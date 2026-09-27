@@ -1,0 +1,308 @@
+#!/bin/bash
+# aios: installer and maintenance utility for AIbex AIOS
+
+   VERSION="0.1.0"
+   ETC="$HOME/etc/aios"
+   STUP_URL="https://raw.githubusercontent.com/bluccino/tool-stup/master/bin/stup"
+
+#===============================================================================
+# brief usage: aios -?
+#===============================================================================
+
+   if [ "$*" == "-?" ]; then
+      echo '   usage: aios -?           # brief usage'
+      echo '          aios --help       # comprehensive help'
+      echo '          aios --version    # print version'
+      echo '          aios --prepare    # prepare a fresh machine (stup, ~/bin, ...)'
+      echo '          aios --install    # install AIbex AIOS for this user'
+      echo '   see also: ai-brain, pimp, stup'
+      exit 1
+   fi
+
+#===============================================================================
+# comprehensive help: aios --help
+#===============================================================================
+
+   if [ "$*" == "--help" ]; then
+      echo '   aios - installer and maintenance utility for AIbex AIOS'
+      echo ''
+      echo '   usage: aios -?           # brief usage'
+      echo '          aios --help       # this help'
+      echo '          aios --version    # print version of this aios script'
+      echo '          aios --prepare    # prepare a fresh machine (stup, ~/bin, ...)'
+      echo '          aios --install    # install AIbex AIOS for this user'
+      echo ''
+      echo '   aios --prepare (idempotent, asks before writing):'
+      echo '      1. install stup, or update it if not the latest version'
+      echo '      2. create ~/bin, ~/etc, ~/tmp, ~/git if missing'
+      echo '      3. create ~/bin/profile.sh with stup --profile, only if missing'
+      echo '         (an existing profile.sh is never overwritten)'
+      echo ''
+      echo '   aios --install (idempotent, asks before writing):'
+      echo '      1. check dependencies (bash, jq)'
+      echo '      2. copy bin/aios and §AIOS/bin/* of the repo  -> <bin>/'
+      echo '         <bin> = ~/bin if it exists, else a writable directory in PATH'
+      echo '      3. copy AIOS skills §AIOS/skills/<name>/      -> ~/.claude/skills/<name>/'
+      echo '      4. record version, repo and bin location      -> ~/etc/aios/'
+      echo '      hooks (~/.claude/settings.json) are not yet installed in 0.1.0'
+      echo ''
+      echo '   fresh machine:'
+      echo '      cd <repo> && ./bin/aios --prepare && ./bin/aios --install'
+      echo '   standard way (no venv, no pimp):'
+      echo '      cd <repo> && ./bin/aios --install'
+      echo '   with pimp (venv @aios activated, aios in PATH):'
+      echo '      . pimp && aios --install'
+      echo ''
+      echo '   see also: ai-brain, pimp, stup'
+      exit 1
+   fi
+
+#===============================================================================
+# print version: aios --version
+#===============================================================================
+
+   if [ "$*" == "--version" ]; then
+      echo "$VERSION"; exit 0
+   fi
+
+#===============================================================================
+# internal helpers (undocumented self-calls):
+#   aios ---r/g/y/c "text"   # colored output (same ANSI codes as ec)
+#   aios ---repo             # repo root of this aios, or empty
+#   aios ---bin              # target bin directory for installation, or empty
+#===============================================================================
+
+   if [ "$1" == "---r" ]; then printf '\033[31m%s\033[0m\n' "$2"; exit 0; fi
+   if [ "$1" == "---g" ]; then printf '\033[32m%s\033[0m\n' "$2"; exit 0; fi
+   if [ "$1" == "---y" ]; then printf '\033[33m%s\033[0m\n' "$2"; exit 0; fi
+   if [ "$1" == "---c" ]; then printf '\033[36m%s\033[0m\n' "$2"; exit 0; fi
+
+   if [ "$*" == "---repo" ]; then
+      # walk up from the script's directory to a directory that carries
+      # bin/aios plus .pimp/ or §AIOS/ (works for <repo>/bin and @aios/bin);
+      # fall back to the location recorded by a previous installation
+      D="$(cd "$(dirname "$0")" && pwd)"
+      while [ "$D" != "/" ]; do
+         if [ -f "$D/bin/aios" ] && { [ -d "$D/.pimp" ] || [ -d "$D/§AIOS" ]; }; then
+            echo "$D"; exit 0
+         fi
+         D="$(dirname "$D")"
+      done
+      if [ -f "$ETC/repo" ] && [ -d "$(cat "$ETC/repo")" ]; then
+         cat "$ETC/repo"; exit 0
+      fi
+      exit 0
+   fi
+
+   if [ "$*" == "---bin" ]; then
+      # ~/bin if it exists; otherwise the first writable directory in PATH,
+      # skipping relative entries and the bin directory of an active venv
+      if [ -d "$HOME/bin" ]; then echo "$HOME/bin"; exit 0; fi
+      IFS=':' read -r -a DIRS <<< "$PATH"
+      for D in "${DIRS[@]}"; do
+         case "$D" in /*) ;; *) continue ;; esac
+         if [ -n "$VIRTUAL_ENV" ] && [ "$D" == "$VIRTUAL_ENV/bin" ]; then continue; fi
+         if [ -d "$D" ] && [ -w "$D" ]; then echo "$D"; exit 0; fi
+      done
+      exit 0
+   fi
+
+#===============================================================================
+# prepare a fresh machine: aios --prepare
+#===============================================================================
+
+   if [ "$*" == "--prepare" ]; then
+      SELF="$0"
+      "$SELF" ---c "=> AIbex AIOS $VERSION: prepare machine"
+
+      if ! command -v curl >/dev/null 2>&1; then
+         "$SELF" ---r "*** error: curl is required to fetch stup"
+         exit 1
+      fi
+
+      # fetch latest stup to a temporary file and compare versions
+      TMPF="$(mktemp)" || exit 1
+      if ! curl -fsSL "$STUP_URL" -o "$TMPF"; then
+         "$SELF" ---r "*** error: cannot fetch stup from $STUP_URL"
+         rm -f "$TMPF"; exit 1
+      fi
+      NEW="$(bash "$TMPF" --version 2>/dev/null)"
+      CUR=""
+      STUP="$(command -v stup)"
+      if [ -n "$STUP" ]; then CUR="$(stup --version 2>/dev/null)"; fi
+
+      # plan
+      echo "   plan:"
+      if [ -z "$STUP" ]; then
+         TARGET="$HOME/bin/stup"
+         echo "      stup: install $NEW  -> ~/bin/stup"
+      elif [ "$CUR" != "$NEW" ]; then
+         TARGET="$STUP"
+         echo "      stup: update $CUR -> $NEW  ($STUP)"
+      else
+         TARGET=""
+         echo "      stup: $CUR is the latest version, nothing to do"
+      fi
+      MKDIRS=()
+      for D in bin etc tmp git; do
+         if [ ! -d "$HOME/$D" ]; then
+            MKDIRS+=("$HOME/$D"); echo "      create ~/$D"
+         fi
+      done
+      if [ -f "$HOME/bin/profile.sh" ]; then
+         MKPROFILE=0
+         echo "      ~/bin/profile.sh exists, left untouched"
+      else
+         MKPROFILE=1
+         echo "      create ~/bin/profile.sh with stup --profile"
+         echo "         (also adds 'source ~/bin/profile.sh' to .bashrc or .bash_profile)"
+      fi
+      if [ -z "$TARGET" ] && [ ${#MKDIRS[@]} -eq 0 ] && [ "$MKPROFILE" == 0 ]; then
+         rm -f "$TMPF"
+         "$SELF" ---g "=> machine already prepared"
+         exit 0
+      fi
+      printf "   prepare? [Y/n] "
+      read -r ANSWER
+      if [ "$ANSWER" != "" ] && [ "$ANSWER" != "y" ] && [ "$ANSWER" != "Y" ]; then
+         rm -f "$TMPF"
+         "$SELF" ---y "   preparation cancelled"
+         exit 1
+      fi
+
+      # directories
+      for D in "${MKDIRS[@]}"; do
+         mkdir -p "$D" || exit 1
+      done
+      [ ${#MKDIRS[@]} -gt 0 ] && "$SELF" ---g "   ${#MKDIRS[@]} directory(ies) created"
+
+      # stup
+      if [ -n "$TARGET" ]; then
+         if [ -w "$(dirname "$TARGET")" ]; then
+            cp "$TMPF" "$TARGET" || exit 1
+            chmod +x "$TARGET" || exit 1
+         else
+            "$SELF" ---y "   $(dirname "$TARGET") is write protected, using sudo"
+            sudo cp "$TMPF" "$TARGET" || exit 1
+            sudo chmod +x "$TARGET" || exit 1
+         fi
+         "$SELF" ---g "   stup $NEW installed in $TARGET"
+      fi
+      rm -f "$TMPF"
+
+      # profile.sh (stup needs BIN and itself in PATH)
+      if [ "$MKPROFILE" == 1 ]; then
+         # stup appends to the bash resource file, but fails to read a missing one
+         if [ "$(uname)" == "Darwin" ]; then touch "$HOME/.bash_profile"
+         else touch "$HOME/.bashrc"; fi
+         BIN="$HOME/bin" PATH="$HOME/bin:$PATH" stup --profile || exit 1
+         "$SELF" ---g "   ~/bin/profile.sh created"
+      fi
+
+      "$SELF" ---g "=> preparation complete"
+      if [ "$MKPROFILE" == 1 ] || [ ${#MKDIRS[@]} -gt 0 ]; then
+         "$SELF" ---y "   open a new shell (or: source ~/bin/profile.sh) to use ~/bin in PATH"
+      fi
+      echo "   check the installation of standard tools with: stup"
+      exit 0
+   fi
+
+#===============================================================================
+# install: aios --install
+#===============================================================================
+
+   if [ "$*" == "--install" ]; then
+      SELF="$0"
+      REPO="$("$SELF" ---repo)"
+      if [ -z "$REPO" ]; then
+         "$SELF" ---r "*** error: cannot locate the aibex-aios repo"
+         exit 1
+      fi
+      "$SELF" ---c "=> AIbex AIOS $VERSION, repo: $REPO"
+
+      # 1. dependencies
+      MISSING=""
+      for T in bash jq; do
+         command -v "$T" >/dev/null 2>&1 || MISSING="$MISSING $T"
+      done
+      if [ -n "$MISSING" ]; then
+         "$SELF" ---r "*** error: missing dependencies:$MISSING"
+         exit 1
+      fi
+      "$SELF" ---g "   dependencies ok (bash, jq)"
+
+      # plan: scripts and skills to be installed
+      BINS=("$REPO/bin/aios")
+      if [ -d "$REPO/§AIOS/bin" ]; then
+         for F in "$REPO/§AIOS/bin/"*; do [ -f "$F" ] && BINS+=("$F"); done
+      fi
+      SKILLS=()
+      if [ -d "$REPO/§AIOS/skills" ]; then
+         for S in "$REPO/§AIOS/skills/"*/; do
+            [ -f "$S/SKILL.md" ] && SKILLS+=("${S%/}")
+         done
+      fi
+
+      BIN="$("$SELF" ---bin)"
+      if [ -z "$BIN" ]; then
+         "$SELF" ---r "*** error: no ~/bin and no writable bin directory in PATH"
+         echo "    run: aios --prepare   # creates ~/bin"
+         exit 1
+      fi
+
+      echo "   plan:"
+      for F in "${BINS[@]}"; do
+         echo "      $(basename "$F")  -> $BIN/"
+      done
+      for S in "${SKILLS[@]}"; do
+         echo "      skill $(basename "$S")  -> ~/.claude/skills/"
+      done
+      echo "      version, repo, bin  -> ~/etc/aios/"
+      printf "   install? [Y/n] "
+      read -r ANSWER
+      if [ "$ANSWER" != "" ] && [ "$ANSWER" != "y" ] && [ "$ANSWER" != "Y" ]; then
+         "$SELF" ---y "   installation cancelled"
+         exit 1
+      fi
+
+      # 2. scripts -> $BIN
+      for F in "${BINS[@]}"; do
+         cp "$F" "$BIN/" || exit 1
+         chmod +x "$BIN/$(basename "$F")" || exit 1
+      done
+      "$SELF" ---g "   ${#BINS[@]} script(s) copied to $BIN"
+
+      # 3. AIOS skills -> ~/.claude/skills
+      if [ ${#SKILLS[@]} -gt 0 ]; then
+         for S in "${SKILLS[@]}"; do
+            T="$HOME/.claude/skills/$(basename "$S")"
+            mkdir -p "$T" || exit 1
+            cp -R "$S/." "$T/" || exit 1
+         done
+         "$SELF" ---g "   ${#SKILLS[@]} AIOS skill(s) registered in ~/.claude/skills"
+      else
+         "$SELF" ---y "   no AIOS skills found (§AIOS/skills/ empty or missing)"
+      fi
+
+      # 4. version and repo location -> ~/etc/aios
+      mkdir -p "$ETC" || exit 1
+      echo "$VERSION" > "$ETC/version" || exit 1
+      echo "$REPO" > "$ETC/repo" || exit 1
+      echo "$BIN" > "$ETC/bin" || exit 1
+      "$SELF" ---g "   version $VERSION recorded in ~/etc/aios"
+
+      "$SELF" ---y "   hooks are not yet installed in $VERSION"
+      case ":$PATH:" in
+         *":$BIN:"*) ;;
+         *) "$SELF" ---y "   note: $BIN is not in your PATH" ;;
+      esac
+      "$SELF" ---g "=> installation complete"
+      exit 0
+   fi
+
+#===============================================================================
+# cannot deal with anything else ...
+#===============================================================================
+
+   "$0" -?
+   exit 1
