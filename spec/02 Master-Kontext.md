@@ -15,7 +15,7 @@ related:
 
 # Master-Kontext
 
-Diese Spec regelt, welches Wissen ein Chat bekommt: wie AIOS Vault, Projekt und Kette bestimmt, wie die Klassen eines Masterspace wirken, was das CLI `aios-context` ausgibt, was die Hooks tun und was der Skill `/aios-context` zeigt. Begriffe siehe Spec 01, Dateistrukturen und Formate siehe Spec 04.
+Diese Spec regelt, welches Wissen ein Chat bekommt, den **Master-Kontext** (geladen) und das **verfügbare Wissen** (bei Bedarf gelesen): wie AIOS Vault, Projekt und Kette bestimmt, wie die Klassen eines Masterspace wirken, was das CLI `aios-context` ausgibt, was die Hooks tun und was der Skill `/aios-context` zeigt. Begriffe siehe Spec 01, Dateistrukturen und Formate siehe Spec 04.
 
 ## Vault, Projekt und Kette
 
@@ -50,8 +50,8 @@ Die Klasse eines Unterverzeichnisses eines Masterspace steht im Namen. Erkannt w
 | Präfix | Klasse | Wirkung |
 |---|---|---|
 | `@!` | **Verborgen** | nie Kontext; Blueprints (`@!Skill`, `@!Prompt`, `@!Agent`) |
-| `@@` | **Verfügbar** | gehört zum Master-Kontext, wird nur bei Bedarf gelesen; im Kontext steht ein Inhaltsverzeichnis |
-| `@` | **Laden** | wird zu Beginn des Chats vollständig geladen |
+| `@@` | **Verfügbar** | verfügbares Wissen: gehört **nicht** zum Master-Kontext und wird nur bei Bedarf gelesen; im Master-Kontext steht sein Inhaltsverzeichnis |
+| `@` | **Laden** | bildet den Master-Kontext; wird zu Beginn des Chats vollständig geladen |
 
 `@@` und `@!` werden vor `@` geprüft; sonst würde `@@Kapitel` als *Laden* mit dem Namen `@Kapitel` gelesen.
 
@@ -67,11 +67,11 @@ Die Detailregeln sind offen (Spec 01, O2). Für v0.1 gilt vorläufig:
 | K2 | Mit der Ordnung *Laden* < *Verfügbar* < *Verborgen* gilt auf einem Pfad die strengste Klasse: ein `@X` innerhalb von `@!Skill` bleibt verborgen, ein `@@X` innerhalb von `@Wissen` ist verfügbar. |
 | K3 | Dateien direkt in `@/` gehören zur Klasse *Laden*. |
 | K4 | Berücksichtigt werden nur Dateien mit der Endung `.md`. Andere Dateien (Bilder, PDFs) bleiben liegen und werden nicht geladen. |
-| K5 | Die Masterspace-id wird aus `cwd`, den Pfaden und Inhalten aller *geladenen* Dateien und den Pfaden der *verfügbaren* Dateien gebildet (siehe `aios-context --id`). Verborgene Dateien gehen nicht ein. |
+| K5 | Die id des Master-Kontexts wird aus `cwd`, den Pfaden und Inhalten aller geladenen Dateien und den Pfaden des verfügbaren Wissens gebildet, also genau aus dem, was der Master-Kontext enthält (siehe `aios-context --id`). Inhalte des verfügbaren Wissens und verborgene Dateien gehen nicht ein. |
 
-### Inhaltsverzeichnis des verfügbaren Teils
+### Inhaltsverzeichnis des verfügbaren Wissens
 
-Für jede verfügbare Datei der Kette enthält der geladene Kontext eine Zeile mit absolutem Pfad und der ersten Überschrift der Datei:
+Für jede Datei des verfügbaren Wissens enthält der Master-Kontext eine Zeile mit absolutem Pfad und der ersten Überschrift der Datei:
 
 ```
 <aios-available>
@@ -118,7 +118,7 @@ Außerhalb eines Vaults geben `--session` und `--advise` nichts aus; `--id` meld
 |---|---|
 | `<aios-context id=… >` … `</aios-context id=…>` | Anfangs- und Endmarke; der Master-Kontext gilt nur als geladen, wenn beide Marken mit derselben id im Kontext stehen |
 | `<aios-file class="load" src=…>` | eine geladene Datei mit absolutem Pfad |
-| `<aios-available>` | Inhaltsverzeichnis des verfügbaren Teils |
+| `<aios-available>` | Inhaltsverzeichnis des verfügbaren Wissens (Teil des Master-Kontexts) |
 
 Die Anweisung bei nicht initialisiertem Projekt steht vor dem Master-Kontext:
 
@@ -170,15 +170,15 @@ AIOS-Skill, Nachfolger von `/masterspace`. Auslöser: `/aios-context`, „Master
 ```
 Master-Kontext geladen (id 3fa91c02, AIOS 0.1.0) — Garten
 
-Kette       §Demo → Garten
+Kette                      §Demo → Garten
 
-Laden       3 Dateien, 4.120 Zeichen
+Master-Kontext (geladen)   3 Dateien, 4.120 Zeichen
   §Demo/@/@Rule/stil.md
   §Demo/@/@Wissen/@Content/inhalt.md
   …
-Verfügbar   1 Datei (Inhaltsverzeichnis geladen)
+verfügbares Wissen         1 Datei (nicht geladen, Inhaltsverzeichnis im Master-Kontext)
   §Demo/@/@Wissen/@@Kapitel/kapitel.md
-Verborgen   Blueprints: 2 Skills, 1 Agent, 1 Prompt
+Verborgen                  Blueprints: 2 Skills, 1 Agent, 1 Prompt
   Skills    memo 6.0.0 (§Demo) — registriert
             apfel-birnen-algebra (Agent obstgaertner, privat)
   Agenten   obstgaertner (§Demo)

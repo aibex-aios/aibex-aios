@@ -55,7 +55,8 @@ Die Begründungen stehen in den Memos 01 bis 15 des Konzeptprojekts `§AIbex/P-P
 | **Root-Masterspace** | `@/` der Vault-Root |
 | **lokaler Masterspace** | `@/` des Projekts, in dem ein Chat läuft |
 | **Master-Space-Kette** | die Masterspaces aller Projekte vom Projekt des Chats aufwärts bis zum Root-Projekt |
-| **Master-Kontext** | was die Kette dem Chat beisteuert: der *geladene* und der *verfügbare* Teil |
+| **Master-Kontext** | der geladene Teil der Master-Space-Kette: alles, was beim Chatbeginn in den Kontext des Hosts gelangt, einschließlich des Inhaltsverzeichnisses des verfügbaren Wissens |
+| **verfügbares Wissen** | die Dateien der Klasse *Verfügbar* in der Kette; gehört nicht zum Master-Kontext, das Modell liest sie bei Bedarf |
 | **Klasse** | *Laden* (`@…`), *Verfügbar* (`@@…`), *Verborgen* (`@!…`); steht im Namen eines Unterverzeichnisses eines Masterspace |
 | **Blueprint** | Beschreibung eines Skills, Prompts oder Agenten in einem verborgenen Verzeichnis (`@!Skill`, `@!Prompt`, `@!Agent`) |
 | **Build-Output** | aus Blueprints erzeugte Dateien für den Host (z. B. `.claude/skills/`); nie Quelle, jederzeit neu erzeugbar |
@@ -122,7 +123,7 @@ v0.1 ist fertig, wenn dieser Ablauf auf einem Rechner ohne AIOS gelingt. Jeder S
 | 4 | `§Demo/@/@Rule/stil.md`, `§Demo/@/@Wissen/@Content/inhalt.md` und `§Demo/@/@Wissen/@@Kapitel/kapitel.md` anlegen | — |
 | 5 | Ordner `§Demo/Garten` anlegen, Chat darin öffnen | Hinweis „kein initialisiertes Projekt" mit den Wahlmöglichkeiten initialisieren oder ins Root-Projekt wechseln |
 | 6 | Initialisieren wählen | `/aios-init`: `@/`, `@Memo/`, `.gitignore`, `git init`, erster Commit |
-| 7 | neuen Chat in `§Demo/Garten` öffnen, `/aios-context` | `stil.md` und `inhalt.md` geladen, `kapitel.md` als verfügbar gelistet |
+| 7 | neuen Chat in `§Demo/Garten` öffnen, `/aios-context` | Master-Kontext mit `stil.md` und `inhalt.md`; `kapitel.md` als verfügbares Wissen gelistet |
 | 8 | `/aios-deploy memo==6.0.0` mit Ziel `§Demo` | `§Demo/@/@!Skill/memo/`, `skills: {memo: 6.0.0}` in `§Demo/.aios/config.yaml`, `memo` in `Garten/.claude/skills/` registriert |
 | 9 | Agent `obstgaertner` in `§Demo/@/@!Agent/` mit eigenem Wissen und privatem Skill anlegen; `/aios-agent Obstgärtner: Test` | Persönlichkeit, Wissen und Skill des Agenten im Chat, Titel gesetzt |
 | 10 | Projekt `§Demo/Sternwarte` mit eigenem Skill in `@/@!Skill/`; Chat in `Garten` | der Skill aus `Sternwarte` ist in `Garten` nicht registriert |
