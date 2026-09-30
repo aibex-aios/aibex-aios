@@ -1,6 +1,6 @@
 ---
 title: "Installation und Konfiguration"
-date: 2026-09-30
+date: 2026-10-01
 author: iHux
 status: Spec
 tags: [spec, aios, v0.1, installation, konfiguration]
@@ -10,6 +10,7 @@ related:
   - "Spec 02 Master-Kontext"
   - "Spec 03 Skills und Agenten"
   - "Memo 04 Der Vault §AIOS, Repo und Installation (Konzeptprojekt PAA-AIbex-AIOS-V0.1)"
+  - "Memo 21 Repo ohne Vault und Skill-Gruppen (Konzeptprojekt PAA-AIbex-AIOS-V0.1)"
   - "Memo 09 Parallele Versionen und Aktivierung je Projekt (Konzeptprojekt PAA-AIbex-AIOS-V0.1)"
   - "Memo 10 Das Verzeichnis .aios — global, Vault und Projekt (Konzeptprojekt PAA-AIbex-AIOS-V0.1)"
   - "Memo 12 Umfang von AIOS v0.1.0 — Entscheidungen vor der Spec (Konzeptprojekt PAA-AIbex-AIOS-V0.1)"
@@ -34,9 +35,8 @@ Diese Spec regelt, welche Dateien AIOS v0.1 wo anlegt, ihre Formate, die Konfigu
     │   └── aios-context
     ├── lib/aios/                   Python-Paket: Logik von aios und aios-context
     ├── skills/
-    │   └── aios-<name>/SKILL.md    AIOS-Skills (vollständig)
-    ├── library/
-    │   └── memo/6.0.0/SKILL.md     mitgelieferte Skills
+    │   ├── aios/aios-<name>/SKILL.md   AIOS-Skills (vollständig)
+    │   └── basic/memo/6.0.0/SKILL.md   mitgelieferte Skills, je Skill-Version
     ├── templates/
     │   └── gitignore               Vorlage für /aios-init
     ├── doc/
@@ -191,7 +191,7 @@ Eingetragen per `jq`-Merge; andere Schlüssel und fremde Hooks bleiben erhalten.
 ```markdown
 ---
 name: aios-init
-description: <Beschreibung aus /opt/aios/v<version>/skills/aios-init/SKILL.md>
+description: <Beschreibung aus /opt/aios/v<version>/skills/aios/aios-init/SKILL.md>
 ---
 
 !`aios --skill aios-init`
@@ -300,39 +300,41 @@ Entfernt die Benutzereinrichtung: Weiterleiter, AIOS-Skills in `~/.claude/skills
 
 ```
 aibex-aios/                          GitHub aibex-hub/aibex-aios, Tags v<version>
-├── bin/aios                         Einstieg: ./bin/aios --install
+├── README.md
+├── CLAUDE.md                        Regeln für die Arbeit am Repo
+├── VERSION                          Entwicklungsstand, z. B. 0.1.0-dev
+├── bin/                             aios (Einstieg: ./bin/aios --install), aios-context
+├── lib/aios/                        Python-Paket
+├── skills/
+│   ├── aios/<name>/SKILL.md         AIOS-Skills
+│   └── basic/<name>/SKILL.md        Grundausstattung, version im Frontmatter
+├── templates/
+├── python/requirements.txt          pyyaml
 ├── spec/                            diese Spec (gepflegt aus dem Konzeptprojekt)
 ├── doc/                             künftig: tutorials/, wiki/
+├── dev/                             Entwickler-Doku, nicht installiert
 ├── tests/                           Tests im Sandkasten (tests/run), nicht installiert
-├── .pimp/                           optionale Entwicklungsumgebung (venv @aios)
-└── §AIOS/                           Vault von AIOS selbst
-    ├── @/ …                         Regeln für die Arbeit an AIOS
-    ├── VERSION                      Entwicklungsstand, z. B. 0.1.0-dev
-    ├── bin/aios-context
-    ├── bin/aios                     Verweis auf ../../bin/aios (nur Entwicklungsstand)
-    ├── lib/aios/                    Python-Paket
-    ├── skills/aios-<name>/SKILL.md
-    ├── library/<name>/SKILL.md      mitgelieferte Skills, version im Frontmatter
-    ├── templates/
-    └── python/requirements.txt      pyyaml
+├── etc/image/                       Bilder des README, nicht installiert
+└── .pimp/                           optionale Entwicklungsumgebung (venv @aios)
 ```
+
+Das Repo enthält keinen Vault. Vaults legt der User an und bindet sie mit `aios --activate` an eine Version; die Tests legen ihre Vaults im Sandkasten an.
+
+**Skill-Gruppen:** Skills liegen in `skills/<gruppe>/<name>/`. Nur die Gruppe `aios` ist besonders: Ihre Skills schreibt `aios --install` als versionsneutrale AIOS-Skills nach `~/.claude/skills/` (Spec 03). Alle übrigen Gruppen (v0.1: `basic`; künftig z. B. `project`, `mail`) enthalten normale Skills, die mit `aios --deploy` ausgerollt werden. Die Gruppe dient nur der Ordnung: Skill-Namen sind über alle Gruppen eindeutig, `aios --deploy memo==6.0.0` nennt keine Gruppe.
 
 | Repo | Installation |
 |---|---|
-| `bin/aios` | `v<version>/bin/aios` |
-| `§AIOS/bin/aios-context` | `v<version>/bin/aios-context` |
-| `§AIOS/lib/` | `v<version>/lib/` |
-| `§AIOS/VERSION` | `v<version>/VERSION`, beim Installieren mit der Version des Tags überschrieben |
-| `§AIOS/skills/` | `v<version>/skills/` |
-| `§AIOS/library/<name>/` | `v<version>/library/<name>/<skill-version>/` |
-| `§AIOS/templates/` | `v<version>/templates/` |
-| `§AIOS/python/requirements.txt` | `v<version>/python/` (venv) |
+| `bin/`, `lib/`, `templates/` | `v<version>/bin/`, `v<version>/lib/`, `v<version>/templates/` |
+| `VERSION` | `v<version>/VERSION`, beim Installieren mit der Version des Tags überschrieben |
+| `skills/aios/<name>/` | `v<version>/skills/aios/<name>/` |
+| `skills/<gruppe>/<name>/` (übrige Gruppen) | `v<version>/skills/<gruppe>/<name>/<skill-version>/`, Skill-Version aus dem Frontmatter |
+| `python/requirements.txt` | `v<version>/python/` (venv) |
 | `spec/` | `v<version>/doc/spec/` |
 | `doc/tutorials/`, `doc/wiki/` (künftig) | `v<version>/doc/tutorials/`, `v<version>/doc/wiki/` |
 
 Ein Release (Tag `v<version>`) ist nur vollständig, wenn `spec/` den Soll-Stand dieser Version beschreibt.
 
-Ein Entwicklungsstand wird ohne Installation genutzt, indem `~/.aios/installations.yaml` auf `§AIOS` im Klon zeigt (z. B. `v0.2.0-dev: ~/git/AIbex/aibex-aios/§AIOS`) oder `AIOS_HOME` auf diesen Ort gesetzt wird. `§AIOS/bin/` enthält dafür beide Werkzeuge: `aios-context` und `aios`, einen Verweis, der `bin/aios` des Repos aufruft. Der Verweis wird nicht installiert; die Installation erhält `bin/aios` des Repos (Tabelle oben).
+Ein Entwicklungsstand wird ohne Installation genutzt, indem `~/.aios/installations.yaml` auf die Wurzel des Klons zeigt (z. B. `v0.2.0-dev: ~/git/AIbex/aibex-aios`) oder `AIOS_HOME` auf diesen Ort gesetzt wird. Die Weiterleiter finden dort wie in einer Installation `bin/aios` und `bin/aios-context`. Im Entwicklungsstand liegen die übrigen Skill-Gruppen ohne Versionsebene vor (`skills/basic/memo/`); `aios` liest ihre Version aus dem Frontmatter.
 
 ## Legacy und Umstieg
 

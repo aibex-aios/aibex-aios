@@ -2,7 +2,7 @@
 # lib.sh: helpers for AIOS tests (sandbox, assertions); sourced by tests/run
 
    REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-   SRC="$REPO/§AIOS"
+   SRC="$REPO"                         # repo root = source of an installation
 
 #===============================================================================
 # sandbox: fresh HOME, AIOS_PREFIX and AIOS_CLAUDE_DIR per test file

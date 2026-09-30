@@ -1,6 +1,6 @@
 ---
 title: "Skills und Agenten"
-date: 2026-09-30
+date: 2026-10-01
 author: iHux
 status: Spec
 tags: [spec, aios, v0.1, skills, agenten]
@@ -22,7 +22,7 @@ Diese Spec regelt die Arten von Skills, ihre Versionen, das Ausrollen und Regist
 
 | Art | Quelle | registriert in | Verwaltung |
 |---|---|---|---|
-| **AIOS-Skill** | `/opt/aios/v<version>/skills/` | global `~/.claude/skills/aios-*/` (versionsneutral, Spec 04) | `aios --install` |
+| **AIOS-Skill** | `/opt/aios/v<version>/skills/aios/` | global `~/.claude/skills/aios-*/` (versionsneutral, Spec 04) | `aios --install` |
 | **Projekt-Skill** | `@!Skill/<name>/` eines Masterspace der Kette | `<Projekt>/.claude/skills/<name>/` | Registrierung (siehe unten) |
 | **Agenten-Skill** | `@!Agent/<agent>/@!Skill/<name>/` oder `@!Skill/<name>/` der Kette, genannt in `skills:` der `AGENT.md` | nicht registriert; `/aios-agent` lädt ihn als Kontext | `/aios-agent` |
 
@@ -63,7 +63,7 @@ description: >
 | Aspekt | Regel |
 |---|---|
 | **Veröffentlichung** | Eine Version eines Skills aus einem Pflegeprojekt ist ein Git-Tag `<name>-v<version>` (z. B. `memo-v6.0.0`); `version` im Frontmatter des getaggten Stands muss übereinstimmen |
-| **Mitgelieferte Skills** | liegen in `/opt/aios/v<version>/library/<name>/<skill-version>/`; ihre Version ist unabhängig von der AIOS-Version |
+| **Mitgelieferte Skills** | liegen in `/opt/aios/v<version>/skills/<gruppe>/<name>/<skill-version>/` (v0.1: Gruppe `basic`, Spec 04); ihre Version ist unabhängig von der AIOS-Version |
 | **Manifest** | `skills:` in `.aios/config.yaml` nennt je Skill eine **exakte** Version; Bereiche gibt es nicht |
 | **Übertrumpfung** | je Skill: der nächstgelegene Eintrag in der Konfigurationskette gewinnt (Spec 04) |
 | **Ort** | Das Manifest eines Projekts gehört zu den Blueprints in `@/@!Skill/` genau dieses Projekts |

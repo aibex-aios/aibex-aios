@@ -40,9 +40,9 @@
       echo ''
       echo '   aios --install (idempotent, asks before writing):'
       echo '      1. check dependencies (bash, jq)'
-      echo '      2. copy bin/aios and §AIOS/bin/* of the repo  -> <bin>/'
+      echo '      2. copy bin/* of the repo                       -> <bin>/'
       echo '         <bin> = ~/bin if it exists, else a writable directory in PATH'
-      echo '      3. copy AIOS skills §AIOS/skills/<name>/      -> ~/.claude/skills/<name>/'
+      echo '      3. copy AIOS skills skills/aios/<name>/        -> ~/.claude/skills/<name>/'
       echo '      4. record version, repo and bin location      -> ~/etc/aios/'
       echo '      hooks (~/.claude/settings.json) are not yet installed in 0.1.0'
       echo ''
@@ -79,11 +79,11 @@
 
    if [ "$*" == "---repo" ]; then
       # walk up from the script's directory to a directory that carries
-      # bin/aios plus .pimp/ or §AIOS/ (works for <repo>/bin and @aios/bin);
+      # bin/aios plus .pimp/ or spec/ (works for <repo>/bin and @aios/bin);
       # fall back to the location recorded by a previous installation
       D="$(cd "$(dirname "$0")" && pwd)"
       while [ "$D" != "/" ]; do
-         if [ -f "$D/bin/aios" ] && { [ -d "$D/.pimp" ] || [ -d "$D/§AIOS" ]; }; then
+         if [ -f "$D/bin/aios" ] && { [ -d "$D/.pimp" ] || [ -d "$D/spec" ]; }; then
             echo "$D"; exit 0
          fi
          D="$(dirname "$D")"
@@ -232,13 +232,11 @@
       "$SELF" ---g "   dependencies ok (bash, jq)"
 
       # plan: scripts and skills to be installed
-      BINS=("$REPO/bin/aios")
-      if [ -d "$REPO/§AIOS/bin" ]; then
-         for F in "$REPO/§AIOS/bin/"*; do [ -f "$F" ] && BINS+=("$F"); done
-      fi
+      BINS=()
+      for F in "$REPO/bin/"*; do [ -f "$F" ] && BINS+=("$F"); done
       SKILLS=()
-      if [ -d "$REPO/§AIOS/skills" ]; then
-         for S in "$REPO/§AIOS/skills/"*/; do
+      if [ -d "$REPO/skills/aios" ]; then
+         for S in "$REPO/skills/aios/"*/; do
             [ -f "$S/SKILL.md" ] && SKILLS+=("${S%/}")
          done
       fi
@@ -281,7 +279,7 @@
          done
          "$SELF" ---g "   ${#SKILLS[@]} AIOS skill(s) registered in ~/.claude/skills"
       else
-         "$SELF" ---y "   no AIOS skills found (§AIOS/skills/ empty or missing)"
+         "$SELF" ---y "   no AIOS skills found (skills/aios/ empty or missing)"
       fi
 
       # 4. version and repo location -> ~/etc/aios

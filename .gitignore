@@ -1,16 +1,13 @@
 # venv (Build-Output von . pimp)
 @aios/
 
-# consignte Kopien in .pimp/bin (Quelle: bin/, §AIOS/bin/)
+# consignte Kopien in .pimp/bin (Quelle: bin/)
 .pimp/bin/*
 !.pimp/bin/setup.sh
 !.pimp/bin/cleanup.sh
 
 # macOS
 .DS_Store
-
-# Obsidian (rechnerspezifischer Zustand)
-§AIOS/.obsidian/workspace*.json
 
 # Python
 __pycache__/

@@ -12,13 +12,16 @@
 # repo layout (spec 04, Repo aibex-aios)
 #===============================================================================
 
-   for D in "@/@Rule" bin lib/aios skills library templates python; do
+   for D in bin lib/aios skills/aios skills/basic templates python spec dev tests; do
       assert_dir "$SRC/$D"
    done
+   assert_file "$REPO/CLAUDE.md"
+   assert_file "$REPO/dev/Bash-Skript-Struktur.md"
+   [ ! -e "$REPO/§AIOS" ] && ok || fail "no vault in the repo: §AIOS exists"
+   [ ! -e "$REPO/library" ] && ok || fail "library/ replaced by skills/<group>/"
    assert_file "$SRC/VERSION"
    assert_file "$SRC/python/requirements.txt"
    assert_file "$SRC/templates/gitignore"
-   assert_dir  "$REPO/spec"
    assert_exec "$SRC/bin/aios-context"
 
    assert_contains "$(cat "$SRC/python/requirements.txt")" "pyyaml" "requirements"
@@ -50,9 +53,9 @@ print(aios.version()); print(p.prefix()); print(p.user_dir()); print(p.claude_di
    assert_eq "$(sed -n 5p <<< "$PYOUT")" "$HOME/bin" "paths.bin_dir()"
 
 #===============================================================================
-# development state: §AIOS/bin holds aios and aios-context (spec 04)
+# development state: bin/ holds aios and aios-context (spec 04)
 #===============================================================================
 
    assert_exec "$SRC/bin/aios"
-   assert_eq "$("$SRC/bin/aios" --version)" "$("$REPO/bin/aios" --version)" "§AIOS/bin/aios --version"
    assert_exit 1 "$SRC/bin/aios" -?
+   assert_eq "$("$SRC/bin/aios" ---repo)" "$REPO" "aios ---repo finds the repo"

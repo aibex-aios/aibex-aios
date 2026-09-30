@@ -19,7 +19,7 @@
 # locations of this installation or source tree
 #===============================================================================
 
-   HERE="$(cd "$(dirname "$0")/.." && pwd)"      # installation or §AIOS
+   HERE="$(cd "$(dirname "$0")/.." && pwd)"      # installation or repo root
    PY="$HERE/python/bin/python"                  # venv of an installation
    [ -x "$PY" ] || PY="python3"                  # source tree: system python
 
