@@ -9,6 +9,7 @@ Regeln für Sessions, die an AIbex AIOS arbeiten, ob sie im Repo laufen oder im 
 | Spec (Soll-Stand, verbindlich) | `spec/` |
 | Memos (Begründungen, Verlauf) | Konzeptprojekt, siehe unten |
 | Implementierungsplan | Memo 18 im Konzeptprojekt, spätere Memos gehen ihm vor |
+| Stand der Umsetzung | `STATUS.md` |
 | Code | `bin/` (Bash: `aios`, `aios-context`), `lib/aios/` (Python) |
 | Skills | `skills/<gruppe>/<name>/SKILL.md`: `aios` (AIOS-Skills), `basic` (Grundausstattung) |
 | Tests | `tests/run` |
@@ -25,7 +26,7 @@ Konzeptprojekt mit den Memos:
 ## Stand ermitteln
 
 1. Memo 18 lesen (Implementierungsplan, Schritte 1–12), dann alle Memos mit höherer Nummer.
-2. `git log --oneline` im Repo: Jeder abgeschlossene Schritt hat einen Commit `Schritt N: …`. Der nächste Schritt ist der erste ohne solchen Commit.
+2. `STATUS.md` lesen: Der nächste Schritt ist der erste mit ☐. Zur Kontrolle `git log --oneline`: Jeder abgeschlossene Schritt hat einen Commit `Schritt N: …`.
 3. `tests/run` als Ausgangsprüfung, alle Tests müssen grün sein.
 4. Dem User den ermittelten Schritt nennen und dann beginnen.
 
@@ -45,7 +46,7 @@ Das Memo wird im Konzeptprojekt angelegt und dort committet, die Spec-Änderung 
 - **Bash für Weiterleiter und Bootstrap, Python für die Logik** (Memo 18, E1). Bash-Skripte folgen der Bash-Konvention (unten).
 - **Keine fest verdrahteten Pfade:** immer `AIOS_PREFIX`, `HOME`, `AIOS_CLAUDE_DIR` (Spec 04, *Umlenkung für Tests*).
 - **Tests im Sandkasten:** `tests/run` vor jedem Commit; Tests verändern nie den echten Rechner.
-- **Ein Schritt, ein Commit:** jeder Schritt des Plans endet mit grünen Tests und einem Commit `Schritt N: …`, danach Push.
+- **Ein Schritt, ein Commit:** jeder Schritt des Plans endet mit grünen Tests und einem Commit `Schritt N: …`, danach Push. Im selben Commit wird der Schritt in `STATUS.md` abgehakt (☐ → ☑, Ergebnis nachgetragen).
 - **Das Arbeitsverzeichnis nicht wechseln:** `git -C <repo>` und absolute Pfade verwenden, damit der Masterspace der Session gültig bleibt.
 - **Der Arbeitsrechner wird erst in Schritt 12 umgestellt** (Memo 18, E4).
 
