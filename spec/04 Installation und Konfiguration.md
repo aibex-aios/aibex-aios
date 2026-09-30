@@ -309,6 +309,7 @@ aibex-aios/                          GitHub aibex-hub/aibex-aios, Tags v<version
     ├── @/ …                         Regeln für die Arbeit an AIOS
     ├── VERSION                      Entwicklungsstand, z. B. 0.1.0-dev
     ├── bin/aios-context
+    ├── bin/aios                     Verweis auf ../../bin/aios (nur Entwicklungsstand)
     ├── lib/aios/                    Python-Paket
     ├── skills/aios-<name>/SKILL.md
     ├── library/<name>/SKILL.md      mitgelieferte Skills, version im Frontmatter
@@ -331,7 +332,7 @@ aibex-aios/                          GitHub aibex-hub/aibex-aios, Tags v<version
 
 Ein Release (Tag `v<version>`) ist nur vollständig, wenn `spec/` den Soll-Stand dieser Version beschreibt.
 
-Ein Entwicklungsstand wird ohne Installation genutzt, indem `~/.aios/installations.yaml` auf den Klon zeigt (z. B. `v0.2.0-dev: ~/git/AIbex/aibex-aios`) oder `AIOS_HOME` gesetzt wird.
+Ein Entwicklungsstand wird ohne Installation genutzt, indem `~/.aios/installations.yaml` auf `§AIOS` im Klon zeigt (z. B. `v0.2.0-dev: ~/git/AIbex/aibex-aios/§AIOS`) oder `AIOS_HOME` auf diesen Ort gesetzt wird. `§AIOS/bin/` enthält dafür beide Werkzeuge: `aios-context` und `aios`, einen Verweis, der `bin/aios` des Repos aufruft. Der Verweis wird nicht installiert; die Installation erhält `bin/aios` des Repos (Tabelle oben).
 
 ## Legacy und Umstieg
 

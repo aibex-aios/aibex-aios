@@ -48,3 +48,11 @@ print(aios.version()); print(p.prefix()); print(p.user_dir()); print(p.claude_di
    assert_eq "$(sed -n 3p <<< "$PYOUT")" "$HOME/.aios" "paths.user_dir()"
    assert_eq "$(sed -n 4p <<< "$PYOUT")" "$AIOS_CLAUDE_DIR" "paths.claude_dir()"
    assert_eq "$(sed -n 5p <<< "$PYOUT")" "$HOME/bin" "paths.bin_dir()"
+
+#===============================================================================
+# development state: §AIOS/bin holds aios and aios-context (spec 04)
+#===============================================================================
+
+   assert_exec "$SRC/bin/aios"
+   assert_eq "$("$SRC/bin/aios" --version)" "$("$REPO/bin/aios" --version)" "§AIOS/bin/aios --version"
+   assert_exit 1 "$SRC/bin/aios" -?

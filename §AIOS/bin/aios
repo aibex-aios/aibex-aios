@@ -1,0 +1,3 @@
+#!/bin/bash
+# aios: development link to ../../bin/aios, so that §AIOS/bin holds both tools (spec 04)
+   exec "$(cd "$(dirname "$0")/../.." && pwd)/bin/aios" "$@"
