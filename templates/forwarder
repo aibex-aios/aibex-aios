@@ -1,0 +1,163 @@
+#!/bin/bash
+# forwarder: ~/bin/aios and ~/bin/aios-context, choose the AIOS version and call it (spec 04)
+
+   TOOL="$(basename "$0")"                          # aios or aios-context
+   case "$TOOL" in aios|aios-context) ;; *) TOOL="aios";; esac
+
+   if [ "$*" == "---help" ]; then
+      echo "   usage: $TOOL <args>      # forward <args> to $TOOL of the chosen version"
+      echo "          $TOOL ---which    # show the chosen installation and why"
+      echo "          $TOOL ---version  # print version of this forwarder"
+      echo "          $TOOL ---help     # this help"
+      echo '   order: AIOS_HOME, aios: in .aios/config.yaml up to the vault root,'
+      echo '          otherwise aios: highest installed version, aios-context: ai-brain'
+      echo '   see also: aios, aios-context, ai-brain'
+      exit 1
+   fi
+
+#===============================================================================
+# print version: <tool> ---version
+#===============================================================================
+
+   if [ "$*" == "---version" ]; then
+      echo "0.1.0"; exit 0
+   fi
+
+#===============================================================================
+# helpers: installations, versions, activation
+#===============================================================================
+
+   PREFIX="${AIOS_PREFIX:-/opt/aios}"
+
+   installed() {                                    # print "v<version>|<path>", user wins
+      local F LINE NAME VAL SEEN=""
+      for F in "$HOME/.aios/installations.yaml" "$PREFIX/installations.yaml"; do
+         [ -f "$F" ] || continue
+         while IFS= read -r LINE || [ -n "$LINE" ]; do
+            LINE="${LINE%$'\r'}"
+            [[ "$LINE" =~ ^(v[0-9][^:[:space:]]*):[[:space:]]*(.*)$ ]] || continue
+            NAME="${BASH_REMATCH[1]}"; VAL="${BASH_REMATCH[2]}"
+            VAL="${VAL%%[[:space:]]#*}"; VAL="${VAL%"${VAL##*[![:space:]]}"}"
+            VAL="${VAL#\"}"; VAL="${VAL%\"}"; VAL="${VAL#\'}"; VAL="${VAL%\'}"
+            case "$VAL" in "~") VAL="$HOME";; "~/"*) VAL="$HOME/${VAL#\~/}";; esac
+            case " $SEEN " in *" $NAME "*) continue;; esac
+            SEEN="$SEEN $NAME"
+            echo "$NAME|$VAL"
+         done < "$F"
+      done
+   }
+
+   lookup() {                                       # path of v<version> or nothing
+      local E
+      while IFS= read -r E; do
+         [ "${E%%|*}" == "v$1" ] && { echo "${E#*|}"; return 0; }
+      done < <(installed)
+      return 1
+   }
+
+   newer() {                                        # semver: is $1 newer than $2 ?
+      local A="${1#v}" B="${2#v}" AP="" BP="" I X Y
+      [[ "$A" == *-* ]] && { AP="${A#*-}"; A="${A%%-*}"; }
+      [[ "$B" == *-* ]] && { BP="${B#*-}"; B="${B%%-*}"; }
+      IFS=. read -r -a X <<< "$A"; IFS=. read -r -a Y <<< "$B"
+      for I in 0 1 2; do
+         [ "$((10#${X[$I]:-0}))" -gt "$((10#${Y[$I]:-0}))" ] && return 0
+         [ "$((10#${X[$I]:-0}))" -lt "$((10#${Y[$I]:-0}))" ] && return 1
+      done
+      [ -z "$AP" ] && [ -n "$BP" ] && return 0      # release beats pre-release
+      [ -n "$AP" ] && [ -z "$BP" ] && return 1
+      [[ "$AP" > "$BP" ]]
+   }
+
+   highest() {                                      # print "v<version>|<path>"
+      local E BEST=""
+      while IFS= read -r E; do
+         { [ -z "$BEST" ] || newer "${E%%|*}" "${BEST%%|*}"; } && BEST="$E"
+      done < <(installed)
+      [ -n "$BEST" ] && echo "$BEST"
+   }
+
+   activation() {                                   # print "<version>|<config>" or nothing
+      local D="$PWD" ROOT="" LINE
+      while :; do                                   # vault root: nearest dir named §*
+         case "$(basename "$D")" in §*) ROOT="$D"; break;; esac
+         [ "$D" == "/" ] && break
+         D="$(dirname "$D")"
+      done
+      [ -n "$ROOT" ] || return 1                    # outside a vault: never activated
+      D="$PWD"
+      while :; do
+         if [ "$D" != "$HOME" ] && [ -f "$D/.aios/config.yaml" ]; then
+            LINE="$(grep -E -m1 '^aios:' "$D/.aios/config.yaml")"
+            if [[ "$LINE" =~ ^aios:[[:space:]]*[\"\']?v?([0-9][^\"\'[:space:]#]*) ]]; then
+               echo "${BASH_REMATCH[1]}|$D/.aios/config.yaml"; return 0
+            fi
+         fi
+         [ "$D" == "$ROOT" ] && break
+         D="$(dirname "$D")"
+      done
+      return 1
+   }
+
+   choose() {                                       # set KIND, TARGET, WHY
+      local A E
+      KIND=""; TARGET=""; WHY=""
+      if [ -n "$AIOS_HOME" ]; then
+         KIND=aios; TARGET="$AIOS_HOME/bin/$TOOL"; WHY="AIOS_HOME=$AIOS_HOME"; return 0
+      fi
+      if A="$(activation)"; then
+         WHY="aios: ${A%%|*} in ${A#*|}"
+         if E="$(lookup "${A%%|*}")"; then
+            KIND=aios; TARGET="$E/bin/$TOOL"; return 0
+         fi
+         KIND=missing; TARGET="v${A%%|*}"; return 0
+      fi
+      if [ "$TOOL" == "aios-context" ]; then
+         KIND=legacy; TARGET="$(command -v ai-brain)"; WHY="not activated (legacy mode)"
+         return 0
+      fi
+      if E="$(highest)"; then
+         KIND=aios; TARGET="${E#*|}/bin/$TOOL"; WHY="not activated, highest installed ${E%%|*}"
+         return 0
+      fi
+      KIND=none; WHY="no installation of AIOS found"
+   }
+
+#===============================================================================
+# show choice: <tool> ---which
+#===============================================================================
+
+   if [ "$*" == "---which" ]; then
+      choose
+      echo "tool=$TOOL kind=$KIND target=${TARGET:--} why=$WHY"
+      exit 0
+   fi
+
+#===============================================================================
+# forward: <tool> <args>
+#===============================================================================
+
+   choose
+   case "$KIND" in
+      aios)
+         [ -x "$TARGET" ] || { echo "*** $TOOL: $TARGET not found ($WHY)" >&2; exit 1; }
+         exec "$TARGET" "$@"
+         ;;
+      legacy)
+         [ -n "$TARGET" ] || exit 0                 # no ai-brain: no output
+         exec "$TARGET" "$@"
+         ;;
+      missing)
+         echo "*** $TOOL: AIOS $TARGET is not installed ($WHY)" >&2
+         echo "    run: aios --install $TARGET" >&2
+         exit 1
+         ;;
+   esac
+
+#===============================================================================
+# cannot deal with anything else ...
+#===============================================================================
+
+   echo "*** $TOOL: $WHY" >&2
+   echo "    run: ./bin/aios --install in a clone of aibex-aios" >&2
+   exit 1

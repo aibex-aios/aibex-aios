@@ -5,7 +5,7 @@ Umsetzungsschritte nach dem Implementierungsplan (Memo 18 im Konzeptprojekt, erg
 | # | Schritt | Ergebnis | Spec | Stand |
 |---|---|---|---|---|
 | 1 | **Gerüst:** Repo-Struktur (`bin/`, `lib/aios/`, `skills/aios/`, `skills/basic/`, `templates/`, `python/`, `CLAUDE.md`, `dev/`), Testrahmen `tests/` mit Sandkasten | Grundgerüst, 36 Prüfungen grün | 04 *Repo* | ☑ abgeschlossen |
-| 2 | **Weiterleiter und Versionen:** `~/bin/aios`, `~/bin/aios-context`; Auflösung über `AIOS_HOME`, Kette, `installations.yaml`; Legacy-Aufruf von `ai-brain` | Weiterleiter mit Tests für alle Ränge | 04 *Weiterleiter* | ☐ offen |
+| 2 | **Weiterleiter und Versionen:** `~/bin/aios`, `~/bin/aios-context`; Auflösung über `AIOS_HOME`, Kette, `installations.yaml`; Legacy-Aufruf von `ai-brain` | `templates/forwarder`, alle Ränge getestet (t02, 24 Prüfungen), Memo 22 | 04 *Weiterleiter* | ☑ abgeschlossen |
 | 3 | **Installieren:** `--prepare`, `--install [v<version>]`, `--versions`, `--remove-version`, `--uninstall`; ersetzt den Prototyp `bin/aios` | Installation im Sandkasten, idempotent, rückbaubar | 04 *CLI* | ☐ offen |
 | 4 | **Aktivieren:** `--activate`, `--deactivate`, Konfigurationskette mit Übertrumpfung je Schlüssel | `.aios/config.yaml` richtig geschrieben und gelesen | 04 *Formate*, 02 | ☐ offen |
 | 5 | **Master-Kontext:** `aios-context` mit Vault, Projekt, Kette, Klassen K1–K5, Inhaltsverzeichnis, Ausgabe, id, `--load` | Ausgabe für Beispielbäume exakt geprüft | 02 | ☐ offen |

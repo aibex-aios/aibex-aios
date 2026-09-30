@@ -38,6 +38,7 @@ Diese Spec regelt, welche Dateien AIOS v0.1 wo anlegt, ihre Formate, die Konfigu
     │   ├── aios/aios-<name>/SKILL.md   AIOS-Skills (vollständig)
     │   └── basic/memo/6.0.0/SKILL.md   mitgelieferte Skills, je Skill-Version
     ├── templates/
+    │   ├── forwarder               Quelle der Weiterleiter in ~/bin
     │   └── gitignore               Vorlage für /aios-init
     ├── doc/
     │   └── spec/                   die Spec dieser Version (Pflicht)
@@ -221,14 +222,24 @@ Weiterleiter, `aios` und `aios-context` verwenden ausschließlich diese Variable
 
 ## Weiterleiter
 
-`~/bin/aios` und `~/bin/aios-context` enthalten keine Logik außer der Wahl der Version:
+`~/bin/aios` und `~/bin/aios-context` enthalten keine Logik außer der Wahl der Version. Beide sind Kopien desselben Skripts `templates/forwarder`, das `aios --install` unter beiden Namen nach `~/bin` legt; das Werkzeug ergibt sich aus dem Namen, unter dem es aufgerufen wird.
 
 1. Ist `AIOS_HOME` gesetzt: `$AIOS_HOME/bin/<tool>` aufrufen.
-2. Sonst von `cwd` aufwärts bis zur Vault-Root die erste Zeile `aios: <version>` in einer `.aios/config.yaml` suchen.
+2. Sonst von `cwd` aufwärts bis zur Vault-Root die erste Zeile `aios: <version>` in einer `.aios/config.yaml` suchen. Außerhalb eines Vaults wird nicht gesucht, und `~/.aios/config.yaml` zählt nie, auch wenn `~` in einem Vault liegt.
 3. Gefunden: `v<version>` in `~/.aios/installations.yaml`, danach in `/opt/aios/installations.yaml` nachschlagen und `<pfad>/bin/<tool>` mit allen Argumenten aufrufen. Nicht installiert: Fehler mit Hinweis auf `aios --install v<version>`.
 4. Nicht gefunden:
    - `aios`: die höchste installierte Version aufrufen.
    - `aios-context`: **Legacy-Modus**, d. h. `ai-brain` mit denselben Argumenten aufrufen, falls vorhanden (`--session`, `--advise`, `--load`, `--id`, `--context`); sonst nichts ausgeben.
+
+„Höchste Version" gilt nach Semver: `0.10.0` liegt über `0.2.0`, eine Vorabversion wie `0.2.0-dev` unter `0.2.0`. In `installations.yaml` darf ein Pfad in Anführungszeichen stehen und mit `~/` beginnen.
+
+Alle Argumente werden unverändert durchgereicht, auch `-?`, `--help` und `--version`. Die eigenen Optionen der Weiterleiter haben deshalb drei Striche:
+
+| Option | Wirkung |
+|---|---|
+| `---which` | gewählte Installation und Grund, z. B. `tool=aios-context kind=aios target=/opt/aios/v0.1.0/bin/aios-context why=aios: 0.1.0 in /…/§Demo/.aios/config.yaml` |
+| `---version` | Version des Weiterleiters |
+| `---help` | Hilfe |
 
 Die Weiterleiter lesen nur kleine Dateien und greifen nie auf das Netzwerk zu.
 
@@ -308,7 +319,7 @@ aibex-aios/                          GitHub aibex-hub/aibex-aios, Tags v<version
 ├── skills/
 │   ├── aios/<name>/SKILL.md         AIOS-Skills
 │   └── basic/<name>/SKILL.md        Grundausstattung, version im Frontmatter
-├── templates/
+├── templates/                       forwarder (Weiterleiter), gitignore (Vorlage für /aios-init)
 ├── python/requirements.txt          pyyaml
 ├── spec/                            diese Spec (gepflegt aus dem Konzeptprojekt)
 ├── doc/                             künftig: tutorials/, wiki/
