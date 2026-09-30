@@ -56,7 +56,7 @@ description: >
 |---|---|---|
 | `name` | ja | Kleinbuchstaben, Ziffern, Bindestriche, höchstens 64 Zeichen, gleich dem Verzeichnisnamen |
 | `description` | ja | höchstens 1024 Zeichen |
-| `version` | für installierte Skills | Semver `MAJOR.MINOR.PATCH` (offen: Spec 01, O3) |
+| `version` | für installierte Skills | Semver `MAJOR.MINOR.PATCH`; Claude Code erkennt Skills mit diesem Feld ohne Einschränkung (Memo 16) |
 
 ## Versionen
 
@@ -113,7 +113,7 @@ Registrieren macht die geltenden Projekt-Skills **für Claude Code aufrufbar**.
 | SessionStart-Hook (`aios-context --sync --yes`) | nein | jeder Session-Start in einem aktivierten Vault |
 | `/aios-register`, `aios --register` | ja, mit Vorschau | manueller Anstoß, z. B. nach `/aios-deploy` |
 
-Nach Änderungen weist `/aios-register` auf `/reload-skills` hin. Ob ein beim Session-Start neu angelegter Skill in derselben Session aufrufbar ist, ist offen (Spec 01, O1); ist er es nicht, meldet der Hook „wirksam ab dem nächsten Chat".
+**Wirksamkeit:** Claude Code übernimmt Skills, die nach dem Start einer Session angelegt werden, nicht zuverlässig in diese Session (Memo 16). Die Registrierung beim Session-Start stellt deshalb den Stand für den **nächsten** Chat her. Ändert sie etwas, meldet der Hook `AIOS-SKILLS: <Änderungen> — wirksam ab dem nächsten Chat`. `/aios-register`, `/aios-deploy` und `/aios-init` sagen nach dem Registrieren: „Der Skill ist ab dem nächsten Chat verfügbar (oder nach `/reload-skills`)." Ob `/reload-skills` das zuverlässig leistet, ist offen (Spec 01, O1).
 
 ## Agenten
 

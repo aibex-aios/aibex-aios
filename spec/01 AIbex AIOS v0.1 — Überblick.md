@@ -133,7 +133,6 @@ v0.1 ist fertig, wenn dieser Ablauf auf einem Rechner ohne AIOS gelingt. Jeder S
 
 | # | Punkt | vorläufige Festlegung für v0.1 |
 |---|---|---|
-| O1 | Ist ein Skill, den der SessionStart-Hook in `.claude/skills/` anlegt, in derselben Session aufrufbar? Wie weit sucht Claude Code ohne Git-Repo? | Registrierung beim Start; wirkt sie erst ab dem nächsten Chat, meldet der Hook das (Spec 03) |
+| O1 | Wirkt `/reload-skills` in einer interaktiven Session auf Skills, die nach dem Start angelegt wurden? | Getestet (Memo 16): Ein beim Session-Start angelegter Skill ist erst im nächsten Chat verfügbar; die Registrierung ist darauf ausgelegt (Spec 03). Offen ist nur `/reload-skills` |
 | O2 | Detailregeln der Klassen | siehe Spec 02, *Vorläufige Regeln der Klassen* |
-| O3 | ignoriert Claude Code das zusätzliche Frontmatter-Feld `version` in `SKILL.md`? | Feld wird verwendet; bei Problemen in eine Begleitdatei auslagern |
-| O4 | neutraler Memo-Skill ohne AIbex-Pfade | Voraussetzung dafür, dass `memo` in die Bibliothek kommt |
+| O3 | neutraler Memo-Skill ohne AIbex-Pfade | Voraussetzung dafür, dass `memo` in die Bibliothek kommt |
