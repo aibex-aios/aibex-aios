@@ -206,6 +206,18 @@ description: <Beschreibung aus /opt/aios/v<version>/skills/aios-init/SKILL.md>
 .aios/manifest
 ```
 
+## Umlenkung für Tests
+
+Alle festen Orte lassen sich über Umgebungsvariablen umlenken, damit Tests in einem Sandkasten laufen und den Rechner nicht verändern:
+
+| Variable | ersetzt | Standard |
+|---|---|---|
+| `AIOS_PREFIX` | `/opt/aios` | `/opt/aios` |
+| `HOME` | `~` (damit `~/bin`, `~/.aios`) | Home-Verzeichnis |
+| `AIOS_CLAUDE_DIR` | `~/.claude` | `$HOME/.claude` |
+
+Weiterleiter, `aios` und `aios-context` verwenden ausschließlich diese Variablen, nie fest verdrahtete Pfade.
+
 ## Weiterleiter
 
 `~/bin/aios` und `~/bin/aios-context` enthalten keine Logik außer der Wahl der Version:
@@ -234,7 +246,7 @@ Die Weiterleiter lesen nur kleine Dateien und greifen nie auf das Netzwerk zu.
 | `aios --deploy …`, `aios --register` | Spec 03 |
 | `aios --skill <name>` | Rumpf eines AIOS-Skills der gültigen Version (für die versionsneutralen Skills) |
 
-Alle schreibenden Befehle zeigen zuerst einen Plan und fragen `[Y/n]` (I7). Der Aufbau folgt der Bash-Konvention (Help-, Version- und Dispatch-Blöcke, Fallback).
+Alle schreibenden Befehle zeigen zuerst einen Plan und fragen `[Y/n]` (I7). `bin/aios` und die Weiterleiter sind Bash-Skripte nach der Bash-Konvention (Help-, Version- und Dispatch-Blöcke, Fallback); die Logik hinter `aios` und `aios-context` läuft in Python im venv der Installation (`python/`). Nur das Bootstrap von `./bin/aios --install`, bevor die venv existiert, kommt ohne Python-Pakete aus.
 
 ### `aios --prepare`
 
