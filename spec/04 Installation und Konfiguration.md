@@ -32,6 +32,7 @@ Diese Spec regelt, welche Dateien AIOS v0.1 wo anlegt, ihre Formate, die Konfigu
     ├── bin/
     │   ├── aios
     │   └── aios-context
+    ├── lib/aios/                   Python-Paket: Logik von aios und aios-context
     ├── skills/
     │   └── aios-<name>/SKILL.md    AIOS-Skills (vollständig)
     ├── library/
@@ -302,10 +303,13 @@ aibex-aios/                          GitHub aibex-hub/aibex-aios, Tags v<version
 ├── bin/aios                         Einstieg: ./bin/aios --install
 ├── spec/                            diese Spec (gepflegt aus dem Konzeptprojekt)
 ├── doc/                             künftig: tutorials/, wiki/
+├── tests/                           Tests im Sandkasten (tests/run), nicht installiert
 ├── .pimp/                           optionale Entwicklungsumgebung (venv @aios)
 └── §AIOS/                           Vault von AIOS selbst
     ├── @/ …                         Regeln für die Arbeit an AIOS
+    ├── VERSION                      Entwicklungsstand, z. B. 0.1.0-dev
     ├── bin/aios-context
+    ├── lib/aios/                    Python-Paket
     ├── skills/aios-<name>/SKILL.md
     ├── library/<name>/SKILL.md      mitgelieferte Skills, version im Frontmatter
     ├── templates/
@@ -316,6 +320,8 @@ aibex-aios/                          GitHub aibex-hub/aibex-aios, Tags v<version
 |---|---|
 | `bin/aios` | `v<version>/bin/aios` |
 | `§AIOS/bin/aios-context` | `v<version>/bin/aios-context` |
+| `§AIOS/lib/` | `v<version>/lib/` |
+| `§AIOS/VERSION` | `v<version>/VERSION`, beim Installieren mit der Version des Tags überschrieben |
 | `§AIOS/skills/` | `v<version>/skills/` |
 | `§AIOS/library/<name>/` | `v<version>/library/<name>/<skill-version>/` |
 | `§AIOS/templates/` | `v<version>/templates/` |

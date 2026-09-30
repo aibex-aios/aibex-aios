@@ -1,0 +1,58 @@
+#!/bin/bash
+# run: run all AIOS tests (tests/t*.sh), each in its own sandbox
+
+   if [ "$*" == "-?" ] || [ "$*" == "--help" ]; then
+      echo '   usage: tests/run            # run all tests'
+      echo '          tests/run t01        # run tests whose file name starts with t01'
+      echo '          tests/run --version  # print version'
+      echo '   see also: aios, aios-context'
+      exit 1
+   fi
+
+#===============================================================================
+# print version: tests/run --version
+#===============================================================================
+
+   if [ "$*" == "--version" ]; then
+      echo "0.1.0"; exit 0
+   fi
+
+#===============================================================================
+# run tests: tests/run [<prefix>]
+#===============================================================================
+
+   if [ "$2" == "" ]; then
+      DIR="$(cd "$(dirname "$0")" && pwd)"
+      REAL_HOME="$HOME"
+      TOTAL_PASS=0; TOTAL_FAIL=0
+      for T in "$DIR"/${1:-t}*.sh; do
+         [ -f "$T" ] || continue
+         OUT="$(
+            source "$DIR/lib.sh"
+            sandbox_new
+            [ "$HOME" != "$REAL_HOME" ] || { echo "0 1"; exit 0; }   # never test in the real HOME
+            source "$T"
+            sandbox_drop
+            echo "$PASS $FAIL"
+         )"
+         SUMMARY="$(printf '%s\n' "$OUT" | tail -1)"
+         printf '%s\n' "$OUT" | sed '$d'
+         read -r P F <<< "$SUMMARY"
+         TOTAL_PASS=$((TOTAL_PASS+P)); TOTAL_FAIL=$((TOTAL_FAIL+F))
+         if [ "$F" == "0" ]; then
+            printf '\033[32mok\033[0m   %-40s %s checks\n' "$(basename "$T")" "$P"
+         else
+            printf '\033[31mFAIL\033[0m %-40s %s ok, %s failed\n' "$(basename "$T")" "$P" "$F"
+         fi
+      done
+      echo "=> $TOTAL_PASS passed, $TOTAL_FAIL failed"
+      [ "$TOTAL_FAIL" == "0" ] || exit 1
+      exit 0
+   fi
+
+#===============================================================================
+# cannot deal with anything else ...
+#===============================================================================
+
+   "$0" -?
+   exit 1

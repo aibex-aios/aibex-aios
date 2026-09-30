@@ -11,3 +11,9 @@
 
 # Obsidian (rechnerspezifischer Zustand)
 §AIOS/.obsidian/workspace*.json
+
+# Python
+__pycache__/
+
+# Obsidian-Vault des Users auf der Repo-Wurzel
+/.obsidian/

@@ -1,0 +1,47 @@
+#!/bin/bash
+# aios-context: master context of AIbex AIOS (classes, chain, hooks), see spec 02
+
+   if [ "$*" == "-?" ] || [ "$*" == "--help" ]; then
+      echo '   usage: aios-context --session      # SessionStart hook'
+      echo '          aios-context --advise       # UserPromptSubmit hook'
+      echo '          aios-context --context      # print master context of cwd'
+      echo '          aios-context --load         # write master context into part files'
+      echo '          aios-context --id           # print id, files, cwd, mode'
+      echo '          aios-context --list         # listing for /aios-context'
+      echo '          aios-context --sync [--yes] # register project skills'
+      echo '          aios-context --agent <name> # context of an agent'
+      echo '          aios-context --version      # print version'
+      echo '   see also: aios, ai-brain'
+      exit 1
+   fi
+
+#===============================================================================
+# locations of this installation or source tree
+#===============================================================================
+
+   HERE="$(cd "$(dirname "$0")/.." && pwd)"      # installation or §AIOS
+   PY="$HERE/python/bin/python"                  # venv of an installation
+   [ -x "$PY" ] || PY="python3"                  # source tree: system python
+
+#===============================================================================
+# print version: aios-context --version
+#===============================================================================
+
+   if [ "$*" == "--version" ]; then
+      cat "$HERE/VERSION"; exit 0
+   fi
+
+#===============================================================================
+# everything else is handled by the Python part (implemented from step 5 on)
+#===============================================================================
+
+   if [ "$1" != "" ]; then
+      PYTHONPATH="$HERE/lib" exec "$PY" -m aios.context "$@"
+   fi
+
+#===============================================================================
+# cannot deal with anything else ...
+#===============================================================================
+
+   "$0" -?
+   exit 1
