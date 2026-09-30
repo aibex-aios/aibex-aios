@@ -26,3 +26,24 @@ def claude_dir() -> Path:
 def bin_dir() -> Path:
     """Directory of the forwarders, ~/bin."""
     return home() / "bin"
+
+
+def user_versions() -> Path:
+    """Fallback for installations when /opt/aios cannot be set up, ~/.aios/versions."""
+    return user_dir() / "versions"
+
+
+def sudo_cmd() -> str:
+    """Program used as sudo (AIOS_SUDO), tests never call the real sudo."""
+    return os.environ.get("AIOS_SUDO", "sudo")
+
+
+def stup_url() -> str:
+    """Source of stup (AIOS_STUP_URL), may be a file:// URL in tests."""
+    return os.environ.get(
+        "AIOS_STUP_URL", "https://raw.githubusercontent.com/bluccino/tool-stup/master/bin/stup")
+
+
+def pip_cmd() -> str:
+    """Command that installs python/requirements.txt into the venv (AIOS_PIP), empty = default."""
+    return os.environ.get("AIOS_PIP", "")

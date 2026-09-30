@@ -19,7 +19,7 @@
 
    sandbox_drop() {
       case "$SANDBOX" in
-         */aios-test.*) rm -rf "$SANDBOX" ;;
+         */aios-test.*) chmod -R u+w "$SANDBOX" 2>/dev/null; rm -rf "$SANDBOX" ;;   # installations are read-only
       esac
    }
 

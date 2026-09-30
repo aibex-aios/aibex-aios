@@ -1,0 +1,747 @@
+"""aios --prepare, --install, --versions, --remove-version, --uninstall (spec 04).
+
+Standard library only: this module runs from a clone with the system python,
+before the venv of an installation exists.
+"""
+
+from __future__ import annotations
+
+import getpass
+import io
+import json
+import os
+import re
+import shlex
+import shutil
+import stat
+import subprocess
+import sys
+import tarfile
+import tempfile
+import urllib.request
+from pathlib import Path
+
+from . import paths
+
+
+class Abort(Exception):
+    """Stop the command with a message, nothing (more) is written."""
+
+
+FORWARDER_MARK = "# forwarder: ~/bin/aios and ~/bin/aios-context"
+PROTOTYPE_MARK = 'ETC="$HOME/etc/aios"'
+WRAPPER_MARK = "!`aios --skill "
+AIOS_HOOKS = {"SessionStart": "aios-context --session", "UserPromptSubmit": "aios-context --advise"}
+LEGACY_HOOKS = {"SessionStart": "ai-brain --session", "UserPromptSubmit": "ai-brain --advise"}
+RELEASE = re.compile(r"^v(\d+)\.(\d+)\.(\d+)$")
+ENTRY = re.compile(r"^(v\d[^:\s]*):\s*(.*?)\s*$")
+TOOLS = ("aios", "aios-context")
+
+
+# ---------------------------------------------------------------------------
+# dialog
+# ---------------------------------------------------------------------------
+
+class Plan:
+    """Steps shown before anything is written (I7), executed after one confirmation."""
+
+    def __init__(self):
+        self.steps = []
+
+    def add(self, text, action=None):
+        self.steps.append((text, action))
+
+    def __bool__(self):
+        return any(action for _, action in self.steps)
+
+    def show(self):
+        print("   plan:")
+        for text, action in self.steps:
+            print(("      " if action else "      (") + text + ("" if action else ")"))
+
+    def run(self):
+        for _, action in self.steps:
+            if action:
+                action()
+
+
+def ask(question):
+    sys.stdout.write(f"   {question} [Y/n] ")
+    sys.stdout.flush()
+    line = sys.stdin.readline()
+    if not line:                                    # no input: never write
+        print()
+        return False
+    return line.strip().lower() in ("", "y", "yes", "j", "ja")
+
+
+def confirm(plan, question, cancelled):
+    plan.show()
+    if not ask(question):
+        print(f"   {cancelled}")
+        return False
+    plan.run()
+    return True
+
+
+def say(text):
+    print(text)
+
+
+def warn(text):
+    print(f"   warning: {text}", file=sys.stderr)
+
+
+# ---------------------------------------------------------------------------
+# versions and installations.yaml
+# ---------------------------------------------------------------------------
+
+def semver_key(name):
+    core, _, pre = name.lstrip("v").partition("-")
+    nums = [int(x) if x.isdigit() else 0 for x in core.split(".")] + [0, 0, 0]
+    return (nums[0], nums[1], nums[2], 0 if pre else 1, pre)
+
+
+def user_entries():
+    return paths.user_dir() / "installations.yaml"
+
+
+def system_entries():
+    return paths.prefix() / "installations.yaml"
+
+
+def read_entries(file):
+    """[(name, path)] of one installations.yaml; quotes, comments and ~/ are resolved."""
+    result = []
+    if not file.is_file():
+        return result
+    for line in file.read_text(encoding="utf-8").splitlines():
+        m = ENTRY.match(line.rstrip("\r"))
+        if not m:
+            continue
+        value = re.sub(r"\s+#.*$", "", m.group(2)).strip().strip("\"'")
+        if value == "~" or value.startswith("~/"):
+            value = str(paths.home()) + value[1:]
+        result.append((m.group(1), Path(value)))
+    return result
+
+
+def installations():
+    """{name: (path, file)}; the entry of the user wins (spec 04)."""
+    found = {}
+    for file in (user_entries(), system_entries()):
+        for name, path in read_entries(file):
+            found.setdefault(name, (path, file))
+    return found
+
+
+def set_entry(file, name, path):
+    file.parent.mkdir(parents=True, exist_ok=True)
+    lines = file.read_text(encoding="utf-8").splitlines() if file.is_file() else []
+    value = f'"{path}"' if re.search(r"[\s#'\"]", str(path)) else str(path)
+    new = f"{name}: {value}"
+    out, done = [], False
+    for line in lines:
+        m = ENTRY.match(line)
+        if m and m.group(1) == name:
+            if not done:
+                out.append(new)
+                done = True
+            continue
+        out.append(line)
+    if not done:
+        out.append(new)
+    file.write_text("\n".join(out) + "\n", encoding="utf-8")
+
+
+def drop_entry(file, name):
+    if not file.is_file():
+        return
+    lines = [line for line in file.read_text(encoding="utf-8").splitlines()
+             if not (ENTRY.match(line) and ENTRY.match(line).group(1) == name)]
+    file.write_text("\n".join(lines) + ("\n" if lines else ""), encoding="utf-8")
+
+
+def normalize(version):
+    return version if version.startswith("v") else "v" + version
+
+
+# ---------------------------------------------------------------------------
+# files
+# ---------------------------------------------------------------------------
+
+def make_readonly(root):
+    """Remove write permission below root; symlinks are skipped (they point outside)."""
+    for dirpath, dirnames, filenames in os.walk(root, topdown=False):
+        for name in filenames + dirnames:
+            p = os.path.join(dirpath, name)
+            st = os.lstat(p)
+            if not stat.S_ISLNK(st.st_mode):
+                os.chmod(p, stat.S_IMODE(st.st_mode) & ~0o222)
+    os.chmod(root, stat.S_IMODE(os.lstat(root).st_mode) & ~0o222)
+
+
+def make_writable(root):
+    if not os.path.lexists(root):
+        return
+    os.chmod(root, stat.S_IMODE(os.lstat(root).st_mode) | 0o200)
+    for dirpath, dirnames, filenames in os.walk(root):
+        for name in dirnames + filenames:
+            p = os.path.join(dirpath, name)
+            st = os.lstat(p)
+            if not stat.S_ISLNK(st.st_mode):
+                os.chmod(p, stat.S_IMODE(st.st_mode) | 0o200)
+
+
+def remove_tree(root):
+    make_writable(root)
+    shutil.rmtree(root)
+
+
+def frontmatter(file):
+    """Minimal YAML frontmatter reader for SKILL.md: plain values and block scalars."""
+    text = file.read_text(encoding="utf-8")
+    if not text.startswith("---"):
+        return {}
+    end = text.find("\n---", 3)
+    lines = text[3:end if end > 0 else len(text)].splitlines()
+    result, key, block = {}, None, []
+    for line in lines + ["end: "]:
+        if key and (line.startswith((" ", "\t")) or not line.strip()):
+            block.append(line.strip())
+            continue
+        if key:
+            result[key] = " ".join(x for x in block if x)
+            key, block = None, []
+        m = re.match(r"^([A-Za-z_][\w-]*):\s*(.*)$", line)
+        if not m:
+            continue
+        name, value = m.group(1), m.group(2).strip()
+        if value in (">", "|", ">-", "|-", ">+", "|+"):
+            key = name
+        else:
+            result[name] = value.strip("\"'")
+    result.pop("end", None)
+    return result
+
+
+def run(cmd, **kw):
+    return subprocess.run(cmd, check=True, **kw)
+
+
+# ---------------------------------------------------------------------------
+# prepare
+# ---------------------------------------------------------------------------
+
+def existing_parent(path):
+    p = path
+    while not p.exists() and p != p.parent:
+        p = p.parent
+    return p
+
+
+def plan_root(plan):
+    """Where installations go: (root, installations.yaml), with the steps to set it up."""
+    prefix = paths.prefix()
+    if prefix.is_dir() and os.access(prefix, os.W_OK):
+        return prefix, system_entries()
+    if not prefix.exists() and os.access(existing_parent(prefix), os.W_OK):
+        plan.add(f"create {prefix}", lambda: prefix.mkdir(parents=True))
+        return prefix, system_entries()
+    sudo = shutil.which(paths.sudo_cmd())
+    user = os.environ.get("USER") or getpass.getuser()
+    if sudo:
+        def setup():
+            run([sudo, "mkdir", "-p", str(prefix)])
+            run([sudo, "chown", user, str(prefix)])
+        plan.add(f"create {prefix} for {user}: sudo mkdir -p {prefix} && sudo chown {user} {prefix}"
+                 f" (sudo may ask for your password)", setup)
+        return prefix, system_entries()
+    fallback = paths.user_versions()
+    if not fallback.is_dir():
+        plan.add(f"no sudo: installations go to {fallback} instead of {prefix}",
+                 lambda: fallback.mkdir(parents=True))
+    return fallback, user_entries()
+
+
+def plan_prepare(plan):
+    home = paths.home()
+    root = plan_root(plan)
+    for d in ("bin", "etc", "tmp", "git"):
+        if not (home / d).is_dir():
+            plan.add(f"create ~/{d}", lambda d=d: (home / d).mkdir(parents=True))
+
+    current = shutil.which("stup")
+    have = subprocess.run([current, "--version"], capture_output=True, text=True).stdout.strip() \
+        if current else ""
+    url = paths.stup_url()
+    try:
+        data = urllib.request.urlopen(url, timeout=20).read()
+    except Exception as e:                          # noqa: BLE001 - any fetch problem
+        if not current:
+            raise Abort(f"cannot fetch stup from {url}: {e}")
+        warn(f"cannot check stup for updates ({url}): {e}")
+        data = None
+    target = None
+    if data is not None:
+        tmp = Path(tempfile.mkdtemp()) / "stup"
+        tmp.write_bytes(data)
+        new = subprocess.run(["bash", str(tmp), "--version"], capture_output=True, text=True).stdout.strip()
+        if not current:
+            target = home / "bin" / "stup"
+            what = f"stup: install {new} -> ~/bin/stup"
+        elif have != new:
+            target = Path(current)
+            what = f"stup: update {have} -> {new} ({current})"
+        if target:
+            def put(target=target, tmp=tmp):
+                if os.access(target.parent, os.W_OK):
+                    shutil.copyfile(tmp, target)
+                    target.chmod(0o755)
+                else:
+                    run([paths.sudo_cmd(), "cp", str(tmp), str(target)])
+                    run([paths.sudo_cmd(), "chmod", "755", str(target)])
+            plan.add(what, put)
+
+    if not (home / "bin" / "profile.sh").exists():
+        def profile():
+            stup = shutil.which("stup") or str(home / "bin" / "stup")
+            (home / (".bash_profile" if sys.platform == "darwin" else ".bashrc")).touch()
+            env = dict(os.environ, BIN=str(home / "bin"), PATH=f"{home / 'bin'}:{os.environ.get('PATH', '')}")
+            run([stup, "--profile"], env=env)
+        plan.add("create ~/bin/profile.sh with stup --profile", profile)
+    return root
+
+
+def prepare():
+    plan = Plan()
+    plan_prepare(plan)
+    if not plan:
+        say("=> machine prepared, nothing to do")
+        return 0
+    say("=> AIbex AIOS: prepare the machine")
+    if not confirm(plan, "prepare?", "preparation cancelled"):
+        return 1
+    say("=> machine prepared (open a new shell to use ~/bin in PATH)")
+    return 0
+
+
+# ---------------------------------------------------------------------------
+# install: repo, version, build
+# ---------------------------------------------------------------------------
+
+def clone_of_this():
+    here = Path(__file__).resolve().parents[2]
+    if (here / ".git").exists() and (here / "spec").is_dir() and (here / "bin" / "aios").is_file():
+        return here
+    return None
+
+
+def find_repo():
+    here = clone_of_this()
+    if here:
+        return here
+    f = paths.user_dir() / "repo"
+    if f.is_file():
+        p = Path(f.read_text(encoding="utf-8").strip())
+        if (p / ".git").exists() and (p / "bin" / "aios").is_file():
+            return p
+    raise Abort("cannot locate the clone of aibex-aios; run ./bin/aios --install in a clone")
+
+
+def git(repo, *args):
+    return subprocess.run(["git", "-C", str(repo), *args], capture_output=True, text=True)
+
+
+def choose_version(repo, version):
+    if git(repo, "remote").stdout.strip():
+        if git(repo, "fetch", "--tags", "-q").returncode:
+            warn("git fetch --tags failed, using the local tags")
+    if version:
+        tag = normalize(version)
+        if git(repo, "rev-parse", "-q", "--verify", f"refs/tags/{tag}").returncode:
+            raise Abort(f"no tag {tag} in {repo}")
+        return tag
+    tags = [t for t in git(repo, "tag", "-l", "v*").stdout.split() if RELEASE.match(t)]
+    if not tags:
+        raise Abort(f"no release tag v<MAJOR.MINOR.PATCH> in {repo}; give a version")
+    return max(tags, key=semver_key)
+
+
+def extract(repo, tag):
+    """Stage the tagged tree in a temporary directory (nothing is installed yet)."""
+    stage = Path(tempfile.mkdtemp(prefix="aios-stage."))
+    data = subprocess.run(["git", "-C", str(repo), "archive", "--format=tar", tag],
+                          capture_output=True, check=True).stdout
+    with tarfile.open(fileobj=io.BytesIO(data)) as t:
+        if hasattr(tarfile, "data_filter"):
+            t.extractall(stage, filter="data")
+        else:
+            t.extractall(stage)
+    return stage
+
+
+def skills_of(src):
+    """[(group, name, dir, version)] of skills/<group>/<name>/SKILL.md; names are unique."""
+    result, seen = [], {}
+    base = src / "skills"
+    if not base.is_dir():
+        return result
+    for group in sorted(p for p in base.iterdir() if p.is_dir()):
+        for skill in sorted(p for p in group.iterdir() if (p / "SKILL.md").is_file()):
+            if skill.name in seen:
+                raise Abort(f"skill {skill.name} exists in {seen[skill.name]}/ and {group.name}/")
+            seen[skill.name] = group.name
+            meta = frontmatter(skill / "SKILL.md")
+            if group.name == "aios":
+                if not skill.name.startswith("aios-"):
+                    raise Abort(f"AIOS skill {skill.name} must start with aios-")
+                version = None
+            else:
+                version = meta.get("version")
+                if not version:
+                    raise Abort(f"skill {group.name}/{skill.name} has no version in its frontmatter")
+            result.append((group.name, skill.name, skill, version))
+    return result
+
+
+def build(stage, tag, root, entries):
+    """Copy the staged tree into <root>/<tag> (spec 04, Abbildung), venv, read-only, entry."""
+    final = root / tag
+    tmp = Path(tempfile.mkdtemp(prefix=f".{tag}.", dir=root))
+    inst = tmp / tag
+    try:
+        inst.mkdir()
+        for d in ("bin", "lib", "templates"):
+            if (stage / d).is_dir():
+                shutil.copytree(stage / d, inst / d, symlinks=True)
+        (inst / "VERSION").write_text(tag[1:] + "\n", encoding="utf-8")
+        for group, name, src, version in skills_of(stage):
+            dst = inst / "skills" / group / name
+            shutil.copytree(src, dst / version if version else dst)
+        if (stage / "spec").is_dir():
+            shutil.copytree(stage / "spec", inst / "doc" / "spec")
+        for d in ("tutorials", "wiki"):
+            if (stage / "doc" / d).is_dir():
+                shutil.copytree(stage / "doc" / d, inst / "doc" / d)
+        pip = paths.pip_cmd()
+        run([sys.executable, "-m", "venv", *(["--without-pip"] if pip else []), str(inst / "python")])
+        req = inst / "python" / "requirements.txt"
+        if (stage / "python" / "requirements.txt").is_file():
+            shutil.copyfile(stage / "python" / "requirements.txt", req)
+            if pip:
+                run(f"{pip} {shlex.quote(str(req))}", shell=True)
+            else:
+                run([str(inst / "python" / "bin" / "python"), "-m", "pip", "install", "-q", "-r", str(req)])
+        run([str(inst / "python" / "bin" / "python"), "-m", "compileall", "-q", str(inst / "lib")],
+            stdout=subprocess.DEVNULL)
+        os.rename(inst, final)
+    finally:
+        remove_tree(tmp)
+    make_readonly(final)
+    set_entry(entries, tag, final)
+
+
+# ---------------------------------------------------------------------------
+# install: user setup (forwarders, config, hooks, AIOS skills)
+# ---------------------------------------------------------------------------
+
+def forwarder_version(text):
+    m = re.search(r'---version" \]; then\s*\n\s*echo "([^"]+)"', text)
+    return m.group(1) if m else "0"
+
+
+def plan_forwarders(plan, src):
+    text = (src / "templates" / "forwarder").read_text(encoding="utf-8")
+    new = forwarder_version(text)
+    bindir = paths.bin_dir()
+    for tool in TOOLS:
+        target = bindir / tool
+        what = None
+        if not target.exists():
+            what = f"forwarder ~/bin/{tool} {new}"
+        else:
+            old = target.read_text(encoding="utf-8", errors="replace")
+            if PROTOTYPE_MARK in old:
+                what = f"forwarder ~/bin/{tool} {new}, replaces the prototype"
+            elif FORWARDER_MARK in old:
+                if semver_key(new) > semver_key(forwarder_version(old)):
+                    what = f"forwarder ~/bin/{tool}: update {forwarder_version(old)} -> {new}"
+            else:
+                warn(f"~/bin/{tool} is not an AIOS forwarder, left untouched")
+        if what:
+            def put(target=target):
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_text(text, encoding="utf-8")
+                target.chmod(0o755)
+            plan.add(what, put)
+    etc = paths.home() / "etc" / "aios"
+    if etc.is_dir():
+        plan.add("remove ~/etc/aios of the prototype", lambda: shutil.rmtree(etc))
+
+
+def is_command(hook, cmd):
+    c = str(hook.get("command", "")).strip()
+    return hook.get("type") == "command" and (c == cmd or c.endswith("/" + cmd))
+
+
+def merge_hooks(settings):
+    """Remove the ai-brain hooks, add the AIOS hooks; other keys and hooks stay."""
+    new = json.loads(json.dumps(settings))
+    hooks = new.setdefault("hooks", {})
+    removed = {}
+    for event, legacy in LEGACY_HOOKS.items():
+        groups = []
+        for group in hooks.get(event, []):
+            gone = [h for h in group.get("hooks", []) if is_command(h, legacy)]
+            rest = [h for h in group.get("hooks", []) if not is_command(h, legacy)]
+            if gone:
+                removed.setdefault(event, []).append(dict(group, hooks=gone))
+            if rest or not gone:
+                groups.append(dict(group, hooks=rest) if gone else group)
+        if event in hooks:
+            hooks[event] = groups
+    added = []
+    for event, cmd in AIOS_HOOKS.items():
+        groups = hooks.setdefault(event, [])
+        if not any(is_command(h, cmd) for g in groups for h in g.get("hooks", [])):
+            groups.insert(0, {"hooks": [{"type": "command", "command": cmd}]})
+            added.append(cmd)
+    return new, removed, added
+
+
+def unmerge_hooks(settings, backup):
+    """Remove the AIOS hooks, put the saved ai-brain hooks back."""
+    new = json.loads(json.dumps(settings))
+    hooks = new.get("hooks", {})
+    for event, cmd in AIOS_HOOKS.items():
+        if event not in hooks:
+            continue
+        groups = []
+        for group in hooks[event]:
+            rest = [h for h in group.get("hooks", []) if not is_command(h, cmd)]
+            if rest or not group.get("hooks"):
+                groups.append(dict(group, hooks=rest))
+        hooks[event] = groups
+    for event, groups in backup.items():
+        hooks.setdefault(event, [])
+        for group in groups:
+            if group not in hooks[event]:
+                hooks[event].insert(0, group)
+    for event in [e for e, g in hooks.items() if g == []]:
+        del hooks[event]
+    if "hooks" in new and not new["hooks"]:
+        del new["hooks"]
+    return new
+
+
+def settings_file():
+    return paths.claude_dir() / "settings.json"
+
+
+def backup_file():
+    return paths.user_dir() / "hooks-backup.json"
+
+
+def load_json(file):
+    if not file.is_file():
+        return {}
+    try:
+        return json.loads(file.read_text(encoding="utf-8") or "{}")
+    except ValueError as e:
+        raise Abort(f"{file} is not valid JSON ({e}); nothing changed")
+
+
+def write_json(file, data):
+    file.parent.mkdir(parents=True, exist_ok=True)
+    tmp = file.with_name(file.name + ".aios-tmp")
+    tmp.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    os.replace(tmp, file)
+
+
+def plan_hooks(plan):
+    settings = load_json(settings_file())
+    new, removed, added = merge_hooks(settings)
+    if new == settings:
+        return
+    parts = [f"add {', '.join(added)}"] if added else []
+    if removed:
+        parts.append("remove the ai-brain hooks (saved in ~/.aios/hooks-backup.json)")
+
+    def apply():
+        if removed:
+            backup = load_json(backup_file())
+            saved = backup.setdefault("hooks", {})
+            for event, groups in removed.items():
+                saved.setdefault(event, []).extend(g for g in groups if g not in saved.get(event, []))
+            write_json(backup_file(), backup)
+        write_json(settings_file(), new)
+    plan.add(f"hooks in {settings_file()}: " + "; ".join(parts), apply)
+
+
+def wrapper(name, description):
+    return (f"---\nname: {name}\ndescription: {json.dumps(description, ensure_ascii=False)}\n---\n\n"
+            f"!`aios --skill {name}`\n")
+
+
+def plan_skills(plan, src):
+    for group, name, skill, _ in skills_of(src):
+        if group != "aios":
+            continue
+        meta = frontmatter(skill / "SKILL.md")
+        text = wrapper(name, meta.get("description", ""))
+        target = paths.claude_dir() / "skills" / name / "SKILL.md"
+        if target.is_file():
+            old = target.read_text(encoding="utf-8", errors="replace")
+            if old == text:
+                continue
+            if WRAPPER_MARK not in old:
+                warn(f"{target} is not an AIOS skill wrapper, left untouched")
+                continue
+
+        def put(target=target, text=text):
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(text, encoding="utf-8")
+        plan.add(f"AIOS skill /{name} -> {target.parent}", put)
+
+
+def plan_user(plan, src, repo):
+    plan_forwarders(plan, src)
+    config = paths.user_dir() / "config.yaml"
+    if not config.exists():
+        def create():
+            config.parent.mkdir(parents=True, exist_ok=True)
+            config.write_text("hosts: [claude-code]\n", encoding="utf-8")
+        plan.add("create ~/.aios/config.yaml (hosts: [claude-code])", create)
+    plan_hooks(plan)
+    plan_skills(plan, src)
+    record = paths.user_dir() / "repo"
+    if repo and (not record.is_file() or record.read_text(encoding="utf-8").strip() != str(repo)):
+        def remember():
+            record.parent.mkdir(parents=True, exist_ok=True)
+            record.write_text(f"{repo}\n", encoding="utf-8")
+        plan.add(f"remember the clone {repo} in ~/.aios/repo", remember)
+
+
+def install(version):
+    repo = find_repo()
+    tag = choose_version(repo, version)
+    plan = Plan()
+    root, entries = plan_prepare(plan)
+    known = installations()
+    stage = None
+    try:
+        if tag in known and known[tag][0].is_dir():
+            src = known[tag][0]
+            plan.add(f"{tag} is already installed in {src}")
+        else:
+            stage = src = extract(repo, tag)
+            plan.add(f"install {tag} from {repo} -> {root / tag} (read-only)",
+                     lambda: build(stage, tag, root, entries))
+        plan_user(plan, src, repo if clone_of_this() else None)
+        if not plan:
+            say(f"=> AIbex AIOS {tag}: nothing to do")
+            return 0
+        say(f"=> AIbex AIOS {tag}")
+        if not confirm(plan, "install?", "installation cancelled"):
+            return 1
+    finally:
+        if stage:
+            shutil.rmtree(stage, ignore_errors=True)
+    say(f"=> AIbex AIOS {tag} installed")
+    say(f"   activate a vault with: aios --activate {tag} <vault>; hooks and skills apply from the next chat")
+    return 0
+
+
+# ---------------------------------------------------------------------------
+# versions, remove-version, uninstall
+# ---------------------------------------------------------------------------
+
+def versions():
+    listed = []
+    for file, origin in ((user_entries(), "user"), (system_entries(), "system")):
+        for name, path in read_entries(file):
+            listed.append((name, path, origin))
+    if not listed:
+        say("no installation of AIOS")
+        return 0
+    effective = installations()
+    for name, path, origin in sorted(listed, key=lambda e: semver_key(e[0])):
+        notes = [origin]
+        if effective[name][0] != path:
+            notes.append("shadowed by the user entry")
+        if not path.is_dir():
+            notes.append("missing")
+        say(f"{name:14} {path}  ({', '.join(notes)})")
+    return 0
+
+
+def managed(path):
+    """Is path an installation directory created by aios (not e.g. a clone)?"""
+    try:
+        parent = path.parent.resolve()
+    except OSError:
+        return False
+    roots = []
+    for r in (paths.prefix(), paths.user_versions()):
+        try:
+            roots.append(r.resolve())
+        except OSError:
+            pass
+    return parent in roots and RELEASE.match(path.name.split("-")[0]) is not None
+
+
+def remove_version(version):
+    tag = normalize(version)
+    hits = [(file, path) for file in (user_entries(), system_entries())
+            for name, path in read_entries(file) if name == tag]
+    if not hits:
+        raise Abort(f"{tag} is not installed (aios --versions)")
+    plan = Plan()
+    for file, path in hits:
+        if managed(path) and path.is_dir():
+            if not os.access(path.parent, os.W_OK):
+                raise Abort(f"{path.parent} is not writable")
+            plan.add(f"remove {path}", lambda path=path: remove_tree(path))
+        elif path.is_dir():
+            plan.add(f"{path} is not an installation directory, it is kept")
+        plan.add(f"remove the entry {tag} from {file}", lambda file=file: drop_entry(file, tag))
+    say(f"=> remove AIbex AIOS {tag}; vaults bound to {tag[1:]} stop working until it is installed again")
+    if not confirm(plan, "remove?", "removal cancelled"):
+        return 1
+    if not installations():
+        say("   this was the last installation; remove the user setup with: aios --uninstall")
+    say(f"=> {tag} removed")
+    return 0
+
+
+def uninstall():
+    plan = Plan()
+    for tool in TOOLS:
+        target = paths.bin_dir() / tool
+        if target.is_file() and FORWARDER_MARK in target.read_text(encoding="utf-8", errors="replace"):
+            plan.add(f"remove the forwarder ~/bin/{tool}", target.unlink)
+    skills = paths.claude_dir() / "skills"
+    if skills.is_dir():
+        for d in sorted(skills.glob("aios-*")):
+            f = d / "SKILL.md"
+            if f.is_file() and WRAPPER_MARK in f.read_text(encoding="utf-8", errors="replace"):
+                plan.add(f"remove the AIOS skill {d}", lambda d=d: shutil.rmtree(d))
+    settings = load_json(settings_file())
+    backup = load_json(backup_file()).get("hooks", {})
+    new = unmerge_hooks(settings, backup)
+    if new != settings:
+        plan.add(f"hooks in {settings_file()}: remove the AIOS hooks"
+                 + ("; restore the ai-brain hooks from ~/.aios/hooks-backup.json" if backup else ""),
+                 lambda: write_json(settings_file(), new))
+    if backup_file().is_file():
+        plan.add("remove ~/.aios/hooks-backup.json", backup_file().unlink)
+    plan.add("installations, ~/.aios/config.yaml and all .aios/ in vaults are kept")
+    if not plan:
+        say("=> nothing to uninstall")
+        return 0
+    say("=> uninstall the user setup of AIbex AIOS")
+    if not confirm(plan, "uninstall?", "uninstall cancelled"):
+        return 1
+    say("=> user setup removed; ai-brain runs as before from the next chat")
+    return 0

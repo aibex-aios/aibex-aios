@@ -63,7 +63,9 @@ Kann `/opt/aios` nicht angelegt werden (kein `sudo`), gilt statt `/opt/aios` das
 └── aios-context                    Weiterleiter
 ~/.aios/
 ├── config.yaml                     Voreinstellungen
-├── installations.yaml              eigene Einträge (z. B. Entwicklungsstand)
+├── installations.yaml              eigene Einträge (z. B. Entwicklungsstand, Ersatzort)
+├── repo                            Pfad des Klons, aus dem zuletzt installiert wurde
+├── versions/v<version>/            Ersatzort der Installationen ohne sudo
 ├── hooks-backup.json               vom Installieren ersetzte Hook-Einträge
 ├── cache/<id>/part-<n>.md          Part-Dateien des Master-Kontexts
 └── logs/aios.log
@@ -77,11 +79,13 @@ Kann `/opt/aios` nicht angelegt werden (kein `sudo`), gilt statt `/opt/aios` das
 | `~/bin/aios`, `~/bin/aios-context` | erstes `aios --install` | `aios --uninstall` |
 | `~/.aios/config.yaml` | erstes `aios --install` (nur wenn fehlend) | nie |
 | `~/.aios/installations.yaml`, `logs/`, `cache/` | bei Bedarf | `cache/`: Einträge älter als 7 Tage bei jedem `--load` |
+| `~/.aios/repo` | `aios --install` aus einem Klon | nie |
+| `~/.aios/versions/v<version>/` | `aios --install`, wenn `/opt/aios` nicht eingerichtet werden kann | `aios --remove-version` |
 | `~/.aios/hooks-backup.json` | erstes `aios --install` | `aios --uninstall` (nach Wiederherstellung) |
 | Hooks in `~/.claude/settings.json` | erstes `aios --install` | `aios --uninstall` |
 | `~/.claude/skills/aios-*/` | jedes `aios --install` | `aios --uninstall` |
 
-`ai-brain` in `~/bin` bleibt unverändert.
+`ai-brain` in `~/bin` bleibt unverändert. `aios --uninstall` entfernt nur Weiterleiter und Skill-Hüllen, die AIOS erkennbar selbst geschrieben hat (Kopfzeile des Weiterleiters bzw. `` !`aios --skill `` im Rumpf).
 
 ### Vault
 
@@ -185,7 +189,7 @@ registered:
 }
 ```
 
-Eingetragen per `jq`-Merge; andere Schlüssel und fremde Hooks bleiben erhalten. Einträge mit `ai-brain --session` bzw. `ai-brain --advise` werden entfernt und in `~/.aios/hooks-backup.json` gesichert.
+Zusammengeführt mit dem `json`-Modul von Python; andere Schlüssel und fremde Hooks bleiben erhalten, auch fremde Hooks in derselben Gruppe. Die Hooks `ai-brain --session` bzw. `ai-brain --advise` werden entfernt und in `~/.aios/hooks-backup.json` gesichert, im selben Aufbau wie `settings.json` (`{"hooks": {…}}`). Ist `settings.json` kein gültiges JSON, bricht `aios` ab, bevor etwas geschrieben wird.
 
 ### Versionsneutrale AIOS-Skills
 
@@ -217,6 +221,11 @@ Alle festen Orte lassen sich über Umgebungsvariablen umlenken, damit Tests in e
 | `AIOS_PREFIX` | `/opt/aios` | `/opt/aios` |
 | `HOME` | `~` (damit `~/bin`, `~/.aios`) | Home-Verzeichnis |
 | `AIOS_CLAUDE_DIR` | `~/.claude` | `$HOME/.claude` |
+| `AIOS_SUDO` | Programm für `sudo` | `sudo` |
+| `AIOS_STUP_URL` | Quelle von stup (auch `file://`) | `https://raw.githubusercontent.com/bluccino/tool-stup/master/bin/stup` |
+| `AIOS_PIP` | Befehl, der `python/requirements.txt` in die venv installiert; gesetzt wird die venv ohne `pip` angelegt | `<venv>/bin/python -m pip install -q -r` |
+
+Tests rufen damit nie das echte `sudo` auf und greifen nie auf das Netzwerk zu.
 
 Weiterleiter, `aios` und `aios-context` verwenden ausschließlich diese Variablen, nie fest verdrahtete Pfade.
 
@@ -258,29 +267,31 @@ Die Weiterleiter lesen nur kleine Dateien und greifen nie auf das Netzwerk zu.
 | `aios --deploy …`, `aios --register` | Spec 03 |
 | `aios --skill <name>` | Rumpf eines AIOS-Skills der gültigen Version (für die versionsneutralen Skills) |
 
-Alle schreibenden Befehle zeigen zuerst einen Plan und fragen `[Y/n]` (I7). `bin/aios` und die Weiterleiter sind Bash-Skripte nach der Bash-Konvention (Help-, Version- und Dispatch-Blöcke, Fallback); die Logik hinter `aios` und `aios-context` läuft in Python im venv der Installation (`python/`). Nur das Bootstrap von `./bin/aios --install`, bevor die venv existiert, kommt ohne Python-Pakete aus.
+Alle schreibenden Befehle zeigen zuerst einen Plan und fragen `[Y/n]` (I7). `bin/aios` und die Weiterleiter sind Bash-Skripte nach der Bash-Konvention (Help-, Version- und Dispatch-Blöcke, Fallback); die Logik hinter `aios` und `aios-context` läuft in Python im venv der Installation (`python/`). `--prepare`, `--install`, `--versions`, `--remove-version` und `--uninstall` verwenden nur die Standardbibliothek, weil sie aus einem Klon mit dem `python3` des Systems laufen, bevor eine venv existiert. Voraussetzungen sind `python3` ab 3.9 und `git`.
 
 ### `aios --prepare`
 
 | Prüfung | fehlt → |
 |---|---|
-| `/opt/aios` existiert und ist beschreibbar | `sudo mkdir -p /opt/aios && sudo chown $USER /opt/aios`; ohne `sudo` Rückfall auf `~/.aios/versions/` |
+| `/opt/aios` existiert und ist beschreibbar | anlegen, wenn das übergeordnete Verzeichnis beschreibbar ist; sonst `sudo mkdir -p /opt/aios && sudo chown $USER /opt/aios`; ohne `sudo` Rückfall auf `~/.aios/versions/`: Installationen liegen dann in `~/.aios/versions/v<version>/` und werden in `~/.aios/installations.yaml` eingetragen, damit die Weiterleiter sie finden |
 | `~/bin`, `~/etc`, `~/tmp`, `~/git` | anlegen |
-| stup vorhanden und aktuell | installieren bzw. aktualisieren (von `bluccino/tool-stup`) |
+| stup vorhanden und aktuell | installieren nach `~/bin/stup` bzw. aktualisieren (von `bluccino/tool-stup`, Vergleich mit `stup --version`); ist die Quelle nicht erreichbar, nur eine Warnung, sofern stup vorhanden ist |
 | `~/bin/profile.sh` | mit `stup --profile` anlegen, nur wenn sie fehlt; nie überschreiben |
 
 Ist alles vorhanden: „Rechner vorbereitet", keine Rückfrage.
 
 ### `aios --install [v<version>]`
 
-Aufgerufen aus einem Klon des Repos `aibex-aios` (`./bin/aios --install …`) oder über den Weiterleiter.
+Aufgerufen aus einem Klon des Repos `aibex-aios` (`./bin/aios --install …`) oder über den Weiterleiter; dann gilt der Klon aus `~/.aios/repo`.
 
-1. **Version bestimmen:** angegeben oder der höchste Tag `v<MAJOR.MINOR.PATCH>` im Repo (nach `git fetch --tags`).
+1. **Version bestimmen:** angegeben oder der höchste Tag `v<MAJOR.MINOR.PATCH>` im Repo (Vorabversionen wie `v0.3.0-rc1` nur, wenn angegeben); vorher `git fetch --tags`, sofern der Klon einen Remote hat.
 2. **Vorbereitung prüfen:** ist der Rechner nicht vorbereitet, gehören die Schritte von `--prepare` in den Plan.
 3. **Plan zeigen**, einmal fragen; muss `sudo` nach einem Passwort fragen, steht das im Plan.
 4. **Installieren**, falls `v<version>` noch nicht installiert ist: Stand des Tags mit `git archive` nach `/opt/aios/v<version>/` übertragen (Abbildung siehe *Repo*), venv in `python/` anlegen und `pyyaml` installieren, `python -m compileall`, Dateien schreibschützen, Eintrag in `installations.yaml`.
-5. **Benutzer einrichten**, beim ersten Mal: Weiterleiter nach `~/bin` (bzw. in das erste beschreibbare Verzeichnis im `PATH`, wenn `~/bin` fehlt), `~/.aios/config.yaml` mit `hosts: [claude-code]`, Hooks eintragen und `ai-brain`-Hooks sichern.
-6. **AIOS-Skills** in `~/.claude/skills/aios-*/` schreiben (bei jedem Install).
+5. **Benutzer einrichten**, was fehlt: Weiterleiter nach `~/bin` (angelegt von `--prepare`); ein vorhandener Weiterleiter wird nur durch einen neueren ersetzt, der Prototyp (`~/bin/aios` mit `~/etc/aios/`) immer. `~/.aios/config.yaml` mit `hosts: [claude-code]`, Hooks eintragen und `ai-brain`-Hooks sichern, `~/.aios/repo` merken.
+6. **AIOS-Skills** der Gruppe `aios` als Hüllen in `~/.claude/skills/aios-*/` schreiben (bei jedem Install). Skills der übrigen Gruppen werden nicht registriert, sondern ausgerollt (Spec 03).
+
+Das Übertragen geschieht in ein temporäres Verzeichnis neben dem Ziel, das erst am Ende umbenannt wird; ein Abbruch hinterlässt keine halbe Installation.
 
 Eine bereits installierte Version wird nicht erneut installiert (I5, I8).
 
@@ -301,7 +312,7 @@ Entfernt den Schlüssel `aios` aus `<pfad>/.aios/config.yaml`. Danach gilt die F
 
 ### `aios --remove-version v<version>`
 
-Entfernt `/opt/aios/v<version>/` und den Eintrag in `installations.yaml` nach Warnung und Bestätigung. Ist die Version die einzige installierte, wird zusätzlich auf `aios --uninstall` hingewiesen.
+Entfernt `/opt/aios/v<version>/` (bzw. `~/.aios/versions/v<version>/`) und den Eintrag in `installations.yaml` nach Warnung und Bestätigung. Zeigt der Eintrag auf ein anderes Verzeichnis, etwa einen Klon als Entwicklungsstand, wird nur der Eintrag entfernt. Ist die Version die einzige installierte, wird zusätzlich auf `aios --uninstall` hingewiesen.
 
 ### `aios --uninstall`
 
@@ -355,4 +366,4 @@ Ein Entwicklungsstand wird ohne Installation genutzt, indem `~/.aios/installatio
 | Umstieg eines Vaults (z. B. `§AIbex`) | `@Skill` nach `@!Skill` verschieben; weitere `@`-Ordner prüfen, ob sie *Laden* bleiben sollen; `aios --activate v<version> <vault>` |
 | Rückkehr | `aios --deactivate <vault>`; vollständig mit `aios --uninstall` |
 
-Das heutige Skript `aibex-aios/bin/aios` 0.1.0 (Kopie nach `~/bin`, Konfiguration in `~/etc/aios/`) ist ein Prototyp und wird durch den hier beschriebenen Stand ersetzt.
+Ein Rechner mit dem Prototyp von `aios` (Kopie nach `~/bin`, Konfiguration in `~/etc/aios/`) wird beim ersten `aios --install` umgestellt: Der Weiterleiter ersetzt `~/bin/aios`, `~/etc/aios/` wird entfernt.

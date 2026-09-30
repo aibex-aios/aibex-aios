@@ -58,4 +58,5 @@ print(aios.version()); print(p.prefix()); print(p.user_dir()); print(p.claude_di
 
    assert_exec "$SRC/bin/aios"
    assert_exit 1 "$SRC/bin/aios" -?
-   assert_eq "$("$SRC/bin/aios" ---repo)" "$REPO" "aios ---repo finds the repo"
+   assert_eq "$("$SRC/bin/aios" --version)" "$(cat "$SRC/VERSION")" "aios --version"
+   assert_exit 2 "$SRC/bin/aios" --activate v0.1.0
