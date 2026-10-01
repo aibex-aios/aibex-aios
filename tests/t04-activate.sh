@@ -79,7 +79,7 @@
    assert_contains "$W3" "foo" "warning: unknown key"
    assert_contains "$W3" "$HOME/.aios/config.yaml: aios is not allowed here" "warning: aios in ~/.aios"
    assert_eq "$(CFG "$SANDBOX/outside" 'c.aios, c.hosts, c.inline_limit')" "(None, ['codex', 'claude-code'], 5000)" "outside a vault: only home"
-   assert_eq "$(at "$SANDBOX/outside" aios-context --id)" "" "forwarder outside a vault: legacy (no ai-brain here)"
+   assert_eq "$(at "$SANDBOX/outside" aios-context --id)" "id=- files=0 cwd=$SANDBOX/outside mode=none" "forwarder outside a vault: mode=none"
 
    OUT="$(A --config "$C")"
    assert_contains "$OUT" "aios      0.2.0 ($D/Garten/.aios/config.yaml)" "--config: aios with origin"
@@ -118,4 +118,4 @@
    [ ! -e "$D/.aios" ] && ok || fail "empty config and .aios/ removed"
    assert_contains "$OUT" "legacy mode" "vault in legacy mode"
    assert_contains "$(A --deactivate "$D" </dev/null)" "nothing to do" "deactivate again: nothing to do"
-   assert_eq "$(at "$D/Garten" aios-context --id)" "" "forwarder: legacy (no ai-brain here)"
+   assert_eq "$(at "$D/Garten" aios-context --id)" "id=- files=0 cwd=$D/Garten mode=legacy" "forwarder: legacy (no ai-brain here)"

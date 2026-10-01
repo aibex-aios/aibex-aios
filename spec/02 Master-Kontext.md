@@ -1,6 +1,6 @@
 ---
 title: "Master-Kontext"
-date: 2026-09-30
+date: 2026-10-01
 author: iHux
 status: Spec
 tags: [spec, aios, v0.1, master-kontext]
@@ -66,12 +66,14 @@ Die Detailregeln sind offen (Spec 01, O2). Für v0.1 gilt vorläufig:
 | K1 | Ein Unterverzeichnis ohne Präfix erbt die Klasse seines übergeordneten Verzeichnisses. |
 | K2 | Mit der Ordnung *Laden* < *Verfügbar* < *Verborgen* gilt auf einem Pfad die strengste Klasse: ein `@X` innerhalb von `@!Skill` bleibt verborgen, ein `@@X` innerhalb von `@Wissen` ist verfügbar. |
 | K3 | Dateien direkt in `@/` gehören zur Klasse *Laden*. |
-| K4 | Berücksichtigt werden nur Dateien mit der Endung `.md`. Andere Dateien (Bilder, PDFs) bleiben liegen und werden nicht geladen. |
-| K5 | Die id des Master-Kontexts wird aus `cwd`, den Pfaden und Inhalten aller geladenen Dateien und den Pfaden des verfügbaren Wissens gebildet, also genau aus dem, was der Master-Kontext enthält (siehe `aios-context --id`). Inhalte des verfügbaren Wissens und verborgene Dateien gehen nicht ein. |
+| K4 | Berücksichtigt werden nur Dateien mit der Endung `.md`. Andere Dateien (Bilder, PDFs) bleiben liegen und werden nicht geladen. Dateien und Verzeichnisse, deren Name mit `.` beginnt (z. B. `.obsidian/`), werden übergangen. |
+| K5 | Die id des Master-Kontexts wird aus `cwd`, den Pfaden und Inhalten aller geladenen Dateien und den Pfaden des verfügbaren Wissens gebildet, also genau aus dem, was der Master-Kontext enthält (siehe `aios-context --id`). Inhalte des verfügbaren Wissens und verborgene Dateien gehen nicht ein. Genau: die ersten 8 Hex-Zeichen von SHA-256 über `cwd <cwd>⏎`, je geladener Datei `load <pfad>⏎<inhalt>⏎` und je Datei des verfügbaren Wissens `available <pfad>⏎`, in der Reihenfolge des Master-Kontexts. |
+
+**Reihenfolge:** Masterspaces von der Vault-Root zum Projekt; innerhalb eines Masterspace je Verzeichnis nach Namen sortiert (Dateien und Verzeichnisse gemeinsam, Zeichencode), rekursiv. `files` zählt die geladenen Dateien.
 
 ### Inhaltsverzeichnis des verfügbaren Wissens
 
-Für jede Datei des verfügbaren Wissens enthält der Master-Kontext eine Zeile mit absolutem Pfad und der ersten Überschrift der Datei:
+Für jede Datei des verfügbaren Wissens enthält der Master-Kontext eine Zeile mit absolutem Pfad und der ersten Überschrift der Datei (nach einem allfälligen Frontmatter; ohne Überschrift der Dateiname ohne `.md`):
 
 ```
 <aios-available>
@@ -90,15 +92,25 @@ Ein handgeschriebenes Inhaltsverzeichnis mit der Spalte „Lesen, wenn …" kann
 | `aios-context --session` | SessionStart-Hook (liest Hook-JSON von stdin, nimmt dessen `cwd`), siehe *Hooks* |
 | `aios-context --advise` | UserPromptSubmit-Hook, siehe *Hooks* |
 | `aios-context --context` | gibt den Master-Kontext von `cwd` aus (Format siehe *Ausgabe*) |
-| `aios-context --load` | schreibt den Master-Kontext in Part-Dateien unter `~/.aios/cache/<id>/` (je höchstens 40.000 Zeichen) und gibt die Liste aus |
-| `aios-context --id` | gibt `id=<id> files=<n> cwd=<cwd> mode=<aios-0.1.0 | legacy | none>` aus |
+| `aios-context --load` | schreibt den Master-Kontext in Part-Dateien unter `~/.aios/cache/<id>/` (je höchstens 40.000 Zeichen, geschnitten an Zeilenenden) und gibt die Liste aus; einmal je id, Cache-Einträge älter als 7 Tage werden entfernt |
+| `aios-context --id` | gibt `id=<id> files=<n> cwd=<cwd> mode=<aios-0.1.0 | legacy | none>` aus; `aios-<version>` ist die Version des laufenden Programms |
 | `aios-context --list` | Aufstellung für `/aios-context` (siehe dort) |
 | `aios-context --sync` | Registrierung der Projekt-Skills (Spec 03, *Registrieren*), mit Vorschau; mit `--yes` ohne Rückfrage |
 | `aios-context --agent <name>` | gibt den Kontext eines Agenten aus (Spec 03, *Agenten*) |
 | `aios-context --version` | Version des laufenden Programms |
 | `aios-context -?`, `--help` | Hilfe |
 
-Außerhalb eines Vaults geben `--session` und `--advise` nichts aus; `--id` meldet `mode=none`.
+Außerhalb eines Vaults geben `--session`, `--advise`, `--context` und `--load` nichts auf stdout aus; `--id` meldet `id=- files=0 cwd=<cwd> mode=none`. Im Legacy-Modus meldet `--id` die Ausgabe von `ai-brain --id` mit angehängtem `mode=legacy` (ohne `ai-brain`: `id=- files=0 cwd=<cwd> mode=legacy`); so erkennt `/aios-context` den Modus. Das gilt für den Weiterleiter und für `aios-context` selbst.
+
+`--load` meldet:
+
+```
+AIOS-CONTEXT-LOAD id=<id> files=<n> parts=<p> cwd=<cwd>
+Read each of the following part files completely (Read tool), in order:
+   ~/.aios/cache/<id>/part-1.md
+   …
+The master context is loaded once </aios-context id="<id>"> (end of the last part) has been read.
+```
 
 ### Ausgabe
 
@@ -116,7 +128,7 @@ Außerhalb eines Vaults geben `--session` und `--advise` nichts aus; `--id` meld
 
 | Element | Bedeutung |
 |---|---|
-| `<aios-context id=… >` … `</aios-context id=…>` | Anfangs- und Endmarke; der Master-Kontext gilt nur als geladen, wenn beide Marken mit derselben id im Kontext stehen |
+| `<aios-context id=… >` … `</aios-context id=…>` | Anfangs- und Endmarke; der Master-Kontext gilt nur als geladen, wenn beide Marken mit derselben id im Kontext stehen; `version` ist die Version des laufenden Programms |
 | `<aios-file class="load" src=…>` | eine geladene Datei mit absolutem Pfad |
 | `<aios-available>` | Inhaltsverzeichnis des verfügbaren Wissens (Teil des Master-Kontexts) |
 
@@ -141,7 +153,7 @@ Die Hooks erzeugen außer der Registrierung keine Dateien im Projekt und fragen 
 
 ## Legacy-Modus
 
-Ohne Aktivierung in der Kette verhält sich `aios-context` exakt wie `ai-brain` in der Version, die beim Installieren von AIOS vorlag:
+Ohne Aktivierung in der Kette verhält sich `aios-context` exakt wie `ai-brain` in der Version, die beim Installieren von AIOS vorlag. Meist ruft schon der Weiterleiter `ai-brain` auf; läuft `aios-context` selbst (z. B. über `AIOS_HOME`), reicht es den Aufruf an `ai-brain` weiter (Ausnahme `--id`, siehe oben):
 
 | Aspekt | Legacy-Modus |
 |---|---|

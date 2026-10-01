@@ -240,7 +240,7 @@ Weiterleiter, `aios` und `aios-context` verwenden ausschließlich diese Variable
 3. Gefunden: `v<version>` in `~/.aios/installations.yaml`, danach in `/opt/aios/installations.yaml` nachschlagen und `<pfad>/bin/<tool>` mit allen Argumenten aufrufen. Nicht installiert: Fehler mit Hinweis auf `aios --install v<version>`.
 4. Nicht gefunden:
    - `aios`: die höchste installierte Version aufrufen.
-   - `aios-context`: **Legacy-Modus**, d. h. `ai-brain` mit denselben Argumenten aufrufen, falls vorhanden (`--session`, `--advise`, `--load`, `--id`, `--context`); sonst nichts ausgeben.
+   - `aios-context`: **Legacy-Modus**, d. h. `ai-brain` mit denselben Argumenten aufrufen, falls vorhanden (`--session`, `--advise`, `--load`, `--context`); sonst nichts ausgeben. Ausnahme `--id`: Ausgabe von `ai-brain --id` mit angehängtem `mode=legacy`, außerhalb eines Vaults `mode=none` (Spec 02).
 
 „Höchste Version" gilt nach Semver: `0.10.0` liegt über `0.2.0`, eine Vorabversion wie `0.2.0-dev` unter `0.2.0`. In `installations.yaml` darf ein Pfad in Anführungszeichen stehen und mit `~/` beginnen.
 

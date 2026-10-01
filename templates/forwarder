@@ -20,7 +20,7 @@
 #===============================================================================
 
    if [ "$*" == "---version" ]; then
-      echo "0.1.0"; exit 0
+      echo "0.1.1"; exit 0
    fi
 
 #===============================================================================
@@ -77,14 +77,18 @@
       [ -n "$BEST" ] && echo "$BEST"
    }
 
-   activation() {                                   # print "<version>|<config>" or nothing
-      local D="$PWD" ROOT="" LINE
-      while :; do                                   # vault root: nearest dir named §*
-         case "$(basename "$D")" in §*) ROOT="$D"; break;; esac
-         [ "$D" == "/" ] && break
+   vault_root() {                                   # nearest dir named §* at or above $PWD
+      local D="$PWD"
+      while :; do
+         case "$(basename "$D")" in §*) echo "$D"; return 0;; esac
+         [ "$D" == "/" ] && return 1
          D="$(dirname "$D")"
       done
-      [ -n "$ROOT" ] || return 1                    # outside a vault: never activated
+   }
+
+   activation() {                                   # print "<version>|<config>" or nothing
+      local D ROOT LINE
+      ROOT="$(vault_root)" || return 1              # outside a vault: never activated
       D="$PWD"
       while :; do
          if [ "$D" != "$HOME" ] && [ -f "$D/.aios/config.yaml" ]; then
@@ -144,6 +148,15 @@
          exec "$TARGET" "$@"
          ;;
       legacy)
+         if [ "$*" == "--id" ]; then                # spec 02: --id names the mode
+            if ! vault_root >/dev/null; then echo "id=- files=0 cwd=$PWD mode=none"; exit 0; fi
+            OUT=""; [ -n "$TARGET" ] && OUT="$("$TARGET" --id 2>/dev/null)"
+            case "$OUT" in
+               id=*) echo "$OUT mode=legacy" ;;
+               *)    echo "id=- files=0 cwd=$PWD mode=legacy" ;;
+            esac
+            exit 0
+         fi
          [ -n "$TARGET" ] || exit 0                 # no ai-brain: no output
          exec "$TARGET" "$@"
          ;;

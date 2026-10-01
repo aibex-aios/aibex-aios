@@ -47,3 +47,19 @@ def stup_url() -> str:
 def pip_cmd() -> str:
     """Command that installs python/requirements.txt into the venv (AIOS_PIP), empty = default."""
     return os.environ.get("AIOS_PIP", "")
+
+
+def cwd() -> str:
+    """Logical working directory ($PWD) like the forwarders and the shell, physical as fallback."""
+    pwd = os.environ.get("PWD")
+    try:
+        if pwd and os.path.samefile(pwd, os.getcwd()):
+            return os.path.abspath(pwd)
+    except OSError:
+        pass
+    return os.getcwd()
+
+
+def cache_dir() -> Path:
+    """Part files of the master context, ~/.aios/cache."""
+    return user_dir() / "cache"

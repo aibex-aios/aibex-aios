@@ -37,7 +37,7 @@
    assert_exit 1 "$SRC/bin/aios-context" -?
    assert_exit 1 "$SRC/bin/aios-context"
    assert_eq "$("$SRC/bin/aios-context" --version)" "$(cat "$SRC/VERSION")" "aios-context --version"
-   assert_exit 2 "$SRC/bin/aios-context" --id
+   assert_exit 2 "$SRC/bin/aios-context" --agent obstgaertner
 
 #===============================================================================
 # python part: paths follow the redirection variables

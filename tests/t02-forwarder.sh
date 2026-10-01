@@ -36,7 +36,7 @@
 # forwarder: own options, arguments passed unchanged
 #===============================================================================
 
-   assert_eq "$(aios ---version)" "0.1.0" "---version"
+   assert_eq "$(aios ---version)" "0.1.1" "---version"
    assert_exit 1 aios ---help
    assert_contains "$(aios-context ---help)" "aios-context ---which" "---help names the tool"
 
@@ -92,10 +92,14 @@
    assert_eq "$(run "$V/Garten" aios-context --session)" "ai-brain --session" "legacy: ai-brain with same arguments"
    assert_eq "$(run "$SANDBOX/outside" aios-context --advise)" "ai-brain --advise" "outside a vault: legacy"
    mkdir -p "$V/Anderes/.aios" "$V/Anderes/sub"; printf 'aios: 0.1.0\n' > "$V/Anderes/.aios/config.yaml"
-   assert_eq "$(HOME="$V/Anderes" run "$V/Anderes/sub" "$HOME/bin/aios-context" --id)" "ai-brain --id" "~/.aios/config.yaml never activates, even inside a vault"
+   assert_eq "$(HOME="$V/Anderes" run "$V/Anderes/sub" "$HOME/bin/aios-context" --context)" "ai-brain --context" "~/.aios/config.yaml never activates, even inside a vault"
    rm -rf "$V/Anderes/.aios"
 
+   printf '#!/bin/bash\n[ "$*" == "--id" ] && echo "id=abcd1234 files=3 cwd=$PWD" || echo "ai-brain $*"\n' > "$SANDBOX/fake/ai-brain"
+   assert_eq "$(run "$V/Garten" aios-context --id)" "id=abcd1234 files=3 cwd=$V/Garten mode=legacy" "legacy --id: ai-brain output plus mode=legacy"
+   assert_eq "$(run "$SANDBOX/outside" aios-context --id)" "id=- files=0 cwd=$SANDBOX/outside mode=none" "--id outside a vault: mode=none"
    rm "$SANDBOX/fake/ai-brain"
+   assert_eq "$(run "$V/Garten" aios-context --id)" "id=- files=0 cwd=$V/Garten mode=legacy" "legacy --id without ai-brain"
    OUT="$(run "$V/Garten" aios-context --session)"; RC=$?
    assert_eq "$RC:$OUT" "0:" "legacy without ai-brain: no output, exit 0"
 

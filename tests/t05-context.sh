@@ -1,0 +1,146 @@
+# t05-context.sh: step 5 of the plan (memo 18) - aios-context --context/--load/--id, classes K1-K5 (spec 02)
+
+#===============================================================================
+# setup: activated vault with every class rule, a sibling, a container, fake ai-brain
+#===============================================================================
+
+   mkdir -p "$SANDBOX/fake" "$SANDBOX/outside"
+   export PATH="$SANDBOX/fake:/usr/bin:/bin:/usr/sbin:/sbin"
+   VER="$(cat "$SRC/VERSION")"
+   D="$SANDBOX/work/§Demo"; M="$D/@"
+   mk() { mkdir -p "$(dirname "$1")"; printf '%s' "$2" > "$1"; }
+
+   mk "$D/.aios/config.yaml"                   $'aios: 0.1.0\n'
+   mk "$M/README.md"                           $'# Root\nroot text\n'                  # K3
+   mk "$M/@Rule/stil.md"                       $'# Stil\nschreib klar\n'
+   mk "$M/@Rule/sub/tief.md"                   'no newline at the end'                  # K1, no trailing newline
+   mk "$M/@Rule/bild.png"                      'PNG'                                    # K4
+   mk "$M/@Rule/notiz.txt"                     'text'                                   # K4
+   mk "$M/Notizen/n.md"                        $'# Notiz\n'                             # K1 in @/
+   mk "$M/@Wissen/@Content/inhalt.md"          $'# Inhalt\n| Datei | Lesen, wenn |\n'
+   mk "$M/@Wissen/@@Kapitel1/kapitel.md"       $'---\ntitle: x\n---\n\n# Kapitel 1: Grundlagen\nlang\n'
+   mk "$M/@Wissen/@@Kapitel1/@Teil/teil.md"    $'Kein Titel\n'                          # K2: @ in @@ stays available
+   mk "$M/@!Skill/memo/SKILL.md"               $'# Memo\n'                              # hidden
+   mk "$M/@!Skill/memo/@Rule/r.md"             $'# r\n'                                 # K2: @ in @! stays hidden
+   mk "$M/@@Buch/@!Geheim/g.md"                $'# Geheim\n'                            # K2: @! in @@ is hidden
+   mk "$M/.obsidian/x.md"                      $'# dot\n'                               # dot entries skipped
+   mk "$D/Garten/@/garten.md"                  $'# Garten\nApfel\n'
+   mk "$D/Wiese/@/wiese.md"                    $'# Wiese\n'                             # sibling, not in the chain
+   mkdir -p "$D/Garten/Beet"                                                            # not initialized
+
+   at() { (cd "$1" && shift && "$@" 2>&1); }
+   CTX() { at "$1" "$SRC/bin/aios-context" "${@:2}"; }
+   IDOF() { CTX "$1" --id | sed 's/^id=\([^ ]*\).*/\1/'; }
+
+#===============================================================================
+# --context: exact output from the project Garten
+#===============================================================================
+
+   OUT="$(CTX "$D/Garten" --context; echo x)"; OUT="${OUT%x}"
+   ID="$(IDOF "$D/Garten")"
+   EXP="<aios-context id=\"$ID\" files=\"6\" cwd=\"$D/Garten\" version=\"$VER\">
+<aios-file class=\"load\" src=\"$M/@Rule/stil.md\">
+# Stil
+schreib klar
+</aios-file>
+<aios-file class=\"load\" src=\"$M/@Rule/sub/tief.md\">
+no newline at the end
+</aios-file>
+<aios-file class=\"load\" src=\"$M/@Wissen/@Content/inhalt.md\">
+# Inhalt
+| Datei | Lesen, wenn |
+</aios-file>
+<aios-file class=\"load\" src=\"$M/Notizen/n.md\">
+# Notiz
+</aios-file>
+<aios-file class=\"load\" src=\"$M/README.md\">
+# Root
+root text
+</aios-file>
+<aios-file class=\"load\" src=\"$D/Garten/@/garten.md\">
+# Garten
+Apfel
+</aios-file>
+<aios-available>
+- $M/@Wissen/@@Kapitel1/@Teil/teil.md — teil
+- $M/@Wissen/@@Kapitel1/kapitel.md — Kapitel 1: Grundlagen
+</aios-available>
+</aios-context id=\"$ID\">
+"
+   assert_eq "$OUT" "$EXP" "--context: exact output"
+   [[ "$ID" =~ ^[0-9a-f]{8}$ ]] && ok || fail "id: 8 hex characters ($ID)"
+   assert_eq "$(CTX "$D/Garten" --id)" "id=$ID files=6 cwd=$D/Garten mode=aios-$VER" "--id"
+
+   for X in "@!Skill" "@@Buch" ".obsidian" "bild.png" "notiz.txt" "wiese.md" "Geheim"; do
+      case "$OUT" in *"$X"*) fail "must not appear in the master context: $X" ;; *) ok ;; esac
+   done
+
+#===============================================================================
+# chain: root project, not initialized project, outside a vault
+#===============================================================================
+
+   assert_contains "$(CTX "$D" --id)" "files=5 cwd=$D " "root project: only the root masterspace"
+   B="$(CTX "$D/Garten/Beet" --context)"
+   assert_contains "$B" "src=\"$D/Garten/@/garten.md\"" "not initialized: chain up to the project above"
+   [ "$(IDOF "$D/Garten/Beet")" != "$ID" ] && ok || fail "id depends on cwd"
+   assert_eq "$(CTX "$SANDBOX/outside" --id)" "id=- files=0 cwd=$SANDBOX/outside mode=none" "outside a vault: mode=none"
+   assert_eq "$(cd "$SANDBOX/outside" && "$SRC/bin/aios-context" --context 2>/dev/null)" "" "outside a vault: no master context on stdout"
+
+#===============================================================================
+# id (K5): what changes it and what does not
+#===============================================================================
+
+   I0="$(IDOF "$D/Garten")"
+   assert_eq "$(IDOF "$D/Garten")" "$I0" "id is stable"
+   printf 'lang und neu\n' >> "$M/@Wissen/@@Kapitel1/kapitel.md"
+   assert_eq "$(IDOF "$D/Garten")" "$I0" "content of available knowledge: id unchanged"
+   printf 'x\n' >> "$M/@!Skill/memo/SKILL.md"
+   assert_eq "$(IDOF "$D/Garten")" "$I0" "hidden file changed: id unchanged"
+   printf 'x\n' > "$M/@Rule/bild2.png"
+   assert_eq "$(IDOF "$D/Garten")" "$I0" "non-md file added: id unchanged"
+   mk "$M/@Wissen/@@Kapitel2/k2.md" $'# K2\n'
+   I1="$(IDOF "$D/Garten")"
+   [ "$I1" != "$I0" ] && ok || fail "available file added: id changes"
+   printf 'Birne\n' >> "$D/Garten/@/garten.md"
+   I2="$(IDOF "$D/Garten")"
+   [ "$I2" != "$I1" ] && ok || fail "loaded content changed: id changes"
+   mv "$M/@Rule/stil.md" "$M/@Rule/stil2.md"
+   [ "$(IDOF "$D/Garten")" != "$I2" ] && ok || fail "loaded file renamed: id changes"
+
+#===============================================================================
+# --load: part files of at most 40000 characters, cache per id
+#===============================================================================
+
+   python3 -c "import sys; sys.stdout.write(''.join(f'Zeile {i:05d} ' + 'x'*80 + '\n' for i in range(1200)))" > "$D/Garten/@/gross.md"
+   OUT="$(CTX "$D/Garten" --load)"
+   ID="$(IDOF "$D/Garten")"
+   CD="$HOME/.aios/cache/$ID"
+   assert_contains "$OUT" "AIOS-CONTEXT-LOAD id=$ID files=7 parts=" "--load: header"
+   assert_contains "$OUT" "</aios-context id=\"$ID\">" "--load: names the end marker"
+   NP="$(ls "$CD"/part-*.md | wc -l | tr -d ' ')"
+   [ "$NP" -ge 3 ] && ok || fail "--load: at least 3 parts ($NP)"
+   MAXC="$(python3 -c "import glob; print(max(len(open(f,encoding='utf-8').read()) for f in glob.glob('$CD/part-*.md')))")"
+   [ "$MAXC" -le 40000 ] && ok || fail "--load: parts <= 40000 characters ($MAXC)"
+   ALL="$(for i in $(seq 1 "$NP"); do cat "$CD/part-$i.md"; done; echo x)"
+   FULL="$(CTX "$D/Garten" --context; echo x)"
+   assert_eq "$ALL" "$FULL" "--load: parts joined = --context"
+   assert_eq "$(printf '%s\n' "$OUT" | grep -c '^   /')" "$NP" "--load: every part listed"
+
+   mkdir -p "$HOME/.aios/cache/alt0000"; touch -t 202001010000 "$HOME/.aios/cache/alt0000"
+   touch -t 202001010000 "$CD"
+   CTX "$D/Garten" --load >/dev/null
+   [ ! -e "$HOME/.aios/cache/alt0000" ] && ok || fail "--load: cache older than 7 days removed"
+   assert_dir "$CD"
+
+#===============================================================================
+# legacy mode (no aios: in the chain): aios-context behaves like ai-brain
+#===============================================================================
+
+   L="$SANDBOX/work/§Alt"; mk "$L/@/a.md" $'# A\n'
+   assert_eq "$(CTX "$L" --id)" "id=- files=0 cwd=$L mode=legacy" "legacy --id without ai-brain"
+   assert_eq "$(CTX "$L" --context)" "" "legacy --context without ai-brain: nothing"
+   printf '#!/bin/bash\n[ "$*" == "--id" ] && echo "id=feed0001 files=1 cwd=$PWD" || echo "ai-brain $*"\n' > "$SANDBOX/fake/ai-brain"
+   chmod +x "$SANDBOX/fake/ai-brain"
+   assert_eq "$(CTX "$L" --id)" "id=feed0001 files=1 cwd=$L mode=legacy" "legacy --id: ai-brain plus mode=legacy"
+   assert_eq "$(CTX "$L" --load)" "ai-brain --load" "legacy --load: ai-brain"
+   assert_exit 2 "$SRC/bin/aios-context" --list

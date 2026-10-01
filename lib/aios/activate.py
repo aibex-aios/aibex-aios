@@ -5,26 +5,15 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from . import config, install
+from . import config, install, paths
 from .ui import Abort, Plan, confirm, say
 
 
 def target(path):
-    p = Path(os.path.abspath(path or paths_cwd()))
+    p = Path(os.path.abspath(path or paths.cwd()))
     if not p.is_dir():
         raise Abort(f"{p} is not a directory")
     return p
-
-
-def paths_cwd():
-    """Logical cwd ($PWD) like the forwarders and the hooks, physical as fallback."""
-    pwd = os.environ.get("PWD")
-    try:
-        if pwd and os.path.samefile(pwd, os.getcwd()):
-            return pwd
-    except OSError:
-        pass
-    return os.getcwd()
 
 
 def effective(p):
