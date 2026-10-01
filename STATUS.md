@@ -1,18 +1,15 @@
-# Stand der Umsetzung AIOS v0.1.0
+# Stand der Umsetzung AIOS v0.2.0
 
-Umsetzungsschritte nach dem Implementierungsplan (Memo 18 im Konzeptprojekt, ergänzt durch spätere Memos). Jeder Schritt wird im selben Commit `Schritt N: …` abgehakt, der ihn abschließt.
+Umsetzungsschritte nach dem Implementierungsplan v0.2 (Memo 20 im Konzeptprojekt `PAA-AIbex-AIOS-V0.2`, ergänzt durch spätere Memos). Jeder Schritt wird im selben Commit `Schritt N: …` abgehakt, der ihn abschließt.
+
+v0.1.0 ist abgeschlossen (Tag `v0.1.0`, Abnahme in Memo 32 von `PAA-AIbex-AIOS-V0.1`); sein Stand steht in `STATUS.md` dieses Tags.
 
 | # | Schritt | Ergebnis | Spec | Stand |
 |---|---|---|---|---|
-| 1 | **Gerüst:** Repo-Struktur (`bin/`, `lib/aios/`, `skills/aios/`, `skills/basic/`, `templates/`, `python/`, `CLAUDE.md`, `dev/`), Testrahmen `tests/` mit Sandkasten | Grundgerüst, 36 Prüfungen grün | 04 *Repo* | ☑ abgeschlossen |
-| 2 | **Weiterleiter und Versionen:** `~/bin/aios`, `~/bin/aios-context`; Auflösung über `AIOS_HOME`, Kette, `installations.yaml`; Legacy-Aufruf von `ai-brain` | `templates/forwarder`, alle Ränge getestet (t02, 24 Prüfungen), Memo 22 | 04 *Weiterleiter* | ☑ abgeschlossen |
-| 3 | **Installieren:** `--prepare`, `--install [v<version>]`, `--versions`, `--remove-version`, `--uninstall`; ersetzt den Prototyp `bin/aios` | `bin/aios` → `lib/aios/install.py`, ganzer Lebenslauf im Sandkasten getestet (t03, 77 Prüfungen), Prototyp ersetzt, Memo 23 | 04 *CLI* | ☑ abgeschlossen |
-| 4 | **Aktivieren:** `--activate`, `--deactivate`, Konfigurationskette mit Übertrumpfung je Schlüssel | `lib/aios/config.py` (Kette), `activate.py`, neu `aios --config`; geprüft gegen die Weiterleiter (t04, 46 Prüfungen), Memo 24 | 04 *Formate*, 02 | ☑ abgeschlossen |
-| 5 | **Master-Kontext:** `aios-context` mit Vault, Projekt, Kette, Klassen K1–K5, Inhaltsverzeichnis, Ausgabe, id, `--load` | `lib/aios/context.py`: `--context`, `--load`, `--id`, Legacy-Modus; Ausgabe exakt und id-Vertrag geprüft (t05, 35 Prüfungen), Memo 25 | 02 | ☑ abgeschlossen |
-| 6 | **Hooks:** `--session`, `--advise`, `PROJECT-UNINITIALIZED`, Inline-Grenze und Part-Dateien | `--session`, `--advise` (t06, 25 Prüfungen); vier echte Headless-Sessions bestanden (`tests/live/hooks.sh`), Memo 26 | 02 *Hooks* | ☑ abgeschlossen |
-| 7 | **Registrieren:** `--sync`, Manifest, reservierte Namen, `aios --register` | `lib/aios/registry.py`, `--sync`, `aios --register`, Registrierung beim Session-Start (t07, 42 Prüfungen); Abgleich über eine Git-Grenze mit echten Sessions bestanden (L5), Memo 27 | 03 *Registrieren* | ☑ abgeschlossen |
-| 8 | **AIOS-Skills:** versionsneutrale Hüllen (`aios --skill`), dann `/aios-context`, `/aios-init`, `/aios-status`, `/aios-register` | `aios --skill`, Hüllen, `--list`, `aios --init`, `--plan`/`--yes`; vier Skills (t08, 43 Prüfungen), alle vier in echten Sessions aufgerufen (`tests/live/skills.sh`), Memo 28 | 03, 04 | ☑ abgeschlossen |
-| 9 | **Ausrollen und Versionen:** `aios --deploy`, Tags `<skill>-v<version>`, Manifest `skills:`; `memo` neutralisieren und in `skills/basic/` aufnehmen (O3) | `aios --deploy`, Abgleich, `--library`, Marke `.aios-deploy`, neutrales `memo` 6.0.0 (t09, 51 Prüfungen); `/aios-deploy memo==6.0.0` in echter Session (S5), Memo 29 | 03 *Ausrollen* | ☑ abgeschlossen |
-| 10 | **Agenten:** `aios-context --agent`, `/aios-agent`, Auflösung von Prompt und Skills | `aios-context --agent`, `--agents`, `/aios-agent` (t10, 20 Prüfungen); Obstgärtner und Astronom in echten Sessions (`tests/live/agents.sh`), Memo 30 | 03 *Agenten* | ☑ abgeschlossen |
-| 11 | **Doku:** `spec/` → `doc/spec/` in der Installation, README aktualisieren | Spec in `doc/spec/` der Installation geprüft (t03), README neu, Durchsicht der vier Specs (I4 jetzt auch für `--deploy`), Memo 31 | 04 | ☑ abgeschlossen |
-| 12 | **Abnahme:** auf dem Arbeitsrechner installieren, `§Demo` anlegen, Abnahmetest (Spec 01) durchspielen | Abnahmetest 1–12 auf dem Arbeitsrechner bestanden (`~/tmp/§Demo`); drei Fehler behoben (rc2, rc3), Tag **`v0.1.0`** auf `0e00780`, 423 Prüfungen grün, Memo 32 | 01 *Abnahmetest* | ☑ abgeschlossen |
+| 0 | **Repo auf v0.2 umstellen:** `CLAUDE.md`, `STATUS.md`, `VERSION` `0.2.0-dev` | Regeln zeigen auf V0.2 und Memo 20, Stand v0.2, 423 Prüfungen grün | — | ☑ abgeschlossen |
+| 1 | **Umbenennung:** Agent → Assistent (`@!Assistant`, `ASSISTANT.md`, `--assistant(s)`, `<aios-assistant …>`, `/aios-assistant`, `deploy --assistant`) | | 01–04 | ☐ offen |
+| 2 | **Versionen Pflicht:** Skills und Assistenten ohne gültige `version` werden nicht registriert bzw. aufgelöst und gemeldet; Manifest immer mit Version | | 03, 04 | ☐ offen |
+| 3 | **Demo-Assistenten in der Bibliothek:** `assistants/demo/gaertner`, `astronom` 0.1.0, Abbildung in der Installation, `aios --library` | | 03, 04 | ☐ offen |
+| 4 | **Ausrollen von Assistenten:** `aios --deploy gaertner==0.1.0`, Marke, `assistants:`, Abgleich | | 03, 04 | ☐ offen |
+| 5 | **Doku:** `--list` mit Assistenten, README, Tutorial | | 02 | ☐ offen |
+| 6 | **Abnahme:** v0.1.0 entfernen, v0.2.0 installieren, `§Demo` neu, Abnahmetest (Spec 01) | Tags **`v0.2.0`**, `gaertner-v0.1.0`, `astronom-v0.1.0` | 01 *Abnahmetest* | ☐ offen |
