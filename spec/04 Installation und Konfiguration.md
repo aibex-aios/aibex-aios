@@ -199,13 +199,16 @@ Zusammengeführt mit dem `json`-Modul von Python; andere Schlüssel und fremde H
 ```markdown
 ---
 name: aios-init
-description: <Beschreibung aus /opt/aios/v<version>/skills/aios/aios-init/SKILL.md>
+description: "<Beschreibung aus /opt/aios/v<version>/skills/aios/aios-init/SKILL.md>"
+allowed-tools: Bash(aios --skill *), <allowed-tools aus derselben SKILL.md>
 ---
 
 !`aios --skill aios-init`
 ```
 
-`aios --skill <name>` gibt den Rumpf (ohne Frontmatter) der `SKILL.md` der **gültigen** Version aus. Die Beschreibung wird bei jedem `aios --install` aus der installierten Version übernommen.
+`aios --skill <name>` gibt den Rumpf (ohne Frontmatter) der `SKILL.md` der **gültigen** Version aus; gültig ist die Version, die der Weiterleiter für `cwd` wählt. Beschreibung und `allowed-tools` werden bei jedem `aios --install` aus der installierten Version übernommen. Der Rumpf eines AIOS-Skills enthält keine `!`-Befehle, weil Claude Code die Ausgabe von `` !`aios --skill …` `` nicht noch einmal auswertet; er weist Claude an, die Befehle selbst auszuführen.
+
+v0.1 liefert die AIOS-Skills `aios-context`, `aios-init`, `aios-register` und `aios-status` (Spec 02, 03); `aios-deploy` und `aios-agent` folgen mit den Schritten 9 und 10.
 
 ### `.gitignore`-Vorlage
 
@@ -271,8 +274,9 @@ Die Weiterleiter lesen nur kleine Dateien und greifen nie auf das Netzwerk zu.
 | `aios --register [<pfad>]` | Projekt-Skills registrieren, mit Vorschau (Spec 03) |
 | `aios --deploy …` | Spec 03 |
 | `aios --skill <name>` | Rumpf eines AIOS-Skills der gültigen Version (für die versionsneutralen Skills) |
+| `aios --init [<pfad>]` | Ordner zum Projekt machen (Spec 03, *Initialisieren*) |
 
-Alle schreibenden Befehle zeigen zuerst einen Plan und fragen `[Y/n]` (I7). `bin/aios` und die Weiterleiter sind Bash-Skripte nach der Bash-Konvention (Help-, Version- und Dispatch-Blöcke, Fallback); die Logik hinter `aios` und `aios-context` läuft in Python im venv der Installation (`python/`). `--prepare`, `--install`, `--versions`, `--remove-version` und `--uninstall` verwenden nur die Standardbibliothek, weil sie aus einem Klon mit dem `python3` des Systems laufen, bevor eine venv existiert. Voraussetzungen sind `python3` ab 3.9 und `git`.
+Alle schreibenden Befehle zeigen zuerst einen Plan und fragen `[Y/n]` (I7). Für Skills, die im Bash-Werkzeug keine Rückfrage beantworten können, gibt es zwei Schalter: `--plan` zeigt nur den Plan und schreibt nichts (Exit 0), `--yes` überspringt die Frage. Ein Skill zeigt den Plan, fragt im Chat und ruft erst nach Ja mit `--yes` auf; ohne Eingabe auf stdin wird nie geschrieben. `bin/aios` und die Weiterleiter sind Bash-Skripte nach der Bash-Konvention (Help-, Version- und Dispatch-Blöcke, Fallback); die Logik hinter `aios` und `aios-context` läuft in Python im venv der Installation (`python/`). `--prepare`, `--install`, `--versions`, `--remove-version` und `--uninstall` verwenden nur die Standardbibliothek, weil sie aus einem Klon mit dem `python3` des Systems laufen, bevor eine venv existiert. Voraussetzungen sind `python3` ab 3.9 und `git`.
 
 ### `aios --prepare`
 

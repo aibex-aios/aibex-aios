@@ -94,7 +94,8 @@ Ein handgeschriebenes Inhaltsverzeichnis mit der Spalte „Lesen, wenn …" kann
 | `aios-context --context [<pfad>]` | gibt den Master-Kontext von `cwd` bzw. `<pfad>` aus (Format siehe *Ausgabe*) |
 | `aios-context --load [<pfad>]` | schreibt den Master-Kontext in Part-Dateien unter `~/.aios/cache/<id>/` (je höchstens 40.000 Zeichen, geschnitten an Zeilenenden) und gibt die Liste aus; einmal je id, Cache-Einträge älter als 7 Tage werden entfernt |
 | `aios-context --id [<pfad>]` | gibt `id=<id> files=<n> cwd=<cwd> mode=<aios-0.1.0 | legacy | none>` aus; `aios-<version>` ist die Version des laufenden Programms |
-| `aios-context --list` | Aufstellung für `/aios-context` (siehe dort) |
+| `aios-context --list [<pfad>]` | Aufstellung für `/aios-context` (siehe dort) |
+| `aios-context --sync [--yes\|--plan]` | Registrierung (Spec 03) |
 | `aios-context --sync` | Registrierung der Projekt-Skills (Spec 03, *Registrieren*), mit Vorschau; mit `--yes` ohne Rückfrage |
 | `aios-context --agent <name>` | gibt den Kontext eines Agenten aus (Spec 03, *Agenten*) |
 | `aios-context --version` | Version des laufenden Programms |
@@ -202,8 +203,8 @@ AIOS-Skill, Nachfolger von `/masterspace`. Auslöser: `/aios-context`, „Master
 1. `aios-context --id` ausführen.
 2. `mode=none`: „Kein Vault — kein Master-Kontext." und beenden. `mode=legacy`: auf `/masterspace` verweisen und beenden.
 3. Prüfen, ob beide Marken `<aios-context id="<id>"` und `</aios-context id="<id>">` im Kontext stehen. Erinnerungen, Zusammenfassungen und Hook-Meldungen zählen nicht.
-4. Fehlen sie oder steht eine andere id im Kontext: „Master-Kontext veraltet (`<alt>` → `<neu>`)" bzw. „Lade Master-Kontext", `aios-context --load`, alle Part-Dateien vollständig lesen, Endmarke prüfen.
-5. `aios-context --list` ausführen und die Aufstellung zeigen.
+4. Fehlen sie oder steht eine andere id im Kontext: „Master-Kontext veraltet (`<alt>` → `<neu>`)" bzw. „Lade Master-Kontext", `aios-context --load "<cwd>"`, alle Part-Dateien vollständig lesen, Endmarke prüfen.
+5. `aios-context --list "<cwd>"` ausführen und die Aufstellung zeigen. `--list` beginnt mit `Master-Kontext id <id>, AIOS <version> — <Projekt>`; der Skill ersetzt diese Zeile durch „Master-Kontext geladen (id …)". Im Legacy-Modus gibt `--list` nur einen Verweis auf `/masterspace` aus, außerhalb eines Vaults „Kein Vault — kein Master-Kontext.".
 
 **Aufstellung:**
 

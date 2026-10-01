@@ -111,7 +111,7 @@ Registrieren macht die geltenden Projekt-Skills **für Claude Code aufrufbar**.
 | Aufruf | Rückfrage | Anlass |
 |---|---|---|
 | SessionStart-Hook (`aios-context --sync --yes`) | nein | jeder Session-Start in einem aktivierten Vault |
-| `/aios-register`, `aios --register [<pfad>]`, `aios-context --sync` | ja, mit Vorschau | manueller Anstoß, z. B. nach `/aios-deploy` |
+| `/aios-register`, `aios --register [<pfad>]`, `aios-context --sync` | ja, mit Vorschau | manueller Anstoß, z. B. nach `/aios-deploy`; der Skill holt mit `--plan` die Vorschau, fragt im Chat und führt nach Ja `--yes` aus |
 
 **Wirksamkeit:** Claude Code übernimmt Skills, die nach dem Start einer Session angelegt werden, nicht zuverlässig in diese Session (Memo 16). Die Registrierung beim Session-Start stellt deshalb den Stand für den **nächsten** Chat her. Ändert sie etwas, meldet der Hook `AIOS-SKILLS: <Änderungen> — wirksam ab dem nächsten Chat` (z. B. `AIOS-SKILLS: new memo; changed shared — wirksam ab dem nächsten Chat`); übersprungene Blueprints meldet er als `AIOS-WARNING`. Weil die Kopie im Projekt selbst liegt, ist ein Skill aus einem Masterspace oberhalb auch dann verfügbar, wenn das Projekt ein eigenes Git-Repo ist (geprüft mit echten Sessions, Memo 27). `/aios-register`, `/aios-deploy` und `/aios-init` sagen nach dem Registrieren: „Der Skill ist ab dem nächsten Chat verfügbar (oder nach `/reload-skills`)." Ob `/reload-skills` das zuverlässig leistet, ist offen (Spec 01, O1).
 
@@ -180,15 +180,15 @@ Die Aktivierung gilt bis zum Ende des Chats. Nach einer Compaction muss sie wied
 
 ## Initialisieren — `/aios-init`
 
-Macht das Arbeitsverzeichnis zum Projekt. Auslöser: `/aios-init`, Wahl (1) nach `PROJECT-UNINITIALIZED` (Spec 02).
+Macht das Arbeitsverzeichnis zum Projekt. Auslöser: `/aios-init`, Wahl (1) nach `PROJECT-UNINITIALIZED` (Spec 02). Die Arbeit macht `aios --init [<pfad>]`; der Skill holt mit `--plan` die Vorschau, fragt im Chat und führt nach Ja `--yes` aus.
 
 | Schritt | Wirkung |
 |---|---|
-| Prüfen | `cwd` liegt in einem aktivierten Vault und hat kein `@/`. Liegt `cwd` bereits in einem Git-Repo, wird das gemeldet und nachgefragt, bevor `git init` ausgeführt wird |
+| Prüfen | `cwd` liegt in einem aktivierten Vault, ist nicht die Vault-Root und hat kein `@/`. Liegt `cwd` bereits in einem Git-Repo, steht das als Hinweis im Plan, bevor `git init` ausgeführt wird; ist `cwd` selbst schon ein Git-Repo, entfällt `git init` |
 | Vorschau | Liste der anzulegenden Dateien; Anlegen erst nach Ja |
-| Anlegen | `@/`, `@Memo/`, `.gitignore` aus der Vorlage (Spec 04), `git init -b main` |
-| Registrieren | `aios-context --sync --yes` |
-| Commit | erster Commit mit `.gitignore` und den angelegten Ordnern (`.gitkeep` in leeren Ordnern) |
+| Anlegen | `@/` und `@Memo/` mit `.gitkeep`, fehlende Zeilen der `.gitignore`-Vorlage (Spec 04; vorhandene Zeilen bleiben), `git init` mit dem Branch `main` |
+| Registrieren | Projekt-Skills registrieren (wie `aios-context --sync --yes`) |
+| Commit | erster Commit „AIOS: Projekt initialisiert" mit `.gitignore`, `@/.gitkeep`, `@Memo/.gitkeep`; scheitert er (z. B. ohne Git-Identität), nur eine Warnung |
 | Abschluss | Hinweis, dass der Master-Kontext für das neue Projekt ab dem nächsten Chat vollständig gilt |
 
 Für das Root-Projekt ist `/aios-init` nicht nötig; `aios --activate` legt dort ein fehlendes `@/` an.

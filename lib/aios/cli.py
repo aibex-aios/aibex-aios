@@ -3,14 +3,14 @@
 import subprocess
 import sys
 
-from . import activate, install, paths, registry, ui
+from . import activate, aiosinit, install, paths, registry, skills, ui
 
 USAGE = ("usage: aios --prepare | --install [v<version>] | --versions | --remove-version v<version>"
          " | --uninstall | --activate v<version> [<path>] | --deactivate [<path>] | --config [<path>]"
-         " | --register [<path>]")
+         " | --register [<path>] | --init [<path>] | --skill <name>  (writing commands: --plan, --yes)")
 
 LATER = {                                           # commands of later steps (memo 18)
-    "--skill": 8, "--deploy": 9,
+    "--deploy": 9,
 }
 
 
@@ -18,6 +18,10 @@ def main(argv):
     if not argv:
         print(USAGE, file=sys.stderr)
         return 1
+    for flag, mode in (("--plan", "plan"), ("--yes", "yes")):      # for skills (spec 03)
+        if flag in argv[1:]:
+            argv = [a for a in argv if a != flag]
+            ui.MODE = mode
     cmd, args = argv[0], argv[1:]
     try:
         if cmd == "--prepare" and not args:
@@ -36,11 +40,19 @@ def main(argv):
             return activate.deactivate(*args)
         if cmd == "--config" and len(args) <= 1:
             return activate.show(*args)
+        if cmd == "--skill" and len(args) == 1:
+            return skills.body(args[0])
+        if cmd == "--init" and len(args) <= 1:
+            return aiosinit.init(args[0] if args else None)
         if cmd == "--register" and len(args) <= 1:
             return registry.register(args[0] if args else paths.cwd())
         if cmd in LATER:
             print(f"aios {cmd}: not implemented yet (step {LATER[cmd]})", file=sys.stderr)
             return 2
+    except ui.PlanOnly:
+        return 0
+    except ui.Cancelled:
+        return 1
     except ui.Abort as e:
         print(f"*** aios {cmd}: {e}", file=sys.stderr)
         return 1

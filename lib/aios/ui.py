@@ -3,8 +3,15 @@
 import sys
 
 
+MODE = "ask"                                        # ask | yes (--yes) | plan (--plan)
+
+
 class Abort(Exception):
     """Stop the command with a message, nothing (more) is written."""
+
+
+class PlanOnly(Exception):
+    """--plan: the plan was shown, nothing is written (exit 0)."""
 
 
 class Plan:
@@ -41,12 +48,25 @@ def ask(question):
 
 
 def confirm(plan, question, cancelled):
+    """Show the plan; --plan stops here, --yes skips the question (for skills, spec 03)."""
     plan.show()
-    if not ask(question):
-        print(f"   {cancelled}")
-        return False
+    proceed(question, cancelled)
     plan.run()
     return True
+
+
+def proceed(question, cancelled):
+    """After showing a plan: raise PlanOnly (--plan), go on (--yes) or ask; Abort on no."""
+    if MODE == "plan":
+        print("   (plan only, nothing written)")
+        raise PlanOnly()
+    if MODE != "yes" and not ask(question):
+        print(f"   {cancelled}")
+        raise Cancelled()
+
+
+class Cancelled(Exception):
+    """The user said no (exit 1)."""
 
 
 def say(text):

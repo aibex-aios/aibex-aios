@@ -11,8 +11,11 @@
       echo '          aios --deactivate [<path>]          # remove the binding'
       echo '          aios --config [<path>]              # effective configuration and its origin'
       echo '          aios --register [<path>]            # register the project skills (spec 03)'
+      echo '          aios --init [<path>]                # make a folder a project (@/, @Memo/, git)'
       echo '          aios --deploy ...                   # deploy a skill version (spec 03)'
       echo '          aios --skill <name>                 # body of an AIOS skill'
+      echo '          aios <writing command> --plan       # show the plan only (for skills)'
+      echo '          aios <writing command> --yes        # no question (after asking in the chat)'
       echo '          aios --version                      # print version'
       echo '   see also: aios-context, ai-brain, stup'
       exit 1

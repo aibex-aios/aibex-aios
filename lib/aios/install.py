@@ -523,9 +523,11 @@ def plan_hooks(plan):
     plan.add(f"hooks in {settings_file()}: " + "; ".join(parts), apply)
 
 
-def wrapper(name, description):
-    return (f"---\nname: {name}\ndescription: {json.dumps(description, ensure_ascii=False)}\n---\n\n"
-            f"!`aios --skill {name}`\n")
+def wrapper(name, description, tools=""):
+    """Version-neutral wrapper: the body comes from the valid version at load time (spec 04)."""
+    allowed = ", ".join(t for t in ["Bash(aios --skill *)", tools] if t)
+    return (f"---\nname: {name}\ndescription: {json.dumps(description, ensure_ascii=False)}\n"
+            f"allowed-tools: {allowed}\n---\n\n!`aios --skill {name}`\n")
 
 
 def plan_skills(plan, src):
@@ -533,7 +535,7 @@ def plan_skills(plan, src):
         if group != "aios":
             continue
         meta = frontmatter(skill / "SKILL.md")
-        text = wrapper(name, meta.get("description", ""))
+        text = wrapper(name, meta.get("description", ""), meta.get("allowed-tools", ""))
         target = paths.claude_dir() / "skills" / name / "SKILL.md"
         if target.is_file():
             old = target.read_text(encoding="utf-8", errors="replace")

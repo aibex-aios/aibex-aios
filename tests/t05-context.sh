@@ -143,4 +143,4 @@ Apfel
    chmod +x "$SANDBOX/fake/ai-brain"
    assert_eq "$(CTX "$L" --id)" "id=feed0001 files=1 cwd=$L mode=legacy" "legacy --id: ai-brain plus mode=legacy"
    assert_eq "$(CTX "$L" --load)" "ai-brain --load" "legacy --load: ai-brain"
-   assert_exit 2 "$SRC/bin/aios-context" --list
+   assert_exit 2 "$SRC/bin/aios-context" --agent obstgaertner

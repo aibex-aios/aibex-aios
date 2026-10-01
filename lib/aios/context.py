@@ -23,7 +23,7 @@ PART_LIMIT = 40000                                  # characters per part file (
 CACHE_DAYS = 7
 HEADING = re.compile(r"^#{1,6}\s+(.+?)\s*#*\s*$")
 
-LATER = {"--list": 8, "--agent": 10}
+LATER = {"--agent": 10}
 
 
 # ---------------------------------------------------------------------------
@@ -292,7 +292,7 @@ def legacy(cmd, cwd, stdin=""):
 
 
 USAGE = ("usage: aios-context --session | --advise | --context [<path>] | --load [<path>] | --id [<path>]"
-         " | --sync [--yes]")
+         " | --list [<path>] | --sync [--yes|--plan]")
 
 
 def main(argv):
@@ -300,8 +300,10 @@ def main(argv):
         print(f"aios-context {argv[0]}: not implemented yet (step {LATER[argv[0]]})", file=sys.stderr)
         return 2
     cmd = argv[0] if argv else ""
-    if cmd == "--sync" and argv[1:] in ([], ["--yes"]):
-        from . import registry
+    if cmd == "--sync" and argv[1:] in ([], ["--yes"], ["--plan"]):
+        from . import registry, ui
+        if argv[1:] == ["--plan"]:
+            ui.MODE = "plan"
         return registry.register(paths.cwd(), yes=argv[1:] == ["--yes"])
     if cmd in ("--session", "--advise") and len(argv) == 1:
         try:
@@ -309,7 +311,7 @@ def main(argv):
         except Exception as e:                      # noqa: BLE001 - a hook never breaks the session
             print(f"AIOS-WARNING: aios-context {cmd} failed: {e}")
             return 0
-    if cmd not in ("--context", "--load", "--id") or len(argv) > 2:
+    if cmd not in ("--context", "--load", "--id", "--list") or len(argv) > 2:
         print(USAGE, file=sys.stderr)
         return 1
     cwd = os.path.abspath(argv[1]) if len(argv) == 2 else paths.cwd()
@@ -317,6 +319,10 @@ def main(argv):
         print(f"aios-context: {cwd} is not a directory", file=sys.stderr)
         return 1
     ctx = Context(cwd)
+    if cmd == "--list":
+        from .skills import listing
+        print("\n".join(listing(ctx)))
+        return 0
     if ctx.mode == "none":
         if cmd == "--id":
             print(f"id=- files=0 cwd={ctx.cwd} mode=none")

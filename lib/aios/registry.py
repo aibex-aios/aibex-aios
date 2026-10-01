@@ -183,7 +183,8 @@ def sync_for(cwd):
 
 def register(cwd, yes=False):
     """aios-context --sync [--yes], aios --register: preview, (question), apply."""
-    from .ui import ask, say, warn
+    from . import ui
+    from .ui import say, warn
     ctx, s = sync_for(cwd)
     if s is None:
         reason = {"none": "not in a vault", "legacy": "legacy mode (no aios: in the chain)"}.get(ctx.mode)
@@ -197,8 +198,13 @@ def register(cwd, yes=False):
     say(f"=> register the project skills of {ctx.cwd} in .claude/skills/")
     for line in s.lines():
         say(f"      {line}")
-    if not yes and not ask("register?"):
-        say("   registration cancelled")
+    if yes:
+        ui.MODE = "yes"
+    try:
+        ui.proceed("register?", "registration cancelled")
+    except ui.PlanOnly:
+        return 0
+    except ui.Cancelled:
         return 1
     s.apply()
     say(f"=> registered: {s.summary()}")
