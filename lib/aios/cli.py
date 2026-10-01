@@ -3,12 +3,13 @@
 import subprocess
 import sys
 
-from . import install
+from . import activate, install, ui
 
-USAGE = "usage: aios --prepare | --install [v<version>] | --versions | --remove-version v<version> | --uninstall"
+USAGE = ("usage: aios --prepare | --install [v<version>] | --versions | --remove-version v<version>"
+         " | --uninstall | --activate v<version> [<path>] | --deactivate [<path>] | --config [<path>]")
 
 LATER = {                                           # commands of later steps (memo 18)
-    "--activate": 4, "--deactivate": 4, "--register": 7, "--skill": 8, "--deploy": 9,
+    "--register": 7, "--skill": 8, "--deploy": 9,
 }
 
 
@@ -28,10 +29,16 @@ def main(argv):
             return install.remove_version(args[0])
         if cmd == "--uninstall" and not args:
             return install.uninstall()
+        if cmd == "--activate" and len(args) in (1, 2):
+            return activate.activate(*args)
+        if cmd == "--deactivate" and len(args) <= 1:
+            return activate.deactivate(*args)
+        if cmd == "--config" and len(args) <= 1:
+            return activate.show(*args)
         if cmd in LATER:
             print(f"aios {cmd}: not implemented yet (step {LATER[cmd]})", file=sys.stderr)
             return 2
-    except install.Abort as e:
+    except ui.Abort as e:
         print(f"*** aios {cmd}: {e}", file=sys.stderr)
         return 1
     except subprocess.CalledProcessError as e:

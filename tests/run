@@ -27,6 +27,11 @@
       TOTAL_PASS=0; TOTAL_FAIL=0
       for T in "$DIR"/${1:-t}*.sh; do
          [ -f "$T" ] || continue
+         if ! ERR="$(bash -n "$T" 2>&1)"; then          # a broken test file is a failure
+            printf '%s\n' "$ERR"
+            printf '\033[31mFAIL\033[0m %-40s syntax error\n' "$(basename "$T")"
+            TOTAL_FAIL=$((TOTAL_FAIL+1)); continue
+         fi
          OUT="$(
             source "$DIR/lib.sh"
             sandbox_new
@@ -38,6 +43,7 @@
          SUMMARY="$(printf '%s\n' "$OUT" | tail -1)"
          printf '%s\n' "$OUT" | sed '$d'
          read -r P F <<< "$SUMMARY"
+         if [ "$P" == "0" ] && [ "$F" == "0" ]; then F=1; echo "   no checks ran"; fi
          TOTAL_PASS=$((TOTAL_PASS+P)); TOTAL_FAIL=$((TOTAL_FAIL+F))
          if [ "$F" == "0" ]; then
             printf '\033[32mok\033[0m   %-40s %s checks\n' "$(basename "$T")" "$P"

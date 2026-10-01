@@ -143,11 +143,13 @@ hosts: [claude-code]
 | `hosts` | alle Ebenen | Liste | in v0.1 nur `claude-code` |
 | `inline_limit` | Home | Zeichenzahl | Grenze für die Inline-Ladung, Standard 9000 |
 
-`aios` in `~/.aios/config.yaml` ist nicht erlaubt: Die Voreinstellung des Rechners darf keinen Vault aktivieren (Grundregel 6). Unbekannte Schlüssel werden mit Warnung ignoriert.
+`aios` in `~/.aios/config.yaml` ist nicht erlaubt: Die Voreinstellung des Rechners darf keinen Vault aktivieren (Grundregel 6). Unbekannte Schlüssel, Schlüssel auf einer Ebene, auf der sie nicht erlaubt sind, und ein `aios`-Wert, der keine Version ist, werden mit Warnung ignoriert.
+
+`config.yaml` verwendet eine Untermenge von YAML, die AIOS ohne PyYAML liest: Zeilen `schlüssel: wert` ohne Einrückung, Listen als `[a, b]` oder als eingerückte `- eintrag`, eine eingerückte Ebene `name: wert` (für `skills`), Kommentare mit `#` und Werte in Anführungszeichen. Jeder Schlüssel darf je Datei nur einmal vorkommen. Eine Datei außerhalb dieser Untermenge wird in der Kette mit Warnung übergangen; `aios --activate` und `aios --deactivate` brechen dann ab, ohne sie zu ändern.
 
 ### Konfigurationskette
 
-Gelesen wird von `cwd` aufwärts jede `.aios/config.yaml` bis zur Vault-Root, danach `~/.aios/config.yaml`. **Je Schlüssel gilt der nächstgelegene Eintrag**; bei `skills` je Skillname.
+Gelesen wird von `cwd` aufwärts jede `.aios/config.yaml` bis zur Vault-Root, danach `~/.aios/config.yaml`. **Je Schlüssel gilt der nächstgelegene Eintrag**; bei `skills` je Skillname. Außerhalb eines Vaults gilt nur `~/.aios/config.yaml`; liegt `~` in einem Vault, zählt `~/.aios/config.yaml` trotzdem als Ebene *Home*. `aios --config [<pfad>]` zeigt die wirksamen Werte mit ihrer Herkunft.
 
 | Rang | Quelle |
 |---|---|
@@ -261,6 +263,7 @@ Die Weiterleiter lesen nur kleine Dateien und greifen nie auf das Netzwerk zu.
 | `aios --install [v<version>]` | Version installieren (schließt `--prepare` ein) |
 | `aios --activate v<version> [<pfad>]` | Vault oder Projekt an eine Version binden |
 | `aios --deactivate [<pfad>]` | Bindung lösen |
+| `aios --config [<pfad>]` | wirksame Konfiguration mit der Herkunft je Schlüssel, nur lesend |
 | `aios --versions` | installierte Versionen und ihre Orte |
 | `aios --remove-version v<version>` | Installation entfernen |
 | `aios --uninstall` | Benutzereinrichtung entfernen |
@@ -304,11 +307,12 @@ Eine bereits installierte Version wird nicht erneut installiert (I5, I8).
 | Vault-Root | ist der Pfad eine Vault-Root (Name beginnt mit `§`) und fehlt `@/`, wird `@/` mit Hinweis angelegt |
 | Projekt | ist der Pfad kein Projekt (kein `@/`) und keine Vault-Root: Abbruch mit Hinweis auf `/aios-init` |
 | Wirkung | `aios: <version>` in `<pfad>/.aios/config.yaml` schreiben bzw. ersetzen |
+| Version | mit oder ohne `v` angegeben, geschrieben ohne `v`; steht dieselbe Version schon in der Datei: „nichts zu tun", keine Rückfrage |
 | Hinweis | Master-Kontext und Registrierung gelten ab dem nächsten Chat |
 
 ### `aios --deactivate [<pfad>]`
 
-Entfernt den Schlüssel `aios` aus `<pfad>/.aios/config.yaml`. Danach gilt die Festlegung darüber, sonst der Legacy-Modus. `skills` und andere Schlüssel bleiben stehen; eine leere Datei wird entfernt.
+Entfernt den Schlüssel `aios` aus `<pfad>/.aios/config.yaml`. Danach gilt die Festlegung darüber, sonst der Legacy-Modus; beides wird gemeldet. `skills` und andere Schlüssel bleiben stehen, ebenso Kommentare; eine leere Datei wird entfernt, ein danach leeres `.aios/` ebenfalls. Steht kein `aios` in der Datei: „nichts zu tun".
 
 ### `aios --remove-version v<version>`
 

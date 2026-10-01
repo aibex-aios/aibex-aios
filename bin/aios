@@ -9,6 +9,7 @@
       echo '          aios --uninstall                    # remove forwarders, AIOS skills and hooks'
       echo '          aios --activate v<version> [<path>] # bind a vault or project to a version'
       echo '          aios --deactivate [<path>]          # remove the binding'
+      echo '          aios --config [<path>]              # effective configuration and its origin'
       echo '          aios --deploy ..., --register       # skills (spec 03)'
       echo '          aios --skill <name>                 # body of an AIOS skill'
       echo '          aios --version                      # print version'
