@@ -200,3 +200,11 @@ EOF
    assert_eq "$RC" "1" "invalid settings.json: exit 1"
    assert_contains "$OUT" "is not valid JSON" "invalid settings.json: message"
    [ ! -e "$HOME/bin/aios-context" ] && [ "$(cat "$SET")" == "{ broken" ] && ok || fail "invalid settings.json: nothing written"
+
+#===============================================================================
+# documentation in the installation (step 11)
+#===============================================================================
+
+   for F in "01 AIbex AIOS v0.1 — Überblick.md" "02 Master-Kontext.md" "03 Skills und Agenten.md" "04 Installation und Konfiguration.md"; do
+      assert_eq "$(cat "$I/doc/spec/$F")" "$(cat "$S/spec/$F")" "doc/spec: $F"
+   done

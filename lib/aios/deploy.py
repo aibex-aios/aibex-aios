@@ -160,7 +160,7 @@ def target_project(to):
     if not (p / "@").is_dir():
         raise Abort(f"{p} is not a project (no @/); give --to <project> or initialize it with /aios-init")
     if not config.load(p).aios:
-        warn(f"{p} is not activated; the skill takes effect once the vault runs with AIOS")
+        raise Abort(f"{p} is not activated (legacy mode); run: aios --activate v<version> {root}")
     return p
 
 

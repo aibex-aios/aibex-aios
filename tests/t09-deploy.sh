@@ -31,7 +31,9 @@
    assert_contains "$(A --deploy memo==7.5.0 --from "$PF" --to "$D")" "no tag memo-v7.5.0" "maintenance project: missing tag"
    assert_contains "$(A --deploy memo==9.0.0 --from "$PF" --to "$D")" "version '8.0.0'; expected memo 9.0.0" "maintenance project: frontmatter differs"
    assert_contains "$(A --deploy memo==6.0.0 --agent nobody --to "$G")" "no agent nobody" "unknown agent"
-   [ ! -e "$D/@/@!Skill" ] && [ ! -e "$G/@/@!Skill" ] && ok || fail "checks: nothing written"
+   mkdir -p "$SANDBOX/work/§Alt/@"
+   assert_contains "$(A --deploy memo==6.0.0 --to "$SANDBOX/work/§Alt")" "is not activated (legacy mode)" "vault without activation (I4)"
+   [ ! -e "$D/@/@!Skill" ] && [ ! -e "$G/@/@!Skill" ] && [ ! -e "$SANDBOX/work/§Alt/@/@!Skill" ] && ok || fail "checks: nothing written"
 
 #===============================================================================
 # deploy from the library to the root project, registration in the session project

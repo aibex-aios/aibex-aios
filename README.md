@@ -14,19 +14,108 @@ agent can give the chat a personality with its own selection of skills and
 knowledge.
 
 
+## Requirements
+
+macOS or Linux with `bash`, `git`, `python3` (3.9 or newer) and
+[Claude Code](https://claude.com/claude-code) as the host.
+
+
 ## Installation
 
 ```sh
   git clone https://github.com/aibex-hub/aibex-aios ~/git/AIbex/aibex-aios
   cd ~/git/AIbex/aibex-aios
-  ./bin/aios --prepare     # fresh machine only
-  ./bin/aios --install     # install AIOS for this user
+  ./bin/aios --install v0.1.0     # prepares the machine, then installs
 ```
 
-`aios --help` explains what both commands do. They show a plan and ask before
-they write anything.
+`aios --install` shows a plan and asks once before it writes anything. It
+installs the version read-only to `/opt/aios/v0.1.0/` (without `sudo`:
+`~/.aios/versions/`), puts the forwarders `aios` and `aios-context` into
+`~/bin`, adds two hooks to `~/.claude/settings.json` and the AIOS skills to
+`~/.claude/skills/`. Hooks of `ai-brain` are saved and restored by
+`aios --uninstall`.
+
+Installing does not touch any vault. A vault runs with AIOS only after it has
+been **activated**; all other vaults keep working as before (legacy mode).
+
+
+## Quick start
+
+```sh
+  mkdir ~/Vaults/§Demo
+  aios --activate v0.1.0 ~/Vaults/§Demo      # writes §Demo/.aios/config.yaml, creates §Demo/@/
+```
+
+Put knowledge into the **masterspace** `@/` of a project. The prefix of a
+folder decides what a chat sees:
+
+| Folder | Class | Effect |
+|---|---|---|
+| `@Rule/`, `@Wissen/@Content/`, files directly in `@/` | load | loaded at the start of every chat (master context) |
+| `@@Kapitel/` | available | not loaded; the master context lists it, the chat reads it on demand |
+| `@!Skill/`, `@!Agent/`, `@!Prompt/` | hidden | blueprints of skills, agents and prompts |
+
+A project is any folder with `@/`; the vault root is the root project. A chat
+in a project sees the masterspaces from the vault root down to the project.
+Open a chat in a new folder and AIOS offers to initialize it (`/aios-init`).
+
+In a chat:
+
+| Skill | Purpose |
+|---|---|
+| `/aios-context` | check and show the master context |
+| `/aios-init` | make the folder a project (`@/`, `@Memo/`, git, first commit) |
+| `/aios-deploy memo==6.0.0` | deploy a skill version into a project or an agent |
+| `/aios-register` | register the project skills for Claude Code |
+| `/aios-agent Obstgärtner` | activate an agent for this chat |
+| `/aios-status` | project status from memos and git |
+
+Registered skills become available in the **next** chat.
+
+
+## Command line
+
+| Command | Purpose |
+|---|---|
+| `aios --install [v<version>]`, `--versions`, `--remove-version v<version>`, `--uninstall` | installations |
+| `aios --activate v<version> [<path>]`, `--deactivate [<path>]`, `--config [<path>]` | bind a vault or project to a version, show the configuration |
+| `aios --init`, `--register`, `--deploy`, `--library` | projects and skills |
+| `aios-context --context`, `--load`, `--id`, `--list`, `--agent <name>`, `--agents` | master context and agents |
+
+Every writing command shows a plan first; `--plan` only shows it, `--yes`
+skips the question. Several versions can be installed side by side; each vault
+or project chooses its version with `aios: <version>` in `.aios/config.yaml`.
+
+
+## Documentation
+
+The specification of each version is part of it: `spec/` in this repository,
+installed to `/opt/aios/v<version>/doc/spec/`.
+
+| Spec | Content |
+|---|---|
+| `01 AIbex AIOS v0.1 — Überblick` | definition, terms, scope, invariants, acceptance test |
+| `02 Master-Kontext` | projects, chain, classes, `aios-context`, hooks |
+| `03 Skills und Agenten` | skills, versions, deploy, register, agents, init, status |
+| `04 Installation und Konfiguration` | files, formats, forwarders, the command `aios` |
+
+
+## Development
+
+```sh
+  tests/run                  # all tests in a sandbox, never touch the machine
+  tests/live/hooks.sh        # real headless Claude sessions (cost tokens)
+  tests/live/skills.sh
+  tests/live/agents.sh
+```
+
+A clone can be used without installing: point `AIOS_HOME` to it, or add a
+line `v0.1.0-dev: ~/git/AIbex/aibex-aios` to `~/.aios/installations.yaml`.
+`CLAUDE.md` holds the rules for working on the repository, `STATUS.md` the
+state of the implementation.
 
 
 ## Status
 
-Version **0.1.0** — early work in progress, not yet tagged.
+Version **0.1.0** — implemented and tested, acceptance on a working machine
+pending, not yet tagged.

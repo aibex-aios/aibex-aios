@@ -41,7 +41,7 @@ Die Spec v0.1 besteht aus vier Dokumenten, die sich nicht wiederholen:
 | **03 Skills und Agenten** | Arten von Skills, Versionen, `/aios-deploy`, `/aios-register`, Agenten, `/aios-agent`, `/aios-init`, `/aios-status` |
 | **04 Installation und Konfiguration** | Dateistrukturen, Formate, CLI `aios`, Versionen und Aktivierung, Weiterleiter |
 
-Die Begründungen stehen in den Memos 01 bis 15 des Konzeptprojekts `§AIbex/P-Projekte/AI/PA-AIbex-AIOS/PAA-AIbex-AIOS-V0.1/@Memo/`; die Spec beschreibt nur den Soll-Stand. Sie wird im Repo `aibex-aios` unter `spec/` gepflegt und mit jeder Version nach `doc/spec/` ausgeliefert.
+Die Begründungen stehen in den Memos des Konzeptprojekts `§AIbex/P-Projekte/AI/PA-AIbex-AIOS/PAA-AIbex-AIOS-V0.1/@Memo/`; die Spec beschreibt nur den Soll-Stand. Sie wird im Repo `aibex-aios` unter `spec/` gepflegt und mit jeder Version nach `doc/spec/` ausgeliefert.
 
 ## Begriffe
 
@@ -63,7 +63,7 @@ Die Begründungen stehen in den Memos 01 bis 15 des Konzeptprojekts `§AIbex/P-P
 | **AIOS-Skill** | Skill, der zu AIOS selbst gehört (Präfix `aios-`); global registriert |
 | **Projekt-Skill** | Skill aus `@!Skill` der Kette, projektlokal registriert |
 | **Agent** | Bündel aus Prompt, Skills, Modell, Werkzeugen und eigenem Wissen in `@!Agent/<name>/` |
-| **mitgelieferter Skill** | normaler Skill, den AIOS in einer Bibliothek bereitstellt (in v0.1: `memo`) |
+| **mitgelieferter Skill** | normaler Skill, den eine AIOS-Version in ihrer **Bibliothek** bereitstellt, also in `skills/<gruppe>/` außer der Gruppe `aios` (in v0.1: `memo`; `aios --library`) |
 | **installierter Skill** | Skill, der über ein Manifest mit Version ausgerollt wurde |
 | **lokaler Skill** | Skill, der im Projekt selbst geschrieben wurde und in keinem Manifest steht |
 | **Host** | das Programm, das die Session ausführt; in v0.1 nur Claude Code |
@@ -105,10 +105,10 @@ AIOS v0.1 hält diese Regeln in jedem Befehl ein:
 | I1 | AIOS ändert nie ein bestehendes Memo in `@Memo/`. |
 | I2 | AIOS schreibt in einen Masterspace `@/` nur über `/aios-deploy`, und nur nach `@!Skill/<name>/` bzw. `@!Agent/<name>/@!Skill/<name>/`. Ausnahme: `aios --activate` und `/aios-init` legen ein fehlendes, leeres `@/` an. |
 | I3 | AIOS registriert nie einen Skill aus einem Masterspace global; global liegen nur AIOS-Skills. |
-| I4 | AIOS fasst in Vaults ohne Aktivierung nichts an und verhält sich dort wie `ai-brain`. |
+| I4 | AIOS fasst in Vaults ohne Aktivierung nichts an und verhält sich dort wie `ai-brain`. Einzige Ausnahme ist `aios --activate`, das die Aktivierung schreibt; `aios --deploy`, `aios --init` und die Registrierung brechen ab bzw. tun nichts. |
 | I5 | AIOS verändert nie eine installierte Version in `/opt/aios/v<version>/`. |
-| I6 | AIOS fasst in `.claude/skills/` nur an, was in `.aios/manifest` steht. |
-| I7 | Jeder schreibende Befehl zeigt vorher, was er tut, und wartet auf Bestätigung; Ausnahme ist die Registrierung beim Session-Start. |
+| I6 | AIOS fasst in `.claude/skills/` nur Ordner an, die in `.aios/manifest` stehen oder die es beim Registrieren neu anlegt; Ordner, die schon da sind und nicht im Manifest stehen, nie. |
+| I7 | Jeder schreibende Befehl zeigt vorher, was er tut, und wartet auf Bestätigung; Ausnahme ist die Registrierung beim Session-Start. Ein Skill holt den Plan mit `--plan`, fragt im Chat und ruft erst nach Ja mit `--yes` auf (Spec 04). |
 | I8 | Jeder Befehl ist idempotent: Ein zweiter Aufruf ohne Änderung ändert nichts. |
 
 ## Abnahmetest
