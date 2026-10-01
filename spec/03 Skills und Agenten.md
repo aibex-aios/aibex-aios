@@ -77,7 +77,8 @@ Ausrollen legt fest, **wo** ein Skill gilt: Es kopiert eine Version als Blueprin
 | Skill | CLI | Wirkung |
 |---|---|---|
 | `/aios-deploy memo==6.0.0` | `aios --deploy memo==6.0.0 [--to <projekt>] [--agent <name>] [--from <pflegeprojekt>]` | eine Version ausrollen |
-| `/aios-deploy` | `aios --deploy [--to <projekt>]` | das Projekt mit seinem Manifest abgleichen |
+| `/aios-deploy` | `aios --deploy [--to <projekt>] [--from <pflegeprojekt>]` | das Projekt mit seinem Manifest abgleichen |
+| — | `aios --library` | mitgelieferte Skills mit ihren Versionen |
 
 | Option | Bedeutung | Standard |
 |---|---|---|
@@ -89,11 +90,17 @@ Ausrollen legt fest, **wo** ein Skill gilt: Es kopiert eine Version als Blueprin
 
 1. Quelle bestimmen und prüfen: Version vorhanden (Bibliothek) bzw. Tag vorhanden und Frontmatter passend (Pflegeprojekt).
 2. Ziel bestimmen: `<ziel>/@/@!Skill/<name>/` bzw. `<ziel>/@/@!Agent/<agent>/@!Skill/<name>/`.
-3. Vorschau: `new`, `changed`, `remove` je Datei, dazu die Änderung am Manifest (`memo: 5.2.0 → 6.0.0`). Weicht der vorhandene Blueprint von der im Manifest genannten Version ab, wird er als „direkt geändert" gemeldet.
-4. Nach Ja: Blueprint spiegeln (nur dieser eine Ordner), Manifest `<ziel>/.aios/config.yaml` schreiben.
-5. `/aios-register` im Projekt der Session aufrufen.
+3. Vorschau: `new`, `changed`, `remove` je Datei, dazu die Änderung am Manifest (`memo: 5.2.0 -> 6.0.0`). Weicht der vorhandene Blueprint vom ausgerollten Stand ab (Prüfsumme in der Marke), wird er als „direkt geändert" gemeldet; ein gleichnamiger lokaler Skill ohne Marke ebenfalls. Beide werden ersetzt.
+4. Nach Ja: Blueprint spiegeln (nur dieser eine Ordner) mit der Marke `.aios-deploy`, Manifest `<ziel>/.aios/config.yaml` schreiben (nur die Zeile des Skills; Kommentare und andere Zeilen bleiben).
+5. Die Projekt-Skills im Projekt der Session registrieren (wie `/aios-register`); bei `--agent` entfällt das, weil Agenten-Skills nicht registriert werden.
 
-Ohne Argument gleicht `/aios-deploy` alle Einträge in `skills:` des Zielprojekts mit den Blueprints ab (z. B. nach `git pull` oder auf einem anderen Rechner). Ein Eintrag, der aus dem Manifest entfernt wurde, wird nach Rückfrage aus `@!Skill` entfernt.
+**Marke `.aios-deploy`:** Jeder ausgerollte Blueprint enthält die Datei `.aios-deploy` mit `name`, `version`, `source` (`library` oder Pfad des Pflegeprojekts) und `digest` (Prüfsumme der ausgerollten Dateien ohne die Marke, Verfahren wie Spec 04, *Manifest*). Sie wird mit dem Blueprint versioniert und unterscheidet ausgerollte von lokalen Blueprints.
+
+**Manifest für Agenten:** Ein Skill, der mit `--agent <name>` ausgerollt wurde, steht in `skills:` als `<agent>/<skill>: <version>`.
+
+Ohne Argument gleicht `/aios-deploy` alle Einträge in `skills:` des Zielprojekts mit den Blueprints ab (z. B. nach `git pull` oder auf einem anderen Rechner): Ein fehlender, direkt geänderter oder in einer anderen Version vorliegender Blueprint wird aus seiner Quelle neu ausgerollt. Quelle ist das mit `--from` genannte Pflegeprojekt, sonst das Pflegeprojekt aus der Marke, sonst die Bibliothek; ist keine Quelle zu finden, wird das mit Warnung gemeldet. Ein Blueprint mit Marke, dessen Eintrag aus dem Manifest entfernt wurde, wird nach Rückfrage entfernt; lokale Blueprints ohne Marke bleiben unberührt.
+
+**Mitgeliefert in v0.1:** `memo` 6.0.0 (Gruppe `basic`), eine neutrale Fassung des Memo-Stils ohne Bezüge auf einen bestimmten Vault.
 
 Mitgelieferte Skills rollt nur der User aus; `aios --install` bietet es nicht an.
 

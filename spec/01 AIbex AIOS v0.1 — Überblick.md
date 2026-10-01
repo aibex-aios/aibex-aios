@@ -1,6 +1,6 @@
 ---
 title: "AIbex AIOS v0.1 — Überblick"
-date: 2026-09-30
+date: 2026-10-01
 author: iHux
 status: Spec
 tags: [spec, aios, v0.1]
@@ -136,4 +136,4 @@ v0.1 ist fertig, wenn dieser Ablauf auf einem Rechner ohne AIOS gelingt. Jeder S
 |---|---|---|
 | O1 | Wirkt `/reload-skills` in einer interaktiven Session auf Skills, die nach dem Start angelegt wurden? | Getestet (Memo 16): Ein beim Session-Start angelegter Skill ist erst im nächsten Chat verfügbar; die Registrierung ist darauf ausgelegt (Spec 03). Offen ist nur `/reload-skills` |
 | O2 | Detailregeln der Klassen | siehe Spec 02, *Vorläufige Regeln der Klassen* |
-| O3 | neutraler Memo-Skill ohne AIbex-Pfade | Voraussetzung dafür, dass `memo` in die Bibliothek kommt |
+| O3 | neutraler Memo-Skill ohne AIbex-Pfade | erledigt: `skills/basic/memo/` 6.0.0 wird mitgeliefert (Memo 29) |

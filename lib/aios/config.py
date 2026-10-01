@@ -14,6 +14,7 @@ from pathlib import Path
 from . import paths
 
 KEY = re.compile(r"^([A-Za-z_][\w-]*):(?:\s+(.*?))?\s*$")
+SUBKEY = re.compile(r"^([A-Za-z0-9_][\w./-]*):(?:\s+(.*?))?\s*$")   # skills: name or agent/name
 VERSION = re.compile(r"^v?(\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)$")
 LEVELS = {                                          # key -> levels where it is allowed
     "aios": ("vault", "project"),
@@ -89,7 +90,7 @@ def parse(text, name="config.yaml"):
                 raise ConfigError(f"{name}:{no}: list item inside a mapping")
             result[current].append(scalar(item[1:]))
             continue
-        m = KEY.match(item)
+        m = SUBKEY.match(item)
         if not m or not m.group(2):
             raise ConfigError(f"{name}:{no}: expected 'name: value' below {current}")
         if result[current] is None:
@@ -109,8 +110,8 @@ def read(file):
 # ---------------------------------------------------------------------------
 
 def vault_root(path):
-    """Nearest directory named §… at or above path (spec 02), or None."""
-    p = Path(os.path.abspath(path))
+    """Nearest directory named §… at or above the physical path (spec 02), or None."""
+    p = Path(os.path.realpath(path))
     for d in [p, *p.parents]:
         if d.name.startswith("§"):
             return d
@@ -119,7 +120,7 @@ def vault_root(path):
 
 def chain_dirs(path):
     """Directories from path up to the vault root, nearest first; empty outside a vault."""
-    p = Path(os.path.abspath(path))
+    p = Path(os.path.realpath(path))
     root = vault_root(p)
     if root is None:
         return []
@@ -135,7 +136,7 @@ class Config:
     """Effective configuration of a directory: per key the nearest entry wins."""
 
     def __init__(self, path):
-        self.path = Path(os.path.abspath(path))
+        self.path = Path(os.path.realpath(path))
         self.vault = vault_root(self.path)
         self.values = {}                            # key -> value
         self.source = {}                            # key -> file (skills: name -> file)
@@ -263,3 +264,57 @@ def drop_aios(file):
         return "dir"
     except OSError:
         return "file"
+
+
+# ---------------------------------------------------------------------------
+# writing skills: entries (line based, spec 03 Manifest)
+# ---------------------------------------------------------------------------
+
+def _skills_block(lines):
+    """(index of 'skills:', end index of its block) or (None, None)."""
+    for i, line in enumerate(lines):
+        if line.startswith("skills:"):
+            if strip_comment(line)[len("skills:"):].strip():
+                raise ConfigError("skills: must be a block of 'name: version' lines")
+            j = i + 1
+            while j < len(lines) and (not lines[j].strip() or lines[j][0].isspace()):
+                j += 1
+            while j > i + 1 and not lines[j - 1].strip():
+                j -= 1
+            return i, j
+    return None, None
+
+
+def set_skill(file, key, version):
+    """skills: <key>: <version> in file; other lines stay."""
+    lines = file.read_text(encoding="utf-8").splitlines() if file.is_file() else []
+    start, end = _skills_block(lines)
+    entry = f"  {key}: {version}"
+    if start is None:
+        lines += ["skills:", entry]
+    else:
+        for i in range(start + 1, end):
+            m = SUBKEY.match(lines[i].strip())
+            if m and m.group(1) == key:
+                lines[i] = entry
+                break
+        else:
+            lines.insert(end, entry)
+    file.parent.mkdir(parents=True, exist_ok=True)
+    file.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def drop_skill(file, key):
+    """Remove skills: <key>; an empty block and an empty file are removed."""
+    lines = file.read_text(encoding="utf-8").splitlines()
+    start, end = _skills_block(lines)
+    if start is None:
+        return
+    keep = [i for i in range(start + 1, end)
+            if not (SUBKEY.match(lines[i].strip()) and SUBKEY.match(lines[i].strip()).group(1) == key)]
+    block = [lines[i] for i in keep]
+    rest = lines[:start] + ((["skills:"] + block) if any(strip_comment(x).strip() for x in block) else []) + lines[end:]
+    if any(strip_comment(x).strip() for x in rest):
+        file.write_text("\n".join(rest) + "\n", encoding="utf-8")
+    else:
+        file.unlink()

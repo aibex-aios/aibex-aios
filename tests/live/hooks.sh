@@ -24,7 +24,7 @@
    if [ "$2" == "" ]; then
       MODEL="${1:-haiku}"
       REPO="$(cd "$(dirname "$0")/../.." && pwd)"
-      T="${TMPDIR:-/tmp}"; SB="$(mktemp -d "${T%/}/aios-live.XXXXXX")" || exit 1
+      T="${TMPDIR:-/tmp}"; SB="$(cd "$(mktemp -d "${T%/}/aios-live.XXXXXX")" && pwd -P)" || exit 1
       SECRET="Quittenbaum-$RANDOM$RANDOM"
       V="$SB/§Live"
       mkdir -p "$SB/home/.aios" "$SB/bin" "$V/.aios" "$V/@/@Rule" "$V/Garten/@" "$V/Garten/Neu"

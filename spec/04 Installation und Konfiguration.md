@@ -145,7 +145,7 @@ hosts: [claude-code]
 
 `aios` in `~/.aios/config.yaml` ist nicht erlaubt: Die Voreinstellung des Rechners darf keinen Vault aktivieren (Grundregel 6). Unbekannte Schlüssel, Schlüssel auf einer Ebene, auf der sie nicht erlaubt sind, und ein `aios`-Wert, der keine Version ist, werden mit Warnung ignoriert.
 
-`config.yaml` verwendet eine Untermenge von YAML, die AIOS ohne PyYAML liest: Zeilen `schlüssel: wert` ohne Einrückung, Listen als `[a, b]` oder als eingerückte `- eintrag`, eine eingerückte Ebene `name: wert` (für `skills`), Kommentare mit `#` und Werte in Anführungszeichen. Jeder Schlüssel darf je Datei nur einmal vorkommen. Eine Datei außerhalb dieser Untermenge wird in der Kette mit Warnung übergangen; `aios --activate` und `aios --deactivate` brechen dann ab, ohne sie zu ändern.
+`config.yaml` verwendet eine Untermenge von YAML, die AIOS ohne PyYAML liest: Zeilen `schlüssel: wert` ohne Einrückung, Listen als `[a, b]` oder als eingerückte `- eintrag`, eine eingerückte Ebene `name: wert` (für `skills`; der Name darf `/` enthalten, für Agenten-Skills `agent/skill`), Kommentare mit `#` und Werte in Anführungszeichen. Jeder Schlüssel darf je Datei nur einmal vorkommen. Eine Datei außerhalb dieser Untermenge wird in der Kette mit Warnung übergangen; `aios --activate` und `aios --deactivate` brechen dann ab, ohne sie zu ändern.
 
 ### Konfigurationskette
 
@@ -240,7 +240,7 @@ Weiterleiter, `aios` und `aios-context` verwenden ausschließlich diese Variable
 `~/bin/aios` und `~/bin/aios-context` enthalten keine Logik außer der Wahl der Version. Beide sind Kopien desselben Skripts `templates/forwarder`, das `aios --install` unter beiden Namen nach `~/bin` legt; das Werkzeug ergibt sich aus dem Namen, unter dem es aufgerufen wird.
 
 1. Ist `AIOS_HOME` gesetzt: `$AIOS_HOME/bin/<tool>` aufrufen.
-2. Sonst von `cwd` aufwärts bis zur Vault-Root die erste Zeile `aios: <version>` in einer `.aios/config.yaml` suchen. Außerhalb eines Vaults wird nicht gesucht, und `~/.aios/config.yaml` zählt nie, auch wenn `~` in einem Vault liegt.
+2. Sonst vom physischen `cwd` (`pwd -P`) aufwärts bis zur Vault-Root die erste Zeile `aios: <version>` in einer `.aios/config.yaml` suchen. Außerhalb eines Vaults wird nicht gesucht, und `~/.aios/config.yaml` zählt nie, auch wenn `~` in einem Vault liegt.
 3. Gefunden: `v<version>` in `~/.aios/installations.yaml`, danach in `/opt/aios/installations.yaml` nachschlagen und `<pfad>/bin/<tool>` mit allen Argumenten aufrufen. Nicht installiert: Fehler mit Hinweis auf `aios --install v<version>`.
 4. Nicht gefunden:
    - `aios`: die höchste installierte Version aufrufen.
@@ -272,7 +272,9 @@ Die Weiterleiter lesen nur kleine Dateien und greifen nie auf das Netzwerk zu.
 | `aios --remove-version v<version>` | Installation entfernen |
 | `aios --uninstall` | Benutzereinrichtung entfernen |
 | `aios --register [<pfad>]` | Projekt-Skills registrieren, mit Vorschau (Spec 03) |
-| `aios --deploy …` | Spec 03 |
+| `aios --deploy <name>==<version> [--to <projekt>] [--agent <name>] [--from <pflegeprojekt>]` | eine Skill-Version ausrollen (Spec 03) |
+| `aios --deploy [--to <projekt>] [--from <pflegeprojekt>]` | Blueprints mit dem Manifest abgleichen (Spec 03) |
+| `aios --library` | mitgelieferte Skills mit ihren Versionen |
 | `aios --skill <name>` | Rumpf eines AIOS-Skills der gültigen Version (für die versionsneutralen Skills) |
 | `aios --init [<pfad>]` | Ordner zum Projekt machen (Spec 03, *Initialisieren*) |
 

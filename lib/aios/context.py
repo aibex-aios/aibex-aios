@@ -97,7 +97,7 @@ class Context:
     """Master context of one working directory in an activated vault."""
 
     def __init__(self, cwd):
-        self.cwd = Path(os.path.abspath(cwd))
+        self.cwd = Path(os.path.realpath(cwd))      # physical: one id however cwd was reached
         self.cfg = config.load(self.cwd)
         self.vault = self.cfg.vault
         self.masterspaces = chain(self.cwd) if self.vault else []

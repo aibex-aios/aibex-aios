@@ -36,7 +36,7 @@
 # forwarder: own options, arguments passed unchanged
 #===============================================================================
 
-   assert_eq "$(aios ---version)" "0.1.1" "---version"
+   assert_eq "$(aios ---version)" "0.1.2" "---version"
    assert_exit 1 aios ---help
    assert_contains "$(aios-context ---help)" "aios-context ---which" "---help names the tool"
 

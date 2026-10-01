@@ -9,7 +9,7 @@
 #===============================================================================
 
    sandbox_new() {
-      SANDBOX="$(T="${TMPDIR:-/tmp}"; mktemp -d "${T%/}/aios-test.XXXXXX")" || exit 1
+      SANDBOX="$(T="${TMPDIR:-/tmp}"; cd "$(mktemp -d "${T%/}/aios-test.XXXXXX")" && pwd -P)" || exit 1   # physical, like AIOS
       export HOME="$SANDBOX/home"
       export AIOS_PREFIX="$SANDBOX/opt/aios"
       export AIOS_CLAUDE_DIR="$HOME/.claude"

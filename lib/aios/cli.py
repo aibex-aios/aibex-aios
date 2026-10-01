@@ -3,15 +3,15 @@
 import subprocess
 import sys
 
-from . import activate, aiosinit, install, paths, registry, skills, ui
+from . import activate, aiosinit, deploy, install, paths, registry, skills, ui
 
 USAGE = ("usage: aios --prepare | --install [v<version>] | --versions | --remove-version v<version>"
          " | --uninstall | --activate v<version> [<path>] | --deactivate [<path>] | --config [<path>]"
-         " | --register [<path>] | --init [<path>] | --skill <name>  (writing commands: --plan, --yes)")
+         " | --register [<path>] | --init [<path>] | --skill <name> | --library"
+         " | --deploy [<name>==<version>] [--to <project>] [--agent <name>] [--from <repo>]"
+         "  (writing commands: --plan, --yes)")
 
-LATER = {                                           # commands of later steps (memo 18)
-    "--deploy": 9,
-}
+LATER = {}                                          # commands of later steps (memo 18)
 
 
 def main(argv):
@@ -40,6 +40,10 @@ def main(argv):
             return activate.deactivate(*args)
         if cmd == "--config" and len(args) <= 1:
             return activate.show(*args)
+        if cmd == "--deploy":
+            return deploy.command(args)
+        if cmd == "--library" and not args:
+            return deploy.show_library()
         if cmd == "--skill" and len(args) == 1:
             return skills.body(args[0])
         if cmd == "--init" and len(args) <= 1:

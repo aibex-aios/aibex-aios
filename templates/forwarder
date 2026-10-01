@@ -20,7 +20,7 @@
 #===============================================================================
 
    if [ "$*" == "---version" ]; then
-      echo "0.1.1"; exit 0
+      echo "0.1.2"; exit 0
    fi
 
 #===============================================================================
@@ -77,8 +77,8 @@
       [ -n "$BEST" ] && echo "$BEST"
    }
 
-   vault_root() {                                   # nearest dir named §* at or above $PWD
-      local D="$PWD"
+   vault_root() {                                   # nearest dir named §* above the physical cwd
+      local D; D="$(pwd -P)"
       while :; do
          case "$(basename "$D")" in §*) echo "$D"; return 0;; esac
          [ "$D" == "/" ] && return 1
@@ -89,9 +89,9 @@
    activation() {                                   # print "<version>|<config>" or nothing
       local D ROOT LINE
       ROOT="$(vault_root)" || return 1              # outside a vault: never activated
-      D="$PWD"
+      D="$(pwd -P)"
       while :; do
-         if [ "$D" != "$HOME" ] && [ -f "$D/.aios/config.yaml" ]; then
+         if [ "$D" != "$(cd "$HOME" 2>/dev/null && pwd -P)" ] && [ -f "$D/.aios/config.yaml" ]; then
             LINE="$(grep -E -m1 '^aios:' "$D/.aios/config.yaml")"
             if [[ "$LINE" =~ ^aios:[[:space:]]*[\"\']?v?([0-9][^\"\'[:space:]#]*) ]]; then
                echo "${BASH_REMATCH[1]}|$D/.aios/config.yaml"; return 0

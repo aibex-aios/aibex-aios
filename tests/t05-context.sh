@@ -144,3 +144,15 @@ Apfel
    assert_eq "$(CTX "$L" --id)" "id=feed0001 files=1 cwd=$L mode=legacy" "legacy --id: ai-brain plus mode=legacy"
    assert_eq "$(CTX "$L" --load)" "ai-brain --load" "legacy --load: ai-brain"
    assert_exit 2 "$SRC/bin/aios-context" --agent obstgaertner
+
+#===============================================================================
+# physical paths: a symlink without § reaches the same vault and the same id
+#===============================================================================
+
+   ln -s "$D" "$SANDBOX/Vault"
+   assert_eq "$(CTX "$SANDBOX/Vault/Garten" --id)" "$(CTX "$D/Garten" --id)" "symlink: same id, same cwd"
+   assert_contains "$("$SRC/bin/aios-context" --id "$SANDBOX/Vault/Garten")" "mode=aios-" "symlink: vault recognized"
+   mkdir -p "$HOME/bin"; cp "$SRC/templates/forwarder" "$HOME/bin/aios-context"; chmod +x "$HOME/bin/aios-context"
+   mkdir -p "$AIOS_PREFIX/v0.1.0/bin"; printf '#!/bin/bash\necho "fwd $*"\n' > "$AIOS_PREFIX/v0.1.0/bin/aios-context"
+   chmod +x "$AIOS_PREFIX/v0.1.0/bin/aios-context"; echo "v0.1.0: $AIOS_PREFIX/v0.1.0" > "$AIOS_PREFIX/installations.yaml"
+   assert_eq "$(at "$SANDBOX/Vault/Garten" "$HOME/bin/aios-context" --id)" "fwd --id" "forwarder: vault recognized through the symlink"

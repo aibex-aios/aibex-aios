@@ -19,7 +19,7 @@ Diese Spec regelt, welches Wissen ein Chat bekommt, den **Master-Kontext** (gela
 
 ## Vault, Projekt und Kette
 
-Ausgangspunkt ist immer das Arbeitsverzeichnis `cwd` der Session.
+Ausgangspunkt ist immer das Arbeitsverzeichnis `cwd` der Session, als **physischer Pfad** (Symlinks aufgelöst). So hat ein Projekt dieselbe id, wie immer `cwd` erreicht wurde, und ein Vault wird auch über einen Symlink ohne `§` im Namen erkannt. Dasselbe gilt für die Weiterleiter (Spec 04).
 
 | Schritt | Regel |
 |---|---|

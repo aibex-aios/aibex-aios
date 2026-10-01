@@ -98,6 +98,7 @@ EOF
    [ ! -e "$I/tests" ] && [ ! -e "$I/dev" ] && [ ! -e "$I/CLAUDE.md" ] && [ ! -e "$I/.git" ] && ok || fail "only the mapped parts are installed"
    ro "$I" && ro "$I/bin/aios" && ro "$I/lib/aios" && ok || fail "installation is read-only"
    assert_eq "$(cat "$P/installations.yaml")" "v0.2.0: $I" "installations.yaml"
+   assert_eq "$("$I/bin/aios" --library)" "memo                     6.1.0" "installation: --library reads <name>/<version>/"
 
 #===============================================================================
 # --install: user setup

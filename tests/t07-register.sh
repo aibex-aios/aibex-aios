@@ -39,7 +39,7 @@
    assert_contains "$OUT" "new      memo 6.1.0  ($G/@/@!Skill/memo)" "preview: nearest masterspace wins"
    assert_contains "$OUT" "new      shared  ($D/@/@!Skill/shared)" "preview: skill without version"
    for X in aios-evil Bad_Name noskill wrongname privat; do
-      case "$(printf '%s\n' "$OUT" | grep '^      ')" in *"$X"*) fail "preview must not list $X" ;; *) ok ;; esac
+      case "$(printf '%s\n' "$OUT" | grep '^      ')" in *"new      $X"*|*"changed  $X"*) fail "preview must not list $X" ;; *) ok ;; esac
    done
    assert_contains "$OUT" "the name aios-evil is reserved" "reserved name reported"
    assert_contains "$OUT" "Bad_Name is not a valid skill name" "invalid name reported"

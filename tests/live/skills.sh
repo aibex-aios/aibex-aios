@@ -1,8 +1,8 @@
 #!/bin/bash
-# skills.sh: live test of the AIOS skills with real headless Claude sessions (step 8, costs tokens)
+# skills.sh: live test of the AIOS skills with real headless Claude sessions (steps 8, 9; costs tokens)
 
    if [ "$*" == "-?" ] || [ "$*" == "--help" ]; then
-      echo '   usage: tests/live/skills.sh [<model>]   # headless sessions S1-S4, default model haiku'
+      echo '   usage: tests/live/skills.sh [<model>]   # headless sessions S1-S5, default model haiku'
       echo '          tests/live/skills.sh --version   # print version'
       echo '   not part of tests/run: needs a logged-in claude CLI and uses tokens'
       echo '   see also: tests/live/hooks.sh, aios --skill'
@@ -24,7 +24,7 @@
    if [ "$2" == "" ]; then
       MODEL="${1:-haiku}"
       REPO="$(cd "$(dirname "$0")/../.." && pwd)"
-      T="${TMPDIR:-/tmp}"; SB="$(mktemp -d "${T%/}/aios-live.XXXXXX")" || exit 1
+      T="${TMPDIR:-/tmp}"; SB="$(cd "$(mktemp -d "${T%/}/aios-live.XXXXXX")" && pwd -P)" || exit 1
       V="$SB/§Live"; G="$V/Garten"
       mkdir -p "$SB/home/.aios" "$SB/bin" "$V/.aios" "$V/@/@Rule" "$G/@" "$G/@Memo" "$G/Neu"
       printf 'aios: 0.1.0\n' > "$V/.aios/config.yaml"
@@ -86,6 +86,12 @@ for f in sorted((repo / "skills" / "aios").glob("*/SKILL.md")):
             --allowedTools "Skill" "Bash(aios --skill *)" "Bash(aios --register *)" 2>&1)"
       [ -f "$G/.claude/skills/giesskanne/SKILL.md" ] && R4="registered" || R4="not registered: $A"
       check "S4 /aios-register: blueprint registered" "$R4" "registered"
+
+      A="$(cd "$G" && PATH="$SB/bin:$PATH" claude -p "/aios-deploy memo==6.0.0 --to $V Ich bestätige schon jetzt ausdrücklich: ja, ausrollen." \
+            --model "$MODEL" --settings '{"hooks":{}}' --setting-sources project --add-dir "$SB" \
+            --allowedTools "Skill" "Bash(aios --skill *)" "Bash(aios --deploy *)" "Bash(aios --library *)" 2>&1)"
+      [ -f "$V/@/@!Skill/memo/.aios-deploy" ] && grep -q '^  memo: 6.0.0$' "$V/.aios/config.yaml" && R5="deployed" || R5="not deployed: $A"
+      check "S5 /aios-deploy memo==6.0.0 to the root project" "$R5" "deployed"
 
       echo "=> $PASS passed, $FAIL failed"
       rm -rf "$SB"
