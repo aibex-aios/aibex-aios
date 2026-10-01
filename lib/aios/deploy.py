@@ -67,10 +67,10 @@ def assistant_library():
     return found
 
 
-def from_library(name, ver):
-    versions = library().get(name)
+def from_library(name, ver, kind="skill"):
+    versions = (library() if kind == "skill" else assistant_library()).get(name)
     if not versions:
-        raise Abort(f"AIOS {version()} has no bundled skill {name} (aios --library)")
+        raise Abort(f"AIOS {version()} has no bundled {kind} {name} (aios --library)")
     if ver not in versions:
         raise Abort(f"{name} {ver} is not bundled with AIOS {version()}; available: "
                     + ", ".join(sorted(versions, key=semver_key)))
@@ -106,9 +106,11 @@ def from_repo(repo, name, ver, stage):
 # ---------------------------------------------------------------------------
 
 def files_of(d):
-    """{relative path: bytes} of a skill directory without the marker."""
+    """{relative path: bytes} of a blueprint without the marker. Subfolders with their own marker
+    (skills deployed into an assistant with --assistant) belong to their own deployment (spec 03)."""
     out = {}
     for root, dirs, files in os.walk(d):
+        dirs[:] = [x for x in dirs if not (Path(root) / x / MARKER).is_file()]
         for f in files:
             p = Path(root) / f
             rel = p.relative_to(d).as_posix()
@@ -160,12 +162,24 @@ def writable_copy(src, dst, ignore=None):
     make_writable(dst)
 
 
+def marked_subfolders(d):
+    """Subfolders of d with their own marker (not d itself)."""
+    return sorted(m.parent for m in d.rglob(MARKER) if m.parent != d) if d.is_dir() else []
+
+
 def mirror(src, dst, name, ver, source):
-    """Replace dst by a copy of src (only this one folder) and write the marker."""
+    """Replace dst by a copy of src (only this one folder) and write the marker. Subfolders of dst
+    with their own marker (skills deployed into an assistant) are kept."""
     tmp = Path(tempfile.mkdtemp(prefix=f".{name}.", dir=dst.parent))
     try:
         writable_copy(src, tmp / name, ignore=shutil.ignore_patterns(MARKER))
-        write_marker(tmp / name, name, ver, source, digest_of(src))
+        for sub in marked_subfolders(dst):
+            keep = tmp / name / sub.relative_to(dst)
+            if keep.exists():
+                shutil.rmtree(keep)
+            keep.parent.mkdir(parents=True, exist_ok=True)
+            writable_copy(sub, keep)
+        write_marker(tmp / name, name, ver, source, digest_of(tmp / name))
         if dst.exists():
             make_writable(dst)
             shutil.rmtree(dst)
@@ -230,6 +244,19 @@ def register_session(plan):
         plan.add(f"register the project skills of {cwd}", run)
 
 
+def kind_of(name, source):
+    """skill or assistant: assistants come from the library only (spec 03, F2)."""
+    return "assistant" if not source and name in assistant_library() else "skill"
+
+
+def manifest(file, section):
+    try:
+        data = config.read(file).get(section, {}) if file.is_file() else {}
+    except config.ConfigError as e:
+        raise Abort(f"{e}; fix the file first")
+    return data if isinstance(data, dict) else {}
+
+
 def deploy(spec, to=None, assistant=None, source=None):
     m = SPEC.match(spec)
     if not m:
@@ -237,23 +264,25 @@ def deploy(spec, to=None, assistant=None, source=None):
     name, ver = m.group(1), m.group(2)
     if name.startswith("aios-"):
         raise Abort(f"{name} is an AIOS skill; aios --install provides it")
+    kind = kind_of(name, source)
+    if kind == "assistant" and assistant:
+        raise Abort(f"{name} is an assistant; --assistant <name> is only for skills")
     project = target_project(to)
-    dst, key = blueprint_dir(project, name, assistant)
+    if kind == "assistant":
+        dst, key, section = project / "@" / "@!Assistant" / name, name, "assistants"
+    else:
+        (dst, key), section = blueprint_dir(project, name, assistant), "skills"
     stage = Path(tempfile.mkdtemp(prefix="aios-deploy."))
     try:
-        src = from_repo(source, name, ver, stage) if source else from_library(name, ver)
+        src = from_repo(source, name, ver, stage) if source else from_library(name, ver, kind)
         origin = str(Path(os.path.abspath(source))) if source else LIBRARY
         file = project / ".aios" / "config.yaml"
-        try:
-            old = config.read(file).get("skills", {}) if file.is_file() else {}
-        except config.ConfigError as e:
-            raise Abort(f"{e}; fix the file first")
-        old = old if isinstance(old, dict) else {}
+        old = manifest(file, section)
         plan = Plan()
         diff = differences(src, dst)
         mark = read_marker(dst) if dst.is_dir() else None
         if dst.is_dir() and mark is None:
-            plan.add(f"note: {dst} is a local skill without {MARKER}; it is replaced")
+            plan.add(f"note: {dst} is a local {kind} without {MARKER}; it is replaced")
         elif mark and digest_of(dst) != mark.get("digest"):
             plan.add(f"note: {dst} was changed directly (differs from {name} {mark.get('version')}); "
                      f"the changes are replaced")
@@ -262,69 +291,81 @@ def deploy(spec, to=None, assistant=None, source=None):
                      + "".join(f"\n         {d}" for d in diff),
                      lambda: (dst.parent.mkdir(parents=True, exist_ok=True), mirror(src, dst, name, ver, origin)))
         if old.get(key) != ver:
-            plan.add(f"manifest {file}: {key}: {old.get(key, '(new)')} -> {ver}",
-                     lambda: config.set_skill(file, key, ver))
+            plan.add(f"manifest {file}: {section}: {key}: {old.get(key, '(new)')} -> {ver}",
+                     lambda: config.set_skill(file, key, ver, section))
         if not plan:
             say(f"=> {name} {ver} is already deployed in {dst}, nothing to do")
             return 0
-        if not assistant:
+        if kind == "skill" and not assistant:
             register_session(plan)
-        say(f"=> deploy {name} {ver} to {project}" + (f" (assistant {assistant})" if assistant else ""))
+        say(f"=> deploy {kind} {name} {ver} to {project}" + (f" (assistant {assistant})" if assistant else ""))
         confirm(plan, "deploy?", "deployment cancelled")
     finally:
         shutil.rmtree(stage, ignore_errors=True)
     say(f"=> {name} {ver} deployed")
-    say("   the skill is available from the next chat (or after /reload-skills)")
+    if kind == "assistant":
+        title = frontmatter(dst / "ASSISTANT.md").get("title", name)
+        say(f"   activate it in a chat of the chain with /aios-assistant {title}")
+    else:
+        say("   the skill is available from the next chat (or after /reload-skills)")
     return 0
 
 
 def reconcile(to=None, source=None):
-    """aios --deploy without a name: the blueprints follow the manifest skills: of the project."""
+    """aios --deploy without a name: the blueprints follow skills: and assistants: of the project."""
     project = target_project(to)
     file = project / ".aios" / "config.yaml"
-    try:
-        wanted = config.read(file).get("skills", {}) if file.is_file() else {}
-    except config.ConfigError as e:
-        raise Abort(f"{e}; fix the file first")
-    wanted = wanted if isinstance(wanted, dict) else {}
+    skills, assistants = manifest(file, "skills"), manifest(file, "assistants")
+    home = project / "@" / "@!Assistant"
     plan = Plan()
     stages = []
+
+    def check(dst, key, ver, kind, name, origin):
+        mark = read_marker(dst) if dst.is_dir() else None
+        if mark and mark.get("version") == ver and digest_of(dst) == mark.get("digest"):
+            return
+        origin = origin or (mark.get("source") if mark and mark.get("source") != LIBRARY else None)
+        try:
+            if origin:
+                st = Path(tempfile.mkdtemp(prefix="aios-deploy."))
+                stages.append(st)
+                src = from_repo(origin, name, ver, st)
+            else:
+                src = from_library(name, ver, kind)
+        except Abort as e:
+            warn(f"{key} {ver}: {e}")
+            return
+        why = ("missing" if not dst.is_dir() else f"local {kind}, replaced" if not mark else
+               f"{mark.get('version')} -> {ver}" if mark.get("version") != ver else "changed directly, restored")
+        o = str(Path(os.path.abspath(origin))) if origin else LIBRARY
+        plan.add(f"blueprint {dst}: {key} {ver} ({why})",
+                 lambda: (dst.parent.mkdir(parents=True, exist_ok=True), mirror(src, dst, name, ver, o)))
+
     try:
-        for key, ver in sorted(wanted.items()):
+        for name, ver in sorted(assistants.items()):            # assistants first: their skills go inside
+            check(home / name, name, ver, "assistant", name, None)
+        for key, ver in sorted(skills.items()):
             assistant, _, name = key.rpartition("/")
-            dst, _ = blueprint_dir(project, name, assistant or None)
-            mark = read_marker(dst) if dst.is_dir() else None
-            if mark and mark.get("version") == ver and digest_of(dst) == mark.get("digest"):
+            if assistant and not (home / assistant).is_dir() and assistant not in assistants:
+                warn(f"{key} {ver}: no assistant {assistant} in {home}")
                 continue
-            origin = source or (mark.get("source") if mark and mark.get("source") != LIBRARY else None)
-            try:
-                if origin:
-                    st = Path(tempfile.mkdtemp(prefix="aios-deploy."))
-                    stages.append(st)
-                    src = from_repo(origin, name, ver, st)
-                else:
-                    src = from_library(name, ver)
-            except Abort as e:
-                warn(f"{key} {ver}: {e}")
-                continue
-            why = ("missing" if not dst.is_dir() else "local skill, replaced" if not mark else
-                   f"{mark.get('version')} -> {ver}" if mark.get("version") != ver else "changed directly, restored")
-            src_name = str(Path(os.path.abspath(origin))) if origin else LIBRARY
-            plan.add(f"blueprint {dst}: {key} {ver} ({why})",
-                     lambda src=src, dst=dst, name=name, ver=ver, o=src_name:
-                     (dst.parent.mkdir(parents=True, exist_ok=True), mirror(src, dst, name, ver, o)))
+            dst = home / assistant / "@!Skill" / name if assistant else project / "@" / "@!Skill" / name
+            check(dst, key, ver, "skill", name, source)
+        for a in sorted(home.glob("*")) if home.is_dir() else []:
+            if (a / MARKER).is_file() and a.name not in assistants:
+                plan.add(f"remove {a}: deployed, but no longer in assistants:", lambda a=a: shutil.rmtree(a))
         for base, assistant in [(project / "@" / "@!Skill", None)] + \
-                [(a / "@!Skill", a.name) for a in sorted((project / "@" / "@!Assistant").glob("*")) if a.is_dir()]:
+                [(a / "@!Skill", a.name) for a in sorted(home.glob("*")) if a.is_dir()]:
             for d in sorted(base.glob("*")) if base.is_dir() else []:
                 key = f"{assistant}/{d.name}" if assistant else d.name
-                if (d / MARKER).is_file() and key not in wanted:
-                    plan.add(f"remove {d}: deployed, but no longer in the manifest",
-                             lambda d=d: shutil.rmtree(d))
+                if (d / MARKER).is_file() and key not in skills and \
+                        not (assistant and (base.parent / MARKER).is_file() and assistant not in assistants):
+                    plan.add(f"remove {d}: deployed, but no longer in skills:", lambda d=d: shutil.rmtree(d))
         if not plan:
             say(f"=> the blueprints of {project} match the manifest")
             return 0
         register_session(plan)
-        say(f"=> reconcile the blueprints of {project} with skills: in {file}")
+        say(f"=> reconcile the blueprints of {project} with skills: and assistants: in {file}")
         confirm(plan, "reconcile?", "reconcile cancelled")
     finally:
         for st in stages:

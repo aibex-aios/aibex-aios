@@ -44,7 +44,7 @@ gaertner                 assistant  0.1.0" "--library: skills and assistants of 
    OUT="$(A --deploy memo==6.0.0 --to "$D" --plan)"
    assert_contains "$OUT" "blueprint $D/@/@!Skill/memo: memo 6.0.0 from library" "plan: blueprint"
    assert_contains "$OUT" "new      SKILL.md" "plan: files"
-   assert_contains "$OUT" "manifest $D/.aios/config.yaml: memo: (new) -> 6.0.0" "plan: manifest"
+   assert_contains "$OUT" "manifest $D/.aios/config.yaml: skills: memo: (new) -> 6.0.0" "plan: manifest"
    assert_contains "$OUT" "register the project skills of $G" "plan: registration of the session"
    [ ! -e "$D/@/@!Skill/memo" ] && ok || fail "--plan: nothing written"
 
@@ -108,10 +108,59 @@ gaertner                 assistant  0.1.0" "--library: skills and assistants of 
    mk "$G/@/@!Skill/lokal/SKILL.md" $'---\nname: lokal\n---\n'
    sed -i '' '/obst\/memo/d' "$G/.aios/config.yaml" 2>/dev/null || sed -i '/obst\/memo/d' "$G/.aios/config.yaml"
    OUT="$(A --deploy --yes)"
-   assert_contains "$OUT" "remove $AB: deployed, but no longer in the manifest" "reconcile: removed from the manifest"
+   assert_contains "$OUT" "remove $AB: deployed, but no longer in skills:" "reconcile: removed from the manifest"
    [ ! -e "$AB" ] && ok || fail "reconcile: blueprint removed"
    assert_file "$G/@/@!Skill/lokal/SKILL.md"
    assert_contains "$(A --deploy </dev/null)" "match the manifest" "reconcile again: nothing to do"
+
+#===============================================================================
+# assistants of the library: deploy, skills inside, reconcile (spec 03, F2, F3)
+#===============================================================================
+
+   GA="$D/@/@!Assistant/gaertner"
+   OUT="$(A --deploy gaertner==0.1.0 --to "$D" --plan)"
+   assert_contains "$OUT" "deploy assistant gaertner 0.1.0 to $D" "assistant: plan"
+   assert_contains "$OUT" "blueprint $GA: gaertner 0.1.0 from library" "assistant: blueprint in @!Assistant/"
+   assert_contains "$OUT" "manifest $D/.aios/config.yaml: assistants: gaertner: (new) -> 0.1.0" "assistant: manifest assistants:"
+   case "$OUT" in *"register the project skills"*) fail "assistant: no registration" ;; *) ok ;; esac
+   [ ! -e "$GA" ] && ok || fail "assistant: --plan writes nothing"
+   OUT="$(A --deploy gaertner==0.1.0 --to "$D" --yes)"
+   assert_contains "$OUT" "activate it in a chat of the chain with /aios-assistant Gärtner" "assistant: hint"
+   for F in ASSISTANT.md "@!Skill/apfel-birnen-algebra/SKILL.md" "@Wissen/@Grundlagen/grundlagen.md" "@Wissen/@@Sortenkunde/sortenkunde.md"; do
+      assert_eq "$(cat "$GA/$F")" "$(cat "$SRC/assistants/demo/gaertner/$F")" "assistant: $F"
+   done
+   assert_eq "$(sed -n '2,4p' "$GA/.aios-deploy")" "$(printf 'name: gaertner\nversion: 0.1.0\nsource: "library"')" "assistant: marker"
+   assert_contains "$(cat "$D/.aios/config.yaml")" $'assistants:\n  gaertner: 0.1.0' "assistant: config.yaml"
+   assert_contains "$(cd "$G" && "$SRC/bin/aios" --config)" "assistant gaertner 0.1.0 ($D/.aios/config.yaml)" "assistant: entry read by the chain"
+   assert_contains "$(cd "$G" && "$SRC/bin/aios-context" --assistants)" "gaertner             Gärtner 0.1.0" "assistant: resolved in the chain"
+   assert_contains "$(A --deploy gaertner==0.1.0 --to "$D")" "already deployed" "assistant: second deploy, nothing to do"
+   assert_contains "$(A --deploy gaertner==9.9.9 --to "$D")" "gaertner 9.9.9 is not bundled with AIOS" "assistant: unknown version"
+   assert_contains "$(A --deploy gaertner==0.1.0 --assistant obst --to "$G")" "gaertner is an assistant; --assistant <name> is only for skills" "assistant: no --assistant"
+   assert_contains "$(A --deploy astronom==0.1.0 --from "$PF" --to "$D")" "no tag astronom-v0.1.0" "assistant: --from only for skills"
+
+   A --deploy memo==6.0.0 --assistant gaertner --to "$D" --yes >/dev/null
+   assert_file "$GA/@!Skill/memo/.aios-deploy"
+   assert_contains "$(cat "$D/.aios/config.yaml")" "  gaertner/memo: 6.0.0" "skill into the deployed assistant: manifest"
+   assert_contains "$(A --deploy --to "$D" </dev/null)" "match the manifest" "skill inside: the assistant is not changed directly (F3)"
+
+   printf 'eigene Notiz\n' >> "$GA/ASSISTANT.md"
+   assert_contains "$(A --deploy --to "$D" --plan)" "blueprint $GA: gaertner 0.1.0 (changed directly, restored)" "assistant changed directly: reconcile"
+   A --deploy --to "$D" --yes >/dev/null
+   case "$(cat "$GA/ASSISTANT.md")" in *"eigene Notiz"*) fail "assistant restored" ;; *) ok ;; esac
+   assert_file "$GA/@!Skill/memo/SKILL.md"
+   assert_contains "$(A --deploy --to "$D" </dev/null)" "match the manifest" "assistant restored, its skill kept"
+
+   rm -rf "$GA"                                                         # e.g. fresh clone
+   assert_contains "$(A --deploy --to "$D" --yes)" "gaertner 0.1.0 (missing)" "assistant missing: restored"
+   assert_file "$GA/ASSISTANT.md"
+   assert_file "$GA/@!Skill/memo/SKILL.md"
+
+   sed -i '' '/gaertner/d; /^assistants:/d' "$D/.aios/config.yaml" 2>/dev/null || sed -i '/gaertner/d; /^assistants:/d' "$D/.aios/config.yaml"
+   OUT="$(A --deploy --to "$D" --yes)"
+   assert_contains "$OUT" "remove $GA: deployed, but no longer in assistants:" "assistant removed from the manifest"
+   case "$OUT" in *"remove $GA/@!Skill/memo"*) fail "its skill goes with the assistant" ;; *) ok ;; esac
+   [ ! -e "$GA" ] && ok || fail "assistant removed"
+   assert_contains "$(A --deploy --to "$D" </dev/null)" "match the manifest" "after removal: nothing to do"
 
 #===============================================================================
 # config.yaml: skills: lines are edited in place
@@ -126,3 +175,6 @@ from pathlib import Path; from aios import config; f=Path('$SANDBOX/c.yaml'); co
    assert_eq "$(P "drop_skill(f, 'c')")" "$(printf 'aios: 0.1.0\nhosts: [claude-code]')" "drop_skill: empty block removed"
    printf 'skills:\n  a: 1.0.0\n' > "$SANDBOX/c.yaml"
    assert_eq "$(P "drop_skill(f, 'a')")" "<gone>" "drop_skill: empty file removed"
+   printf 'skills:\n  a: 1.0.0\n' > "$SANDBOX/c.yaml"
+   assert_eq "$(P "set_skill(f, 'g', '0.1.0', 'assistants')")" "$(printf 'skills:\n  a: 1.0.0\nassistants:\n  g: 0.1.0')" "set_skill: section assistants:"
+   assert_eq "$(P "drop_skill(f, 'g', 'assistants')")" "$(printf 'skills:\n  a: 1.0.0')" "drop_skill: section assistants:"

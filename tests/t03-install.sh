@@ -158,6 +158,10 @@ noversion refused: assistant demo/x has no version MAJOR.MINOR.PATCH" "library: 
    assert_eq "$(ls -a "$VD/@/@!Skill" | grep -c '^\.memo')" "0" "no temporary folder left"
    OUT="$(cd "$VD/Garten" && aios --deploy memo==6.1.0 --to "$VD" </dev/null 2>&1)"
    assert_contains "$OUT" "already deployed" "deploy again: nothing to do"
+   OUT="$(cd "$VD/Garten" && aios --deploy gaertner==0.1.0 --to "$VD" --yes 2>&1)"; RC=$?
+   assert_eq "$RC" "0" "deploy an assistant from the installation: exit 0"
+   [ -w "$VD/@/@!Assistant/gaertner/ASSISTANT.md" ] && [ -w "$VD/@/@!Assistant/gaertner/@!Skill/apfel-birnen-algebra" ] && ok || fail "deployed assistant is writable"
+   assert_eq "$(ls -a "$VD/@/@!Assistant" | grep -c '^\.gaertner')" "0" "assistant: no temporary folder left"
 
 #===============================================================================
 # --install via the forwarder: older version, idempotent user setup

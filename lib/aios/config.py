@@ -19,6 +19,7 @@ VERSION = re.compile(r"^v?(\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)$")
 LEVELS = {                                          # key -> levels where it is allowed
     "aios": ("vault", "project"),
     "skills": ("vault", "project"),
+    "assistants": ("vault", "project"),
     "hosts": ("vault", "project", "home"),
     "inline_limit": ("home",),
 }
@@ -158,6 +159,8 @@ class Config:
         self.source = {}                            # key -> file (skills: name -> file)
         self.skills = {}                            # name -> version
         self.skill_source = {}
+        self.assistants = {}                        # name -> version (manifest assistants:)
+        self.assistant_source = {}
         self.files = []                             # chain files, nearest first
         self.warnings = []
 
@@ -182,13 +185,15 @@ class Config:
             if level not in LEVELS[key]:
                 self.warnings.append(f"{file}: {key} is not allowed here, ignored")
                 continue
-            if key == "skills":
+            if key in ("skills", "assistants"):
                 if not isinstance(val, dict):
-                    self.warnings.append(f"{file}: skills must map names to versions, ignored")
+                    self.warnings.append(f"{file}: {key} must map names to versions, ignored")
                     continue
+                entries, sources = (self.skills, self.skill_source) if key == "skills" else \
+                    (self.assistants, self.assistant_source)
                 for name, version in val.items():
-                    if name not in self.skills:
-                        self.skills[name], self.skill_source[name] = version, file
+                    if name not in entries:
+                        entries[name], sources[name] = version, file
                 continue
             if key == "aios":
                 m = VERSION.match(str(val or ""))
@@ -242,6 +247,8 @@ def describe(cfg):
                  else "aios      - (not activated: legacy mode)")
     for name in sorted(cfg.skills):
         lines.append(f"skill     {name} {cfg.skills[name]} ({cfg.skill_source[name]})")
+    for name in sorted(cfg.assistants):
+        lines.append(f"assistant {name} {cfg.assistants[name]} ({cfg.assistant_source[name]})")
     lines.append(f"hosts     {', '.join(cfg.hosts)} ({where(cfg.source.get('hosts'))})")
     lines.append(f"inline    {cfg.inline_limit} ({where(cfg.source.get('inline_limit'))})")
     lines += [f"warning   {w}" for w in cfg.warnings]
@@ -286,12 +293,12 @@ def drop_aios(file):
 # writing skills: entries (line based, spec 03 Manifest)
 # ---------------------------------------------------------------------------
 
-def _skills_block(lines):
-    """(index of 'skills:', end index of its block) or (None, None)."""
+def _skills_block(lines, section="skills"):
+    """(index of '<section>:', end index of its block) or (None, None)."""
     for i, line in enumerate(lines):
-        if line.startswith("skills:"):
-            if strip_comment(line)[len("skills:"):].strip():
-                raise ConfigError("skills: must be a block of 'name: version' lines")
+        if line.startswith(f"{section}:"):
+            if strip_comment(line)[len(section) + 1:].strip():
+                raise ConfigError(f"{section}: must be a block of 'name: version' lines")
             j = i + 1
             while j < len(lines) and (not lines[j].strip() or lines[j][0].isspace()):
                 j += 1
@@ -301,13 +308,13 @@ def _skills_block(lines):
     return None, None
 
 
-def set_skill(file, key, version):
-    """skills: <key>: <version> in file; other lines stay."""
+def set_skill(file, key, version, section="skills"):
+    """<section>: <key>: <version> in file (skills: or assistants:); other lines stay."""
     lines = file.read_text(encoding="utf-8").splitlines() if file.is_file() else []
-    start, end = _skills_block(lines)
+    start, end = _skills_block(lines, section)
     entry = f"  {key}: {version}"
     if start is None:
-        lines += ["skills:", entry]
+        lines += [f"{section}:", entry]
     else:
         for i in range(start + 1, end):
             m = SUBKEY.match(lines[i].strip())
@@ -320,16 +327,16 @@ def set_skill(file, key, version):
     file.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
-def drop_skill(file, key):
-    """Remove skills: <key>; an empty block and an empty file are removed."""
+def drop_skill(file, key, section="skills"):
+    """Remove <section>: <key>; an empty block and an empty file are removed."""
     lines = file.read_text(encoding="utf-8").splitlines()
-    start, end = _skills_block(lines)
+    start, end = _skills_block(lines, section)
     if start is None:
         return
     keep = [i for i in range(start + 1, end)
             if not (SUBKEY.match(lines[i].strip()) and SUBKEY.match(lines[i].strip()).group(1) == key)]
     block = [lines[i] for i in keep]
-    rest = lines[:start] + ((["skills:"] + block) if any(strip_comment(x).strip() for x in block) else []) + lines[end:]
+    rest = lines[:start] + (([f"{section}:"] + block) if any(strip_comment(x).strip() for x in block) else []) + lines[end:]
     if any(strip_comment(x).strip() for x in rest):
         file.write_text("\n".join(rest) + "\n", encoding="utf-8")
     else:
