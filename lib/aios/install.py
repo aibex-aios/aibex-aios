@@ -349,6 +349,29 @@ def skills_of(src):
     return result
 
 
+def assistants_of(src):
+    """[(group, name, dir, version)] of assistants/<group>/<name>/ASSISTANT.md (spec 04, Assistenten-Gruppen).
+    Every assistant has a version; names are unique across all skills and assistants of the library."""
+    result, seen = [], {name: f"skills/{group}" for group, name, _, _ in skills_of(src)}
+    base = src / "assistants"
+    if not base.is_dir():
+        return result
+    for group in sorted(p for p in base.iterdir() if p.is_dir()):
+        for a in sorted(p for p in group.iterdir() if (p / "ASSISTANT.md").is_file()):
+            if a.name in seen:
+                raise Abort(f"assistant {a.name} of assistants/{group.name}/ has the name of {seen[a.name]}/{a.name}; "
+                            "names of the library are unique")
+            seen[a.name] = f"assistants/{group.name}"
+            meta = frontmatter(a / "ASSISTANT.md")
+            if meta.get("name") != a.name:
+                raise Abort(f"assistant {group.name}/{a.name}: name in ASSISTANT.md is {meta.get('name')!r}")
+            version = str(meta.get("version") or "")
+            if not re.match(r"^\d+\.\d+\.\d+$", version):
+                raise Abort(f"assistant {group.name}/{a.name} has no version MAJOR.MINOR.PATCH in its frontmatter")
+            result.append((group.name, a.name, a, version))
+    return result
+
+
 def build(stage, tag, root, entries):
     """Copy the staged tree into <root>/<tag> (spec 04, Abbildung), venv, read-only, entry."""
     final = root / tag
@@ -363,6 +386,8 @@ def build(stage, tag, root, entries):
         for group, name, src, version in skills_of(stage):
             dst = inst / "skills" / group / name
             shutil.copytree(src, dst / version if version else dst)
+        for group, name, src, version in assistants_of(stage):
+            shutil.copytree(src, inst / "assistants" / group / name / version)
         if (stage / "spec").is_dir():
             shutil.copytree(stage / "spec", inst / "doc" / "spec")
         for d in ("tutorials", "wiki"):

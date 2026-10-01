@@ -60,3 +60,20 @@ print(aios.version()); print(p.prefix()); print(p.user_dir()); print(p.claude_di
    assert_exit 1 "$SRC/bin/aios" -?
    assert_eq "$("$SRC/bin/aios" --version)" "$(cat "$SRC/VERSION")" "aios --version"
    assert_exit 1 "$SRC/bin/aios" --deploy memo-6.0.0
+
+#===============================================================================
+# library of the repo: demo assistants gaertner and astronom (spec 03, memo 17 of V0.2)
+#===============================================================================
+
+   assert_eq "$(PYTHONPATH="$SRC/lib" python3 -c '
+import sys
+from pathlib import Path
+from aios import install
+print(" ".join(f"{g}/{n}=={v}" for g, n, _, v in install.assistants_of(Path(sys.argv[1]))))' "$SRC")" \
+      "demo/astronom==0.1.0 demo/gaertner==0.1.0" "library: demo assistants with versions"
+   case "$(grep -rl -e 'P-Projekte' -e 'PC-Custom-AI' -e '§AIbex' "$SRC/assistants")" in
+      "") ok ;; *) fail "demo assistants contain no paths of a particular vault" ;;
+   esac
+   for F in "gaertner/@!Skill/apfel-birnen-algebra" "astronom/@!Skill/sonne-mond-zahlen"; do
+      assert_contains "$(sed -n 1,4p "$SRC/assistants/demo/$F/SKILL.md")" "version: 0.1.0" "private skill with version: $F"
+   done

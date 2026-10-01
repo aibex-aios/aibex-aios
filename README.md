@@ -67,7 +67,7 @@ In a chat:
 | `/aios-init` | make the folder a project (`@/`, `@Memo/`, git, first commit) |
 | `/aios-deploy memo==6.0.0` | deploy a skill version into a project or an assistant |
 | `/aios-register` | register the project skills for Claude Code |
-| `/aios-assistant Obstgärtner` | activate an assistant for this chat |
+| `/aios-assistant Gärtner` | activate an assistant for this chat |
 | `/aios-status` | project status from memos and git |
 
 Registered skills become available in the **next** chat.

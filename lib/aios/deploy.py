@@ -50,6 +50,23 @@ def library():
     return found
 
 
+def assistant_library():
+    """{name: {version: dir}} of the bundled assistants (assistants/<group>/<name>/, spec 04)."""
+    found = {}
+    root = library_root().parent / "assistants"
+    if not root.is_dir():
+        return found
+    for group in sorted(p for p in root.iterdir() if p.is_dir()):
+        for a in sorted(p for p in group.iterdir() if p.is_dir()):
+            if (a / "ASSISTANT.md").is_file():                       # clone: version in the frontmatter
+                v = frontmatter(a / "ASSISTANT.md").get("version")
+                if v:
+                    found.setdefault(a.name, {})[v] = a
+            for vdir in sorted(p for p in a.iterdir() if (p / "ASSISTANT.md").is_file()):
+                found.setdefault(a.name, {})[vdir.name] = vdir       # installation: <name>/<version>/
+    return found
+
+
 def from_library(name, ver):
     versions = library().get(name)
     if not versions:
@@ -188,12 +205,14 @@ def blueprint_dir(project, name, assistant):
 # ---------------------------------------------------------------------------
 
 def show_library():
-    lib = library()
-    if not lib:
-        say(f"AIOS {version()} bundles no skills")
+    """Skills and assistants of the library with their versions (spec 03)."""
+    rows = [(n, "skill", v) for n, v in library().items()] + \
+           [(n, "assistant", v) for n, v in assistant_library().items()]
+    if not rows:
+        say(f"AIOS {version()} bundles no skills and no assistants")
         return 0
-    for name in sorted(lib):
-        say(f"{name:24} {', '.join(sorted(lib[name], key=semver_key))}")
+    for name, kind, versions in sorted(rows, key=lambda r: (r[1] != "skill", r[0])):
+        say(f"{name:24} {kind:10} {', '.join(sorted(versions, key=semver_key))}")
     return 0
 
 

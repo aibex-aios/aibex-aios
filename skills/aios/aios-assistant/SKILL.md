@@ -1,6 +1,6 @@
 ---
 name: aios-assistant
-description: Aktiviert einen Assistenten von AIbex AIOS (Persönlichkeit, Skills, Wissen und Modell aus @!Assistant/<name>/ASSISTANT.md der Masterspace-Kette) für diesen Chat, ohne etwas zu schreiben. Aufruf "/aios-assistant <Name>[: <Titel>]", z. B. "/aios-assistant Obstgärtner: Teste Apfel-Birne". Verwenden bei "/aios-assistant", "Assistent aktivieren", "welche Assistenten gibt es?".
+description: Aktiviert einen Assistenten von AIbex AIOS (Persönlichkeit, Skills, Wissen und Modell aus @!Assistant/<name>/ASSISTANT.md der Masterspace-Kette) für diesen Chat, ohne etwas zu schreiben. Aufruf "/aios-assistant <Name>[: <Titel>]", z. B. "/aios-assistant Gärtner: Teste Apfel-Birne". Verwenden bei "/aios-assistant", "Assistent aktivieren", "welche Assistenten gibt es?".
 allowed-tools: Bash(aios-context --assistant *), Bash(aios-context --assistants *), Read
 ---
 

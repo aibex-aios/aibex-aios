@@ -90,7 +90,9 @@ EOF
    I="$P/v0.2.0"
    assert_eq "$(cat "$I/VERSION")" "0.2.0" "VERSION of the tag"
    for F in bin/aios bin/aios-context lib/aios/install.py templates/forwarder templates/gitignore \
-            skills/aios/aios-demo/SKILL.md skills/basic/memo/6.1.0/SKILL.md python/requirements.txt; do
+            skills/aios/aios-demo/SKILL.md skills/basic/memo/6.1.0/SKILL.md python/requirements.txt \
+            assistants/demo/gaertner/0.1.0/ASSISTANT.md "assistants/demo/gaertner/0.1.0/@!Skill/apfel-birnen-algebra/SKILL.md" \
+            "assistants/demo/gaertner/0.1.0/@Wissen/@@Sortenkunde/sortenkunde.md" assistants/demo/astronom/0.1.0/ASSISTANT.md; do
       assert_file "$I/$F"
    done
    assert_file "$I/doc/spec/04 Installation und Konfiguration.md"
@@ -98,7 +100,28 @@ EOF
    [ ! -e "$I/tests" ] && [ ! -e "$I/dev" ] && [ ! -e "$I/CLAUDE.md" ] && [ ! -e "$I/.git" ] && ok || fail "only the mapped parts are installed"
    ro "$I" && ro "$I/bin/aios" && ro "$I/lib/aios" && ok || fail "installation is read-only"
    assert_eq "$(cat "$P/installations.yaml")" "v0.2.0: $I" "installations.yaml"
-   assert_eq "$("$I/bin/aios" --library)" "memo                     6.1.0" "installation: --library reads <name>/<version>/"
+   assert_eq "$("$I/bin/aios" --library)" "memo                     skill      6.1.0
+astronom                 assistant  0.1.0
+gaertner                 assistant  0.1.0" "installation: --library reads <name>/<version>/ of skills and assistants"
+   assert_eq "$(PYTHONPATH="$SRC/lib" python3 -c '
+import sys, tempfile
+from pathlib import Path
+from aios import install
+from aios.ui import Abort
+def tree(files):
+    d = Path(tempfile.mkdtemp())
+    for f, t in files.items():
+        (d / f).parent.mkdir(parents=True, exist_ok=True); (d / f).write_text(t)
+    return d
+skill = "---\nname: memo\nversion: 6.0.0\n---\n"
+for case, files in [("conflict", {"skills/basic/memo/SKILL.md": skill, "assistants/demo/memo/ASSISTANT.md": "---\nname: memo\nversion: 0.1.0\n---\n"}),
+                    ("noversion", {"assistants/demo/x/ASSISTANT.md": "---\nname: x\n---\n"})]:
+    try:
+        install.assistants_of(tree(files)); print(case, "accepted")
+    except Abort as e:
+        print(case, "refused:", str(e).split(";")[0].split(" in its")[0])
+')" "conflict refused: assistant memo of assistants/demo/ has the name of skills/basic/memo
+noversion refused: assistant demo/x has no version MAJOR.MINOR.PATCH" "library: unique names, assistants need a version"
 
 #===============================================================================
 # --install: user setup
