@@ -98,6 +98,7 @@ Ein handgeschriebenes Inhaltsverzeichnis mit der Spalte „Lesen, wenn …" kann
 | `aios-context --sync [--yes\|--plan]` | Registrierung (Spec 03) |
 | `aios-context --sync` | Registrierung der Projekt-Skills (Spec 03, *Registrieren*), mit Vorschau; mit `--yes` ohne Rückfrage |
 | `aios-context --agent <name>` | gibt den Kontext eines Agenten aus (Spec 03, *Agenten*) |
+| `aios-context --agents` | Agenten der Kette mit Titel und Beschreibung |
 | `aios-context --version` | Version des laufenden Programms |
 | `aios-context -?`, `--help` | Hilfe |
 

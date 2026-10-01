@@ -61,10 +61,22 @@ def value(text):
     return scalar(text)
 
 
+BLOCK = (">", "|", ">-", "|-", ">+", "|+")
+
+
 def parse(text, name="config.yaml"):
-    """dict of the subset; raises ConfigError with the line number."""
-    result, current = {}, None
+    """dict of the subset; raises ConfigError with the line number.
+
+    Also reads block scalars (key: > or key: |) as used in frontmatters of AGENT.md.
+    """
+    result, current, block = {}, None, None
     for no, raw in enumerate(text.splitlines(), 1):
+        if block is not None:
+            if not raw.strip() or raw[0].isspace():
+                block.append(raw.strip())
+                continue
+            result[current] = (" " if result[current] == ">" else "\n").join(x for x in block if x)
+            block, current = None, None
         line = strip_comment(raw.rstrip("\r"))
         if not line.strip():
             continue
@@ -75,7 +87,9 @@ def parse(text, name="config.yaml"):
             key, val = m.group(1), m.group(2)
             if key in result:
                 raise ConfigError(f"{name}:{no}: key {key} appears twice")
-            if val:
+            if val in BLOCK:
+                result[key], current, block = val[0], key, []
+            elif val:
                 result[key], current = value(val), None
             else:
                 result[key], current = None, key
@@ -98,6 +112,8 @@ def parse(text, name="config.yaml"):
         if not isinstance(result[current], dict):
             raise ConfigError(f"{name}:{no}: mapping entry inside a list")
         result[current][m.group(1)] = scalar(m.group(2))
+    if block is not None:
+        result[current] = (" " if result[current] == ">" else "\n").join(x for x in block if x)
     return result
 
 

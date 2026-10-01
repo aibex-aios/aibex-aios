@@ -23,7 +23,7 @@ PART_LIMIT = 40000                                  # characters per part file (
 CACHE_DAYS = 7
 HEADING = re.compile(r"^#{1,6}\s+(.+?)\s*#*\s*$")
 
-LATER = {"--agent": 10}
+LATER = {}
 
 
 # ---------------------------------------------------------------------------
@@ -292,7 +292,7 @@ def legacy(cmd, cwd, stdin=""):
 
 
 USAGE = ("usage: aios-context --session | --advise | --context [<path>] | --load [<path>] | --id [<path>]"
-         " | --list [<path>] | --sync [--yes|--plan]")
+         " | --list [<path>] | --sync [--yes|--plan] | --agent <name> | --agents")
 
 
 def main(argv):
@@ -305,6 +305,8 @@ def main(argv):
         if argv[1:] == ["--plan"]:
             ui.MODE = "plan"
         return registry.register(paths.cwd(), yes=argv[1:] == ["--yes"])
+    if cmd in ("--agent", "--agents") and len(argv) == (2 if cmd == "--agent" else 1):
+        return agent_cmd(argv)
     if cmd in ("--session", "--advise") and len(argv) == 1:
         try:
             return hook(cmd)
@@ -339,6 +341,25 @@ def main(argv):
         sys.stdout.write(ctx.render())
     else:
         print(load_message(ctx, load(ctx)))
+    return 0
+
+
+def agent_cmd(argv):
+    """--agent <name>: context of an agent; --agents: agents of the chain (spec 03)."""
+    from . import agent
+    from .ui import Abort
+    ctx = Context(paths.cwd())
+    if ctx.mode != "aios":
+        print("aios-context: agents need a vault activated with AIOS (aios --activate)", file=sys.stderr)
+        return 1
+    try:
+        if argv[0] == "--agents":
+            print("\n".join(agent.available_lines(agent.agents(ctx))))
+        else:
+            sys.stdout.write(agent.render(ctx, argv[1]))
+    except Abort as e:
+        print(f"*** aios-context {argv[0]}: {e}", file=sys.stderr)
+        return 1
     return 0
 
 

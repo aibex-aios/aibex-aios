@@ -10,6 +10,7 @@
       echo '          aios-context --list [<path>]      # listing for /aios-context'
       echo '          aios-context --sync [--yes|--plan] # register the project skills'
       echo '          aios-context --agent <name>       # context of an agent'
+      echo '          aios-context --agents             # agents of the chain'
       echo '          aios-context --version            # print version'
       echo '   see also: aios, ai-brain'
       exit 1

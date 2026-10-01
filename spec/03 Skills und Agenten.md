@@ -171,14 +171,18 @@ tools: [read, search]
 | `model` | nein | Modell je Host; in der Desktop-App nur ein Hinweis an den User |
 | `tools` | nein | neutrale Namen; in v0.1 nur dokumentierend, nicht erzwungen |
 
-**Auflösung von `prompt` und `skills`:** zuerst im Agentenordner, danach in den Masterspaces der Kette vom Projekt aufwärts; der nächstgelegene Treffer gewinnt. Ein nicht gefundener Name ist ein Fehler, den `/aios-agent` meldet.
+**Auflösung von `prompt` und `skills`:** zuerst im Agentenordner (`<agent>/@!Prompt/<prompt>.md`, `<agent>/@!Skill/<skill>/SKILL.md`), danach in den Masterspaces der Kette vom Projekt aufwärts (`<D>/@/@!Prompt/…`, `<D>/@/@!Skill/…`); der nächstgelegene Treffer gewinnt. Ein nicht gefundener Name ist ein Fehler, den `/aios-agent` meldet.
+
+**Agenten der Kette:** alle `<D>/@/@!Agent/<name>/AGENT.md`; bei gleichem Namen gewinnt der nächstgelegene Masterspace. `name` muss dem Verzeichnisnamen entsprechen. Das Frontmatter wird mit der YAML-Untermenge von Spec 04 gelesen (mit Blocktexten wie `description: >`); `model` darf ein einzelner Wert (`model: opus`) oder je Host angegeben sein. Agenten gibt es nur in einem mit AIOS aktivierten Vault. `aios-context --agents` listet sie.
+
+**Wissen des Agenten:** Der Agentenordner wird nach den Klassen von Spec 02 eingeteilt, als wäre er ein Masterspace: Dateien und Ordner ohne Präfix werden geladen (ohne `AGENT.md`), `@@…` ist verfügbar, `@!…` (auch `@!Prompt`, `@!Skill`) verborgen.
 
 ### Aktivieren — `/aios-agent`
 
 Auslöser: `/aios-agent <Name>[: <Titel>]`, z. B. `/aios-agent Obstgärtner: Teste Apfel-Birne`. Die Aktivierung ist **ohne Zustand**: Sie schreibt nichts nach `.claude/` oder `.aios/`.
 
-1. `<Name>` gegen `title` bzw. `name` aller Agenten der Kette auflösen (ohne Rücksicht auf Groß-/Kleinschreibung und Umlaute). Kein oder mehrdeutiger Treffer: verfügbare Agenten listen.
-2. `aios-context --agent <name>` ausführen. Es gibt in `<aios-agent name="…">` … `</aios-agent>` aus: den Prompt, den Text der `AGENT.md`, die geladenen Dateien und das Inhaltsverzeichnis des verfügbaren Wissens des Agentenordners sowie die `SKILL.md` aller genannten Skills.
+1. `<Name>` gegen `title` bzw. `name` aller Agenten der Kette auflösen (ohne Rücksicht auf Groß-/Kleinschreibung; Umlaute gelten als `ae`, `oe`, `ue`, `ss`, sodass „Obstgärtner" auch `obstgaertner` trifft). Kein oder mehrdeutiger Treffer: verfügbare Agenten listen.
+2. `aios-context --agent <name>` ausführen. Es gibt in `<aios-agent name="…" title="…" src="…">` … `</aios-agent name="…">` aus: einen Block `<aios-agent-meta>` mit `description`, `model`, `tools`, `skills`, dann als `<aios-file class="…">` den Prompt (`prompt`), den Text der `AGENT.md` ohne Frontmatter (`agent`), die geladenen Dateien des Agentenordners (`load`), das Inhaltsverzeichnis seines verfügbaren Wissens (`<aios-available>`) und die `SKILL.md` aller genannten Skills (`skill`). Die Endmarke zeigt, dass alles gelesen wurde.
 3. Diese Ausgabe vollständig lesen.
 4. Titel setzen: in der Desktop-App mit dem App-Werkzeug zum Setzen des Session-Titels; in der CLI den User bitten, `/rename <Titel>` einzugeben.
 5. Kurz bestätigen („Obstgärtner aktiv"), `model` gegebenenfalls als Hinweis nennen, danach in der Rolle antworten.

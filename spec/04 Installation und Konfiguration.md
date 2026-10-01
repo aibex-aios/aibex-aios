@@ -145,7 +145,7 @@ hosts: [claude-code]
 
 `aios` in `~/.aios/config.yaml` ist nicht erlaubt: Die Voreinstellung des Rechners darf keinen Vault aktivieren (Grundregel 6). Unbekannte Schlüssel, Schlüssel auf einer Ebene, auf der sie nicht erlaubt sind, und ein `aios`-Wert, der keine Version ist, werden mit Warnung ignoriert.
 
-`config.yaml` verwendet eine Untermenge von YAML, die AIOS ohne PyYAML liest: Zeilen `schlüssel: wert` ohne Einrückung, Listen als `[a, b]` oder als eingerückte `- eintrag`, eine eingerückte Ebene `name: wert` (für `skills`; der Name darf `/` enthalten, für Agenten-Skills `agent/skill`), Kommentare mit `#` und Werte in Anführungszeichen. Jeder Schlüssel darf je Datei nur einmal vorkommen. Eine Datei außerhalb dieser Untermenge wird in der Kette mit Warnung übergangen; `aios --activate` und `aios --deactivate` brechen dann ab, ohne sie zu ändern.
+`config.yaml` verwendet eine Untermenge von YAML, die AIOS ohne PyYAML liest: Zeilen `schlüssel: wert` ohne Einrückung, Listen als `[a, b]` oder als eingerückte `- eintrag`, eine eingerückte Ebene `name: wert` (für `skills`; der Name darf `/` enthalten, für Agenten-Skills `agent/skill`), Kommentare mit `#`, Werte in Anführungszeichen und Blocktexte (`schlüssel: >` bzw. `|` mit eingerückten Zeilen, wie im Frontmatter einer `AGENT.md`). Jeder Schlüssel darf je Datei nur einmal vorkommen. Eine Datei außerhalb dieser Untermenge wird in der Kette mit Warnung übergangen; `aios --activate` und `aios --deactivate` brechen dann ab, ohne sie zu ändern.
 
 ### Konfigurationskette
 
