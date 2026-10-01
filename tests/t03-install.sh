@@ -96,6 +96,7 @@ EOF
       assert_file "$I/$F"
    done
    assert_file "$I/doc/spec/04 Installation und Konfiguration.md"
+   assert_file "$I/doc/tutorials/01 Erste Schritte mit den Demo-Assistenten.md"
    assert_exec "$I/python/bin/python"
    [ ! -e "$I/tests" ] && [ ! -e "$I/dev" ] && [ ! -e "$I/CLAUDE.md" ] && [ ! -e "$I/.git" ] && ok || fail "only the mapped parts are installed"
    ro "$I" && ro "$I/bin/aios" && ro "$I/lib/aios" && ok || fail "installation is read-only"

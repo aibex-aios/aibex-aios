@@ -45,11 +45,12 @@ Diese Spec regelt, welche Dateien AIOS v0.2 wo anlegt, ihre Formate, die Konfigu
     │   ├── forwarder               Quelle der Weiterleiter in ~/bin
     │   └── gitignore               Vorlage für /aios-init
     ├── doc/
-    │   └── spec/                   die Spec dieser Version (Pflicht)
+    │   ├── spec/                   die Spec dieser Version (Pflicht)
+    │   └── tutorials/              Tutorials (v0.2: Demo-Assistenten)
     └── python/                     venv mit PyYAML, vorkompiliert
 ```
 
-Künftig kommen `doc/tutorials/` und `doc/wiki/` hinzu.
+Künftig kommt `doc/wiki/` hinzu.
 
 | Pfad | angelegt von | Inhalt | änderbar |
 |---|---|---|---|
@@ -355,7 +356,7 @@ aibex-aios/                          GitHub aibex-hub/aibex-aios, Tags v<version
 ├── templates/                       forwarder (Weiterleiter), gitignore (Vorlage für /aios-init)
 ├── python/requirements.txt          pyyaml
 ├── spec/                            diese Spec (gepflegt aus dem Konzeptprojekt)
-├── doc/                             künftig: tutorials/, wiki/
+├── doc/tutorials/                   Tutorials; künftig auch doc/wiki/
 ├── dev/                             Entwickler-Doku, nicht installiert
 ├── tests/                           Tests im Sandkasten (tests/run), nicht installiert;
 │                                    tests/live/: Tests mit echten Claude-Sessions (kosten Tokens)

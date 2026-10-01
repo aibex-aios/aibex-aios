@@ -6,7 +6,7 @@
 **AIbex AIOS is an operating system for the context of AI assistants.** It
 manages which knowledge a chat loads, reads on demand or does not see, and
 provides file system conventions, assistants and skills for this purpose.
-Execution is left to a host (Claude Code, Codex).
+Execution is left to a host (in v0.2: Claude Code).
 
 AIOS works on an Obsidian vault: every chat runs in a project directory and
 receives the knowledge that belongs to this project — no more, no less. An
@@ -25,11 +25,11 @@ macOS or Linux with `bash`, `git`, `python3` (3.9 or newer) and
 ```sh
   git clone https://github.com/aibex-hub/aibex-aios ~/git/AIbex/aibex-aios
   cd ~/git/AIbex/aibex-aios
-  ./bin/aios --install v0.1.0     # prepares the machine, then installs
+  ./bin/aios --install v0.2.0     # prepares the machine, then installs
 ```
 
 `aios --install` shows a plan and asks once before it writes anything. It
-installs the version read-only to `/opt/aios/v0.1.0/` (without `sudo`:
+installs the version read-only to `/opt/aios/v0.2.0/` (without `sudo`:
 `~/.aios/versions/`), puts the forwarders `aios` and `aios-context` into
 `~/bin`, adds two hooks to `~/.claude/settings.json` and the AIOS skills to
 `~/.claude/skills/`. Hooks of `ai-brain` are saved and restored by
@@ -43,7 +43,7 @@ been **activated**; all other vaults keep working as before (legacy mode).
 
 ```sh
   mkdir ~/Vaults/§Demo
-  aios --activate v0.1.0 ~/Vaults/§Demo      # writes §Demo/.aios/config.yaml, creates §Demo/@/
+  aios --activate v0.2.0 ~/Vaults/§Demo      # writes §Demo/.aios/config.yaml, creates §Demo/@/
 ```
 
 Put knowledge into the **masterspace** `@/` of a project. The prefix of a
@@ -66,11 +66,33 @@ In a chat:
 | `/aios-context` | check and show the master context |
 | `/aios-init` | make the folder a project (`@/`, `@Memo/`, git, first commit) |
 | `/aios-deploy memo==6.0.0` | deploy a skill version into a project or an assistant |
+| `/aios-deploy gaertner==0.1.0` | deploy a demo assistant of the library into a project |
 | `/aios-register` | register the project skills for Claude Code |
 | `/aios-assistant Gärtner` | activate an assistant for this chat |
 | `/aios-status` | project status from memos and git |
 
-Registered skills become available in the **next** chat.
+Registered skills become available in the **next** chat; an assistant is
+available as soon as it is deployed.
+
+Every skill and every assistant has a version (`version: MAJOR.MINOR.PATCH` in
+its frontmatter). A blueprint without a version is not registered and is
+reported as `AIOS-WARNING` at the start of a session.
+
+
+## Demo assistants
+
+The library of every version contains two demo assistants to play with
+(`aios --library`):
+
+| Assistant | Character | Own skill |
+|---|---|---|
+| `gaertner` (Gärtner) | down-to-earth gardener, calculates only with apples and pears; knows varieties and grafting | `apfel-birnen-algebra` |
+| `astronom` (Astronom) | poetic, precise astronomer, calculates only with sun and moon | `sonne-mond-zahlen` |
+
+Each one politely refuses the other one's calculations, so the answer shows
+which assistant and which skill are active. The tutorial
+[`doc/tutorials/01 Erste Schritte mit den Demo-Assistenten.md`](doc/tutorials/01%20Erste%20Schritte%20mit%20den%20Demo-Assistenten.md)
+walks through a vault with both of them (German).
 
 
 ## Command line
@@ -79,7 +101,7 @@ Registered skills become available in the **next** chat.
 |---|---|
 | `aios --install [v<version>]`, `--versions`, `--remove-version v<version>`, `--uninstall` | installations |
 | `aios --activate v<version> [<path>]`, `--deactivate [<path>]`, `--config [<path>]` | bind a vault or project to a version, show the configuration |
-| `aios --init`, `--register`, `--deploy`, `--library` | projects and skills |
+| `aios --init`, `--register`, `--deploy`, `--library` | projects, skills and assistants |
 | `aios-context --context`, `--load`, `--id`, `--list`, `--assistant <name>`, `--assistants` | master context and assistants |
 
 Every writing command shows a plan first; `--plan` only shows it, `--yes`
@@ -90,7 +112,8 @@ or project chooses its version with `aios: <version>` in `.aios/config.yaml`.
 ## Documentation
 
 The specification of each version is part of it: `spec/` in this repository,
-installed to `/opt/aios/v<version>/doc/spec/`.
+installed to `/opt/aios/v<version>/doc/spec/`; tutorials are installed from
+`doc/tutorials/` to `/opt/aios/v<version>/doc/tutorials/`.
 
 | Spec | Content |
 |---|---|
@@ -110,12 +133,13 @@ installed to `/opt/aios/v<version>/doc/spec/`.
 ```
 
 A clone can be used without installing: point `AIOS_HOME` to it, or add a
-line `v0.1.0-dev: ~/git/AIbex/aibex-aios` to `~/.aios/installations.yaml`.
+line `v0.2.0-dev: ~/git/AIbex/aibex-aios` to `~/.aios/installations.yaml`.
 `CLAUDE.md` holds the rules for working on the repository, `STATUS.md` the
 state of the implementation.
 
 
 ## Status
 
-Version **0.1.0** — implemented and tested, acceptance on a working machine
-pending, not yet tagged.
+Version **0.2.0** in development (`STATUS.md`): assistant instead of agent,
+a version for every skill, demo assistants. Version 0.1.0 is released (tag
+`v0.1.0`). All versions below 1.0 are alpha and beta versions.

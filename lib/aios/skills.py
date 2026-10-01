@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from . import registry, version
+from .install import frontmatter
 from .ui import Abort
 
 
@@ -73,9 +74,10 @@ def listing(ctx):
         skills.append(f"{name_} {ver}".rstrip() + f" ({d.parents[2].name}) — {state}")
     for ms in ctx.masterspaces:
         for a in sorted((ms / "@!Assistant").glob("*/ASSISTANT.md")):
-            assistants.append(f"{a.parent.name} ({ms.parent.name})")
+            assistants.append(f"{a.parent.name} {registry.version_of(frontmatter(a))}".rstrip() + f" ({ms.parent.name})")
             for s in sorted((a.parent / "@!Skill").glob("*/SKILL.md")):
-                skills.append(f"{s.parent.name} (Assistent {a.parent.name}, privat)")
+                skills.append(f"{s.parent.name} {registry.version_of(frontmatter(s))}".rstrip()
+                              + f" (Assistent {a.parent.name}, privat)")
         prompts += [f"{p.stem} ({ms.parent.name})" for p in sorted((ms / "@!Prompt").glob("*.md"))]
     out.append(f"{'Verborgen':27}Blueprints: {plural(len(skills), 'Skill', 'Skills')}, "
                f"{plural(len(assistants), 'Assistent', 'Assistenten')}, {plural(len(prompts), 'Prompt', 'Prompts')}")

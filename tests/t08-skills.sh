@@ -82,8 +82,8 @@ verfügbares Wissen         1 Datei (nicht geladen, Inhaltsverzeichnis im Master
 Verborgen                  Blueprints: 3 Skills, 1 Assistent, 1 Prompt
   Skills       memo 6.0.0 (§Demo) — registriert
                notiz 0.1.0 (§Demo) — nicht registriert
-               apfel (Assistent obstgaertner, privat)
-  Assistenten  obstgaertner (§Demo)
+               apfel 0.1.0 (Assistent obstgaertner, privat)
+  Assistenten  obstgaertner 0.1.0 (§Demo)
   Prompts      obstgaertner (§Demo)
 Hinweis: Blueprints und registrierte Skills stimmen nicht überein — /aios-register" "--list: exact listing"
    assert_contains "$("$SRC/bin/aios-context" --list "$D/Garten")" "Kette                      §Demo → Garten" "--list: chain"
