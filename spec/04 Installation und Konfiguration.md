@@ -170,15 +170,16 @@ Eine Zeile je Version, `v<version>: <pfad>`. `~/.aios/installations.yaml` hat da
 ### `.aios/manifest`
 
 ```yaml
+# written by AIOS (registration), do not edit
 schema: 1
 registered:
   memo:
-    source: /…/§Demo/@/@!Skill/memo
+    source: "/…/§Demo/@/@!Skill/memo"
     version: 6.0.0
     digest: sha256:…
 ```
 
-`digest` ist die Prüfsumme über alle Dateien des Skills; die Registrierung erkennt damit Änderungen.
+`digest` ist SHA-256 über alle Dateien des Skills, je Datei in Pfadfolge `<relativer pfad>⏎<inhalt>⏎`; die Registrierung erkennt damit Änderungen am Blueprint und an der Kopie in `.claude/skills/`. `version` bleibt leer, wenn der Skill keine Version hat. Das Manifest hat dieses feste Format und wird nur von AIOS geschrieben.
 
 ### Hooks in `~/.claude/settings.json`
 
@@ -267,7 +268,8 @@ Die Weiterleiter lesen nur kleine Dateien und greifen nie auf das Netzwerk zu.
 | `aios --versions` | installierte Versionen und ihre Orte |
 | `aios --remove-version v<version>` | Installation entfernen |
 | `aios --uninstall` | Benutzereinrichtung entfernen |
-| `aios --deploy …`, `aios --register` | Spec 03 |
+| `aios --register [<pfad>]` | Projekt-Skills registrieren, mit Vorschau (Spec 03) |
+| `aios --deploy …` | Spec 03 |
 | `aios --skill <name>` | Rumpf eines AIOS-Skills der gültigen Version (für die versionsneutralen Skills) |
 
 Alle schreibenden Befehle zeigen zuerst einen Plan und fragen `[Y/n]` (I7). `bin/aios` und die Weiterleiter sind Bash-Skripte nach der Bash-Konvention (Help-, Version- und Dispatch-Blöcke, Fallback); die Logik hinter `aios` und `aios-context` läuft in Python im venv der Installation (`python/`). `--prepare`, `--install`, `--versions`, `--remove-version` und `--uninstall` verwenden nur die Standardbibliothek, weil sie aus einem Klon mit dem `python3` des Systems laufen, bevor eine venv existiert. Voraussetzungen sind `python3` ab 3.9 und `git`.

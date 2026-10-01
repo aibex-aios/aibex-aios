@@ -1,0 +1,206 @@
+"""Registration of the project skills (spec 03, Registrieren; manifest format spec 04).
+
+The blueprints @/@!Skill/<name>/ of the chain are copied to <project>/.claude/skills/<name>/
+and recorded in <project>/.aios/manifest. Standard library only.
+"""
+
+from __future__ import annotations
+
+import hashlib
+import os
+import re
+import shutil
+import tempfile
+from pathlib import Path
+
+from . import context
+from .install import frontmatter
+
+NAME = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}$")
+RESERVED = "aios-"
+
+
+# ---------------------------------------------------------------------------
+# blueprints of the chain
+# ---------------------------------------------------------------------------
+
+def digest(d):
+    """sha256 over the relative paths and contents of all files of a skill directory."""
+    h = hashlib.sha256()
+    for root, dirs, files in os.walk(d):
+        dirs.sort()
+        for f in sorted(files):
+            p = Path(root) / f
+            h.update(f"{p.relative_to(d).as_posix()}\n".encode())
+            h.update(p.read_bytes())
+            h.update(b"\n")
+    return "sha256:" + h.hexdigest()
+
+
+def blueprints(ctx):
+    """({name: (dir, version)}, [problems]); the nearest masterspace wins (spec 03)."""
+    found, problems = {}, []
+    for ms in ctx.masterspaces:                     # vault root -> project, later wins
+        base = ms / "@!Skill"
+        if not base.is_dir():
+            continue
+        for d in sorted(p for p in base.iterdir() if p.is_dir() and not p.name.startswith(".")):
+            if d.name.startswith(RESERVED):
+                problems.append(f"{d}: the name {d.name} is reserved for AIOS skills, not registered")
+                continue
+            if not NAME.match(d.name):
+                problems.append(f"{d}: {d.name} is not a valid skill name, not registered")
+                continue
+            if not (d / "SKILL.md").is_file():
+                problems.append(f"{d}: no SKILL.md, not registered")
+                continue
+            meta = frontmatter(d / "SKILL.md")
+            if meta.get("name") != d.name:
+                problems.append(f"{d}: name in SKILL.md is {meta.get('name')!r}, not {d.name!r}; not registered")
+                continue
+            found[d.name] = (d, meta.get("version", ""))
+    return found, problems
+
+
+# ---------------------------------------------------------------------------
+# manifest (fixed format of spec 04)
+# ---------------------------------------------------------------------------
+
+def read_manifest(file):
+    """{name: {source, version, digest}}; an unreadable manifest counts as empty."""
+    result, name = {}, None
+    if not file.is_file():
+        return result
+    for line in file.read_text(encoding="utf-8").splitlines():
+        if not line.strip() or line.lstrip().startswith("#"):
+            continue
+        m = re.match(r"^  ([^\s:][^:]*):\s*$", line)
+        if m:
+            name = m.group(1)
+            result[name] = {}
+            continue
+        m = re.match(r"^    (source|version|digest):\s*(.*?)\s*$", line)
+        if m and name:
+            result[name][m.group(1)] = m.group(2).strip('"')
+            continue
+        if not line.startswith(" "):
+            name = None
+    return result
+
+
+def write_manifest(file, entries):
+    lines = ["# written by AIOS (registration), do not edit", "schema: 1", "registered:"]
+    for name in sorted(entries):
+        e = entries[name]
+        lines += [f"  {name}:", f'    source: "{e["source"]}"',
+                  f"    version: {e.get('version') or ''}".rstrip(), f"    digest: {e['digest']}"]
+    file.parent.mkdir(parents=True, exist_ok=True)
+    tmp = file.with_name(file.name + ".tmp")
+    tmp.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    os.replace(tmp, file)
+
+
+# ---------------------------------------------------------------------------
+# plan and apply
+# ---------------------------------------------------------------------------
+
+class Sync:
+    """Difference between the blueprints of the chain and the registered skills of a project."""
+
+    def __init__(self, ctx):
+        self.ctx = ctx
+        self.project = ctx.cwd
+        self.skills_dir = self.project / ".claude" / "skills"
+        self.manifest_file = self.project / ".aios" / "manifest"
+        self.manifest = read_manifest(self.manifest_file)
+        self.chain, self.problems = blueprints(ctx)
+        self.new, self.changed, self.removed, self.foreign = [], [], [], []
+        for name, (src, version) in self.chain.items():
+            dig = digest(src)
+            target = self.skills_dir / name
+            entry = self.manifest.get(name)
+            if entry is None:
+                if target.exists():
+                    self.foreign.append(name)
+                else:
+                    self.new.append((name, src, version, dig))
+            elif (entry.get("digest") != dig or entry.get("source") != str(src)
+                  or not target.is_dir() or digest(target) != dig):
+                self.changed.append((name, src, version, dig))
+        for name in self.manifest:
+            if name not in self.chain:
+                self.removed.append(name)
+        for name in self.foreign:
+            self.problems.append(f"{self.skills_dir / name} exists and is not managed by AIOS, left untouched")
+
+    def __bool__(self):
+        return bool(self.new or self.changed or self.removed)
+
+    def lines(self):
+        out = [f"new      {n} {v}".rstrip() + f"  ({s})" for n, s, v, _ in self.new]
+        out += [f"changed  {n} {v}".rstrip() + f"  ({s})" for n, s, v, _ in self.changed]
+        out += [f"remove   {n}" for n in self.removed]
+        return out
+
+    def summary(self):
+        parts = []
+        if self.new:
+            parts.append("new " + ", ".join(n for n, *_ in self.new))
+        if self.changed:
+            parts.append("changed " + ", ".join(n for n, *_ in self.changed))
+        if self.removed:
+            parts.append("removed " + ", ".join(self.removed))
+        return "; ".join(parts)
+
+    def apply(self):
+        entries = {k: v for k, v in self.manifest.items() if k in self.chain}
+        self.skills_dir.mkdir(parents=True, exist_ok=True)
+        for name, src, version, dig in self.new + self.changed:
+            target = self.skills_dir / name
+            tmp = Path(tempfile.mkdtemp(prefix=f".{name}.", dir=self.skills_dir))
+            shutil.copytree(src, tmp / name)
+            if target.exists():
+                shutil.rmtree(target)
+            os.rename(tmp / name, target)
+            shutil.rmtree(tmp)
+            entries[name] = {"source": str(src), "version": version, "digest": dig}
+        for name in self.removed:
+            target = self.skills_dir / name
+            if target.is_dir():
+                shutil.rmtree(target)
+            entries.pop(name, None)
+        if entries or self.manifest_file.exists():
+            write_manifest(self.manifest_file, entries)
+
+
+def sync_for(cwd):
+    """Sync of the project cwd, None when nothing may be registered there."""
+    ctx = context.Context(cwd)
+    if ctx.mode != "aios" or not ctx.initialized:
+        return ctx, None
+    return ctx, Sync(ctx)
+
+
+def register(cwd, yes=False):
+    """aios-context --sync [--yes], aios --register: preview, (question), apply."""
+    from .ui import ask, say, warn
+    ctx, s = sync_for(cwd)
+    if s is None:
+        reason = {"none": "not in a vault", "legacy": "legacy mode (no aios: in the chain)"}.get(ctx.mode)
+        say(f"=> nothing registered: {reason or f'{ctx.cwd} is not a project (no @/)'}")
+        return 0
+    for p in s.problems:
+        warn(p)
+    if not s:
+        say(f"=> project skills of {ctx.cwd} are up to date")
+        return 0
+    say(f"=> register the project skills of {ctx.cwd} in .claude/skills/")
+    for line in s.lines():
+        say(f"      {line}")
+    if not yes and not ask("register?"):
+        say("   registration cancelled")
+        return 1
+    s.apply()
+    say(f"=> registered: {s.summary()}")
+    say("   the skills are available from the next chat (or after /reload-skills)")
+    return 0

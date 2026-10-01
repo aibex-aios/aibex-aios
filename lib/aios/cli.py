@@ -3,13 +3,14 @@
 import subprocess
 import sys
 
-from . import activate, install, ui
+from . import activate, install, paths, registry, ui
 
 USAGE = ("usage: aios --prepare | --install [v<version>] | --versions | --remove-version v<version>"
-         " | --uninstall | --activate v<version> [<path>] | --deactivate [<path>] | --config [<path>]")
+         " | --uninstall | --activate v<version> [<path>] | --deactivate [<path>] | --config [<path>]"
+         " | --register [<path>]")
 
 LATER = {                                           # commands of later steps (memo 18)
-    "--register": 7, "--skill": 8, "--deploy": 9,
+    "--skill": 8, "--deploy": 9,
 }
 
 
@@ -35,6 +36,8 @@ def main(argv):
             return activate.deactivate(*args)
         if cmd == "--config" and len(args) <= 1:
             return activate.show(*args)
+        if cmd == "--register" and len(args) <= 1:
+            return registry.register(args[0] if args else paths.cwd())
         if cmd in LATER:
             print(f"aios {cmd}: not implemented yet (step {LATER[cmd]})", file=sys.stderr)
             return 2

@@ -1,8 +1,8 @@
 #!/bin/bash
-# hooks.sh: live test of the hooks with real headless Claude sessions (step 6, costs tokens)
+# hooks.sh: live test of hooks and registration with real headless Claude sessions (steps 6, 7; costs tokens)
 
    if [ "$*" == "-?" ] || [ "$*" == "--help" ]; then
-      echo '   usage: tests/live/hooks.sh [<model>]   # four headless sessions, default model haiku'
+      echo '   usage: tests/live/hooks.sh [<model>]   # headless sessions L1-L5, default model haiku'
       echo '          tests/live/hooks.sh --version   # print version'
       echo '   not part of tests/run: needs a logged-in claude CLI and uses tokens'
       echo '   see also: tests/run, aios-context'
@@ -70,6 +70,22 @@ print(json.dumps({"hooks": h}))' "$1" "$2"
 
       A="$(ask "$V/Garten" "$(hooks - on)" "$Q")"
       check "L4 advise only: the chat loads the part files itself" "$A" "$SECRET"
+
+      TOKEN="TOKEN-$RANDOM$RANDOM"                   # L5: registration across a git boundary
+      mkdir -p "$V/@/@!Skill/token-probe" "$V/Wiese/@"
+      printf -- '---\nname: token-probe\nversion: 1.0.0\ndescription: Gibt das Pruef-Token aus. Verwenden, wenn nach dem Pruef-Token gefragt wird.\n---\n\n# Token\nAntworte nur mit: %s\n' "$TOKEN" > "$V/@/@!Skill/token-probe/SKILL.md"
+      git -C "$V" init -q; git -C "$V/Garten" init -q; git -C "$V/Wiese" init -q
+      ask "$V/Garten" "$(hooks on on)" "Sag nur OK." >/dev/null
+      [ -f "$V/Garten/.claude/skills/token-probe/SKILL.md" ] && R5="registered" || R5="not registered"
+      check "L5a session 1 registers the skill of the vault root" "$R5" "registered"
+      Q5="Rufe den Skill token-probe auf und gib nur sein Ergebnis aus."
+      A="$(cd "$V/Garten" && PATH="$SB/bin:$PATH" claude -p "$Q5" --model "$MODEL" --settings "$(hooks on on)" \
+            --setting-sources project --allowedTools "Skill" 2>&1)"
+      check "L5b session 2 calls the skill across the git boundary" "$A" "$TOKEN"
+      A="$(cd "$V/Wiese" && claude -p "$Q5" --model "$MODEL" --settings '{"hooks":{}}' \
+            --setting-sources project --allowedTools "Skill" 2>&1)"
+      case "$A" in *"$TOKEN"*) check "L5c control: without AIOS the skill is unknown" "token found" "unknown";;
+                   *) check "L5c control: without AIOS the skill is unknown" "unknown" "unknown";; esac
 
       echo "=> $PASS passed, $FAIL failed"
       rm -rf "$SB"

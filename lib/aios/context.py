@@ -23,7 +23,7 @@ PART_LIMIT = 40000                                  # characters per part file (
 CACHE_DAYS = 7
 HEADING = re.compile(r"^#{1,6}\s+(.+?)\s*#*\s*$")
 
-LATER = {"--sync": 7, "--list": 8, "--agent": 10}
+LATER = {"--list": 8, "--agent": 10}
 
 
 # ---------------------------------------------------------------------------
@@ -251,8 +251,14 @@ def check_message(ctx):
 
 def session(ctx):
     """SessionStart: warnings, PROJECT-UNINITIALIZED, master context inline or part files."""
+    from . import registry
     out = [f"AIOS-WARNING: {w}" for w in ctx.cfg.warnings]
-    # registration of the project skills (--sync --yes) follows in step 7
+    if ctx.initialized:                             # registration for the next chat (spec 03)
+        s = registry.Sync(ctx)
+        out += [f"AIOS-WARNING: {p}" for p in s.problems]
+        if s:
+            s.apply()
+            out.append(f"AIOS-SKILLS: {s.summary()} — wirksam ab dem nächsten Chat")
     if not ctx.initialized:
         out.append(uninitialized_message(ctx))
     text = ctx.render()
@@ -285,7 +291,8 @@ def legacy(cmd, cwd, stdin=""):
     return 0
 
 
-USAGE = "usage: aios-context --session | --advise | --context [<path>] | --load [<path>] | --id [<path>]"
+USAGE = ("usage: aios-context --session | --advise | --context [<path>] | --load [<path>] | --id [<path>]"
+         " | --sync [--yes]")
 
 
 def main(argv):
@@ -293,6 +300,9 @@ def main(argv):
         print(f"aios-context {argv[0]}: not implemented yet (step {LATER[argv[0]]})", file=sys.stderr)
         return 2
     cmd = argv[0] if argv else ""
+    if cmd == "--sync" and argv[1:] in ([], ["--yes"]):
+        from . import registry
+        return registry.register(paths.cwd(), yes=argv[1:] == ["--yes"])
     if cmd in ("--session", "--advise") and len(argv) == 1:
         try:
             return hook(cmd)

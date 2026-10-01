@@ -101,19 +101,19 @@ Mitgelieferte Skills rollt nur der User aus; `aios --install` bietet es nicht an
 
 Registrieren macht die geltenden Projekt-Skills **für Claude Code aufrufbar**.
 
-**Algorithmus** (für das Projekt der Session):
+**Algorithmus** (für das Projekt der Session; registriert wird nur, wenn `cwd` ein initialisiertes Projekt mit `@/` in einem aktivierten Vault ist, sonst nichts):
 
-1. Alle `@!Skill/<name>/` der Master-Space-Kette sammeln. Bei gleichem Namen gewinnt der nächstgelegene Masterspace. Reservierte Namen (`aios-*`) werden übersprungen.
+1. Alle `<D>/@/@!Skill/<name>/` der Master-Space-Kette sammeln (private Skills eines Agenten in `@!Agent/…/@!Skill/` gehören nicht dazu). Bei gleichem Namen gewinnt der nächstgelegene Masterspace. Übersprungen und gemeldet werden reservierte Namen (`aios-*`), ungültige Namen, Ordner ohne `SKILL.md` und Skills, deren `name` nicht dem Verzeichnisnamen entspricht.
 2. Mit `<Projekt>/.claude/skills/` und `<Projekt>/.aios/manifest` vergleichen.
-3. **neu**: kopieren; **geändert**: ersetzen; **weggefallen** (im Manifest, aber nicht mehr in der Kette): entfernen. Skills in `.claude/skills/`, die nicht im Manifest stehen, bleiben unberührt.
+3. **neu**: kopieren; **geändert** (anderer Inhalt oder andere Quelle des Blueprints, oder die Kopie in `.claude/skills/` wurde verändert): ersetzen; **weggefallen** (im Manifest, aber nicht mehr in der Kette): entfernen. Skills in `.claude/skills/`, die nicht im Manifest stehen, bleiben unberührt und werden gemeldet, wenn ein Blueprint denselben Namen hat.
 4. `.aios/manifest` schreiben (Format Spec 04).
 
 | Aufruf | Rückfrage | Anlass |
 |---|---|---|
 | SessionStart-Hook (`aios-context --sync --yes`) | nein | jeder Session-Start in einem aktivierten Vault |
-| `/aios-register`, `aios --register` | ja, mit Vorschau | manueller Anstoß, z. B. nach `/aios-deploy` |
+| `/aios-register`, `aios --register [<pfad>]`, `aios-context --sync` | ja, mit Vorschau | manueller Anstoß, z. B. nach `/aios-deploy` |
 
-**Wirksamkeit:** Claude Code übernimmt Skills, die nach dem Start einer Session angelegt werden, nicht zuverlässig in diese Session (Memo 16). Die Registrierung beim Session-Start stellt deshalb den Stand für den **nächsten** Chat her. Ändert sie etwas, meldet der Hook `AIOS-SKILLS: <Änderungen> — wirksam ab dem nächsten Chat`. `/aios-register`, `/aios-deploy` und `/aios-init` sagen nach dem Registrieren: „Der Skill ist ab dem nächsten Chat verfügbar (oder nach `/reload-skills`)." Ob `/reload-skills` das zuverlässig leistet, ist offen (Spec 01, O1).
+**Wirksamkeit:** Claude Code übernimmt Skills, die nach dem Start einer Session angelegt werden, nicht zuverlässig in diese Session (Memo 16). Die Registrierung beim Session-Start stellt deshalb den Stand für den **nächsten** Chat her. Ändert sie etwas, meldet der Hook `AIOS-SKILLS: <Änderungen> — wirksam ab dem nächsten Chat` (z. B. `AIOS-SKILLS: new memo; changed shared — wirksam ab dem nächsten Chat`); übersprungene Blueprints meldet er als `AIOS-WARNING`. Weil die Kopie im Projekt selbst liegt, ist ein Skill aus einem Masterspace oberhalb auch dann verfügbar, wenn das Projekt ein eigenes Git-Repo ist (geprüft mit echten Sessions, Memo 27). `/aios-register`, `/aios-deploy` und `/aios-init` sagen nach dem Registrieren: „Der Skill ist ab dem nächsten Chat verfügbar (oder nach `/reload-skills`)." Ob `/reload-skills` das zuverlässig leistet, ist offen (Spec 01, O1).
 
 ## Agenten
 
