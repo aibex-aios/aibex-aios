@@ -7,7 +7,8 @@
    export PATH="/usr/bin:/bin:/usr/sbin:/sbin"
    D="$SANDBOX/work/§Demo"; G="$D/Garten"
    mk() { mkdir -p "$(dirname "$1")"; printf '%s' "$2" > "$1"; }
-   skill() { mk "$1/SKILL.md" "$(printf -- '---\nname: %s\ndescription: %s\n---\n\n# %s\n' "$2" "$3" "$2")"; }
+   skill() { mk "$1/SKILL.md" "$(printf -- '---\nname: %s\ndescription: %s\n%s---\n\n# %s\n' "$2" "$3" "${4-version: 0.1.0
+}" "$2")"; }
    mk "$D/.aios/config.yaml" $'aios: 0.1.0\n'
    mk "$D/@/@Rule/stil.md" $'# Stil\n'
    mk "$D/@/@!Prompt/obstgaertner.md" $'# Obstgärtner (Vault)\nvom Vault\n'
@@ -15,7 +16,7 @@
    skill "$D/@/@!Skill/sonne-mond-zahlen" sonne-mond-zahlen "Zahlen des Vaults"
    O="$G/@/@!Assistant/obstgaertner"
    mk "$G/@/garten.md" $'# Garten\n'
-   mk "$O/ASSISTANT.md" $'---\nname: obstgaertner\ntitle: Obstgärtner\ndescription: >\n  Bodenständiger Obstgärtner,\n  rechnet mit Äpfeln und Birnen\nprompt: obstgaertner\nskills: [apfel-birnen-algebra, memo]\nmodel:\n  claude: sonnet\ntools: [read, search]\n---\n\n## Handwerk\nNur Äpfel und Birnen.\n'
+   mk "$O/ASSISTANT.md" $'---\nname: obstgaertner\ntitle: Obstgärtner\nversion: 0.2.0\ndescription: >\n  Bodenständiger Obstgärtner,\n  rechnet mit Äpfeln und Birnen\nprompt: obstgaertner\nskills: [apfel-birnen-algebra, memo]\nmodel:\n  claude: sonnet\ntools: [read, search]\n---\n\n## Handwerk\nNur Äpfel und Birnen.\n'
    mk "$O/@!Prompt/obstgaertner.md" $'# Obstgärtner\nbodenständig\n'
    skill "$O/@!Skill/apfel-birnen-algebra" apfel-birnen-algebra "Boolesche Algebra mit Apfel und Birne"
    mk "$O/@Wissen/@Grundlagen/grundlagen.md" $'# Grundlagen\nÄpfel und Birnen sind Kernobst.\n'
@@ -24,7 +25,7 @@
    mk "$O/@Wissen/@!Entwurf/geheim.md" $'# Entwurf\n'
    mk "$O/notiz.txt" 'kein md'
    A="$D/@/@!Assistant/astronom"
-   mk "$A/ASSISTANT.md" $'---\nname: astronom\ntitle: Astronom\ndescription: Poetisch-präziser Astronom\nskills: [sonne-mond-zahlen]\nmodel: opus\n---\n\nSonne und Mond.\n'
+   mk "$A/ASSISTANT.md" $'---\nname: astronom\ntitle: Astronom\nversion: 0.1.0\ndescription: Poetisch-präziser Astronom\nskills: [sonne-mond-zahlen]\nmodel: opus\n---\n\nSonne und Mond.\n'
    mk "$D/Wiese/@/wiese.md" $'# Wiese\n'
    AC() { (cd "$1" && shift && "$SRC/bin/aios-context" "$@" 2>&1); }
 
@@ -33,15 +34,15 @@
 #===============================================================================
 
    OUT="$(AC "$G" --assistants)"
-   assert_contains "$OUT" "astronom             Astronom — Poetisch-präziser Astronom  (§Demo)" "--assistants: assistant of the vault"
-   assert_contains "$OUT" "obstgaertner         Obstgärtner — Bodenständiger Obstgärtner, rechnet mit Äpfeln und Birnen  (Garten)" "--assistants: assistant of the project, block scalar"
+   assert_contains "$OUT" "astronom             Astronom 0.1.0 — Poetisch-präziser Astronom  (§Demo)" "--assistants: assistant of the vault"
+   assert_contains "$OUT" "obstgaertner         Obstgärtner 0.2.0 — Bodenständiger Obstgärtner, rechnet mit Äpfeln und Birnen  (Garten)" "--assistants: assistant of the project, block scalar"
    for Q in "Obstgärtner" "obstgaertner" "OBSTGÄRTNER" "Obstgartner"; do
       case "$Q" in
          Obstgartner) assert_contains "$(AC "$G" --assistant "$Q")" "no assistant named 'Obstgartner'" "unknown name: error with the list" ;;
-         *) assert_contains "$(AC "$G" --assistant "$Q")" '<aios-assistant name="obstgaertner" title="Obstgärtner"' "name or title without case/umlauts: $Q" ;;
+         *) assert_contains "$(AC "$G" --assistant "$Q")" '<aios-assistant name="obstgaertner" title="Obstgärtner" version="0.2.0"' "name or title without case/umlauts: $Q" ;;
       esac
    done
-   assert_contains "$(AC "$G" --assistant Obstgartner)" "astronom             Astronom" "unknown name: available assistants listed"
+   assert_contains "$(AC "$G" --assistant Obstgartner)" "astronom             Astronom 0.1.0" "unknown name: available assistants listed"
    assert_exit 1 "$SRC/bin/aios-context" --assistant nobody
    assert_contains "$(AC "$D/Wiese" --assistant obstgaertner)" "no assistant named" "assistant of a sibling project is not in the chain"
    assert_contains "$(AC "$D/Wiese" --assistant astronom)" '<aios-assistant name="astronom"' "vault assistant from a sibling project"
@@ -51,7 +52,7 @@
 #===============================================================================
 
    OUT="$(AC "$G" --assistant Obstgärtner; echo x)"; OUT="${OUT%x}"
-   assert_eq "$OUT" "<aios-assistant name=\"obstgaertner\" title=\"Obstgärtner\" src=\"$O\">
+   assert_eq "$OUT" "<aios-assistant name=\"obstgaertner\" title=\"Obstgärtner\" version=\"0.2.0\" src=\"$O\">
 <aios-assistant-meta>
 description: Bodenständiger Obstgärtner, rechnet mit Äpfeln und Birnen
 model: claude: sonnet
@@ -81,6 +82,7 @@ Nur Äpfel und Birnen.
 ---
 name: apfel-birnen-algebra
 description: Boolesche Algebra mit Apfel und Birne
+version: 0.1.0
 ---
 
 # apfel-birnen-algebra
@@ -89,6 +91,7 @@ description: Boolesche Algebra mit Apfel und Birne
 ---
 name: memo
 description: Memo des Vaults
+version: 0.1.0
 ---
 
 # memo
@@ -114,9 +117,22 @@ description: Memo des Vaults
 # errors and modes
 #===============================================================================
 
-   mk "$D/@/@!Assistant/falsch/ASSISTANT.md" $'---\nname: anders\n---\n'
-   assert_contains "$(AC "$D" --assistants)" "name 'anders' differs from the folder 'falsch'" "name differs from the folder"
+   mk "$D/@/@!Assistant/falsch/ASSISTANT.md" $'---\nname: anders\nversion: 0.1.0\n---\n'
+   OUT="$(AC "$D" --assistants)"
+   assert_contains "$OUT" "skipped: $D/@/@!Assistant/falsch/ASSISTANT.md: name 'anders' differs from the folder 'falsch', not resolved" "name differs from the folder: skipped"
+   assert_contains "$OUT" "astronom             Astronom 0.1.0" "name differs: the other assistants still listed"
    rm -rf "$D/@/@!Assistant/falsch"
+   mk "$D/@/@!Assistant/ohne/ASSISTANT.md" $'---\nname: ohne\ntitle: Ohne\ndescription: d\n---\n'
+   mk "$D/@/@!Assistant/kurz/ASSISTANT.md" $'---\nname: kurz\ntitle: Kurz\nversion: 1\ndescription: d\n---\n'
+   OUT="$(AC "$D" --assistants)"
+   assert_contains "$OUT" "skipped: assistant ohne has no version, not resolved ($D/@/@!Assistant/ohne)" "assistant without version: skipped and reported"
+   assert_contains "$OUT" "skipped: assistant kurz has an invalid version '1' (MAJOR.MINOR.PATCH), not resolved" "assistant with invalid version: reported"
+   assert_contains "$(AC "$D" --assistant Ohne)" "no assistant named 'Ohne'" "assistant without version: not resolved"
+   assert_contains "$(AC "$D" --assistant Ohne)" "skipped: assistant ohne has no version" "assistant without version: reported with the list"
+   rm -rf "$D/@/@!Assistant/ohne" "$D/@/@!Assistant/kurz"
+   skill "$D/@/@!Skill/sonne-mond-zahlen" sonne-mond-zahlen "Zahlen ohne Version" ""
+   rm -rf "$G/@/@!Skill/sonne-mond-zahlen"
+   assert_contains "$(AC "$D" --assistant astronom)" "skill sonne-mond-zahlen has no version" "skill of an assistant without version: error"
    mk "$SANDBOX/work/§Alt/@/@!Assistant/x/ASSISTANT.md" $'---\nname: x\n---\n'
    assert_contains "$(AC "$SANDBOX/work/§Alt" --assistant x)" "need a vault activated with AIOS" "legacy: no assistants"
    [ ! -e "$G/.claude" ] && [ ! -e "$G/.aios" ] && ok || fail "stateless: nothing written"

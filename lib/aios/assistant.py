@@ -5,7 +5,7 @@ from __future__ import annotations
 import unicodedata
 from pathlib import Path
 
-from . import config
+from . import config, registry
 from .context import AVAILABLE, LOAD, classify, title
 from .skills import strip_frontmatter
 from .ui import Abort
@@ -32,31 +32,42 @@ def meta_of(file):
 
 
 def assistants(ctx):
-    """{name: (dir, meta)} of the chain; the nearest masterspace wins (spec 03)."""
-    found = {}
+    """({name: (dir, meta)}, [problems]) of the chain; the nearest masterspace wins (spec 03).
+    An assistant with a wrong name or without a valid version is skipped and reported."""
+    found, problems = {}, []
     for ms in ctx.masterspaces:
         for f in sorted((ms / "@!Assistant").glob("*/ASSISTANT.md")):
-            meta = meta_of(f)
+            try:
+                meta = meta_of(f)
+            except Abort as e:
+                problems.append(f"{e}, not resolved")
+                continue
             if meta.get("name") != f.parent.name:
-                raise Abort(f"{f}: name {meta.get('name')!r} differs from the folder {f.parent.name!r}")
+                problems.append(f"{f}: name {meta.get('name')!r} differs from the folder {f.parent.name!r}, not resolved")
+                continue
+            problem = registry.version_problem("assistant", f.parent.name, meta)
+            if problem:
+                problems.append(f"{problem}, not resolved ({f.parent})")
+                continue
             found[f.parent.name] = (f.parent, meta)
-    return found
+    return found, problems
 
 
-def available_lines(found):
+def available_lines(found, problems=()):
+    lines = [f"{n:20} {m.get('title', n)} {registry.version_of(m)} — {m.get('description', '')}  ({d.parents[2].name})"
+             for n, (d, m) in sorted(found.items())]
     if not found:
-        return ["no assistants in the chain (@!Assistant/<name>/ASSISTANT.md)"]
-    return [f"{n:20} {m.get('title', n)} — {m.get('description', '')}  ({d.parents[2].name})"
-            for n, (d, m) in sorted(found.items())]
+        lines = ["no assistants in the chain (@!Assistant/<name>/ASSISTANT.md)"]
+    return lines + [f"skipped: {p}" for p in problems]
 
 
 def resolve(ctx, query):
-    found = assistants(ctx)
+    found, problems = assistants(ctx)
     q = normalize(query)
     hits = [n for n, (d, m) in found.items() if q in (normalize(n), normalize(str(m.get("title", ""))))]
     if len(hits) != 1:
         what = "no assistant" if not hits else "more than one assistant"
-        raise Abort(f"{what} named {query!r}; available:\n" + "\n".join(available_lines(found)))
+        raise Abort(f"{what} named {query!r}; available:\n" + "\n".join(available_lines(found, problems)))
     return hits[0], found[hits[0]]
 
 
@@ -65,6 +76,10 @@ def lookup(assistant_dir, ctx, kind, name):
     rel = Path("@!Prompt") / f"{name}.md" if kind == "prompt" else Path("@!Skill") / name / "SKILL.md"
     for base in [assistant_dir] + [ms for ms in reversed(ctx.masterspaces)]:
         if (base / rel).is_file():
+            if kind == "skill":
+                problem = registry.version_problem("skill", name, meta_of(base / rel))
+                if problem:
+                    raise Abort(f"{problem} ({base / rel}); a skill of the assistant {assistant_dir.name} needs a version")
             return base / rel
     raise Abort(f"{kind} {name} of the assistant {assistant_dir.name} not found "
                 f"(looked in {assistant_dir} and the masterspaces of the chain)")
@@ -86,7 +101,7 @@ def render(ctx, query):
     model = meta.get("model")
     model = ", ".join(f"{k}: {v}" for k, v in model.items()) if isinstance(model, dict) else (model or "")
     t = meta.get("title", name)
-    out = [f'<aios-assistant name="{name}" title="{t}" src="{d}">\n',
+    out = [f'<aios-assistant name="{name}" title="{t}" version="{registry.version_of(meta)}" src="{d}">\n',
            "<aios-assistant-meta>\n",
            f"description: {meta.get('description', '')}\n",
            f"model: {model or '-'}\n",

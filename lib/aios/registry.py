@@ -17,6 +17,7 @@ from . import context
 from .install import frontmatter, make_writable
 
 NAME = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}$")
+SEMVER = re.compile(r"^\d+\.\d+\.\d+$")
 RESERVED = "aios-"
 
 
@@ -35,6 +36,20 @@ def digest(d):
             h.update(p.read_bytes())
             h.update(b"\n")
     return "sha256:" + h.hexdigest()
+
+
+def version_of(meta):
+    return str(meta.get("version") or "").strip().strip("'\"")
+
+
+def version_problem(kind, name, meta):
+    """None if meta has a version MAJOR.MINOR.PATCH (spec 03: required for every skill and assistant)."""
+    ver = version_of(meta)
+    if not ver:
+        return f"{kind} {name} has no version"
+    if not SEMVER.match(ver):
+        return f"{kind} {name} has an invalid version {ver!r} (MAJOR.MINOR.PATCH)"
+    return None
 
 
 def blueprints(ctx):
@@ -58,7 +73,11 @@ def blueprints(ctx):
             if meta.get("name") != d.name:
                 problems.append(f"{d}: name in SKILL.md is {meta.get('name')!r}, not {d.name!r}; not registered")
                 continue
-            found[d.name] = (d, meta.get("version", ""))
+            problem = version_problem("skill", d.name, meta)
+            if problem:
+                problems.append(f"{problem}, not registered ({d})")
+                continue
+            found[d.name] = (d, version_of(meta))
     return found, problems
 
 

@@ -34,19 +34,20 @@
       printf 'aios: 0.1.0\n' > "$V/.aios/config.yaml"
       printf '# Stil\nAntworte auf Deutsch.\n' > "$V/@/@Rule/stil.md"
       body() { awk 'BEGIN{n=0} /^---$/{n++; next} n>=2' "$1"; }    # text after the frontmatter
-      { printf -- '---\nname: obstgaertner\ntitle: Obstgärtner\ndescription: Bodenständiger Obstgärtner, rechnet ausschließlich mit Äpfeln und Birnen\nskills: [apfel-birnen-algebra]\nmodel:\n  claude: sonnet\ntools: [read, search]\n---\n'
+      { printf -- '---\nname: obstgaertner\ntitle: Obstgärtner\nversion: 0.1.0\ndescription: Bodenständiger Obstgärtner, rechnet ausschließlich mit Äpfeln und Birnen\nskills: [apfel-birnen-algebra]\nmodel:\n  claude: sonnet\ntools: [read, search]\n---\n'
         body "$SRC/Obstgarten/.claude/agents/obstgaertner.md" | sed 's/Dein Wissen dazu ist in `CLAUDE.md` beschrieben./Dein Wissen dazu steht im Wissen dieses Assistenten (geladen oder verfügbar)./'
       } > "$O/ASSISTANT.md"
-      cp -R "$SRC/Obstgarten/.claude/skills/apfel-birnen-algebra" "$O/@!Skill/"
+      addver() { awk 'NR==2{print; print "version: 0.1.0"; next} 1' "$1/SKILL.md" > "$1/SKILL.md.tmp" && mv "$1/SKILL.md.tmp" "$1/SKILL.md"; }   # skills need a version (spec 03)
+      cp -R "$SRC/Obstgarten/.claude/skills/apfel-birnen-algebra" "$O/@!Skill/"; addver "$O/@!Skill/apfel-birnen-algebra"
       cp "$SRC/Obstgarten/Wissen/grundlagen.md" "$O/@Wissen/@Grundlagen/"
       cp "$SRC/Obstgarten/Wissen/sortenkunde.md" "$O/@Wissen/@@Sortenkunde/"
       cp "$SRC/Obstgarten/Wissen/veredelung.md" "$O/@Wissen/@@Veredelung/"
       SORTE="Sternreinette $RANDOM"
       printf '\n## Sandkasten\n\n| Sorte | Genussreife |\n|---|---|\n| %s | nur am 29. Februar eines Schaltjahres |\n' "$SORTE" >> "$O/@Wissen/@@Sortenkunde/sortenkunde.md"
-      { printf -- '---\nname: astronom\ntitle: Astronom\ndescription: Poetisch-präziser Astronom, rechnet ausschließlich mit Sonne und Mond\nskills: [sonne-mond-zahlen]\nmodel:\n  claude: opus\n---\n'
+      { printf -- '---\nname: astronom\ntitle: Astronom\nversion: 0.1.0\ndescription: Poetisch-präziser Astronom, rechnet ausschließlich mit Sonne und Mond\nskills: [sonne-mond-zahlen]\nmodel:\n  claude: opus\n---\n'
         body "$SRC/Sternwarte/.claude/agents/astronom.md"
       } > "$A/ASSISTANT.md"
-      cp -R "$SRC/Sternwarte/.claude/skills/sonne-mond-zahlen" "$V/@/@!Skill/"
+      cp -R "$SRC/Sternwarte/.claude/skills/sonne-mond-zahlen" "$V/@/@!Skill/"; addver "$V/@/@!Skill/sonne-mond-zahlen"
       mkdir -p "$G/@"; printf '# Obstgarten\n' > "$G/@/obstgarten.md"
       for TOOL in aios aios-context; do
          printf '#!/bin/bash\nHOME="%s/home" exec "%s/bin/%s" "$@"\n' "$SB" "$REPO" "$TOOL" > "$SB/bin/$TOOL"; chmod +x "$SB/bin/$TOOL"

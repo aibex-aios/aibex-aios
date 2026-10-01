@@ -12,7 +12,9 @@
 }" "$2" "${4:-}")"; }
    mk "$D/.aios/config.yaml" $'aios: 0.1.0\n'
    skill "$D/@/@!Skill/memo"        memo 6.0.0
-   skill "$D/@/@!Skill/shared"      shared "" "shared v1"
+   skill "$D/@/@!Skill/shared"      shared 0.1.0 "shared v1"
+   skill "$D/@/@!Skill/noversion"   noversion
+   skill "$D/@/@!Skill/badversion"  badversion 1.0
    skill "$D/@/@!Skill/aios-evil"   aios-evil
    skill "$D/@/@!Skill/Bad_Name"    Bad_Name
    mkdir -p "$D/@/@!Skill/noskill"
@@ -37,14 +39,16 @@
    OUT="$(echo n | SY "$G")"; RC=$?
    assert_eq "$RC" "1" "cancelled: exit 1"
    assert_contains "$OUT" "new      memo 6.1.0  ($G/@/@!Skill/memo)" "preview: nearest masterspace wins"
-   assert_contains "$OUT" "new      shared  ($D/@/@!Skill/shared)" "preview: skill without version"
-   for X in aios-evil Bad_Name noskill wrongname privat; do
+   assert_contains "$OUT" "new      shared 0.1.0  ($D/@/@!Skill/shared)" "preview: skill of the vault"
+   for X in aios-evil Bad_Name noskill wrongname privat noversion badversion; do
       case "$(printf '%s\n' "$OUT" | grep '^      ')" in *"new      $X"*|*"changed  $X"*) fail "preview must not list $X" ;; *) ok ;; esac
    done
    assert_contains "$OUT" "the name aios-evil is reserved" "reserved name reported"
    assert_contains "$OUT" "Bad_Name is not a valid skill name" "invalid name reported"
    assert_contains "$OUT" "noskill: no SKILL.md" "missing SKILL.md reported"
    assert_contains "$OUT" "name in SKILL.md is 'other', not 'wrongname'" "wrong name reported"
+   assert_contains "$OUT" "skill noversion has no version, not registered ($D/@/@!Skill/noversion)" "skill without version reported"
+   assert_contains "$OUT" "skill badversion has an invalid version '1.0' (MAJOR.MINOR.PATCH), not registered" "invalid version reported"
    [ ! -e "$K/memo" ] && [ ! -e "$G/.aios/manifest" ] && ok || fail "cancelled: nothing written"
 
    OUT="$(echo y | SY "$G")"
@@ -64,7 +68,7 @@ registered:
     digest: sha256:$DIG
   shared:
     source: \"$D/@/@!Skill/shared\"
-    version:
+    version: 0.1.0
     digest: $(sed -n 's/^    digest: //p' "$G/.aios/manifest" | tail -1)" "manifest: format and digest"
    assert_contains "$(SY "$G" </dev/null)" "are up to date" "second sync: up to date, no question"
 
@@ -85,6 +89,14 @@ registered:
    OUT="$(SY "$G" --yes)"
    assert_contains "$OUT" "changed  memo 6.0.0  ($D/@/@!Skill/memo)" "override removed: vault version"
    [ ! -e "$K/memo/vorlagen" ] && ok || fail "old files of the skill removed"
+
+   sed -i.bak '/^version:/d' "$D/@/@!Skill/shared/SKILL.md" && rm "$D/@/@!Skill/shared/SKILL.md.bak"
+   OUT="$(SY "$G" --yes)"
+   assert_contains "$OUT" "remove   shared" "version removed: no longer valid, remove"
+   assert_contains "$OUT" "skill shared has no version, not registered" "version removed: reported"
+   [ ! -e "$K/shared" ] && ok || fail "version removed: registered copy deleted"
+   skill "$D/@/@!Skill/shared" shared 0.1.0 "shared v3"
+   assert_contains "$(SY "$G" --yes)" "new      shared 0.1.0" "version back: registered again"
 
    rm -rf "$D/@/@!Skill/shared"
    OUT="$(SY "$G" --yes)"

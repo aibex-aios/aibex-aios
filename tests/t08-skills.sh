@@ -24,10 +24,10 @@
    mk "$D/@/@Rule/stil.md" $'# Stil\nklar\n'
    mk "$D/@/@@Buch/kapitel.md" $'# Kapitel\n'
    skill "$D/@/@!Skill/memo" memo 6.0.0
-   skill "$D/@/@!Skill/notiz" notiz
+   skill "$D/@/@!Skill/notiz" notiz 0.1.0
    mk "$D/@/@!Prompt/obstgaertner.md" $'# Prompt\n'
-   mk "$D/@/@!Assistant/obstgaertner/ASSISTANT.md" $'---\nname: obstgaertner\n---\n'
-   skill "$D/@/@!Assistant/obstgaertner/@!Skill/apfel" apfel
+   mk "$D/@/@!Assistant/obstgaertner/ASSISTANT.md" $'---\nname: obstgaertner\nversion: 0.1.0\n---\n'
+   skill "$D/@/@!Assistant/obstgaertner/@!Skill/apfel" apfel 0.1.0
    mk "$D/Garten/@/garten.md" $'# Garten\n'
    mk "$D/Garten/.aios/config.yaml" $'aios: 0.2.0\n'
    mkdir -p "$D/Wiese" "$D/Garten/Beet" "$SANDBOX/work/§Alt/Feld" "$SANDBOX/outside"
@@ -81,7 +81,7 @@ verfügbares Wissen         1 Datei (nicht geladen, Inhaltsverzeichnis im Master
   §Demo/@/@@Buch/kapitel.md
 Verborgen                  Blueprints: 3 Skills, 1 Assistent, 1 Prompt
   Skills       memo 6.0.0 (§Demo) — registriert
-               notiz (§Demo) — nicht registriert
+               notiz 0.1.0 (§Demo) — nicht registriert
                apfel (Assistent obstgaertner, privat)
   Assistenten  obstgaertner (§Demo)
   Prompts      obstgaertner (§Demo)

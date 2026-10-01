@@ -354,7 +354,7 @@ def assistant_cmd(argv):
         return 1
     try:
         if argv[0] == "--assistants":
-            print("\n".join(assistant.available_lines(assistant.assistants(ctx))))
+            print("\n".join(assistant.available_lines(*assistant.assistants(ctx))))
         else:
             sys.stdout.write(assistant.render(ctx, argv[1]))
     except Abort as e:
