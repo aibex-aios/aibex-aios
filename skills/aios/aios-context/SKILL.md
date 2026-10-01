@@ -8,6 +8,8 @@ allowed-tools: Bash(aios-context *), Read
 
 Ein AIOS-Skill von AIbex AIOS (Spec 02, *Skill `/aios-context`*). Er ändert nichts außer dem Nachladen.
 
+**Arbeitsverzeichnis:** Führe alle Befehle dieses Skills im Arbeitsverzeichnis der Session aus und wechsle nie mit `cd`; AIOS bestimmt das Projekt der Session aus dem aktuellen Verzeichnis. Andere Orte nur als ausdrücklichen Pfad angeben.
+
 ## Ablauf
 
 1. **Soll-Stand ermitteln:** Führe `aios-context --id` über das Bash-Werkzeug aus. Die Ausgabe hat die Form `id=<id> files=<n> cwd=<cwd> mode=<mode>`.

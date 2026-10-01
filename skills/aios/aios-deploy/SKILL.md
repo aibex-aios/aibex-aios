@@ -8,6 +8,8 @@ allowed-tools: Bash(aios --deploy *), Bash(aios --library *)
 
 Ein AIOS-Skill von AIbex AIOS (Spec 03, *Ausrollen*). Aufruf: `/aios-deploy <name>==<version> [--to <projekt>] [--agent <name>] [--from <pflegeprojekt>]` oder `/aios-deploy` ohne Skill zum Abgleich.
 
+**Arbeitsverzeichnis:** Führe alle Befehle dieses Skills im Arbeitsverzeichnis der Session aus und wechsle nie mit `cd`; AIOS bestimmt das Projekt der Session aus dem aktuellen Verzeichnis. Andere Orte nur als ausdrücklichen Pfad angeben.
+
 ## Ablauf mit Skill und Version
 
 1. **Ohne Version:** Nennt der User nur einen Namen oder fragt, was es gibt, führe `aios --library` aus, zeige die mitgelieferten Skills mit ihren Versionen und frage nach der Version.

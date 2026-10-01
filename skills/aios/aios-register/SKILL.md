@@ -8,6 +8,8 @@ allowed-tools: Bash(aios --register *)
 
 Ein AIOS-Skill von AIbex AIOS (Spec 03, *Registrieren*).
 
+**Arbeitsverzeichnis:** Führe alle Befehle dieses Skills im Arbeitsverzeichnis der Session aus und wechsle nie mit `cd`; AIOS bestimmt das Projekt der Session aus dem aktuellen Verzeichnis. Andere Orte nur als ausdrücklichen Pfad angeben.
+
 ## Ablauf
 
 1. **Vorschau:** Führe `aios --register --plan` über das Bash-Werkzeug aus.

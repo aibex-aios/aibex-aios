@@ -8,6 +8,8 @@ allowed-tools: Read, Glob, Bash(git log *), Bash(aios-context --id *)
 
 Ein AIOS-Skill von AIbex AIOS (Spec 03, *Projektstatus*). Er läuft nur auf Anforderung und schreibt nichts.
 
+**Arbeitsverzeichnis:** Führe alle Befehle dieses Skills im Arbeitsverzeichnis der Session aus und wechsle nie mit `cd`; AIOS bestimmt das Projekt der Session aus dem aktuellen Verzeichnis. Andere Orte nur als ausdrücklichen Pfad angeben.
+
 ## Ablauf
 
 1. **Projekt bestimmen:** Führe `aios-context --id` aus; das Projekt ist das `cwd` daraus. Hat es kein `@Memo/`, stütze dich nur auf das Git-Log und sag das.

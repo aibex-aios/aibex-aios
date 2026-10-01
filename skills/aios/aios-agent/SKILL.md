@@ -8,6 +8,8 @@ allowed-tools: Bash(aios-context --agent *), Bash(aios-context --agents *), Read
 
 Ein AIOS-Skill von AIbex AIOS (Spec 03, *Aktivieren*). Die Aktivierung ist ohne Zustand: Sie schreibt nichts nach `.claude/` oder `.aios/` und gilt bis zum Ende des Chats.
 
+**Arbeitsverzeichnis:** Führe alle Befehle dieses Skills im Arbeitsverzeichnis der Session aus und wechsle nie mit `cd`; AIOS bestimmt das Projekt der Session aus dem aktuellen Verzeichnis. Andere Orte nur als ausdrücklichen Pfad angeben.
+
 ## Ablauf
 
 1. **Argument lesen:** `<Name>[: <Titel>]`. Ohne Namen oder bei „welche Agenten gibt es?" `aios-context --agents` ausführen, die Liste zeigen und beenden.
