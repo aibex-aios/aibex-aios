@@ -91,9 +91,9 @@ Ein handgeschriebenes Inhaltsverzeichnis mit der Spalte „Lesen, wenn …" kann
 |---|---|
 | `aios-context --session` | SessionStart-Hook (liest Hook-JSON von stdin, nimmt dessen `cwd`), siehe *Hooks* |
 | `aios-context --advise` | UserPromptSubmit-Hook, siehe *Hooks* |
-| `aios-context --context` | gibt den Master-Kontext von `cwd` aus (Format siehe *Ausgabe*) |
-| `aios-context --load` | schreibt den Master-Kontext in Part-Dateien unter `~/.aios/cache/<id>/` (je höchstens 40.000 Zeichen, geschnitten an Zeilenenden) und gibt die Liste aus; einmal je id, Cache-Einträge älter als 7 Tage werden entfernt |
-| `aios-context --id` | gibt `id=<id> files=<n> cwd=<cwd> mode=<aios-0.1.0 | legacy | none>` aus; `aios-<version>` ist die Version des laufenden Programms |
+| `aios-context --context [<pfad>]` | gibt den Master-Kontext von `cwd` bzw. `<pfad>` aus (Format siehe *Ausgabe*) |
+| `aios-context --load [<pfad>]` | schreibt den Master-Kontext in Part-Dateien unter `~/.aios/cache/<id>/` (je höchstens 40.000 Zeichen, geschnitten an Zeilenenden) und gibt die Liste aus; einmal je id, Cache-Einträge älter als 7 Tage werden entfernt |
+| `aios-context --id [<pfad>]` | gibt `id=<id> files=<n> cwd=<cwd> mode=<aios-0.1.0 | legacy | none>` aus; `aios-<version>` ist die Version des laufenden Programms |
 | `aios-context --list` | Aufstellung für `/aios-context` (siehe dort) |
 | `aios-context --sync` | Registrierung der Projekt-Skills (Spec 03, *Registrieren*), mit Vorschau; mit `--yes` ohne Rückfrage |
 | `aios-context --agent <name>` | gibt den Kontext eines Agenten aus (Spec 03, *Agenten*) |
@@ -149,7 +149,35 @@ answer, ask the user: (1) initialize this folder as a project (/aios-init),
 | **SessionStart** (Start, Resume, Clear, nach Compaction) | `aios-context --session` | 1. außerhalb eines Vaults: nichts. 2. Legacy-Modus: Verhalten von `ai-brain --session`. 3. aktiviert: Registrierung der Projekt-Skills ohne Rückfrage (`--sync --yes`), bei Änderungen eine Zeile `AIOS-SKILLS: … — wirksam ab dem nächsten Chat` (Spec 03). 4. bei nicht initialisiertem Projekt: `PROJECT-UNINITIALIZED`. 5. Master-Kontext inline, wenn er höchstens `inline_limit` Zeichen hat (Standard 9000), sonst `AIOS-CONTEXT-MANDATORY` mit der Liste der Part-Dateien |
 | **UserPromptSubmit** | `aios-context --advise` | außerhalb eines Vaults: nichts. Legacy-Modus: Verhalten von `ai-brain --advise`. Aktiviert: `AIOS-CONTEXT-CHECK: expected id=<id>` mit der Anweisung, bei fehlenden Marken „Lade Master-Kontext" zu sagen, `aios-context --load` auszuführen, alle Part-Dateien vollständig zu lesen und „Master-Kontext geladen (id <id>)" zu melden |
 
-Die Hooks erzeugen außer der Registrierung keine Dateien im Projekt und fragen nie nach.
+Die Hooks erzeugen außer der Registrierung keine Dateien im Projekt und fragen nie nach. Beide nehmen `cwd` aus dem Hook-JSON auf stdin, ohne JSON das Arbeitsverzeichnis des Prozesses; im Legacy-Modus erhält `ai-brain` dasselbe JSON. Warnungen der Konfigurationskette gibt `--session` als Zeilen `AIOS-WARNING: …` aus. Scheitert ein Hook, gibt er eine Zeile `AIOS-WARNING: aios-context --session failed: …` aus und endet mit Exit 0: Ein Hook bricht nie die Session ab.
+
+**Texte der Hooks:**
+
+```
+AIOS-CONTEXT (loaded automatically by SessionStart hook):
+<aios-context id="…"> … </aios-context id="…">
+```
+
+```
+AIOS-CONTEXT-MANDATORY: the master context of this project is too large
+ for direct injection (<n> > <inline_limit> characters). Before your first
+ answer, tell the user "Lade Master-Kontext", read every part file listed
+ below completely with the Read tool, then tell the user
+ "Master-Kontext geladen (id <id>)".
+AIOS-CONTEXT-LOAD … (Ausgabe von --load)
+```
+
+```
+AIOS-CONTEXT-CHECK: expected id=<id> (files=<n>, cwd=<cwd>).
+ Before answering, verify that BOTH exact markers <aios-context id="<id>"
+ and </aios-context id="<id>"> are present in your context (memory or a
+ summary of earlier loading does not count). If not: tell the user
+ "Lade Master-Kontext", run `aios-context --load "<cwd>"` via Bash, read every
+ listed part file completely with the Read tool, then tell the user
+ "Master-Kontext geladen (id <id>)". If both markers are present, do nothing.
+```
+
+Die Anweisung nennt den Pfad ausdrücklich, damit die id nicht davon abhängt, in welchem Verzeichnis das Bash-Werkzeug gerade steht. Die Zeichenzahl für `inline_limit` zählt Zeichen, nicht Bytes.
 
 ## Legacy-Modus
 

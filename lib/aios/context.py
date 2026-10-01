@@ -6,6 +6,7 @@ Standard library only. Without activation (legacy mode) the calls go to ai-brain
 from __future__ import annotations
 
 import hashlib
+import json
 import os
 import re
 import shutil
@@ -22,7 +23,7 @@ PART_LIMIT = 40000                                  # characters per part file (
 CACHE_DAYS = 7
 HEADING = re.compile(r"^#{1,6}\s+(.+?)\s*#*\s*$")
 
-LATER = {"--session": 6, "--advise": 6, "--sync": 7, "--list": 8, "--agent": 10}
+LATER = {"--sync": 7, "--list": 8, "--agent": 10}
 
 
 # ---------------------------------------------------------------------------
@@ -207,48 +208,133 @@ def load_message(ctx, parts):
 
 
 # ---------------------------------------------------------------------------
+# hooks (spec 02, Hooks)
+# ---------------------------------------------------------------------------
+
+def hook_input():
+    """(cwd from the hook JSON on stdin or None, raw stdin)."""
+    if sys.stdin is None or sys.stdin.isatty():
+        return None, ""
+    raw = sys.stdin.read()
+    try:
+        d = json.loads(raw or "{}").get("cwd")
+    except (ValueError, AttributeError):
+        d = None
+    return (d if d and os.path.isdir(d) else None), raw
+
+
+def uninitialized_message(ctx):
+    return (f"PROJECT-UNINITIALIZED: {ctx.cwd} has no local masterspace (@/). Before your first\n"
+            f"answer, ask the user: (1) initialize this folder as a project (/aios-init),\n"
+            f"(2) continue in the project {ctx.project}. Give no other answer until the user decides.")
+
+
+def mandatory_message(ctx, size, limit):
+    ident = ctx.id
+    return (f"AIOS-CONTEXT-MANDATORY: the master context of this project is too large\n"
+            f" for direct injection ({size} > {limit} characters). Before your first\n"
+            f" answer, tell the user \"Lade Master-Kontext\", read every part file listed\n"
+            f" below completely with the Read tool, then tell the user\n"
+            f" \"Master-Kontext geladen (id {ident})\".")
+
+
+def check_message(ctx):
+    ident = ctx.id
+    return (f"AIOS-CONTEXT-CHECK: expected id={ident} (files={len(ctx.loaded)}, cwd={ctx.cwd}).\n"
+            f" Before answering, verify that BOTH exact markers <aios-context id=\"{ident}\"\n"
+            f" and </aios-context id=\"{ident}\"> are present in your context (memory or a\n"
+            f" summary of earlier loading does not count). If not: tell the user\n"
+            f" \"Lade Master-Kontext\", run `aios-context --load \"{ctx.cwd}\"` via Bash, read every\n"
+            f" listed part file completely with the Read tool, then tell the user\n"
+            f" \"Master-Kontext geladen (id {ident})\". If both markers are present, do nothing.")
+
+
+def session(ctx):
+    """SessionStart: warnings, PROJECT-UNINITIALIZED, master context inline or part files."""
+    out = [f"AIOS-WARNING: {w}" for w in ctx.cfg.warnings]
+    # registration of the project skills (--sync --yes) follows in step 7
+    if not ctx.initialized:
+        out.append(uninitialized_message(ctx))
+    text = ctx.render()
+    limit = ctx.cfg.inline_limit
+    if len(text) <= limit:
+        out.append("AIOS-CONTEXT (loaded automatically by SessionStart hook):")
+        out.append(text.rstrip("\n"))
+    else:
+        out.append(mandatory_message(ctx, len(text), limit))
+        out.append(load_message(ctx, load(ctx)))
+    return "\n".join(out)
+
+
+# ---------------------------------------------------------------------------
 # legacy mode and command line
 # ---------------------------------------------------------------------------
 
-def legacy(argv, cwd):
+def legacy(cmd, cwd, stdin=""):
     """Without activation aios-context behaves like ai-brain (spec 02, Legacy-Modus)."""
     brain = shutil.which("ai-brain")
-    if argv == ["--id"]:
+    if cmd == "--id":
         out = subprocess.run([brain, "--id"], capture_output=True, text=True, cwd=cwd).stdout.strip() \
             if brain else ""
         print(f"{out} mode=legacy" if out.startswith("id=") else f"id=- files=0 cwd={cwd} mode=legacy")
         return 0
     if not brain:
         return 0
-    sys.stdout.flush()
-    os.execv(brain, [brain, *argv])
+    r = subprocess.run([brain, cmd], input=stdin, text=True, capture_output=True, cwd=cwd)
+    sys.stdout.write(r.stdout)
+    return 0
+
+
+USAGE = "usage: aios-context --session | --advise | --context [<path>] | --load [<path>] | --id [<path>]"
 
 
 def main(argv):
-    cwd = paths.cwd()
     if argv and argv[0] in LATER:
         print(f"aios-context {argv[0]}: not implemented yet (step {LATER[argv[0]]})", file=sys.stderr)
         return 2
-    if argv not in (["--context"], ["--load"], ["--id"]):
-        print("usage: aios-context --context | --load | --id (aios-context -? for all options)", file=sys.stderr)
+    cmd = argv[0] if argv else ""
+    if cmd in ("--session", "--advise") and len(argv) == 1:
+        try:
+            return hook(cmd)
+        except Exception as e:                      # noqa: BLE001 - a hook never breaks the session
+            print(f"AIOS-WARNING: aios-context {cmd} failed: {e}")
+            return 0
+    if cmd not in ("--context", "--load", "--id") or len(argv) > 2:
+        print(USAGE, file=sys.stderr)
+        return 1
+    cwd = os.path.abspath(argv[1]) if len(argv) == 2 else paths.cwd()
+    if not os.path.isdir(cwd):
+        print(f"aios-context: {cwd} is not a directory", file=sys.stderr)
         return 1
     ctx = Context(cwd)
     if ctx.mode == "none":
-        if argv == ["--id"]:
+        if cmd == "--id":
             print(f"id=- files=0 cwd={ctx.cwd} mode=none")
         else:
             print("aios-context: not in a vault, no master context", file=sys.stderr)
         return 0
     if ctx.mode == "legacy":
-        return legacy(argv, cwd)
+        return legacy(cmd, cwd)
     for w in ctx.cfg.warnings:
         print(f"aios-context: warning: {w}", file=sys.stderr)
-    if argv == ["--id"]:
+    if cmd == "--id":
         print(f"id={ctx.id} files={len(ctx.loaded)} cwd={ctx.cwd} mode=aios-{version()}")
-    elif argv == ["--context"]:
+    elif cmd == "--context":
         sys.stdout.write(ctx.render())
     else:
         print(load_message(ctx, load(ctx)))
+    return 0
+
+
+def hook(cmd):
+    given, raw = hook_input()
+    cwd = given or paths.cwd()
+    ctx = Context(cwd)
+    if ctx.mode == "none":
+        return 0
+    if ctx.mode == "legacy":
+        return legacy(cmd, cwd, raw)
+    print(session(ctx) if cmd == "--session" else check_message(ctx))
     return 0
 
 

@@ -1,0 +1,85 @@
+#!/bin/bash
+# hooks.sh: live test of the hooks with real headless Claude sessions (step 6, costs tokens)
+
+   if [ "$*" == "-?" ] || [ "$*" == "--help" ]; then
+      echo '   usage: tests/live/hooks.sh [<model>]   # four headless sessions, default model haiku'
+      echo '          tests/live/hooks.sh --version   # print version'
+      echo '   not part of tests/run: needs a logged-in claude CLI and uses tokens'
+      echo '   see also: tests/run, aios-context'
+      exit 1
+   fi
+
+#===============================================================================
+# print version: tests/live/hooks.sh --version
+#===============================================================================
+
+   if [ "$*" == "--version" ]; then
+      echo "0.1.0"; exit 0
+   fi
+
+#===============================================================================
+# run the live test: tests/live/hooks.sh [<model>]
+#===============================================================================
+
+   if [ "$2" == "" ]; then
+      MODEL="${1:-haiku}"
+      REPO="$(cd "$(dirname "$0")/../.." && pwd)"
+      T="${TMPDIR:-/tmp}"; SB="$(mktemp -d "${T%/}/aios-live.XXXXXX")" || exit 1
+      SECRET="Quittenbaum-$RANDOM$RANDOM"
+      V="$SB/§Live"
+      mkdir -p "$SB/home/.aios" "$SB/bin" "$V/.aios" "$V/@/@Rule" "$V/Garten/@" "$V/Garten/Neu"
+      printf 'aios: 0.1.0\n' > "$V/.aios/config.yaml"
+      printf '# Geheimwort\nDas Geheimwort lautet: %s\n' "$SECRET" > "$V/@/@Rule/geheim.md"
+      printf '# Garten\nIm Garten wachsen Äpfel.\n' > "$V/Garten/@/garten.md"
+      printf '#!/bin/bash\nHOME="%s/home" exec "%s/bin/aios-context" "$@"\n' "$SB" "$REPO" > "$SB/bin/aios-context"
+      chmod +x "$SB/bin/aios-context"
+      hooks() {                                     # hooks <SessionStart|-> <UserPromptSubmit|->
+         python3 -c '
+import json, sys
+h = {}
+if sys.argv[1] != "-": h["SessionStart"] = [{"hooks": [{"type": "command", "command": "aios-context --session"}]}]
+if sys.argv[2] != "-": h["UserPromptSubmit"] = [{"hooks": [{"type": "command", "command": "aios-context --advise"}]}]
+print(json.dumps({"hooks": h}))' "$1" "$2"
+      }
+      ask() {                                       # ask <dir> <settings> <prompt>
+         (cd "$1" && PATH="$SB/bin:$PATH" claude -p "$3" --model "$MODEL" --settings "$2" \
+            --setting-sources project --add-dir "$SB" \
+            --allowedTools "Read" "Bash(aios-context --load:*)" 2>&1)
+      }
+      PASS=0; FAIL=0
+      check() {                                     # check <name> <answer> <expected> [<expected> …]
+         local N="$1" A="$2" E; shift 2
+         for E in "$@"; do
+            case "$A" in *"$E"*) ;; *) FAIL=$((FAIL+1)); printf '\033[31mFAIL\033[0m %s: [%s] missing\n%s\n' "$N" "$E" "$A"; return;; esac
+         done
+         PASS=$((PASS+1)); printf '\033[32mok\033[0m   %s\n' "$N"
+      }
+      Q="Antworte nur mit dem Geheimwort aus dem Master-Kontext, sonst nichts."
+      echo "=> live hook test with model $MODEL in $SB"
+
+      A="$(ask "$V/Garten" "$(hooks on on)" "$Q")"
+      check "L1 inline: master context from SessionStart" "$A" "$SECRET"
+
+      printf 'inline_limit: 100\n' > "$SB/home/.aios/config.yaml"
+      A="$(ask "$V/Garten" "$(hooks on on)" "$Q")"
+      check "L2 part files: AIOS-CONTEXT-MANDATORY" "$A" "$SECRET"
+      rm "$SB/home/.aios/config.yaml"
+
+      A="$(ask "$V/Garten/Neu" "$(hooks on on)" "Was ist 2+2?")"
+      check "L3 not initialized: the chat asks first" "$A" "/aios-init"
+
+      A="$(ask "$V/Garten" "$(hooks - on)" "$Q")"
+      check "L4 advise only: the chat loads the part files itself" "$A" "$SECRET"
+
+      echo "=> $PASS passed, $FAIL failed"
+      rm -rf "$SB"
+      [ "$FAIL" == "0" ] || exit 1
+      exit 0
+   fi
+
+#===============================================================================
+# cannot deal with anything else ...
+#===============================================================================
+
+   "$0" -?
+   exit 1

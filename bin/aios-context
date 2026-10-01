@@ -2,15 +2,15 @@
 # aios-context: master context of AIbex AIOS (classes, chain, hooks), see spec 02
 
    if [ "$*" == "-?" ] || [ "$*" == "--help" ]; then
-      echo '   usage: aios-context --session      # SessionStart hook'
-      echo '          aios-context --advise       # UserPromptSubmit hook'
-      echo '          aios-context --context      # print master context of cwd'
-      echo '          aios-context --load         # write master context into part files'
-      echo '          aios-context --id           # print id, files, cwd, mode'
-      echo '          aios-context --list         # listing for /aios-context'
-      echo '          aios-context --sync [--yes] # register project skills'
-      echo '          aios-context --agent <name> # context of an agent'
-      echo '          aios-context --version      # print version'
+      echo '   usage: aios-context --session            # SessionStart hook (hook JSON on stdin)'
+      echo '          aios-context --advise             # UserPromptSubmit hook (hook JSON on stdin)'
+      echo '          aios-context --context [<path>]   # print the master context of cwd or <path>'
+      echo '          aios-context --load [<path>]      # write the master context into part files'
+      echo '          aios-context --id [<path>]        # print id, files, cwd, mode'
+      echo '          aios-context --list               # listing for /aios-context'
+      echo '          aios-context --sync [--yes]       # register project skills'
+      echo '          aios-context --agent <name>       # context of an agent'
+      echo '          aios-context --version            # print version'
       echo '   see also: aios, ai-brain'
       exit 1
    fi

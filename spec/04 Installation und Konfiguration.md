@@ -339,7 +339,8 @@ aibex-aios/                          GitHub aibex-hub/aibex-aios, Tags v<version
 ├── spec/                            diese Spec (gepflegt aus dem Konzeptprojekt)
 ├── doc/                             künftig: tutorials/, wiki/
 ├── dev/                             Entwickler-Doku, nicht installiert
-├── tests/                           Tests im Sandkasten (tests/run), nicht installiert
+├── tests/                           Tests im Sandkasten (tests/run), nicht installiert;
+│                                    tests/live/: Tests mit echten Claude-Sessions (kosten Tokens)
 ├── etc/image/                       Bilder des README, nicht installiert
 └── .pimp/                           optionale Entwicklungsumgebung (venv @aios)
 ```
