@@ -67,21 +67,21 @@ def listing(ctx):
     chain, problems = registry.blueprints(ctx)
     sync = registry.Sync(ctx) if ctx.initialized else None
     pending = {n for n, *_ in (sync.new + sync.changed)} if sync else set()
-    skills, agents, prompts = [], [], []
+    skills, assistants, prompts = [], [], []
     for name_, (d, ver) in sorted(chain.items()):
         state = "nicht registriert" if name_ in pending or sync is None else "registriert"
         skills.append(f"{name_} {ver}".rstrip() + f" ({d.parents[2].name}) — {state}")
     for ms in ctx.masterspaces:
-        for a in sorted((ms / "@!Agent").glob("*/AGENT.md")):
-            agents.append(f"{a.parent.name} ({ms.parent.name})")
+        for a in sorted((ms / "@!Assistant").glob("*/ASSISTANT.md")):
+            assistants.append(f"{a.parent.name} ({ms.parent.name})")
             for s in sorted((a.parent / "@!Skill").glob("*/SKILL.md")):
-                skills.append(f"{s.parent.name} (Agent {a.parent.name}, privat)")
+                skills.append(f"{s.parent.name} (Assistent {a.parent.name}, privat)")
         prompts += [f"{p.stem} ({ms.parent.name})" for p in sorted((ms / "@!Prompt").glob("*.md"))]
     out.append(f"{'Verborgen':27}Blueprints: {plural(len(skills), 'Skill', 'Skills')}, "
-               f"{plural(len(agents), 'Agent', 'Agenten')}, {plural(len(prompts), 'Prompt', 'Prompts')}")
-    for label, items in (("Skills", skills), ("Agenten", agents), ("Prompts", prompts)):
+               f"{plural(len(assistants), 'Assistent', 'Assistenten')}, {plural(len(prompts), 'Prompt', 'Prompts')}")
+    for label, items in (("Skills", skills), ("Assistenten", assistants), ("Prompts", prompts)):
         for i, item in enumerate(items):
-            out.append(f"  {label if i == 0 else '':10}{item}")
+            out.append(f"  {label if i == 0 else '':13}{item}")
     if sync and (sync or sync.removed):
         out.append("Hinweis: Blueprints und registrierte Skills stimmen nicht überein — /aios-register")
     out += [f"Übersprungen: {p}" for p in problems]

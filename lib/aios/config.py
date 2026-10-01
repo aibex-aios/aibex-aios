@@ -14,7 +14,7 @@ from pathlib import Path
 from . import paths
 
 KEY = re.compile(r"^([A-Za-z_][\w-]*):(?:\s+(.*?))?\s*$")
-SUBKEY = re.compile(r"^([A-Za-z0-9_][\w./-]*):(?:\s+(.*?))?\s*$")   # skills: name or agent/name
+SUBKEY = re.compile(r"^([A-Za-z0-9_][\w./-]*):(?:\s+(.*?))?\s*$")   # skills: name or assistant/name
 VERSION = re.compile(r"^v?(\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)$")
 LEVELS = {                                          # key -> levels where it is allowed
     "aios": ("vault", "project"),
@@ -67,7 +67,7 @@ BLOCK = (">", "|", ">-", "|-", ">+", "|+")
 def parse(text, name="config.yaml"):
     """dict of the subset; raises ConfigError with the line number.
 
-    Also reads block scalars (key: > or key: |) as used in frontmatters of AGENT.md.
+    Also reads block scalars (key: > or key: |) as used in frontmatters of ASSISTANT.md.
     """
     result, current, block = {}, None, None
     for no, raw in enumerate(text.splitlines(), 1):

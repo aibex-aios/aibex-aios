@@ -292,7 +292,7 @@ def legacy(cmd, cwd, stdin=""):
 
 
 USAGE = ("usage: aios-context --session | --advise | --context [<path>] | --load [<path>] | --id [<path>]"
-         " | --list [<path>] | --sync [--yes|--plan] | --agent <name> | --agents")
+         " | --list [<path>] | --sync [--yes|--plan] | --assistant <name> | --assistants")
 
 
 def main(argv):
@@ -305,8 +305,8 @@ def main(argv):
         if argv[1:] == ["--plan"]:
             ui.MODE = "plan"
         return registry.register(paths.cwd(), yes=argv[1:] == ["--yes"])
-    if cmd in ("--agent", "--agents") and len(argv) == (2 if cmd == "--agent" else 1):
-        return agent_cmd(argv)
+    if cmd in ("--assistant", "--assistants") and len(argv) == (2 if cmd == "--assistant" else 1):
+        return assistant_cmd(argv)
     if cmd in ("--session", "--advise") and len(argv) == 1:
         try:
             return hook(cmd)
@@ -344,19 +344,19 @@ def main(argv):
     return 0
 
 
-def agent_cmd(argv):
-    """--agent <name>: context of an agent; --agents: agents of the chain (spec 03)."""
-    from . import agent
+def assistant_cmd(argv):
+    """--assistant <name>: context of an assistant; --assistants: assistants of the chain (spec 03)."""
+    from . import assistant
     from .ui import Abort
     ctx = Context(paths.cwd())
     if ctx.mode != "aios":
-        print("aios-context: agents need a vault activated with AIOS (aios --activate)", file=sys.stderr)
+        print("aios-context: assistants need a vault activated with AIOS (aios --activate)", file=sys.stderr)
         return 1
     try:
-        if argv[0] == "--agents":
-            print("\n".join(agent.available_lines(agent.agents(ctx))))
+        if argv[0] == "--assistants":
+            print("\n".join(assistant.available_lines(assistant.assistants(ctx))))
         else:
-            sys.stdout.write(agent.render(ctx, argv[1]))
+            sys.stdout.write(assistant.render(ctx, argv[1]))
     except Abort as e:
         print(f"*** aios-context {argv[0]}: {e}", file=sys.stderr)
         return 1

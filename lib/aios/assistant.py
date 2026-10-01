@@ -1,4 +1,4 @@
-"""aios-context --agent <name>, --agents (spec 03, Agenten). Stateless: nothing is written."""
+"""aios-context --assistant <name>, --assistants (spec 03, Assistenten). Stateless: nothing is written."""
 
 from __future__ import annotations
 
@@ -31,11 +31,11 @@ def meta_of(file):
         raise Abort(str(e))
 
 
-def agents(ctx):
+def assistants(ctx):
     """{name: (dir, meta)} of the chain; the nearest masterspace wins (spec 03)."""
     found = {}
     for ms in ctx.masterspaces:
-        for f in sorted((ms / "@!Agent").glob("*/AGENT.md")):
+        for f in sorted((ms / "@!Assistant").glob("*/ASSISTANT.md")):
             meta = meta_of(f)
             if meta.get("name") != f.parent.name:
                 raise Abort(f"{f}: name {meta.get('name')!r} differs from the folder {f.parent.name!r}")
@@ -45,29 +45,29 @@ def agents(ctx):
 
 def available_lines(found):
     if not found:
-        return ["no agents in the chain (@!Agent/<name>/AGENT.md)"]
+        return ["no assistants in the chain (@!Assistant/<name>/ASSISTANT.md)"]
     return [f"{n:20} {m.get('title', n)} — {m.get('description', '')}  ({d.parents[2].name})"
             for n, (d, m) in sorted(found.items())]
 
 
 def resolve(ctx, query):
-    found = agents(ctx)
+    found = assistants(ctx)
     q = normalize(query)
     hits = [n for n, (d, m) in found.items() if q in (normalize(n), normalize(str(m.get("title", ""))))]
     if len(hits) != 1:
-        what = "no agent" if not hits else "more than one agent"
+        what = "no assistant" if not hits else "more than one assistant"
         raise Abort(f"{what} named {query!r}; available:\n" + "\n".join(available_lines(found)))
     return hits[0], found[hits[0]]
 
 
-def lookup(agent_dir, ctx, kind, name):
-    """Prompt or skill: first in the agent folder, then in the chain from the project upwards."""
+def lookup(assistant_dir, ctx, kind, name):
+    """Prompt or skill: first in the assistant folder, then in the chain from the project upwards."""
     rel = Path("@!Prompt") / f"{name}.md" if kind == "prompt" else Path("@!Skill") / name / "SKILL.md"
-    for base in [agent_dir] + [ms for ms in reversed(ctx.masterspaces)]:
+    for base in [assistant_dir] + [ms for ms in reversed(ctx.masterspaces)]:
         if (base / rel).is_file():
             return base / rel
-    raise Abort(f"{kind} {name} of the agent {agent_dir.name} not found "
-                f"(looked in {agent_dir} and the masterspaces of the chain)")
+    raise Abort(f"{kind} {name} of the assistant {assistant_dir.name} not found "
+                f"(looked in {assistant_dir} and the masterspaces of the chain)")
 
 
 def as_list(value):
@@ -81,18 +81,18 @@ def render(ctx, query):
     prompt = lookup(d, ctx, "prompt", meta["prompt"]) if meta.get("prompt") else None
     skills = [lookup(d, ctx, "skill", s) for s in as_list(meta.get("skills"))]
     found = classify(d)
-    knowledge = [p for p in found[LOAD] if p != d / "AGENT.md"]
+    knowledge = [p for p in found[LOAD] if p != d / "ASSISTANT.md"]
     available = found[AVAILABLE]
     model = meta.get("model")
     model = ", ".join(f"{k}: {v}" for k, v in model.items()) if isinstance(model, dict) else (model or "")
     t = meta.get("title", name)
-    out = [f'<aios-agent name="{name}" title="{t}" src="{d}">\n',
-           "<aios-agent-meta>\n",
+    out = [f'<aios-assistant name="{name}" title="{t}" src="{d}">\n',
+           "<aios-assistant-meta>\n",
            f"description: {meta.get('description', '')}\n",
            f"model: {model or '-'}\n",
            f"tools: {', '.join(as_list(meta.get('tools'))) or '-'}\n",
            f"skills: {', '.join(as_list(meta.get('skills'))) or '-'}\n",
-           "</aios-agent-meta>\n"]
+           "</aios-assistant-meta>\n"]
 
     def file(cls, p, text):
         out.append(f'<aios-file class="{cls}" src="{p}">\n')
@@ -100,7 +100,7 @@ def render(ctx, query):
         out.append("</aios-file>\n")
     if prompt:
         file("prompt", prompt, prompt.read_text(encoding="utf-8"))
-    file("agent", d / "AGENT.md", strip_frontmatter((d / "AGENT.md").read_text(encoding="utf-8")))
+    file("assistant", d / "ASSISTANT.md", strip_frontmatter((d / "ASSISTANT.md").read_text(encoding="utf-8")))
     for p in knowledge:
         file("load", p, p.read_text(encoding="utf-8", errors="replace"))
     if available:
@@ -109,5 +109,5 @@ def render(ctx, query):
         out.append("</aios-available>\n")
     for s in skills:
         file("skill", s, s.read_text(encoding="utf-8"))
-    out.append(f'</aios-agent name="{name}">\n')
+    out.append(f'</aios-assistant name="{name}">\n')
     return "".join(out)

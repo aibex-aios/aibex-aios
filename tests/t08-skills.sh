@@ -26,8 +26,8 @@
    skill "$D/@/@!Skill/memo" memo 6.0.0
    skill "$D/@/@!Skill/notiz" notiz
    mk "$D/@/@!Prompt/obstgaertner.md" $'# Prompt\n'
-   mk "$D/@/@!Agent/obstgaertner/AGENT.md" $'---\nname: obstgaertner\n---\n'
-   skill "$D/@/@!Agent/obstgaertner/@!Skill/apfel" apfel
+   mk "$D/@/@!Assistant/obstgaertner/ASSISTANT.md" $'---\nname: obstgaertner\n---\n'
+   skill "$D/@/@!Assistant/obstgaertner/@!Skill/apfel" apfel
    mk "$D/Garten/@/garten.md" $'# Garten\n'
    mk "$D/Garten/.aios/config.yaml" $'aios: 0.2.0\n'
    mkdir -p "$D/Wiese" "$D/Garten/Beet" "$SANDBOX/work/§Alt/Feld" "$SANDBOX/outside"
@@ -42,10 +42,12 @@ import sys; t=open(sys.argv[1],encoding='utf-8').read(); e=t.find('\n---',3); pr
    case "$(at "$D" aios --skill aios-init)" in *"name: aios-init"*|*"allowed-tools"*) fail "--skill: no frontmatter" ;; *) ok ;; esac
    case "$(at "$D" aios --skill aios-init)" in *"Nur in Version 0.2.0"*) fail "--skill in §Demo: version 0.1.0" ;; *) ok ;; esac
    assert_contains "$(at "$D/Garten" aios --skill aios-init)" "Nur in Version 0.2.0" "--skill in Garten: version 0.2.0"
-   for S in aios-context aios-init aios-register aios-status; do
+   for S in aios-context aios-init aios-register aios-status aios-deploy aios-assistant; do
       assert_contains "$(at "$D" aios --skill "$S")" "Ein AIOS-Skill von AIbex AIOS" "--skill $S"
    done
    assert_exit 1 "$SRC/bin/aios" --skill aios-nope
+   assert_exit 1 "$SRC/bin/aios" --skill aios-agent
+   assert_eq "$(ls "$SRC/skills/aios" | tr '\n' ' ')" "aios-assistant aios-context aios-deploy aios-init aios-register aios-status " "AIOS skills of v0.2 (aios-assistant, no aios-agent)"
 
 #===============================================================================
 # wrapper: name, description and allowed-tools from the version, body from aios --skill
@@ -77,12 +79,12 @@ Master-Kontext (geladen)   1 Datei, $CH Zeichen
   §Demo/@/@Rule/stil.md
 verfügbares Wissen         1 Datei (nicht geladen, Inhaltsverzeichnis im Master-Kontext)
   §Demo/@/@@Buch/kapitel.md
-Verborgen                  Blueprints: 3 Skills, 1 Agent, 1 Prompt
-  Skills    memo 6.0.0 (§Demo) — registriert
-            notiz (§Demo) — nicht registriert
-            apfel (Agent obstgaertner, privat)
-  Agenten   obstgaertner (§Demo)
-  Prompts   obstgaertner (§Demo)
+Verborgen                  Blueprints: 3 Skills, 1 Assistent, 1 Prompt
+  Skills       memo 6.0.0 (§Demo) — registriert
+               notiz (§Demo) — nicht registriert
+               apfel (Assistent obstgaertner, privat)
+  Assistenten  obstgaertner (§Demo)
+  Prompts      obstgaertner (§Demo)
 Hinweis: Blueprints und registrierte Skills stimmen nicht überein — /aios-register" "--list: exact listing"
    assert_contains "$("$SRC/bin/aios-context" --list "$D/Garten")" "Kette                      §Demo → Garten" "--list: chain"
    assert_contains "$("$SRC/bin/aios-context" --list "$D/Wiese")" "Wiese (nicht initialisiert, Kette bis §Demo)" "--list: not initialized"

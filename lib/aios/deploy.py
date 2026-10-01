@@ -174,12 +174,12 @@ def target_project(to):
     return p
 
 
-def blueprint_dir(project, name, agent):
-    if agent:
-        a = project / "@" / "@!Agent" / agent
+def blueprint_dir(project, name, assistant):
+    if assistant:
+        a = project / "@" / "@!Assistant" / assistant
         if not a.is_dir():
-            raise Abort(f"no agent {agent} in {project / '@' / '@!Agent'}")
-        return a / "@!Skill" / name, f"{agent}/{name}"
+            raise Abort(f"no assistant {assistant} in {project / '@' / '@!Assistant'}")
+        return a / "@!Skill" / name, f"{assistant}/{name}"
     return project / "@" / "@!Skill" / name, name
 
 
@@ -211,7 +211,7 @@ def register_session(plan):
         plan.add(f"register the project skills of {cwd}", run)
 
 
-def deploy(spec, to=None, agent=None, source=None):
+def deploy(spec, to=None, assistant=None, source=None):
     m = SPEC.match(spec)
     if not m:
         raise Abort(f"{spec}: expected <name>==<version>, e.g. memo==6.0.0")
@@ -219,7 +219,7 @@ def deploy(spec, to=None, agent=None, source=None):
     if name.startswith("aios-"):
         raise Abort(f"{name} is an AIOS skill; aios --install provides it")
     project = target_project(to)
-    dst, key = blueprint_dir(project, name, agent)
+    dst, key = blueprint_dir(project, name, assistant)
     stage = Path(tempfile.mkdtemp(prefix="aios-deploy."))
     try:
         src = from_repo(source, name, ver, stage) if source else from_library(name, ver)
@@ -248,9 +248,9 @@ def deploy(spec, to=None, agent=None, source=None):
         if not plan:
             say(f"=> {name} {ver} is already deployed in {dst}, nothing to do")
             return 0
-        if not agent:
+        if not assistant:
             register_session(plan)
-        say(f"=> deploy {name} {ver} to {project}" + (f" (agent {agent})" if agent else ""))
+        say(f"=> deploy {name} {ver} to {project}" + (f" (assistant {assistant})" if assistant else ""))
         confirm(plan, "deploy?", "deployment cancelled")
     finally:
         shutil.rmtree(stage, ignore_errors=True)
@@ -272,8 +272,8 @@ def reconcile(to=None, source=None):
     stages = []
     try:
         for key, ver in sorted(wanted.items()):
-            agent, _, name = key.rpartition("/")
-            dst, _ = blueprint_dir(project, name, agent or None)
+            assistant, _, name = key.rpartition("/")
+            dst, _ = blueprint_dir(project, name, assistant or None)
             mark = read_marker(dst) if dst.is_dir() else None
             if mark and mark.get("version") == ver and digest_of(dst) == mark.get("digest"):
                 continue
@@ -294,10 +294,10 @@ def reconcile(to=None, source=None):
             plan.add(f"blueprint {dst}: {key} {ver} ({why})",
                      lambda src=src, dst=dst, name=name, ver=ver, o=src_name:
                      (dst.parent.mkdir(parents=True, exist_ok=True), mirror(src, dst, name, ver, o)))
-        for base, agent in [(project / "@" / "@!Skill", None)] + \
-                [(a / "@!Skill", a.name) for a in sorted((project / "@" / "@!Agent").glob("*")) if a.is_dir()]:
+        for base, assistant in [(project / "@" / "@!Skill", None)] + \
+                [(a / "@!Skill", a.name) for a in sorted((project / "@" / "@!Assistant").glob("*")) if a.is_dir()]:
             for d in sorted(base.glob("*")) if base.is_dir() else []:
-                key = f"{agent}/{d.name}" if agent else d.name
+                key = f"{assistant}/{d.name}" if assistant else d.name
                 if (d / MARKER).is_file() and key not in wanted:
                     plan.add(f"remove {d}: deployed, but no longer in the manifest",
                              lambda d=d: shutil.rmtree(d))
@@ -315,11 +315,11 @@ def reconcile(to=None, source=None):
 
 
 def command(args):
-    """Parse aios --deploy [<name>==<version>] [--to <p>] [--agent <a>] [--from <repo>]."""
+    """Parse aios --deploy [<name>==<version>] [--to <p>] [--assistant <a>] [--from <repo>]."""
     opts, spec, i = {}, None, 0
     while i < len(args):
         a = args[i]
-        if a in ("--to", "--agent", "--from") and i + 1 < len(args):
+        if a in ("--to", "--assistant", "--from") and i + 1 < len(args):
             opts[a[2:]] = args[i + 1]
             i += 2
             continue
@@ -328,7 +328,7 @@ def command(args):
         spec = a
         i += 1
     if spec:
-        return deploy(spec, opts.get("to"), opts.get("agent"), opts.get("from"))
-    if "agent" in opts:
-        raise Abort("--agent needs <name>==<version>")
+        return deploy(spec, opts.get("to"), opts.get("assistant"), opts.get("from"))
+    if "assistant" in opts:
+        raise Abort("--assistant needs <name>==<version>")
     return reconcile(opts.get("to"), opts.get("from"))

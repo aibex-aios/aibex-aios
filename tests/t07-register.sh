@@ -20,7 +20,7 @@
    mk "$G/@/garten.md" $'# Garten\n'
    skill "$G/@/@!Skill/memo"        memo 6.1.0 "garten memo"
    mk "$G/@/@!Skill/memo/vorlagen/brief.md" $'# Brief\n'
-   skill "$G/@/@!Agent/obst/@!Skill/privat" privat
+   skill "$G/@/@!Assistant/obst/@!Skill/privat" privat
    skill "$G/.claude/skills/own"    own
    git -C "$G" init -q
    mkdir -p "$G/Neu"
@@ -53,7 +53,7 @@
    assert_eq "$(cat "$K/memo/SKILL.md")" "$(cat "$G/@/@!Skill/memo/SKILL.md")" "memo copied from Garten"
    assert_file "$K/memo/vorlagen/brief.md"
    assert_eq "$(cat "$K/own/SKILL.md")" "$(printf -- '---\nname: own\ndescription: test\n---\n\n# own\n')" "foreign skill untouched"
-   [ ! -e "$K/privat" ] && [ ! -e "$K/aios-evil" ] && ok || fail "agent skill and reserved name not registered"
+   [ ! -e "$K/privat" ] && [ ! -e "$K/aios-evil" ] && ok || fail "assistant skill and reserved name not registered"
    DIG="$(cd "$G/@/@!Skill/memo" && find . -type f | sed 's|^\./||' | sort | while IFS= read -r F; do printf '%s\n' "$F"; cat "$F"; printf '\n'; done | shasum -a 256 | cut -c1-64)"
    assert_eq "$(cat "$G/.aios/manifest")" "# written by AIOS (registration), do not edit
 schema: 1

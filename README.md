@@ -5,12 +5,12 @@
 
 **AIbex AIOS is an operating system for the context of AI assistants.** It
 manages which knowledge a chat loads, reads on demand or does not see, and
-provides file system conventions, agents and skills for this purpose.
+provides file system conventions, assistants and skills for this purpose.
 Execution is left to a host (Claude Code, Codex).
 
 AIOS works on an Obsidian vault: every chat runs in a project directory and
 receives the knowledge that belongs to this project — no more, no less. An
-agent can give the chat a personality with its own selection of skills and
+assistant can give the chat a personality with its own selection of skills and
 knowledge.
 
 
@@ -53,7 +53,7 @@ folder decides what a chat sees:
 |---|---|---|
 | `@Rule/`, `@Wissen/@Content/`, files directly in `@/` | load | loaded at the start of every chat (master context) |
 | `@@Kapitel/` | available | not loaded; the master context lists it, the chat reads it on demand |
-| `@!Skill/`, `@!Agent/`, `@!Prompt/` | hidden | blueprints of skills, agents and prompts |
+| `@!Skill/`, `@!Assistant/`, `@!Prompt/` | hidden | blueprints of skills, assistants and prompts |
 
 A project is any folder with `@/`; the vault root is the root project. A chat
 in a project sees the masterspaces from the vault root down to the project.
@@ -65,9 +65,9 @@ In a chat:
 |---|---|
 | `/aios-context` | check and show the master context |
 | `/aios-init` | make the folder a project (`@/`, `@Memo/`, git, first commit) |
-| `/aios-deploy memo==6.0.0` | deploy a skill version into a project or an agent |
+| `/aios-deploy memo==6.0.0` | deploy a skill version into a project or an assistant |
 | `/aios-register` | register the project skills for Claude Code |
-| `/aios-agent Obstgärtner` | activate an agent for this chat |
+| `/aios-assistant Obstgärtner` | activate an assistant for this chat |
 | `/aios-status` | project status from memos and git |
 
 Registered skills become available in the **next** chat.
@@ -80,7 +80,7 @@ Registered skills become available in the **next** chat.
 | `aios --install [v<version>]`, `--versions`, `--remove-version v<version>`, `--uninstall` | installations |
 | `aios --activate v<version> [<path>]`, `--deactivate [<path>]`, `--config [<path>]` | bind a vault or project to a version, show the configuration |
 | `aios --init`, `--register`, `--deploy`, `--library` | projects and skills |
-| `aios-context --context`, `--load`, `--id`, `--list`, `--agent <name>`, `--agents` | master context and agents |
+| `aios-context --context`, `--load`, `--id`, `--list`, `--assistant <name>`, `--assistants` | master context and assistants |
 
 Every writing command shows a plan first; `--plan` only shows it, `--yes`
 skips the question. Several versions can be installed side by side; each vault
@@ -106,7 +106,7 @@ installed to `/opt/aios/v<version>/doc/spec/`.
   tests/run                  # all tests in a sandbox, never touch the machine
   tests/live/hooks.sh        # real headless Claude sessions (cost tokens)
   tests/live/skills.sh
-  tests/live/agents.sh
+  tests/live/assistants.sh
 ```
 
 A clone can be used without installing: point `AIOS_HOME` to it, or add a

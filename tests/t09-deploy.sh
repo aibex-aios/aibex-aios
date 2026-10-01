@@ -1,7 +1,7 @@
 # t09-deploy.sh: step 9 of the plan (memo 18) - aios --deploy, --library, versions, maintenance projects
 
 #===============================================================================
-# setup: vault with root project, project Garten with an agent, maintenance project with tags
+# setup: vault with root project, project Garten with an assistant, maintenance project with tags
 #===============================================================================
 
    export PATH="/usr/bin:/bin:/usr/sbin:/sbin"
@@ -9,7 +9,7 @@
    D="$SANDBOX/work/§Demo"; G="$D/Garten"; PF="$SANDBOX/PSM-Memo"
    mk() { mkdir -p "$(dirname "$1")"; printf '%s' "$2" > "$1"; }
    mk "$D/.aios/config.yaml" $'aios: 0.1.0\n# Vault Demo\n'
-   mkdir -p "$D/@" "$G/@/@!Agent/obst" "$D/Wiese"
+   mkdir -p "$D/@" "$G/@/@!Assistant/obst" "$D/Wiese"
    pfl() { mk "$PF/@Skill/memo/SKILL.md" "$(printf -- '---\nname: memo\nversion: %s\ndescription: Pflege\n---\n\n# Memo %s\n' "$1" "$2")"; }
    pfl 7.0.0 7.0.0; mk "$PF/@Skill/memo/extra.md" $'# extra\n'
    git -C "$PF" init -q; git -C "$PF" add -A; git -C "$PF" commit -qm 7.0.0; git -C "$PF" tag memo-v7.0.0
@@ -30,7 +30,7 @@
    assert_contains "$(A --deploy memo==6.0.0 --to "$D/Wiese")" "is not a project" "target without @/"
    assert_contains "$(A --deploy memo==7.5.0 --from "$PF" --to "$D")" "no tag memo-v7.5.0" "maintenance project: missing tag"
    assert_contains "$(A --deploy memo==9.0.0 --from "$PF" --to "$D")" "version '8.0.0'; expected memo 9.0.0" "maintenance project: frontmatter differs"
-   assert_contains "$(A --deploy memo==6.0.0 --agent nobody --to "$G")" "no agent nobody" "unknown agent"
+   assert_contains "$(A --deploy memo==6.0.0 --assistant nobody --to "$G")" "no assistant nobody" "unknown assistant"
    mkdir -p "$SANDBOX/work/§Alt/@"
    assert_contains "$(A --deploy memo==6.0.0 --to "$SANDBOX/work/§Alt")" "is not activated (legacy mode)" "vault without activation (I4)"
    [ ! -e "$D/@/@!Skill" ] && [ ! -e "$G/@/@!Skill" ] && [ ! -e "$SANDBOX/work/§Alt/@/@!Skill" ] && ok || fail "checks: nothing written"
@@ -62,7 +62,7 @@
    assert_eq "$(cat "$B/SKILL.md")" "$(cat "$LIB")" "direct change replaced"
 
 #===============================================================================
-# deploy from a maintenance project to Garten, upgrade, agent
+# deploy from a maintenance project to Garten, upgrade, assistant
 #===============================================================================
 
    OUT="$(A --deploy memo==7.0.0 --from "$PF" --yes)"
@@ -79,12 +79,12 @@
    assert_contains "$OUT" "remove   extra.md" "upgrade: removed file"
    [ ! -e "$GB/extra.md" ] && ok || fail "upgrade: file of the old version removed"
 
-   OUT="$(A --deploy memo==6.0.0 --agent obst --yes)"
-   AB="$G/@/@!Agent/obst/@!Skill/memo"
-   assert_eq "$(cat "$AB/SKILL.md")" "$(cat "$LIB")" "agent: blueprint"
-   assert_contains "$(cat "$G/.aios/config.yaml")" "  obst/memo: 6.0.0" "agent: manifest key agent/name"
-   case "$OUT" in *"register the project skills"*) fail "agent: no registration" ;; *) ok ;; esac
-   assert_contains "$(cd "$G" && "$SRC/bin/aios" --config)" "skill     obst/memo 6.0.0" "agent entry read by the chain"
+   OUT="$(A --deploy memo==6.0.0 --assistant obst --yes)"
+   AB="$G/@/@!Assistant/obst/@!Skill/memo"
+   assert_eq "$(cat "$AB/SKILL.md")" "$(cat "$LIB")" "assistant: blueprint"
+   assert_contains "$(cat "$G/.aios/config.yaml")" "  obst/memo: 6.0.0" "assistant: manifest key assistant/name"
+   case "$OUT" in *"register the project skills"*) fail "assistant: no registration" ;; *) ok ;; esac
+   assert_contains "$(cd "$G" && "$SRC/bin/aios" --config)" "skill     obst/memo 6.0.0" "assistant entry read by the chain"
 
 #===============================================================================
 # reconcile: aios --deploy without a skill

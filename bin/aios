@@ -13,7 +13,7 @@
       echo '          aios --register [<path>]            # register the project skills (spec 03)'
       echo '          aios --init [<path>]                # make a folder a project (@/, @Memo/, git)'
       echo '          aios --deploy <name>==<version>     # deploy a skill version [--to <project>]'
-      echo '                       [--agent <name>] [--from <repo>]'
+      echo '                       [--assistant <name>] [--from <repo>]'
       echo '          aios --deploy [--to <project>]      # blueprints follow the manifest skills:'
       echo '          aios --library                      # bundled skills and their versions'
       echo '          aios --skill <name>                 # body of an AIOS skill'

@@ -8,7 +8,7 @@ from . import activate, aiosinit, deploy, install, paths, registry, skills, ui
 USAGE = ("usage: aios --prepare | --install [v<version>] | --versions | --remove-version v<version>"
          " | --uninstall | --activate v<version> [<path>] | --deactivate [<path>] | --config [<path>]"
          " | --register [<path>] | --init [<path>] | --skill <name> | --library"
-         " | --deploy [<name>==<version>] [--to <project>] [--agent <name>] [--from <repo>]"
+         " | --deploy [<name>==<version>] [--to <project>] [--assistant <name>] [--from <repo>]"
          "  (writing commands: --plan, --yes)")
 
 LATER = {}                                          # commands of later steps (memo 18)
