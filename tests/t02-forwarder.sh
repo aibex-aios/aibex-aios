@@ -36,7 +36,7 @@
 # forwarder: own options, arguments passed unchanged
 #===============================================================================
 
-   assert_eq "$(aios ---version)" "0.1.2" "---version"
+   assert_eq "$(aios ---version)" "0.1.3" "---version"
    assert_exit 1 aios ---help
    assert_contains "$(aios-context ---help)" "aios-context ---which" "---help names the tool"
 
@@ -98,6 +98,13 @@
    printf '#!/bin/bash\n[ "$*" == "--id" ] && echo "id=abcd1234 files=3 cwd=$PWD" || echo "ai-brain $*"\n' > "$SANDBOX/fake/ai-brain"
    assert_eq "$(run "$V/Garten" aios-context --id)" "id=abcd1234 files=3 cwd=$V/Garten mode=legacy" "legacy --id: ai-brain output plus mode=legacy"
    assert_eq "$(run "$SANDBOX/outside" aios-context --id)" "id=- files=0 cwd=$SANDBOX/outside mode=none" "--id outside a vault: mode=none"
+   mkdir -p "$V/Aktiv/.aios" "$V/Aktiv/@"; printf 'aios: 0.1.0\n' > "$V/Aktiv/.aios/config.yaml"
+   assert_eq "$(run "$SANDBOX/outside" aios-context --id "$V/Aktiv")" "dev-0.1.0 aios-context --id $V/Aktiv" "path argument: version follows the path, not cwd"
+   assert_eq "$(run "$V/Aktiv" aios-context --id "$V/Garten")" "id=abcd1234 files=3 cwd=$V/Garten mode=legacy" "path argument: legacy path, ai-brain runs in it"
+   assert_eq "$(run "$V/Aktiv" aios-context --load "$V/Garten")" "ai-brain --load" "path argument: ai-brain gets no path"
+   assert_eq "$(run "$V/Garten" aios-context --list)" "Legacy-Modus (ai-brain, kein aios: in der Kette) — siehe /masterspace." "legacy --list"
+   assert_eq "$(run "$SANDBOX/outside" aios-context --list)" "Kein Vault — kein Master-Kontext." "--list outside a vault"
+   rm -rf "$V/Aktiv"
    rm "$SANDBOX/fake/ai-brain"
    assert_eq "$(run "$V/Garten" aios-context --id)" "id=- files=0 cwd=$V/Garten mode=legacy" "legacy --id without ai-brain"
    OUT="$(run "$V/Garten" aios-context --session)"; RC=$?

@@ -17,7 +17,7 @@ import tempfile
 from pathlib import Path
 
 from . import config, paths, registry, version
-from .install import frontmatter, semver_key
+from .install import frontmatter, make_writable, semver_key
 from .ui import Abort, Plan, confirm, say, warn
 
 MARKER = ".aios-deploy"
@@ -137,15 +137,25 @@ def differences(src, dst):
     return out
 
 
+def writable_copy(src, dst, ignore=None):
+    """Copy a skill folder with normal permissions: the library of an installation is read-only."""
+    shutil.copytree(src, dst, ignore=ignore, copy_function=shutil.copyfile)
+    make_writable(dst)
+
+
 def mirror(src, dst, name, ver, source):
     """Replace dst by a copy of src (only this one folder) and write the marker."""
     tmp = Path(tempfile.mkdtemp(prefix=f".{name}.", dir=dst.parent))
-    shutil.copytree(src, tmp / name, ignore=shutil.ignore_patterns(MARKER))
-    write_marker(tmp / name, name, ver, source, digest_of(src))
-    if dst.exists():
-        shutil.rmtree(dst)
-    os.rename(tmp / name, dst)
-    shutil.rmtree(tmp)
+    try:
+        writable_copy(src, tmp / name, ignore=shutil.ignore_patterns(MARKER))
+        write_marker(tmp / name, name, ver, source, digest_of(src))
+        if dst.exists():
+            make_writable(dst)
+            shutil.rmtree(dst)
+        os.rename(tmp / name, dst)
+    finally:
+        make_writable(tmp)
+        shutil.rmtree(tmp, ignore_errors=True)
 
 
 # ---------------------------------------------------------------------------

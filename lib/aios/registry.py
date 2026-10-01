@@ -14,7 +14,7 @@ import tempfile
 from pathlib import Path
 
 from . import context
-from .install import frontmatter
+from .install import frontmatter, make_writable
 
 NAME = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}$")
 RESERVED = "aios-"
@@ -158,15 +158,21 @@ class Sync:
         for name, src, version, dig in self.new + self.changed:
             target = self.skills_dir / name
             tmp = Path(tempfile.mkdtemp(prefix=f".{name}.", dir=self.skills_dir))
-            shutil.copytree(src, tmp / name)
-            if target.exists():
-                shutil.rmtree(target)
-            os.rename(tmp / name, target)
-            shutil.rmtree(tmp)
+            try:
+                shutil.copytree(src, tmp / name, copy_function=shutil.copyfile)
+                make_writable(tmp / name)
+                if target.exists():
+                    make_writable(target)
+                    shutil.rmtree(target)
+                os.rename(tmp / name, target)
+            finally:
+                make_writable(tmp)
+                shutil.rmtree(tmp, ignore_errors=True)
             entries[name] = {"source": str(src), "version": version, "digest": dig}
         for name in self.removed:
             target = self.skills_dir / name
             if target.is_dir():
+                make_writable(target)
                 shutil.rmtree(target)
             entries.pop(name, None)
         if entries or self.manifest_file.exists():
