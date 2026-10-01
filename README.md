@@ -94,9 +94,9 @@ installed to `/opt/aios/v<version>/doc/spec/`.
 
 | Spec | Content |
 |---|---|
-| `01 AIbex AIOS v0.1 — Überblick` | definition, terms, scope, invariants, acceptance test |
+| `01 AIbex AIOS v0.2 — Überblick` | definition, terms, scope, pre-releases, invariants, acceptance test |
 | `02 Master-Kontext` | projects, chain, classes, `aios-context`, hooks |
-| `03 Skills und Agenten` | skills, versions, deploy, register, agents, init, status |
+| `03 Skills und Assistenten` | skills, versions, deploy, register, assistants, init, status |
 | `04 Installation und Konfiguration` | files, formats, forwarders, the command `aios` |
 
 

@@ -3,11 +3,11 @@ title: "Master-Kontext"
 date: 2026-10-01
 author: iHux
 status: Spec
-tags: [spec, aios, v0.1, master-kontext]
+tags: [spec, aios, v0.2, master-kontext]
 number: 02
 related:
-  - "Spec 01 AIbex AIOS v0.1 — Überblick"
-  - "Spec 03 Skills und Agenten"
+  - "Spec 01 AIbex AIOS v0.2 — Überblick"
+  - "Spec 03 Skills und Assistenten"
   - "Spec 04 Installation und Konfiguration"
   - "Memo 01 Brainstorming — Masterspace-Klassen und Agenten (Konzeptprojekt PAA-AIbex-AIOS-V0.1)"
   - "Memo 06 Projekt, Root-Projekt und Projektstatus (Konzeptprojekt PAA-AIbex-AIOS-V0.1)"
@@ -49,7 +49,7 @@ Die Klasse eines Unterverzeichnisses eines Masterspace steht im Namen. Erkannt w
 
 | Präfix | Klasse | Wirkung |
 |---|---|---|
-| `@!` | **Verborgen** | nie Kontext; Blueprints (`@!Skill`, `@!Prompt`, `@!Agent`) |
+| `@!` | **Verborgen** | nie Kontext; Blueprints (`@!Skill`, `@!Prompt`, `@!Assistant`) |
 | `@@` | **Verfügbar** | verfügbares Wissen: gehört **nicht** zum Master-Kontext und wird nur bei Bedarf gelesen; im Master-Kontext steht sein Inhaltsverzeichnis |
 | `@` | **Laden** | bildet den Master-Kontext; wird zu Beginn des Chats vollständig geladen |
 
@@ -59,7 +59,7 @@ Die Klassifikation ist rekursiv: Innerhalb eines Verzeichnisses einer Klasse kö
 
 ### Vorläufige Regeln der Klassen
 
-Die Detailregeln sind offen (Spec 01, O2). Für v0.1 gilt vorläufig:
+Die Detailregeln sind offen (Spec 01, O2). Für v0.2 gilt vorläufig:
 
 | # | Regel |
 |---|---|
@@ -93,12 +93,12 @@ Ein handgeschriebenes Inhaltsverzeichnis mit der Spalte „Lesen, wenn …" kann
 | `aios-context --advise` | UserPromptSubmit-Hook, siehe *Hooks* |
 | `aios-context --context [<pfad>]` | gibt den Master-Kontext von `cwd` bzw. `<pfad>` aus (Format siehe *Ausgabe*) |
 | `aios-context --load [<pfad>]` | schreibt den Master-Kontext in Part-Dateien unter `~/.aios/cache/<id>/` (je höchstens 40.000 Zeichen, geschnitten an Zeilenenden) und gibt die Liste aus; einmal je id, Cache-Einträge älter als 7 Tage werden entfernt |
-| `aios-context --id [<pfad>]` | gibt `id=<id> files=<n> cwd=<cwd> mode=<aios-0.1.0 | legacy | none>` aus; `aios-<version>` ist die Version des laufenden Programms |
+| `aios-context --id [<pfad>]` | gibt `id=<id> files=<n> cwd=<cwd> mode=<aios-0.2.0 | legacy | none>` aus; `aios-<version>` ist die Version des laufenden Programms |
 | `aios-context --list [<pfad>]` | Aufstellung für `/aios-context` (siehe dort) |
 | `aios-context --sync [--yes\|--plan]` | Registrierung (Spec 03) |
 | `aios-context --sync` | Registrierung der Projekt-Skills (Spec 03, *Registrieren*), mit Vorschau; mit `--yes` ohne Rückfrage |
-| `aios-context --agent <name>` | gibt den Kontext eines Agenten aus (Spec 03, *Agenten*) |
-| `aios-context --agents` | Agenten der Kette mit Titel und Beschreibung |
+| `aios-context --assistant <name>` | gibt den Kontext eines Assistenten aus (Spec 03, *Assistenten*) |
+| `aios-context --assistants` | Assistenten der Kette mit Titel, Version und Beschreibung |
 | `aios-context --version` | Version des laufenden Programms |
 | `aios-context -?`, `--help` | Hilfe |
 
@@ -117,7 +117,7 @@ The master context is loaded once </aios-context id="<id>"> (end of the last par
 ### Ausgabe
 
 ```
-<aios-context id="3fa91c02" files="12" cwd="/…/§Demo/Garten" version="0.1.0">
+<aios-context id="3fa91c02" files="12" cwd="/…/§Demo/Garten" version="0.2.0">
 <aios-file class="load" src="/…/§Demo/@/@Rule/stil.md">
 … Inhalt …
 </aios-file>
@@ -210,7 +210,7 @@ AIOS-Skill, Nachfolger von `/masterspace`. Auslöser: `/aios-context`, „Master
 **Aufstellung:**
 
 ```
-Master-Kontext geladen (id 3fa91c02, AIOS 0.1.0) — Garten
+Master-Kontext geladen (id 3fa91c02, AIOS 0.2.0) — Garten
 
 Kette                      §Demo → Garten
 
@@ -220,10 +220,10 @@ Master-Kontext (geladen)   3 Dateien, 4.120 Zeichen
   …
 verfügbares Wissen         1 Datei (nicht geladen, Inhaltsverzeichnis im Master-Kontext)
   §Demo/@/@Wissen/@@Kapitel/kapitel.md
-Verborgen                  Blueprints: 2 Skills, 1 Agent, 1 Prompt
-  Skills    memo 6.0.0 (§Demo) — registriert
-            apfel-birnen-algebra (Agent obstgaertner, privat)
-  Agenten   obstgaertner (§Demo)
+Verborgen                  Blueprints: 2 Skills, 1 Assistent, 1 Prompt
+  Skills       memo 6.0.0 (§Demo) — registriert
+               apfel-birnen-algebra 0.1.0 (Assistent gaertner, privat)
+  Assistenten  gaertner 0.1.0 (§Demo)
 ```
 
 Der Skill ändert nichts außer dem Nachladen. Stimmen Blueprints und registrierte Skills nicht überein, weist er auf `/aios-register` hin.
