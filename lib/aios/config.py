@@ -20,6 +20,7 @@ LEVELS = {                                          # key -> levels where it is 
     "aios": ("vault", "project"),
     "skills": ("vault", "project"),
     "assistants": ("vault", "project"),
+    "assistant": ("vault", "project"),             # assignment of the assistant (spec 03)
     "hosts": ("vault", "project", "home"),
     "inline_limit": ("home",),
 }
@@ -271,6 +272,23 @@ def set_aios(file, version):
         out.append(line)
     if not done:
         out.insert(0, f"aios: {version}")
+    file.parent.mkdir(parents=True, exist_ok=True)
+    file.write_text("\n".join(out) + "\n", encoding="utf-8")
+
+
+def set_key(file, key, value):
+    """Top-level `key: value` in file, replaced in place or appended; other lines stay."""
+    lines = file.read_text(encoding="utf-8").splitlines() if file.is_file() else []
+    out, done = [], False
+    for line in lines:
+        if line.startswith(f"{key}:"):
+            if not done:
+                out.append(f"{key}: {value}")
+                done = True
+            continue
+        out.append(line)
+    if not done:
+        out.append(f"{key}: {value}")
     file.parent.mkdir(parents=True, exist_ok=True)
     file.write_text("\n".join(out) + "\n", encoding="utf-8")
 

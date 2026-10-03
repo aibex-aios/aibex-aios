@@ -6,6 +6,7 @@
 
    mkdir -p "$HOME/bin" "$HOME/.aios"
    export PATH="$HOME/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+   export GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@t GIT_COMMITTER_NAME=t GIT_COMMITTER_EMAIL=t@t
    cp "$SRC/templates/forwarder" "$HOME/bin/aios-context"; chmod +x "$HOME/bin/aios-context"
    for V in 0.1.0 0.2.0; do
       mkdir -p "$AIOS_PREFIX/v$V/bin"
@@ -38,10 +39,14 @@
    OUT="$(at "$D" sh -c "echo n | '$SRC/bin/aios' --activate v0.1.0")"
    [ ! -e "$D/@" ] && [ ! -e "$D/.aios" ] && ok || fail "activation cancelled: nothing written"
    OUT="$(at "$D" sh -c "echo y | '$SRC/bin/aios' --activate v0.1.0")"
-   assert_contains "$OUT" "create the root masterspace $D/@" "plan: root masterspace"
+   assert_contains "$OUT" "create @/ (with .gitkeep)" "plan: root masterspace"
+   assert_contains "$OUT" "git init (branch main)" "plan: repo of the root project"
+   assert_contains "$OUT" ".gitignore: .DS_Store, .claude/skills/, .aios/manifest" "plan: .gitignore"
    assert_contains "$OUT" "from the next chat" "hint: next chat"
    assert_dir "$D/@"
    assert_eq "$(cat "$D/.aios/config.yaml")" "aios: 0.1.0" "vault config written"
+   assert_eq "$(git -C "$D" log --format=%s)" "AIOS: Projekt initialisiert" "root project: first commit"
+   assert_eq "$(git -C "$D" show --name-only --format= | sort | tr '\n' ' ')" ".aios/config.yaml .gitignore @/.gitkeep " "root project: committed files"
    assert_eq "$(at "$D/Garten/Beet/Reihe" aios-context --id)" "0.1.0 --id" "forwarder agrees with the activation"
    assert_eq "$(at "$D" sh -c "'$SRC/bin/aios' --activate 0.1.0 </dev/null")" "=> $D runs with AIOS 0.1.0 ($D/.aios/config.yaml), nothing to do" "same version again: nothing to do, no question"
 

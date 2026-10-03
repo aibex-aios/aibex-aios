@@ -107,33 +107,76 @@ Hinweis: Blueprints und registrierte Skills stimmen nicht überein — /aios-reg
    assert_file "$D/.claude/skills/notiz/SKILL.md"
 
 #===============================================================================
-# aios --init: checks, plan, project with git and first commit
+# aios --init: checks, plan, name rule, project with git and first commit (spec 05)
 #===============================================================================
 
    assert_contains "$("$SRC/bin/aios" --init "$SANDBOX/outside" 2>&1)" "is not in a vault" "init: outside a vault"
    assert_contains "$("$SRC/bin/aios" --init "$SANDBOX/work/§Alt/Feld" 2>&1)" "is not activated" "init: legacy vault"
-   assert_contains "$("$SRC/bin/aios" --init "$D" 2>&1)" "the vault root is the root project" "init: vault root"
-   assert_contains "$("$SRC/bin/aios" --init "$D/Garten" 2>&1)" "is already a project" "init: already a project"
+   OUT="$("$SRC/bin/aios" --init "$D" --plan 2>&1)"
+   assert_contains "$OUT" "the project $D" "init: vault root allowed"
+   case "$OUT" in *"name "*) fail "init: vault root exempt from the name rule" ;; *) ok ;; esac
+   assert_contains "$("$SRC/bin/aios" --init "$D/Garten" --plan 2>&1)" "git init (branch main)" "init: existing project is completed"
 
    OUT="$(at "$D/Wiese" "$SRC/bin/aios" --init --plan)"; RC=$?
    assert_eq "$RC" "0" "init --plan: exit 0"
-   assert_contains "$OUT" "create @/ and @Memo/ (with .gitkeep), .gitignore: .DS_Store, .claude/skills/, .aios/manifest" "init plan: files"
+   assert_contains "$OUT" "name Wiese: the name has no prefix" "init plan: name rule"
+   assert_contains "$OUT" "proposal: W-Wiese" "init plan: proposal"
+   assert_contains "$OUT" "create @/ (with .gitkeep)" "init plan: masterspace"
+   assert_contains "$OUT" ".gitignore: .DS_Store, .claude/skills/, .aios/manifest" "init plan: gitignore"
    assert_contains "$OUT" "git init (branch main)" "init plan: git init"
    [ ! -e "$D/Wiese/@" ] && [ ! -e "$D/Wiese/.git" ] && ok || fail "init --plan: nothing written"
+   OUT="$(at "$D/Wiese" "$SRC/bin/aios" --init --yes)"; RC=$?
+   assert_eq "$RC" "2" "init --yes with a name violation: exit 2"
+   assert_contains "$OUT" "run again with --name <name> (proposal) or --accept-name" "violation: hint"
+   [ ! -e "$D/Wiese/@" ] && ok || fail "violation: nothing written"
 
    printf 'eigen.txt\n.DS_Store\n' > "$D/Wiese/.gitignore"
-   OUT="$(at "$D/Wiese" "$SRC/bin/aios" --init --yes)"; RC=$?
-   assert_eq "$RC" "0" "init --yes: exit 0"
+   OUT="$(at "$D/Wiese" "$SRC/bin/aios" --init --accept-name --yes)"; RC=$?
+   assert_eq "$RC" "0" "init --accept-name --yes: exit 0"
+   assert_eq "$OUT" "=> $D/Wiese is a project" "init --yes: only the result"
    assert_file "$D/Wiese/@/.gitkeep"
-   assert_file "$D/Wiese/@Memo/.gitkeep"
+   [ ! -e "$D/Wiese/@Memo" ] && ok || fail "init: no @Memo/ (spec 05)"
    assert_eq "$(cat "$D/Wiese/.gitignore")" "$(printf 'eigen.txt\n.DS_Store\n.claude/skills/\n.aios/manifest')" "init: .gitignore completed, own lines kept"
    assert_eq "$(git -C "$D/Wiese" symbolic-ref --short HEAD)" "main" "init: branch main"
    assert_eq "$(git -C "$D/Wiese" log --format=%s)" "AIOS: Projekt initialisiert" "init: first commit"
-   assert_eq "$(git -C "$D/Wiese" show --name-only --format= | sort | tr '\n' ' ')" ".gitignore @/.gitkeep @Memo/.gitkeep " "init: committed files"
+   assert_eq "$(git -C "$D/Wiese" show --name-only --format= | sort | tr '\n' ' ')" ".gitignore @/.gitkeep " "init: committed files"
    assert_file "$D/Wiese/.claude/skills/memo/SKILL.md"
-   assert_contains "$OUT" "from the next chat" "init: hint next chat"
    assert_eq "$(git -C "$D/Wiese" status --porcelain)" "" "init: working tree clean (build output ignored)"
+   assert_eq "$(at "$D/Wiese" "$SRC/bin/aios" --init --accept-name </dev/null)" "=> $D/Wiese is a complete project, nothing to do" "init again: nothing to do"
+
+   OUT="$(at "$D" sh -c "echo y | '$SRC/bin/aios' --init '$D/W2-Weide' --accept-name")"
+   assert_contains "$OUT" "create the folder $D/W2-Weide" "init: folder created"
+   assert_contains "$OUT" "from the next chat" "init: hint next chat without --yes"
+   assert_dir "$D/W2-Weide/@"
+
+   OUT="$("$SRC/bin/aios" --init "$D/wiese drei" --name W-Wiese-Drei --plan 2>&1)"
+   assert_contains "$OUT" "create the folder $D/W-Wiese-Drei" "--name: folder under the new name"
+   case "$OUT" in *"name W-"*) fail "--name: conforming name, no violation" ;; *) ok ;; esac
+   mkdir -p "$D/feld vier"
+   "$SRC/bin/aios" --init "$D/feld vier" --name F-Feld-Vier --yes >/dev/null 2>&1
+   [ -d "$D/F-Feld-Vier/@" ] && [ ! -e "$D/feld vier" ] && ok || fail "--name: existing folder renamed"
+   assert_contains "$("$SRC/bin/aios" --init "$D/A-Acker" --assistant Bad_Name --plan 2>&1)" "is not an assistant name" "--assistant: name checked"
+   "$SRC/bin/aios" --init "$D/A-Acker" --assistant gaertner --yes >/dev/null 2>&1
+   assert_eq "$(cat "$D/A-Acker/.aios/config.yaml")" "assistant: gaertner" "--assistant written"
+   assert_eq "$(git -C "$D/A-Acker" show --name-only --format= | sort | tr '\n' ' ')" ".aios/config.yaml .gitignore @/.gitkeep " "--assistant: config committed"
+
+#===============================================================================
+# aios --init and the repo above (S4): exclusion, git rm --cached, commit there
+#===============================================================================
 
    git -C "$D" init -q
-   OUT="$(at "$D/Garten/Beet" "$SRC/bin/aios" --init --plan)"
-   assert_contains "$OUT" "lies inside the git repository $(cd "$D" && pwd -P)" "init plan: nested repository noted"
+   printf '.DS_Store\n' > "$D/.gitignore"
+   mkdir -p "$D/G-Garten/B-Beet/@"; printf '# Beet\n' > "$D/G-Garten/B-Beet/@/beet.md"
+   git -C "$D" add .gitignore G-Garten && git -C "$D" commit -qm vorher
+   OUT="$("$SRC/bin/aios" --init "$D/G-Garten/B-Beet" --accept-name --plan 2>&1)"
+   assert_contains "$OUT" "repo above $D: /G-Garten/B-Beet/ in $D/.gitignore; git rm -r --cached G-Garten/B-Beet (1 files" "init plan: exclusion in the repo above"
+   "$SRC/bin/aios" --init "$D/G-Garten/B-Beet" --accept-name --yes >/dev/null 2>&1
+   assert_eq "$(git -C "$D" log -1 --format=%s)" "AIOS: G-Garten/B-Beet als eigenes Projekt ausgeschlossen" "commit in the repo above"
+   assert_eq "$(git -C "$D" ls-files G-Garten)" "" "repo above: files no longer tracked"
+   assert_file "$D/G-Garten/B-Beet/@/beet.md"
+   assert_eq "$(git -C "$D" status --porcelain -- G-Garten .gitignore)" "" "repo above: exclusion committed, subproject not shown"
+   assert_eq "$(git -C "$D/G-Garten/B-Beet" log --format=%s)" "AIOS: Projekt initialisiert" "own repo of the subproject"
+   mkdir -p "$D/H-Hof"; printf 'x\n' > "$D/notiz.txt"; git -C "$D" add notiz.txt
+   "$SRC/bin/aios" --init "$D/H-Hof" --yes >"$SANDBOX/hof.out" 2>&1
+   assert_contains "$(cat "$SANDBOX/hof.out")" "has staged changes; commit the exclusion there by hand" "staged changes above: no commit there"
+   assert_contains "$(cat "$D/.gitignore")" "/H-Hof/" "exclusion written anyway"

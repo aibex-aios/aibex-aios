@@ -7,11 +7,31 @@ from . import activate, aiosinit, deploy, install, paths, registry, skills, ui
 
 USAGE = ("usage: aios --prepare | --install [v<version>] | --versions | --remove-version v<version>"
          " | --uninstall | --activate v<version> [<path>] | --deactivate [<path>] | --config [<path>]"
-         " | --register [<path>] | --init [<path>] | --skill <name> | --library"
+         " | --register [<path>] | --init [<path>] [--assistant <value>] [--name <name>] [--accept-name]"
+         " | --skill <name> | --library"
          " | --deploy [<name>==<version>] [--to <project>] [--assistant <name>] [--from <repo>]"
          "  (writing commands: --plan, --yes)")
 
 LATER = {}                                          # commands of later steps (memo 18)
+
+
+def init_command(args):
+    """aios --init [<path>] [--assistant <value>] [--name <name>] [--accept-name] (spec 05)."""
+    opts, rest, i = {}, [], 0
+    while i < len(args):
+        a = args[i]
+        if a in ("--assistant", "--name") and i + 1 < len(args):
+            opts[a[2:]] = args[i + 1]
+            i += 2
+            continue
+        if a == "--accept-name":
+            opts["accept_name"] = True
+        else:
+            rest.append(a)
+        i += 1
+    if len(rest) > 1 or any(r.startswith("--") for r in rest):
+        raise ui.Abort("usage: aios --init [<path>] [--assistant <value>] [--name <name>] [--accept-name]")
+    return aiosinit.init(rest[0] if rest else None, **opts)
 
 
 def main(argv):
@@ -46,8 +66,8 @@ def main(argv):
             return deploy.show_library()
         if cmd == "--skill" and len(args) == 1:
             return skills.body(args[0])
-        if cmd == "--init" and len(args) <= 1:
-            return aiosinit.init(args[0] if args else None)
+        if cmd == "--init":
+            return init_command(args)
         if cmd == "--register" and len(args) <= 1:
             return registry.register(args[0] if args else paths.cwd())
         if cmd in LATER:
@@ -55,6 +75,8 @@ def main(argv):
             return 2
     except ui.PlanOnly:
         return 0
+    except aiosinit.NameViolation:
+        return 2
     except ui.Cancelled:
         return 1
     except ui.Abort as e:

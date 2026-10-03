@@ -77,6 +77,6 @@ p = project.parent_repo('$D/S-Sternwarte'); print(p.rel, p.ignored, p.tracked)")
    assert_contains "$(NAME "$D/AA-Doppel")" "must be one capital letter directly under the vault root" "root level message"
    assert_eq "$(NAME "$D/X-klein" | cut -d'|' -f1-2)" "bad|X-Klein" "valid prefix kept, part capitalized"
    assert_contains "$(NAME "$D/X-klein")" "the part 'klein' does not start with a capital letter or a digit" "lowercase part reported"
-   assert_eq "$(NAME "$D/P-Projekte/PB-Blogs/pb2-die-ki" | cut -d'|' -f1-2)" "bad|PBP-Pb2-Die-Ki" "proposal always uses a capital letter"
+   assert_eq "$(NAME "$D/P-Projekte/PB-Blogs/pb2-die-ki" | cut -d'|' -f1-2)" "bad|PB2-Die-Ki" "lower-case prefix recognized and capitalized"
    assert_eq "$(NAME "$D/Notizen/irgendwas" | cut -d'|' -f1-2)" "bad|I-Irgendwas" "no prefix: proposal from the initial"
    assert_eq "$(NAME "$D/Notizen/Q-frei" | cut -d'|' -f1-2)" "bad|Q-Frei" "only the form under a non-conforming parent"

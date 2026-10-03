@@ -149,12 +149,12 @@ def capitalize(part):
 
 def propose(name, base):
     """A conforming proposal: whitespace and _ become -, parts start upper case, the prefix
-    is base plus the initial of the first part (a valid prefix is kept)."""
+    is base plus the initial of the first part (a valid prefix is kept, also in lower case)."""
     parts = [x for x in re.split(r"[\s_\-]+", name.strip()) if x]
     if not parts:
         return ""
-    if len(parts) >= 2 and PREFIX.match(parts[0]) and fits(parts[0], base):
-        return "-".join([parts[0]] + [capitalize(x) for x in parts[1:]])
+    if len(parts) >= 2 and PREFIX.match(parts[0].upper()) and fits(parts[0].upper(), base):
+        return "-".join([parts[0].upper()] + [capitalize(x) for x in parts[1:]])   # pb2-… → PB2-…
     parts = [capitalize(x) for x in parts]
     initial = next((c for c in parts[0] if c.isalpha()), "X").upper()
     return "-".join([(base or "") + initial] + parts)

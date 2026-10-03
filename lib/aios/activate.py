@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from . import config, install, paths
+from . import aiosinit, config, install, paths
 from .ui import Abort, Plan, confirm, say
 
 
@@ -36,9 +36,10 @@ def activate(version, path=None):
     if tag not in known or not known[tag][0].is_dir():
         raise Abort(f"AIOS {tag} is not installed; run: aios --install {tag}")
     plan = Plan()
-    if p == root:
-        if not (p / "@").is_dir():
-            plan.add(f"create the root masterspace {p / '@'}", lambda: (p / "@").mkdir())
+    steps = None
+    if p == root:                                   # the vault root becomes the root project (spec 04)
+        steps = aiosinit.Steps(p, plan, root=True)
+        steps.structure()
     elif not (p / "@").is_dir():
         raise Abort(f"{p} is not a project (no @/); initialize it with /aios-init "
                     f"or activate the vault {root}")
@@ -50,12 +51,18 @@ def activate(version, path=None):
             raise Abort(f"{e}; fix the file first")
         if config.VERSION.match(str(data.get("aios") or "")) and \
                 config.VERSION.match(str(data["aios"])).group(1) == m.group(1):
-            say(f"=> {effective(p)}, nothing to do")
-            return 0
-        what = f"aios: {m.group(1)} in {file}" + (f" (was {data['aios']})" if data.get("aios") else "")
+            if not (steps and steps.changes):
+                say(f"=> {effective(p)}, nothing to do")
+                return 0
+            what = None
+        else:
+            what = f"aios: {m.group(1)} in {file}" + (f" (was {data['aios']})" if data.get("aios") else "")
     else:
         what = f"create {file} with aios: {m.group(1)}"
-    plan.add(what, lambda: config.set_aios(file, m.group(1)))
+    if what:
+        plan.add(what, lambda: config.set_aios(file, m.group(1)))
+    if steps and steps.changes:
+        steps.commit(extra=[".aios/config.yaml"])
     say(f"=> activate AIOS {tag} for {p}")
     if not confirm(plan, "activate?", "activation cancelled"):
         return 1
