@@ -235,7 +235,7 @@ allowed-tools: Bash(aios --skill *), <allowed-tools aus derselben SKILL.md>
 !`aios --skill aios-init`
 ```
 
-`aios --skill <name>` gibt den Rumpf (ohne Frontmatter) der `SKILL.md` der **gültigen** Version aus; gültig ist die Version, die der Weiterleiter für `cwd` wählt. Beschreibung und `allowed-tools` werden bei jedem `aios --install` aus der installierten Version übernommen. Der Rumpf eines AIOS-Skills enthält keine `!`-Befehle, weil Claude Code die Ausgabe von `` !`aios --skill …` `` nicht noch einmal auswertet; er weist Claude an, die Befehle selbst auszuführen. Braucht ein Skill die Session-ID (`aios-assistant`), steht in seiner Hülle `` !`aios --skill <name> --session ${CLAUDE_SESSION_ID}` ``; `aios --skill` setzt die ID im Rumpf ein (Spec 01, O3).
+`aios --skill <name>` gibt den Rumpf (ohne Frontmatter) der `SKILL.md` der **gültigen** Version aus; gültig ist die Version, die der Weiterleiter für `cwd` wählt. Beschreibung und `allowed-tools` werden bei jedem `aios --install` aus der installierten Version übernommen. Der Rumpf eines AIOS-Skills enthält keine `!`-Befehle, weil Claude Code die Ausgabe von `` !`aios --skill …` `` nicht noch einmal auswertet; er weist Claude an, die Befehle selbst auszuführen. Braucht ein Skill die Session-ID (`aios-assistant`), steht in seiner Hülle `` !`aios --skill <name> --session ${CLAUDE_SESSION_ID}` ``; `aios --skill` setzt die ID im Rumpf ein. Claude Code ersetzt den Platzhalter auch innerhalb von `!`-Befehlen (V0.3, Memo 31).
 
 Der Alias `/gui` hat dieselbe Form mit festem Text:
 

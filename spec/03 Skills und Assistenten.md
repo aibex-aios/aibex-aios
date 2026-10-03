@@ -256,7 +256,7 @@ Mit `--to <projekt>` schreibt der Aufruf in ein anderes Projekt der Kette, z. B.
    ```
 
    Hat der User den Wechsel in seinem Aufruf schon ausdrücklich bestätigt, entfällt die Rückfrage.
-3. Nach Ja `aios --assistant <wert> [--to <projekt>] --yes --session <session-id>`: schreibt `assistant:` in `.aios/config.yaml` (nur diese Zeile; Kommentare und andere Zeilen bleiben) und setzt den Merker der Session auf den neuen wirksamen Assistenten (Spec 02). Die Session-ID kommt aus dem Platzhalter `${CLAUDE_SESSION_ID}` der Hülle; ohne sie wird nur die Zuordnung geschrieben (Spec 01, O3).
+3. Nach Ja `aios --assistant <wert> [--to <projekt>] --yes --session <session-id>`: schreibt `assistant:` in `.aios/config.yaml` (nur diese Zeile; Kommentare und andere Zeilen bleiben) und setzt den Merker der Session auf den neuen wirksamen Assistenten (Spec 02). Die Session-ID kommt aus dem Platzhalter `${CLAUDE_SESSION_ID}` der Hülle; Claude Code ersetzt ihn im Text und in `!`-Befehlen eines Skills (V0.3, Memo 31).
 4. Ist der neue wirksame Assistent nicht `none`: `aios-context --assistant <name>` ausführen und die Ausgabe vollständig lesen. Bei `none`: die bisherige Rolle ablegen.
 5. Titel setzen, wenn einer angegeben ist (unten).
 6. Kurz bestätigen („Astronom aktiv" bzw. „kein Assistent"), `model` gegebenenfalls als Hinweis nennen, danach in der Rolle antworten.
@@ -333,7 +333,7 @@ Die Oberfläche erscheint, wenn `/aios-gui` oder `/gui` aufgerufen wird; sie ist
 
 `/gui` ist ein **Alias**: eine feste, versionsneutrale Hülle in `~/.claude/skills/gui/` (Spec 04). Es gibt nur diesen einen Alias (V0.3, Memo 25). Der Rumpf entsteht beim Aufruf mit `aios --gui --session ${CLAUDE_SESSION_ID}`:
 
-1. Assistent bestimmen: der Assistent der Session aus dem Merker (Spec 02); ohne Session-ID oder ohne Merker die Zuordnung des Projekts (Spec 01, O3).
+1. Assistent bestimmen: der Assistent der Session aus dem Merker (Spec 02); ohne Merker die Zuordnung des Projekts.
 2. Hat er ein `gui:`, gibt `aios --gui` den Rumpf des Oberflächen-Skills aus, erweitert um die Anweisung, die Oberfläche nach *Darstellung* zu zeigen.
 3. Ist kein Assistent aktiv oder nennt er kein `gui:`: „Der Assistent <Titel> hat keine Oberfläche." bzw. „Kein Assistent aktiv.", jeweils mit „AIOS-Oberfläche: `/aios-gui`".
 

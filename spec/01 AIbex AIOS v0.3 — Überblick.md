@@ -172,5 +172,4 @@ v0.3 ist fertig, wenn dieser Ablauf auf einem Rechner gelingt, auf dem v0.3.0 no
 |---|---|---|
 | O1 | Wirkt `/reload-skills` in einer interaktiven Session auf Skills, die nach dem Start angelegt wurden? | Getestet (V0.1, Memo 16): Ein beim Session-Start angelegter Skill ist erst im nächsten Chat verfügbar; die Registrierung ist darauf ausgelegt (Spec 03). Offen ist nur `/reload-skills` |
 | O2 | Detailregeln der Klassen | siehe Spec 02, *Vorläufige Regeln der Klassen* |
-| O3 | Erfährt ein Skill die Session-ID (Platzhalter `${CLAUDE_SESSION_ID}` in der Hülle)? Davon hängen `/gui` und der Wechsel mit `/aios-assistant` im Merker der Session ab (V0.3, Memo 25) | Spec 03 verwendet den Platzhalter. Steht keine Session-ID zur Verfügung, gilt für `/gui` die Zuordnung des Projekts, und `/aios-assistant` schreibt nur die Zuordnung; der Merker der Session folgt dann beim nächsten Resume nicht dem Wechsel |
-| O4 | Stehen HTML-Oberflächen im Chat in jeder Installation der Desktop-App bereit? (V0.3, Memo 10, 25) | Ohne HTML-Oberfläche zeigen `/gui` und `/aios-gui` das Menü der CLI |
+| O4 | Stehen HTML-Oberflächen im Chat in jeder Installation der Desktop-App bereit? (V0.3, Memo 10, 25, 31) | Geprüft: in der Desktop-App vorhanden, in Headless-Sessions und der CLI nicht. Ohne HTML-Oberfläche zeigen `/gui` und `/aios-gui` das Menü der CLI |
