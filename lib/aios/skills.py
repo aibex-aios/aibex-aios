@@ -30,12 +30,22 @@ def needs_session(text):
     return SESSION in strip_frontmatter(text)
 
 
+def memo_registered():
+    """The project of cwd has a skill memo in its .aios/manifest (precedence of memo, spec 03)."""
+    from . import context, paths
+    ctx = context.Context(paths.cwd())
+    return ctx.project is not None and "memo" in registry.read_manifest(ctx.project / ".aios" / "manifest")
+
+
 def body(name, session_id=None):
     """Print the body of skills/aios/<name>/SKILL.md of the running version (the valid one);
     with --session the placeholder ${CLAUDE_SESSION_ID} is replaced by the id."""
     f = source(name)
     if not f.is_file():
         raise Abort(f"AIOS {version()} has no AIOS skill {name}")
+    if name == "aios-memo" and memo_registered():
+        print("Verwende `/memo` — in diesem Projekt ist der Skill `memo` registriert.")
+        return 0
     text = strip_frontmatter(f.read_text(encoding="utf-8"))
     if session_id is not None:
         from . import session

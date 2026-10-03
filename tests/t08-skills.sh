@@ -42,12 +42,12 @@ import sys; t=open(sys.argv[1],encoding='utf-8').read(); e=t.find('\n---',3); pr
    case "$(at "$D" aios --skill aios-init)" in *"name: aios-init"*|*"allowed-tools"*) fail "--skill: no frontmatter" ;; *) ok ;; esac
    case "$(at "$D" aios --skill aios-init)" in *"Nur in Version 0.2.0"*) fail "--skill in §Demo: version 0.1.0" ;; *) ok ;; esac
    assert_contains "$(at "$D/Garten" aios --skill aios-init)" "Nur in Version 0.2.0" "--skill in Garten: version 0.2.0"
-   for S in aios-context aios-init aios-register aios-status aios-deploy aios-assistant aios-integrity; do
+   for S in aios-context aios-init aios-register aios-status aios-deploy aios-assistant aios-integrity aios-memo; do
       assert_contains "$(at "$D" aios --skill "$S")" "Ein AIOS-Skill von AIbex AIOS" "--skill $S"
    done
    assert_exit 1 "$SRC/bin/aios" --skill aios-nope
    assert_exit 1 "$SRC/bin/aios" --skill aios-agent
-   assert_eq "$(ls "$SRC/skills/aios" | tr '\n' ' ')" "aios-assistant aios-context aios-deploy aios-init aios-integrity aios-register aios-status " "AIOS skills of v0.3 (aios-assistant, no aios-agent; aios-integrity)"
+   assert_eq "$(ls "$SRC/skills/aios" | tr '\n' ' ')" "aios-assistant aios-context aios-deploy aios-init aios-integrity aios-memo aios-register aios-status " "AIOS skills of v0.3 (aios-assistant, no aios-agent; aios-integrity, aios-memo)"
 
 #===============================================================================
 # wrapper: name, description and allowed-tools from the version, body from aios --skill
@@ -208,3 +208,22 @@ for n in ('aios-assistant', 'aios-context', 'aios-init'):
    "$SRC/bin/aios" --init "$D/H-Hof" --yes >"$SANDBOX/hof.out" 2>&1
    assert_contains "$(cat "$SANDBOX/hof.out")" "has staged changes; commit the exclusion there by hand" "staged changes above: no commit there"
    assert_contains "$(cat "$D/.gitignore")" "/H-Hof/" "exclusion written anyway"
+
+#===============================================================================
+# v0.3 step 7: /aios-memo - body of memo==6.0.0, precedence of a registered memo
+#===============================================================================
+
+   MEMO_BODY="$(python3 -c "
+import sys; t=open(sys.argv[1],encoding='utf-8').read(); e=t.find('\n---',3); print(t[t.find('\n',e+4)+1:].lstrip('\n'),end='')" "$SRC/skills/basic/memo/SKILL.md")"
+   assert_contains "$(head -5 "$SRC/skills/basic/memo/SKILL.md")" "version: 6.0.0" "library memo is 6.0.0 (aios-memo carries its body)"
+   mkdir -p "$D/Notiz/@"
+   OUT="$(at "$D/Notiz" aios --skill aios-memo)"
+   case "$OUT" in *"$MEMO_BODY"*) ok ;; *) fail "aios-memo: body of memo==6.0.0" ;; esac
+   assert_contains "$OUT" "Fehlt \`@Memo/\` im Projekt, lege ihn beim ersten Memo an." "aios-memo: creates @Memo/"
+   assert_contains "$(sed -n 1,10p "$SRC/skills/aios/aios-memo/SKILL.md")" 'Nur verwenden, wenn kein Skill `memo` verfügbar ist.' "aios-memo: description defers to memo"
+   mk "$D/Notiz/.aios/manifest" $'# written by AIOS (registration), do not edit\nschema: 1\nregistered:\n  memo:\n    source: "x"\n    version: 6.0.0\n    digest: sha256:0\n'
+   assert_eq "$(at "$D/Notiz" aios --skill aios-memo)" "Verwende \`/memo\` — in diesem Projekt ist der Skill \`memo\` registriert." "memo registered: precedence"
+   assert_eq "$(at "$D/Notiz/@" aios --skill aios-memo)" "Verwende \`/memo\` — in diesem Projekt ist der Skill \`memo\` registriert." "precedence from a folder inside the project"
+   mk "$D/Notiz/.aios/manifest" $'# written by AIOS (registration), do not edit\nschema: 1\nregistered:\n  notiz:\n    source: "x"\n    version: 0.1.0\n    digest: sha256:0\n'
+   case "$(at "$D/Notiz" aios --skill aios-memo)" in *"$MEMO_BODY"*) ok ;; *) fail "other skills registered: body" ;; esac
+   case "$(at "$SANDBOX/outside" "$SRC/bin/aios" --skill aios-memo)" in *"$MEMO_BODY"*) ok ;; *) fail "outside a vault: body" ;; esac
