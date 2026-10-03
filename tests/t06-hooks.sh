@@ -12,11 +12,14 @@
    mk "$D/@/@Rule/stil.md"        $'# Stil\nschreib klar\n'
    mk "$D/Garten/@/garten.md"     $'# Garten\nApfel\n'
    mkdir -p "$D/Garten/Neu"
+   mk "$D/Garten/.gitignore"      $'.DS_Store\n.claude/skills/\n.aios/manifest\n'
+   git -C "$D/Garten" init -q                      # Garten is a complete project (spec 05, S1-S4)
+   mk "$D/Wiese/@/wiese.md"       $'# Wiese\n'
    mk "$SANDBOX/work/§Alt/@/a.md" $'# A\n'
    printf '#!/bin/bash\necho "ai-brain $* stdin=$(cat)"\n' > "$SANDBOX/fake/ai-brain"; chmod +x "$SANDBOX/fake/ai-brain"
 
    AC="$SRC/bin/aios-context"
-   json() { printf '{"session_id":"t","hook_event_name":"SessionStart","source":"startup","cwd":"%s"}' "$1"; }
+   json() { printf '{"session_id":"t","hook_event_name":"SessionStart","source":"%s","cwd":"%s"}' "${SRCE:-startup}" "$1"; }
    HOOK() { json "$2" | (cd "$SANDBOX" && "$AC" "$1"); }          # hook call, cwd only from JSON
 
 #===============================================================================
@@ -48,10 +51,25 @@ $CTX" "session: inline = header + --context"
 #===============================================================================
 
    OUT="$(HOOK --session "$D/Garten/Neu")"
-   assert_eq "$(printf '%s\n' "$OUT" | head -3)" "PROJECT-UNINITIALIZED: $D/Garten/Neu has no local masterspace (@/). Before your first
-answer, ask the user: (1) initialize this folder as a project (/aios-init),
-(2) continue in the project $D/Garten. Give no other answer until the user decides." "uninitialized: message first, X = project above"
+   assert_eq "$(printf '%s\n' "$OUT" | head -4)" "PROJECT-UNINITIALIZED: $D/Garten/Neu has no local masterspace (@/). Before your first
+answer, run \`aios --init \"$D/Garten/Neu\" --plan\` and show the dialog \"Projekt
+initialisieren\" (title, assistant, initialize or continue in the project $D/Garten).
+Give no other answer until the user decides." "uninitialized: dialog, X = project above"
    assert_contains "$OUT" "src=\"$D/Garten/@/garten.md\"" "uninitialized: master context up to X"
+   case "$OUT" in *PROJECT-INCOMPLETE*) fail "uninitialized: no consistency check" ;; *) ok ;; esac
+
+#===============================================================================
+# --session: consistency check at startup only (spec 02, Unvollstaendiges Projekt)
+#===============================================================================
+
+   OUT="$(HOOK --session "$D/Wiese")"
+   assert_eq "$(printf '%s\n' "$OUT" | head -1)" "PROJECT-INCOMPLETE: $D/Wiese is an AIOS project but lacks: own git repo, .gitignore lines: .DS_Store, .claude/skills/, .aios/manifest." "incomplete: gaps named"
+   assert_contains "$OUT" "\`aios --init \"$D/Wiese\"\` (show the plan from --plan" "incomplete: offer aios --init"
+   assert_contains "$OUT" "src=\"$D/Wiese/@/wiese.md\"" "incomplete: master context follows"
+   for S in resume clear compact; do
+      case "$(SRCE=$S HOOK --session "$D/Wiese")" in *PROJECT-INCOMPLETE*) fail "incomplete: no check at $S" ;; *) ok ;; esac
+   done
+   case "$(json "$D/Wiese" >/dev/null; cd "$D/Wiese" && "$AC" --session </dev/null)" in *PROJECT-INCOMPLETE*) ok ;; *) fail "incomplete: without JSON counts as startup" ;; esac
 
 #===============================================================================
 # --session: master context larger than inline_limit -> part files

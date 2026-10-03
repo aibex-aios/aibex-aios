@@ -223,10 +223,29 @@ def hook_input():
     return (d if d and os.path.isdir(d) else None), raw
 
 
+def hook_source(raw):
+    """source of the SessionStart JSON (startup, resume, clear, compact); startup without JSON."""
+    try:
+        return json.loads(raw or "{}").get("source") or "startup"
+    except (ValueError, AttributeError):
+        return "startup"
+
+
 def uninitialized_message(ctx):
+    choices = (f"(title, assistant, initialize or continue in the project {ctx.project})"
+               if ctx.project else "(title, assistant, initialize)")
     return (f"PROJECT-UNINITIALIZED: {ctx.cwd} has no local masterspace (@/). Before your first\n"
-            f"answer, ask the user: (1) initialize this folder as a project (/aios-init),\n"
-            f"(2) continue in the project {ctx.project}. Give no other answer until the user decides.")
+            f"answer, run `aios --init \"{ctx.cwd}\" --plan` and show the dialog \"Projekt\n"
+            f"initialisieren\" {choices}.\n"
+            f"Give no other answer until the user decides.")
+
+
+def incomplete_message(ctx, gaps):
+    return (f"PROJECT-INCOMPLETE: {ctx.cwd} is an AIOS project but lacks: "
+            + ", ".join(g.text for g in gaps) + ".\n"
+            f"Before your first answer, offer the user to complete it with\n"
+            f"`aios --init \"{ctx.cwd}\"` (show the plan from --plan, run with --yes after yes).\n"
+            f"If the user declines, continue normally and do not offer it again.")
 
 
 def mandatory_message(ctx, size, limit):
@@ -249,9 +268,10 @@ def check_message(ctx):
             f" \"Master-Kontext geladen (id {ident})\". If both markers are present, do nothing.")
 
 
-def session(ctx):
-    """SessionStart: warnings, PROJECT-UNINITIALIZED, master context inline or part files."""
-    from . import registry
+def session(ctx, source="startup"):
+    """SessionStart: warnings, PROJECT-UNINITIALIZED or (at startup) PROJECT-INCOMPLETE,
+    master context inline or part files."""
+    from . import project, registry
     out = [f"AIOS-WARNING: {w}" for w in ctx.cfg.warnings]
     if ctx.initialized:                             # registration for the next chat (spec 03)
         s = registry.Sync(ctx)
@@ -261,6 +281,10 @@ def session(ctx):
             out.append(f"AIOS-SKILLS: {s.summary()} — wirksam ab dem nächsten Chat")
     if not ctx.initialized:
         out.append(uninitialized_message(ctx))
+    elif source == "startup":                       # consistency check, first start only (spec 02)
+        gaps = project.check(ctx.cwd)
+        if gaps:
+            out.append(incomplete_message(ctx, gaps))
     text = ctx.render()
     limit = ctx.cfg.inline_limit
     if len(text) <= limit:
@@ -371,7 +395,7 @@ def hook(cmd):
         return 0
     if ctx.mode == "legacy":
         return legacy(cmd, cwd, raw)
-    print(session(ctx) if cmd == "--session" else check_message(ctx))
+    print(session(ctx, hook_source(raw)) if cmd == "--session" else check_message(ctx))
     return 0
 
 
