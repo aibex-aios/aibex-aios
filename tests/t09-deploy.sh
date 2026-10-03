@@ -24,7 +24,7 @@
 
    assert_eq "$("$SRC/bin/aios" --library)" "memo                     skill      6.0.0
 astronom                 assistant  0.1.0
-gaertner                 assistant  0.1.0" "--library: skills and assistants of the clone"
+gaertner                 assistant  0.2.0" "--library: skills and assistants of the clone"
    assert_contains "$(A --deploy memo-6.0.0)" "expected <name>==<version>" "bad spec"
    assert_contains "$(A --deploy aios-init==0.1.0)" "is an AIOS skill" "AIOS skill"
    assert_contains "$(A --deploy nix==1.0.0)" "has no bundled skill nix" "unknown skill"
@@ -118,24 +118,24 @@ gaertner                 assistant  0.1.0" "--library: skills and assistants of 
 #===============================================================================
 
    GA="$D/@/@!Assistant/gaertner"
-   OUT="$(A --deploy gaertner==0.1.0 --to "$D" --plan)"
-   assert_contains "$OUT" "deploy assistant gaertner 0.1.0 to $D" "assistant: plan"
-   assert_contains "$OUT" "blueprint $GA: gaertner 0.1.0 from library" "assistant: blueprint in @!Assistant/"
-   assert_contains "$OUT" "manifest $D/.aios/config.yaml: assistants: gaertner: (new) -> 0.1.0" "assistant: manifest assistants:"
+   OUT="$(A --deploy gaertner==0.2.0 --to "$D" --plan)"
+   assert_contains "$OUT" "deploy assistant gaertner 0.2.0 to $D" "assistant: plan"
+   assert_contains "$OUT" "blueprint $GA: gaertner 0.2.0 from library" "assistant: blueprint in @!Assistant/"
+   assert_contains "$OUT" "manifest $D/.aios/config.yaml: assistants: gaertner: (new) -> 0.2.0" "assistant: manifest assistants:"
    case "$OUT" in *"register the project skills"*) fail "assistant: no registration" ;; *) ok ;; esac
    [ ! -e "$GA" ] && ok || fail "assistant: --plan writes nothing"
-   OUT="$(A --deploy gaertner==0.1.0 --to "$D" --yes)"
+   OUT="$(A --deploy gaertner==0.2.0 --to "$D" --yes)"
    assert_contains "$OUT" "activate it in a chat of the chain with /aios-assistant Gärtner" "assistant: hint"
    for F in ASSISTANT.md "@!Skill/apfel-birnen-algebra/SKILL.md" "@Wissen/@Grundlagen/grundlagen.md" "@Wissen/@@Sortenkunde/sortenkunde.md"; do
       assert_eq "$(cat "$GA/$F")" "$(cat "$SRC/assistants/demo/gaertner/$F")" "assistant: $F"
    done
-   assert_eq "$(sed -n '2,4p' "$GA/.aios-deploy")" "$(printf 'name: gaertner\nversion: 0.1.0\nsource: "library"')" "assistant: marker"
-   assert_contains "$(cat "$D/.aios/config.yaml")" $'assistants:\n  gaertner: 0.1.0' "assistant: config.yaml"
-   assert_contains "$(cd "$G" && "$SRC/bin/aios" --config)" "assistant gaertner 0.1.0 ($D/.aios/config.yaml)" "assistant: entry read by the chain"
-   assert_contains "$(cd "$G" && "$SRC/bin/aios-context" --assistants)" "gaertner             Gärtner 0.1.0" "assistant: resolved in the chain"
-   assert_contains "$(A --deploy gaertner==0.1.0 --to "$D")" "already deployed" "assistant: second deploy, nothing to do"
+   assert_eq "$(sed -n '2,4p' "$GA/.aios-deploy")" "$(printf 'name: gaertner\nversion: 0.2.0\nsource: "library"')" "assistant: marker"
+   assert_contains "$(cat "$D/.aios/config.yaml")" $'assistants:\n  gaertner: 0.2.0' "assistant: config.yaml"
+   assert_contains "$(cd "$G" && "$SRC/bin/aios" --config)" "assistant gaertner 0.2.0 ($D/.aios/config.yaml)" "assistant: entry read by the chain"
+   assert_contains "$(cd "$G" && "$SRC/bin/aios-context" --assistants)" "gaertner             Gärtner 0.2.0" "assistant: resolved in the chain"
+   assert_contains "$(A --deploy gaertner==0.2.0 --to "$D")" "already deployed" "assistant: second deploy, nothing to do"
    assert_contains "$(A --deploy gaertner==9.9.9 --to "$D")" "gaertner 9.9.9 is not bundled with AIOS" "assistant: unknown version"
-   assert_contains "$(A --deploy gaertner==0.1.0 --assistant obst --to "$G")" "gaertner is an assistant; --assistant <name> is only for skills" "assistant: no --assistant"
+   assert_contains "$(A --deploy gaertner==0.2.0 --assistant obst --to "$G")" "gaertner is an assistant; --assistant <name> is only for skills" "assistant: no --assistant"
    assert_contains "$(A --deploy astronom==0.1.0 --from "$PF" --to "$D")" "no tag astronom-v0.1.0" "assistant: --from only for skills"
 
    A --deploy memo==6.0.0 --assistant gaertner --to "$D" --yes >/dev/null
@@ -144,14 +144,14 @@ gaertner                 assistant  0.1.0" "--library: skills and assistants of 
    assert_contains "$(A --deploy --to "$D" </dev/null)" "match the manifest" "skill inside: the assistant is not changed directly (F3)"
 
    printf 'eigene Notiz\n' >> "$GA/ASSISTANT.md"
-   assert_contains "$(A --deploy --to "$D" --plan)" "blueprint $GA: gaertner 0.1.0 (changed directly, restored)" "assistant changed directly: reconcile"
+   assert_contains "$(A --deploy --to "$D" --plan)" "blueprint $GA: gaertner 0.2.0 (changed directly, restored)" "assistant changed directly: reconcile"
    A --deploy --to "$D" --yes >/dev/null
    case "$(cat "$GA/ASSISTANT.md")" in *"eigene Notiz"*) fail "assistant restored" ;; *) ok ;; esac
    assert_file "$GA/@!Skill/memo/SKILL.md"
    assert_contains "$(A --deploy --to "$D" </dev/null)" "match the manifest" "assistant restored, its skill kept"
 
    rm -rf "$GA"                                                         # e.g. fresh clone
-   assert_contains "$(A --deploy --to "$D" --yes)" "gaertner 0.1.0 (missing)" "assistant missing: restored"
+   assert_contains "$(A --deploy --to "$D" --yes)" "gaertner 0.2.0 (missing)" "assistant missing: restored"
    assert_file "$GA/ASSISTANT.md"
    assert_file "$GA/@!Skill/memo/SKILL.md"
 

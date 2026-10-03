@@ -99,6 +99,8 @@ def render(ctx, query):
     name, (d, meta) = resolve(ctx, query)
     prompt = lookup(d, ctx, "prompt", meta["prompt"]) if meta.get("prompt") else None
     skills = [lookup(d, ctx, "skill", s) for s in as_list(meta.get("skills"))]
+    if meta.get("gui") and meta["gui"] not in as_list(meta.get("skills")):
+        raise Abort(f"gui {meta['gui']} of the assistant {name} is not in its skills")
     found = classify(d)
     knowledge = [p for p in found[LOAD] if p != d / "ASSISTANT.md"]
     available = found[AVAILABLE]
@@ -111,6 +113,7 @@ def render(ctx, query):
            f"model: {model or '-'}\n",
            f"tools: {', '.join(as_list(meta.get('tools'))) or '-'}\n",
            f"skills: {', '.join(as_list(meta.get('skills'))) or '-'}\n",
+           f"gui: {meta.get('gui') or '-'}\n",
            "</aios-assistant-meta>\n"]
 
     def file(cls, p, text):

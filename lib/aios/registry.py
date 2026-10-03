@@ -63,6 +63,9 @@ def blueprints(ctx):
             if d.name.startswith(RESERVED):
                 problems.append(f"{d}: the name {d.name} is reserved for AIOS skills, not registered")
                 continue
+            if d.name == "gui":
+                problems.append(f"{d}: the name gui is reserved for the alias /gui, not registered")
+                continue
             if not NAME.match(d.name):
                 problems.append(f"{d}: {d.name} is not a valid skill name, not registered")
                 continue

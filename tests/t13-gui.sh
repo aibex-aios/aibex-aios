@@ -1,0 +1,130 @@
+# t13-gui.sh: step 8 of the plan (V0.3, memo 32) - surfaces: gui.yaml, aios --gui, alias /gui, aios-gui (spec 03, 04)
+
+#===============================================================================
+# setup: a python with PyYAML (gui.yaml is read with PyYAML), vault with the demo Gärtner 0.2.0
+#===============================================================================
+
+   PYDIR=""
+   for P in $(type -ap python3) /opt/homebrew/bin/python3 /usr/local/bin/python3 /usr/bin/python3; do
+      [ -x "$P" ] && "$P" -c "import yaml" 2>/dev/null && { PYDIR="$(dirname "$P")"; break; }
+   done
+   [ -n "$PYDIR" ] && ok || fail "t13 needs a python3 with PyYAML (pip install pyyaml)"
+   export PATH="$PYDIR:/usr/bin:/bin:/usr/sbin:/sbin"
+   D="$SANDBOX/work/§Demo"; G="$D/Garten"
+   mk() { mkdir -p "$(dirname "$1")"; printf '%s' "$2" > "$1"; }
+   mk "$D/.aios/config.yaml" $'aios: 0.3.0\n'
+   mkdir -p "$D/@/@!Assistant" "$G/@/@!Assistant" "$D/Wiese/@"
+   cp -R "$SRC/assistants/demo/gaertner" "$G/@/@!Assistant/gaertner"
+   cp -R "$SRC/assistants/demo/astronom" "$D/@/@!Assistant/astronom"
+   at() { (cd "$1" && shift && "$@" 2>&1); }
+   GUI() { local d="$1"; shift; at "$d" "$SRC/bin/aios" --gui "$@"; }
+   GG="$G/@/@!Assistant/gaertner/@!Skill/gaertner-gui"
+
+#===============================================================================
+# /gui: no assistant, assistant without surface, Gärtner with surface
+#===============================================================================
+
+   assert_eq "$(GUI "$G")" $'Kein Assistent aktiv.\nAIOS-Oberfläche: `/aios-gui`' "no assignment: no assistant"
+   mk "$D/.aios/config.yaml" $'aios: 0.3.0\nassistant: astronom\n'
+   assert_eq "$(GUI "$D/Wiese")" $'Der Assistent Astronom hat keine Oberfläche.\nAIOS-Oberfläche: `/aios-gui`' "assistant without gui"
+   mk "$G/.aios/config.yaml" $'assistant: gaertner\n'
+   OUT="$(GUI "$G")"
+   assert_contains "$OUT" "# Oberfläche des Gärtners" "body of the surface skill"
+   case "$OUT" in *"version: 0.1.0"*|*"name: gaertner-gui"*) fail "body without frontmatter" ;; *) ok ;; esac
+   assert_contains "$OUT" "## Oberfläche zeigen" "instruction appended"
+   assert_contains "$OUT" "führe \`aios --gui --html\` aus" "instruction: HTML in the desktop app"
+   assert_contains "$OUT" "höchstens 4 Einträge je Ebene" "instruction: menu otherwise"
+   assert_contains "$OUT" "- Apfel-Birnen-Rechner — Rechnet mit Äpfeln und Birnen, ohne Claude (HTML-Teil rechner.html)" "tile with HTML part"
+   assert_contains "$OUT" "- Aufgabe rechnen — Eine Apfel-Birnen-Aufgabe mit Rechenweg (sendet: /apfel-birnen-algebra)" "skill tile sends /<skill>"
+   assert_contains "$OUT" "(sendet: Hilf mir, eine Apfelsorte zu bestimmen. Frag mich nach den Merkmalen.)" "prompt tile"
+
+#===============================================================================
+# --html: fragment with buttons (sendPrompt) and embedded HTML parts
+#===============================================================================
+
+   OUT="$(GUI "$G" --html)"
+   case "$OUT" in "<div class=\"aios-gui\">"*) ok ;; *) fail "--html: fragment" ;; esac
+   case "$OUT" in *"<html"*|*"<head"*|*"<body"*) fail "--html: no html, head, body" ;; *) ok ;; esac
+   assert_contains "$OUT" "<h2>Gärtner</h2>" "--html: title"
+   assert_contains "$OUT" "<p>Was möchtest du heute im Garten wissen?</p>" "--html: intro"
+   assert_contains "$OUT" "onclick='sendPrompt(&quot;/apfel-birnen-algebra&quot;)'" "--html: skill tile via sendPrompt"
+   assert_contains "$OUT" "sendPrompt(&quot;Hilf mir, eine Apfelsorte zu bestimmen." "--html: prompt tile via sendPrompt"
+   assert_contains "$OUT" '<section class="part" id="aios-part-1"><h3>Apfel-Birnen-Rechner</h3>' "--html: HTML part embedded"
+   assert_contains "$OUT" 'id="abr-out"' "--html: content of rechner.html"
+
+#===============================================================================
+# assistant of the session from the marker, switching without registration
+#===============================================================================
+
+   mkdir -p "$HOME/.aios/sessions"
+   printf '# written by AIOS (session), do not edit\ncwd: "%s"\nassistant: astronom\nused: 2026-10-03T10:00:00\n' "$G" > "$HOME/.aios/sessions/s1.yaml"
+   assert_contains "$(GUI "$G" --session s1)" "Der Assistent Astronom hat keine Oberfläche." "--session: assistant of the session"
+   assert_contains "$(GUI "$G" --session s2)" "# Oberfläche des Gärtners" "--session without marker: assignment"
+   assert_contains "$(GUI "$G" --session ../x)" "is not a session id" "--session: bad id"
+   assert_contains "$(GUI "$G" --session s2)" "\`aios --gui --session s2 --html\`" "instruction keeps --session"
+
+#===============================================================================
+# /aios-gui: the surface of AIOS with its 7 tiles
+#===============================================================================
+
+   OUT="$(GUI "$G" --aios)"
+   assert_contains "$OUT" "# AIbex AIOS" "--aios: title"
+   for T in "Projekt initialisieren" "Kontext und Konfiguration" "Assistent zuordnen" "Skills ausrollen und registrieren" "Integrität prüfen" "Projektstatus" "Memo schreiben"; do
+      assert_contains "$OUT" "- $T — " "--aios: tile $T"
+   done
+   assert_eq "$(printf '%s\n' "$OUT" | grep -c '^- .*(sendet: ')" "7" "--aios: 7 tiles"
+   assert_contains "$OUT" "(sendet: /aios-init)" "--aios: /aios-init"
+   assert_contains "$OUT" "(sendet: /aios-integrity)" "--aios: /aios-integrity"
+   assert_contains "$OUT" "\`aios --gui --aios --html\`" "--aios: instruction for HTML"
+   case "$(GUI "$SANDBOX" --aios --html)" in "<div class=\"aios-gui\">"*"<h2>AIbex AIOS</h2>"*) ok ;; *) fail "--aios --html outside a vault" ;; esac
+   assert_contains "$(at "$G" "$SRC/bin/aios" --skill aios-gui)" "Führe \`aios --gui --aios\` über das Bash-Werkzeug aus." "skill aios-gui calls aios --gui --aios"
+
+#===============================================================================
+# checks of gui.yaml and of the assistant
+#===============================================================================
+
+   CHK() { PYTHONPATH="$SRC/lib" python3 -c "
+import sys, yaml
+from pathlib import Path
+from aios import gui
+print('|'.join(gui.check(yaml.safe_load(sys.argv[1]), Path('$GG'))))" "$1"; }
+   assert_eq "$(CHK $'title: T\ntiles:\n  - title: A\n    prompt: p\n')" "" "valid description"
+   assert_contains "$(CHK $'tiles:\n  - title: A\n    prompt: p\n')" "title is missing" "title required"
+   assert_contains "$(CHK $'title: T\ntiles: []\n')" "tiles must be a list of 1 to 12 tiles" "at least one tile"
+   assert_contains "$(CHK "$(printf 'title: T\ntiles:\n'; for i in $(seq 13); do printf '  - title: A%s\n    prompt: p\n' "$i"; done)")" "1 to 12" "at most 12 tiles"
+   assert_contains "$(CHK $'title: T\ntiles:\n  - title: A\n    prompt: p\n    skill: s\n')" "tile 1: exactly one of prompt, skill, html" "exactly one action"
+   assert_contains "$(CHK $'title: T\ntiles:\n  - title: A\n    html: fehlt.html\n')" "tile 1: HTML part fehlt.html not found" "HTML part must exist"
+   assert_contains "$(CHK $'title: T\ncolor: red\ntiles:\n  - title: A\n    prompt: p\n')" "unknown key color" "unknown key"
+   printf 'title: [kaputt\n' > "$GG/gui.yaml"
+   assert_contains "$(GUI "$G")" "*** aios --gui: $GG/gui.yaml" "broken gui.yaml: error"
+   assert_exit 1 bash -c "cd '$G' && '$SRC/bin/aios' --gui"
+   cp "$SRC/assistants/demo/gaertner/@!Skill/gaertner-gui/gui.yaml" "$GG/gui.yaml"
+   sed -i.bak 's/^skills: .*/skills: [apfel-birnen-algebra]/' "$G/@/@!Assistant/gaertner/ASSISTANT.md"
+   assert_contains "$(GUI "$G")" "gui gaertner-gui of the assistant gaertner is not in its skills" "gui must be in skills"
+   assert_contains "$(at "$G" "$SRC/bin/aios-context" --assistant gaertner)" "gui gaertner-gui of the assistant gaertner is not in its skills" "aios-context --assistant reports it"
+   mv "$G/@/@!Assistant/gaertner/ASSISTANT.md.bak" "$G/@/@!Assistant/gaertner/ASSISTANT.md"
+   assert_contains "$(at "$G" "$SRC/bin/aios-context" --assistant gaertner)" "gui: gaertner-gui" "meta block names the gui"
+
+#===============================================================================
+# reserved name gui, alias /gui in --install and --uninstall
+#===============================================================================
+
+   mk "$D/@/@!Skill/gui/SKILL.md" $'---\nname: gui\nversion: 0.1.0\ndescription: d\n---\n'
+   assert_contains "$(at "$G" "$SRC/bin/aios-context" --sync --plan)" "the name gui is reserved for the alias /gui, not registered" "blueprint gui: not registered"
+   rm -rf "$D/@/@!Skill/gui"
+   AL() { PYTHONPATH="$SRC/lib" python3 -c "
+from aios import install, ui
+plan = ui.Plan(); install.plan_alias(plan); plan.run(); print(len(plan.steps))" 2>&1; }
+   AL >/dev/null
+   A="$AIOS_CLAUDE_DIR/skills/gui/SKILL.md"
+   assert_contains "$(cat "$A")" '!`aios --gui --session ${CLAUDE_SESSION_ID}`' "alias written"
+   assert_contains "$(cat "$A")" "allowed-tools: Bash(aios --gui *), Bash(aios-context *)" "alias: allowed-tools"
+   assert_eq "$(AL)" "0" "alias unchanged: nothing to do"
+   printf -- '---\nname: gui\n---\neigener Skill\n' > "$A"
+   assert_contains "$(AL)" "was not written by AIOS, left untouched" "foreign gui folder: warning"
+   assert_eq "$(cat "$A")" $'---\nname: gui\n---\neigener Skill' "foreign gui folder: not overwritten"
+   rm -rf "$AIOS_CLAUDE_DIR/skills/gui"; AL >/dev/null
+   mkdir -p "$HOME/.aios/sessions"; touch "$HOME/.aios/sessions/x.yaml"
+   PYTHONPATH="$SRC/lib" python3 -c "from aios import install, ui; ui.MODE = 'yes'; install.uninstall()" >/dev/null 2>&1
+   [ ! -e "$AIOS_CLAUDE_DIR/skills/gui" ] && ok || fail "uninstall: alias removed"
+   [ ! -e "$HOME/.aios/sessions" ] && ok || fail "uninstall: markers of the sessions removed"

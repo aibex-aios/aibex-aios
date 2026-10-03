@@ -91,8 +91,8 @@ EOF
    assert_eq "$(cat "$I/VERSION")" "0.2.0" "VERSION of the tag"
    for F in bin/aios bin/aios-context lib/aios/install.py templates/forwarder templates/gitignore \
             skills/aios/aios-demo/SKILL.md skills/basic/memo/6.1.0/SKILL.md python/requirements.txt \
-            assistants/demo/gaertner/0.1.0/ASSISTANT.md "assistants/demo/gaertner/0.1.0/@!Skill/apfel-birnen-algebra/SKILL.md" \
-            "assistants/demo/gaertner/0.1.0/@Wissen/@@Sortenkunde/sortenkunde.md" assistants/demo/astronom/0.1.0/ASSISTANT.md; do
+            assistants/demo/gaertner/0.2.0/ASSISTANT.md "assistants/demo/gaertner/0.2.0/@!Skill/apfel-birnen-algebra/SKILL.md" \
+            "assistants/demo/gaertner/0.2.0/@Wissen/@@Sortenkunde/sortenkunde.md" assistants/demo/astronom/0.1.0/ASSISTANT.md; do
       assert_file "$I/$F"
    done
    assert_file "$I/doc/spec/04 Installation und Konfiguration.md"
@@ -103,7 +103,7 @@ EOF
    assert_eq "$(cat "$P/installations.yaml")" "v0.2.0: $I" "installations.yaml"
    assert_eq "$("$I/bin/aios" --library)" "memo                     skill      6.1.0
 astronom                 assistant  0.1.0
-gaertner                 assistant  0.1.0" "installation: --library reads <name>/<version>/ of skills and assistants"
+gaertner                 assistant  0.2.0" "installation: --library reads <name>/<version>/ of skills and assistants"
    assert_eq "$(PYTHONPATH="$SRC/lib" python3 -c '
 import sys, tempfile
 from pathlib import Path
@@ -142,6 +142,7 @@ noversion refused: assistant demo/x has no version MAJOR.MINOR.PATCH" "library: 
    assert_contains "$(cat "$W")" 'description: "Demo skill of AIOS, two lines."' "wrapper: description from the version"
    assert_contains "$(cat "$W")" '!`aios --skill aios-demo`' "wrapper: body"
    [ ! -e "$AIOS_CLAUDE_DIR/skills/memo" ] && ok || fail "basic skills are not registered by --install"
+   assert_contains "$(cat "$AIOS_CLAUDE_DIR/skills/gui/SKILL.md" 2>/dev/null)" '!`aios --gui --session ${CLAUDE_SESSION_ID}`' "install: alias /gui"
 
    assert_eq "$(cd "$SANDBOX" && aios --version)" "0.2.0" "forwarder: not activated, highest version"
    assert_contains "$(cd "$SANDBOX" && aios --versions)" "v0.2.0" "--versions"
@@ -159,7 +160,7 @@ noversion refused: assistant demo/x has no version MAJOR.MINOR.PATCH" "library: 
    assert_eq "$(ls -a "$VD/@/@!Skill" | grep -c '^\.memo')" "0" "no temporary folder left"
    OUT="$(cd "$VD/Garten" && aios --deploy memo==6.1.0 --to "$VD" </dev/null 2>&1)"
    assert_contains "$OUT" "already deployed" "deploy again: nothing to do"
-   OUT="$(cd "$VD/Garten" && aios --deploy gaertner==0.1.0 --to "$VD" --yes 2>&1)"; RC=$?
+   OUT="$(cd "$VD/Garten" && aios --deploy gaertner==0.2.0 --to "$VD" --yes 2>&1)"; RC=$?
    assert_eq "$RC" "0" "deploy an assistant from the installation: exit 0"
    [ -w "$VD/@/@!Assistant/gaertner/ASSISTANT.md" ] && [ -w "$VD/@/@!Assistant/gaertner/@!Skill/apfel-birnen-algebra" ] && ok || fail "deployed assistant is writable"
    assert_eq "$(ls -a "$VD/@/@!Assistant" | grep -c '^\.gaertner')" "0" "assistant: no temporary folder left"
@@ -202,6 +203,7 @@ noversion refused: assistant demo/x has no version MAJOR.MINOR.PATCH" "library: 
    assert_eq "$RC" "0" "uninstall: exit 0"
    [ ! -e "$HOME/bin/aios" ] && [ ! -e "$HOME/bin/aios-context" ] && ok || fail "forwarders removed"
    [ ! -e "$AIOS_CLAUDE_DIR/skills/aios-demo" ] && ok || fail "AIOS skill removed"
+   [ ! -e "$AIOS_CLAUDE_DIR/skills/gui" ] && ok || fail "uninstall: alias /gui removed"
    [ ! -e "$HOME/.aios/hooks-backup.json" ] && ok || fail "backup removed"
    assert_eq "$(J "$CMDS" "$SET")" 'ai-brain --session python3 "/x/zeiterfassung.py" export --quiet ai-brain --advise' "ai-brain hooks restored"
    assert_dir "$I"

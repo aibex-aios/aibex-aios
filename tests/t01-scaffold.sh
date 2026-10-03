@@ -70,10 +70,10 @@ import sys
 from pathlib import Path
 from aios import install
 print(" ".join(f"{g}/{n}=={v}" for g, n, _, v in install.assistants_of(Path(sys.argv[1]))))' "$SRC")" \
-      "demo/astronom==0.1.0 demo/gaertner==0.1.0" "library: demo assistants with versions"
+      "demo/astronom==0.1.0 demo/gaertner==0.2.0" "library: demo assistants with versions (Gärtner 0.2.0 with surface)"
    case "$(grep -rl -e 'P-Projekte' -e 'PC-Custom-AI' -e '§AIbex' "$SRC/assistants")" in
       "") ok ;; *) fail "demo assistants contain no paths of a particular vault" ;;
    esac
-   for F in "gaertner/@!Skill/apfel-birnen-algebra" "astronom/@!Skill/sonne-mond-zahlen"; do
+   for F in "gaertner/@!Skill/apfel-birnen-algebra" "gaertner/@!Skill/gaertner-gui" "astronom/@!Skill/sonne-mond-zahlen"; do
       assert_contains "$(sed -n 1,4p "$SRC/assistants/demo/$F/SKILL.md")" "version: 0.1.0" "private skill with version: $F"
    done

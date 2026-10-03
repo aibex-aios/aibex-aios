@@ -15,6 +15,7 @@
       echo '          aios --integrity [<path>]           # integrity of a project and its subprojects'
       echo '          aios --assistant <name|none|inherit> # assign the assistant to the project'
       echo '                       [--to <project>] [--session <id>]'
+      echo '          aios --gui [--session <id>] [--html] # surface of the assistant (--aios: of AIOS)'
       echo '          aios --deploy <name>==<version>     # deploy a skill or assistant [--to <project>]'
       echo '                       [--assistant <name>] [--from <repo>]'
       echo '          aios --deploy [--to <project>]      # blueprints follow skills: and assistants:'

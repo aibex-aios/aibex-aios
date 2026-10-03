@@ -28,6 +28,10 @@ from .ui import Abort, Plan, confirm, say, warn  # noqa: F401 - Abort is part of
 FORWARDER_MARK = "# forwarder: ~/bin/aios and ~/bin/aios-context"
 PROTOTYPE_MARK = 'ETC="$HOME/etc/aios"'
 WRAPPER_MARK = "!`aios --skill "
+ALIAS_MARK = "!`aios --gui "
+ALIAS = ('---\nname: gui\ndescription: "Zeigt die Oberfläche des aktiven Assistenten (AIbex AIOS). '
+         'Auslöser: /gui, „Oberfläche“, „Menü“."\nallowed-tools: Bash(aios --gui *), Bash(aios-context *)\n'
+         '---\n\n!`aios --gui --session ${CLAUDE_SESSION_ID}`\n')
 AIOS_HOOKS = {"SessionStart": "aios-context --session", "UserPromptSubmit": "aios-context --advise"}
 LEGACY_HOOKS = {"SessionStart": "ai-brain --session", "UserPromptSubmit": "ai-brain --advise"}
 RELEASE = re.compile(r"^v(\d+)\.(\d+)\.(\d+)$")
@@ -577,6 +581,24 @@ def plan_skills(plan, src):
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_text(text, encoding="utf-8")
         plan.add(f"AIOS skill /{name} -> {target.parent}", put)
+    plan_alias(plan)
+
+
+def plan_alias(plan):
+    """The alias /gui in ~/.claude/skills/gui/ (spec 04); a folder AIOS did not write stays."""
+    target = paths.claude_dir() / "skills" / "gui" / "SKILL.md"
+    if target.parent.exists():
+        old = target.read_text(encoding="utf-8", errors="replace") if target.is_file() else ""
+        if old == ALIAS:
+            return
+        if ALIAS_MARK not in old:
+            warn(f"{target.parent} was not written by AIOS, left untouched; /gui is not available")
+            return
+
+    def put():
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(ALIAS, encoding="utf-8")
+    plan.add(f"alias /gui -> {target.parent}", put)
 
 
 def plan_user(plan, src, repo):
@@ -701,6 +723,12 @@ def uninstall():
             f = d / "SKILL.md"
             if f.is_file() and WRAPPER_MARK in f.read_text(encoding="utf-8", errors="replace"):
                 plan.add(f"remove the AIOS skill {d}", lambda d=d: shutil.rmtree(d))
+        alias = skills / "gui" / "SKILL.md"
+        if alias.is_file() and ALIAS_MARK in alias.read_text(encoding="utf-8", errors="replace"):
+            plan.add(f"remove the alias {alias.parent}", lambda: shutil.rmtree(alias.parent))
+    sessions = paths.user_dir() / "sessions"
+    if sessions.is_dir():
+        plan.add(f"remove the markers of the sessions {sessions}", lambda: shutil.rmtree(sessions))
     settings = load_json(settings_file())
     backup = load_json(backup_file()).get("hooks", {})
     new = unmerge_hooks(settings, backup)

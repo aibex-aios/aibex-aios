@@ -58,6 +58,7 @@ description: Bodenständiger Obstgärtner, rechnet mit Äpfeln und Birnen
 model: claude: sonnet
 tools: read, search
 skills: apfel-birnen-algebra, memo
+gui: -
 </aios-assistant-meta>
 <aios-file class=\"prompt\" src=\"$O/@!Prompt/obstgaertner.md\">
 # Obstgärtner
