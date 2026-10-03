@@ -1,8 +1,8 @@
 #!/bin/bash
-# assistants.sh: live test of /aios-assistant with the demo assistants Gärtner and Astronom (costs tokens)
+# assistants.sh: live test of the assignment of assistants (/aios-assistant, hooks, resume) with Gärtner and Astronom (costs tokens)
 
    if [ "$*" == "-?" ] || [ "$*" == "--help" ]; then
-      echo '   usage: tests/live/assistants.sh [<model>]   # headless sessions A1-A4, default model haiku'
+      echo '   usage: tests/live/assistants.sh [<model>]   # headless sessions A1-A6, default model haiku'
       echo '          tests/live/assistants.sh --version   # print version'
       echo '   not part of tests/run: needs a logged-in claude CLI and uses tokens;'
       echo '   copies the demo assistants of the library (assistants/demo/) into a sandbox'
@@ -15,7 +15,7 @@
 #===============================================================================
 
    if [ "$*" == "--version" ]; then
-      echo "0.2.0"; exit 0
+      echo "0.3.0"; exit 0
    fi
 
 #===============================================================================
@@ -29,7 +29,7 @@
       T="${TMPDIR:-/tmp}"; SB="$(cd "$(mktemp -d "${T%/}/aios-live.XXXXXX")" && pwd -P)" || exit 1
       V="$SB/§Live"; G="$V/Garten"; O="$G/@/@!Assistant/gaertner"; A="$V/@/@!Assistant/astronom"
       mkdir -p "$SB/bin" "$SB/home" "$V/.aios" "$V/@/@Rule" "$G/@/@!Assistant" "$V/@/@!Assistant"
-      printf 'aios: 0.2.0\n' > "$V/.aios/config.yaml"
+      printf 'aios: 0.3.0\n' > "$V/.aios/config.yaml"
       printf '# Stil\nAntworte auf Deutsch.\n' > "$V/@/@Rule/stil.md"
       cp -R "$LIB/gaertner" "$O"                    # demo assistants of the library (spec 03)
       cp -R "$LIB/astronom" "$A"
@@ -46,12 +46,15 @@ from aios import install
 f = Path(sys.argv[1]) / "skills/aios/aios-assistant/SKILL.md"
 m = install.frontmatter(f)
 d = Path(sys.argv[2]) / ".claude/skills/aios-assistant"; d.mkdir(parents=True)
-(d / "SKILL.md").write_text(install.wrapper("aios-assistant", m["description"], m.get("allowed-tools", "")))' "$REPO" "$G"
-      ask() {                                       # ask <prompt>
-         (cd "$G" && PATH="$SB/bin:$PATH" claude -p "$1" --model "$MODEL" --settings '{"hooks":{}}' \
-            --setting-sources project --add-dir "$SB" \
-            --allowedTools "Skill" "Read" "Bash(aios --skill *)" "Bash(aios-context --assistant *)" "Bash(aios-context --assistants *)" </dev/null 2>&1)
+(d / "SKILL.md").write_text(install.wrapper("aios-assistant", m["description"], m.get("allowed-tools", ""), session=True))' "$REPO" "$G"
+      HOOKS="{\"hooks\":{\"SessionStart\":[{\"hooks\":[{\"type\":\"command\",\"command\":\"$SB/bin/aios-context --session\"}]}],\"UserPromptSubmit\":[{\"hooks\":[{\"type\":\"command\",\"command\":\"$SB/bin/aios-context --advise\"}]}]}}"
+      TOOLS=("Skill" "Read" "Bash(aios --skill *)" "Bash(aios --assistant *)" "Bash(aios-context *)")
+      ask() {                                       # ask <prompt> [<claude options>]: new chat with the AIOS hooks
+         local P="$1"; shift
+         (cd "$G" && PATH="$SB/bin:$PATH" claude -p "$P" --model "$MODEL" --settings "$HOOKS" \
+            --setting-sources project --add-dir "$SB" --allowedTools "${TOOLS[@]}" "$@" </dev/null 2>&1)
       }
+      assign() { (cd "$G" && PATH="$SB/bin:$PATH" aios --assistant "$1" --yes >/dev/null 2>&1); }   # no tokens
       PASS=0; FAIL=0
       check() {                                     # check <name> <answer> <expected> [<expected> …]
          local N="$1" ANS="$2" E; shift 2
@@ -67,20 +70,33 @@ d = Path(sys.argv[2]) / ".claude/skills/aios-assistant"; d.mkdir(parents=True)
       echo "=> live assistant test with model $MODEL in $SB"
 
       ANS="$(ask "/aios-assistant Gärtner: Rechentest — und dann in der Rolle: Was ist ¬Apfel * Birne? Nenne nur das Ergebnis.")"
+      check "A1 /aios-assistant: assignment written" "$(cat "$G/.aios/config.yaml" 2>/dev/null)" "assistant: gaertner"
       check "A1 Gärtner: private skill apfel-birnen-algebra" "$ANS" "Birne"
       refuse "A1 Gärtner: no 0/1 result" "$ANS" "= 1"
 
-      ANS="$(ask "/aios-assistant Gärtner — und dann in der Rolle: Was ist Mond * Mond?")"
+      ANS="$(ask "Was ist Mond * Mond?")"
+      check "A2 new chat: the hook loads Gärtner" "$ANS" "Gärtner"
       refuse "A2 Gärtner: boundary, no result −Sonne" "$ANS" "−Sonne"
       refuse "A2 Gärtner: boundary, no result -Sonne" "$ANS" "-Sonne"
-      check "A2 Gärtner: boundary, refuses kindly" "$ANS" "nicht"
 
-      ANS="$(ask "/aios-assistant Astronom — und dann in der Rolle: Was ist Mond · Mond? Nur das Ergebnis.")"
+      assign astronom
+      ANS="$(ask "Was ist Mond · Mond? Nur das Ergebnis.")"
       case "$ANS" in *"−Sonne"*|*"-Sonne"*|*"− Sonne"*) R3="−Sonne";; *) R3="$ANS";; esac
-      check "A3 Astronom (vault assistant from the project): private skill sonne-mond-zahlen" "$R3" "−Sonne"
+      check "A3 new chat after aios --assistant: Astronom (vault assistant), private skill" "$R3" "−Sonne"
 
-      ANS="$(ask "/aios-assistant Gärtner — und dann in der Rolle: Wann ist die Sorte $SORTE genussreif?")"
+      assign gaertner
+      ANS="$(ask "Wann ist die Sorte $SORTE genussreif?")"
       check "A4 Gärtner: available knowledge read on demand" "$ANS" "29. Februar"
+
+      SID="$(ask "Wer bist du? Nenne nur deinen Titel." --output-format json | python3 -c 'import sys, json; print(json.loads(sys.stdin.read()).get("session_id", ""))' 2>/dev/null)"
+      assign astronom
+      ANS="$(ask "Wer bist du? Nenne nur deinen Titel." --resume "$SID")"
+      check "A5 resume keeps the assistant of the session (Gärtner), not the new assignment" "$ANS" "Gärtner"
+      refuse "A5 resume: not Astronom" "$ANS" "Astronom"
+
+      ANS="$(ask "/aios-assistant --none — und dann: Bist du gerade ein AIOS-Assistent? Antworte mit ja oder nein.")"
+      check "A6 --none: assignment none" "$(cat "$G/.aios/config.yaml")" "assistant: none"
+      check "A6 --none: no assistant" "$ANS" "ein"
 
       echo "=> $PASS passed, $FAIL failed"
       rm -rf "$SB"
