@@ -41,7 +41,7 @@ Projekte tragen einen Namen aus **Prefix** und **Namensteilen**, getrennt durch 
 |---|---|
 | Form | `<Prefix>-<Teil>[-<Teil>…]`, ohne Leerzeichen und ohne `/` |
 | Prefix | Großbuchstaben und Ziffern, beginnt mit einem Großbuchstaben |
-| Prefix und Pfad | Der Prefix ist der Prefix des übergeordneten Ordners plus **ein Großbuchstabe** (typisch der Anfangsbuchstabe, `PA` → `PAA`, `PAG`) oder plus **eine Zahl** (`PB` → `PB1`, `PB12`; immer erlaubt). Das gilt auch über Container hinweg (`PA-AIbex-AIOS` ohne `@/` → `PAA-…`). Direkt unter der Vault-Root ist der Prefix des übergeordneten Ordners leer: ein Großbuchstabe (`P-Projekte`, `T-Test`). Hat der übergeordnete Ordner keinen regelkonformen Namen, wird nur die Form geprüft |
+| Prefix und Pfad | Der Prefix ist der Prefix des übergeordneten Ordners plus **ein Großbuchstabe** (Standard, typisch der Anfangsbuchstabe: `PA` → `PAA`, `PAG`) oder wahlweise plus **eine Zahl** (`PB` → `PB1`, `PB12`; immer erlaubt, z. B. bei Blogs oder YouTube-Projekten). Der Vorschlag verwendet immer den Großbuchstaben. Das gilt auch über Container hinweg (`PA-AIbex-AIOS` ohne `@/` → `PAA-…`). Direkt unter der Vault-Root ist der Prefix des übergeordneten Ordners leer: ein Großbuchstabe (`P-Projekte`, `T-Test`). Hat der übergeordnete Ordner keinen regelkonformen Namen, wird nur die Form geprüft |
 | Namensteil | beginnt mit einem Großbuchstaben oder einer Ziffer (`V0.3`, `KI`, `2026`); ein Teil, der mit einem Kleinbuchstaben beginnt, verstößt gegen die Regel |
 
 Die Vault-Root ist von der Namensregel ausgenommen. Ob ein Prefix unter Geschwistern eindeutig ist, wird nicht geprüft.
