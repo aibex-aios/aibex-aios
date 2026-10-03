@@ -15,6 +15,7 @@
       export AIOS_CLAUDE_DIR="$HOME/.claude"
       unset AIOS_HOME
       mkdir -p "$HOME"
+      cd "$SANDBOX" || exit 1             # never inherit the caller's cwd (it may lie in an activated vault)
    }
 
    sandbox_drop() {
