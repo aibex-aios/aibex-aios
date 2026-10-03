@@ -48,8 +48,10 @@ def ask(question):
 
 
 def confirm(plan, question, cancelled):
-    """Show the plan; --plan stops here, --yes skips the question (for skills, spec 03)."""
-    plan.show()
+    """Show the plan; --plan stops here, --yes skips the question and the plan: with --yes a
+    command prints only its result and errors (spec 04)."""
+    if MODE != "yes":
+        plan.show()
     proceed(question, cancelled)
     plan.run()
     return True

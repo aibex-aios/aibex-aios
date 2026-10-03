@@ -59,7 +59,7 @@ gaertner                 assistant  0.2.0" "--library: skills and assistants of 
    assert_contains "$(A --deploy memo==6.0.0 --to "$D" </dev/null)" "already deployed" "same version again: nothing to do"
 
    printf 'eigene Zeile\n' >> "$B/SKILL.md"
-   OUT="$(A --deploy memo==6.0.0 --to "$D" --yes)"
+   OUT="$(A --deploy memo==6.0.0 --to "$D" --plan)"; A --deploy memo==6.0.0 --to "$D" --yes >/dev/null              # --yes prints only the result (spec 04)
    assert_contains "$OUT" "was changed directly (differs from memo 6.0.0)" "direct change reported"
    assert_eq "$(cat "$B/SKILL.md")" "$(cat "$LIB")" "direct change replaced"
 
@@ -75,7 +75,8 @@ gaertner                 assistant  0.2.0" "--library: skills and assistants of 
    assert_eq "$(sed -n '/^skills:/,$p' "$G/.aios/config.yaml")" "$(printf 'skills:\n  memo: 7.0.0')" "manifest in Garten"
    assert_contains "$(cat "$G/.claude/skills/memo/SKILL.md")" "# Memo 7.0.0" "registered: Garten beats the vault"
 
-   OUT="$(A --deploy memo==7.1.0 --from "$PF" --yes)"
+   OUT="$(A --deploy memo==7.1.0 --from "$PF" --plan)"; YES="$(A --deploy memo==7.1.0 --from "$PF" --yes)"
+   case "$YES" in *"plan:"*|*"changed  SKILL.md"*) fail "--yes: no plan, only the result (spec 04)" ;; *) ok ;; esac
    assert_contains "$OUT" "memo: 7.0.0 -> 7.1.0" "upgrade: manifest"
    assert_contains "$OUT" "changed  SKILL.md" "upgrade: changed file"
    assert_contains "$OUT" "remove   extra.md" "upgrade: removed file"
@@ -96,18 +97,18 @@ gaertner                 assistant  0.2.0" "--library: skills and assistants of 
 
    rm -rf "$GB"                                                         # e.g. fresh clone without the blueprint
    assert_contains "$(A --deploy --plan)" "memo 7.1.0 is not bundled with AIOS" "reconcile: source unknown without --from (warning)"
-   OUT="$(A --deploy --from "$PF" --yes)"
+   OUT="$(A --deploy --from "$PF" --plan)"; A --deploy --from "$PF" --yes >/dev/null              # --yes prints only the result (spec 04)
    assert_contains "$OUT" "memo 7.1.0 (missing)" "reconcile: missing blueprint restored"
    assert_contains "$(cat "$GB/SKILL.md")" "# Memo 7.1.0" "reconcile: from the maintenance project"
 
    sed -i '' 's/  memo: 7.1.0/  memo: 7.0.0/' "$G/.aios/config.yaml" 2>/dev/null || sed -i 's/  memo: 7.1.0/  memo: 7.0.0/' "$G/.aios/config.yaml"
-   OUT="$(A --deploy --yes)"
+   OUT="$(A --deploy --plan)"; A --deploy --yes >/dev/null              # --yes prints only the result (spec 04)
    assert_contains "$OUT" "memo 7.0.0 (7.1.0 -> 7.0.0)" "reconcile: manifest changed, source from the marker"
    assert_contains "$(cat "$GB/SKILL.md")" "# Memo 7.0.0" "reconcile: version of the manifest"
 
    mk "$G/@/@!Skill/lokal/SKILL.md" $'---\nname: lokal\n---\n'
    sed -i '' '/obst\/memo/d' "$G/.aios/config.yaml" 2>/dev/null || sed -i '/obst\/memo/d' "$G/.aios/config.yaml"
-   OUT="$(A --deploy --yes)"
+   OUT="$(A --deploy --plan)"; A --deploy --yes >/dev/null              # --yes prints only the result (spec 04)
    assert_contains "$OUT" "remove $AB: deployed, but no longer in skills:" "reconcile: removed from the manifest"
    [ ! -e "$AB" ] && ok || fail "reconcile: blueprint removed"
    assert_file "$G/@/@!Skill/lokal/SKILL.md"
@@ -151,12 +152,13 @@ gaertner                 assistant  0.2.0" "--library: skills and assistants of 
    assert_contains "$(A --deploy --to "$D" </dev/null)" "match the manifest" "assistant restored, its skill kept"
 
    rm -rf "$GA"                                                         # e.g. fresh clone
-   assert_contains "$(A --deploy --to "$D" --yes)" "gaertner 0.2.0 (missing)" "assistant missing: restored"
+   assert_contains "$(A --deploy --to "$D" --plan)" "gaertner 0.2.0 (missing)" "assistant missing: restored"
+   A --deploy --to "$D" --yes >/dev/null
    assert_file "$GA/ASSISTANT.md"
    assert_file "$GA/@!Skill/memo/SKILL.md"
 
    sed -i '' '/gaertner/d; /^assistants:/d' "$D/.aios/config.yaml" 2>/dev/null || sed -i '/gaertner/d; /^assistants:/d' "$D/.aios/config.yaml"
-   OUT="$(A --deploy --to "$D" --yes)"
+   OUT="$(A --deploy --to "$D" --plan)"; A --deploy --to "$D" --yes >/dev/null
    assert_contains "$OUT" "remove $GA: deployed, but no longer in assistants:" "assistant removed from the manifest"
    case "$OUT" in *"remove $GA/@!Skill/memo"*) fail "its skill goes with the assistant" ;; *) ok ;; esac
    [ ! -e "$GA" ] && ok || fail "assistant removed"

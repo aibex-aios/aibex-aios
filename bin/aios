@@ -11,7 +11,7 @@
       echo '          aios --deactivate [<path>]          # remove the binding'
       echo '          aios --config [<path>]              # effective configuration and its origin'
       echo '          aios --register [<path>]            # register the project skills (spec 03)'
-      echo '          aios --init [<path>]                # make a folder a project (@/, @Memo/, git)'
+      echo '          aios --init [<path>]                # make a folder a project (@/, git, .gitignore)'
       echo '          aios --integrity [<path>]           # integrity of a project and its subprojects'
       echo '          aios --assistant <name|none|inherit> # assign the assistant to the project'
       echo '                       [--to <project>] [--session <id>]'
