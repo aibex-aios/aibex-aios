@@ -1,15 +1,19 @@
-# Stand der Umsetzung AIOS v0.2.0
+# Stand der Umsetzung AIOS v0.3.0
 
-Umsetzungsschritte nach dem Implementierungsplan v0.2 (Memo 20 im Konzeptprojekt `PAA-AIbex-AIOS-V0.2`, ergänzt durch spätere Memos). Jeder Schritt wird im selben Commit `Schritt N: …` abgehakt, der ihn abschließt.
+Umsetzungsschritte nach dem Implementierungsplan v0.3 (Memo 32 im Konzeptprojekt `AAA-AIbex-AIOS-V0.3`, freigegeben in Memo 33, ergänzt durch spätere Memos). Jeder Schritt wird im selben Commit `Schritt N: …` abgehakt, der ihn abschließt. Vor jedem Schritt kommt ein Fragepaket nach der Regel *Weiter*.
 
-v0.1.0 ist abgeschlossen (Tag `v0.1.0`, Abnahme in Memo 32 von `PAA-AIbex-AIOS-V0.1`); sein Stand steht in `STATUS.md` dieses Tags.
+v0.2.0 ist abgeschlossen (Tag `v0.2.0`, Abnahme in Memo 21 von `AAA-AIbex-AIOS-V0.2`); sein Stand steht in `STATUS.md` dieses Tags.
 
 | # | Schritt | Ergebnis | Spec | Stand |
 |---|---|---|---|---|
-| 0 | **Repo auf v0.2 umstellen:** `CLAUDE.md`, `STATUS.md`, `VERSION` `0.2.0-dev` | Regeln zeigen auf V0.2 und Memo 20, Stand v0.2, 423 Prüfungen grün | — | ☑ abgeschlossen |
-| 1 | **Umbenennung:** Agent → Assistent (`@!Assistant`, `ASSISTANT.md`, `--assistant(s)`, `<aios-assistant …>`, `/aios-assistant`, `deploy --assistant`) | `lib/aios/assistant.py`, Skill `aios-assistant`, t10 → `t10-assistant.sh` (`@!Agent/` wird ignoriert), t08 prüft die AIOS-Skills von v0.2; 430 Prüfungen grün, Live-Test `tests/live/assistants.sh` 7/7 | 01–04 | ☑ abgeschlossen |
-| 2 | **Versionen Pflicht:** Skills und Assistenten ohne gültige `version` werden nicht registriert bzw. aufgelöst und gemeldet; Manifest immer mit Version | `registry.version_problem` (Semver `MAJOR.MINOR.PATCH`); Assistenten mit falschem Namen oder ohne Version werden übersprungen statt abzubrechen; `--assistants` und `<aios-assistant …>` mit Version (t07, t08, t10); 444 Prüfungen grün, Live-Test 7/7 | 03, 04 | ☑ abgeschlossen |
-| 3 | **Demo-Assistenten in der Bibliothek:** `assistants/demo/gaertner`, `astronom` 0.1.0, Abbildung in der Installation, `aios --library` | aus `PC-Custom-AI` kopiert und neutral gemacht (Satz „Demo-Assistent“, private Skills 0.1.0); `install.assistants_of` mit eindeutigen Namen und Version, Abbildung `assistants/<gruppe>/<name>/<version>/`; `aios --library` mit Spalte Art (t01, t03, t09); 453 Prüfungen grün; Live-Test nutzt jetzt die Bibliothek, 7/7 | 03, 04 | ☑ abgeschlossen |
-| 4 | **Ausrollen von Assistenten:** `aios --deploy gaertner==0.1.0`, Marke, `assistants:`, Abgleich | Art aus der Bibliothek, `--assistant`/`--from` nur für Skills; Unterordner mit eigener Marke zählen nicht zur Prüfsumme und bleiben beim Spiegeln erhalten (F3); `config` mit Abschnitt `assistants:`; Abgleich zuerst Assistenten, dann Skills; Skill `aios-deploy` (t03, t09); 490 Prüfungen grün | 03, 04 | ☑ abgeschlossen |
-| 5 | **Doku:** `--list` mit Assistenten, README, Tutorial | `--list` mit Versionen der Assistenten und ihrer privaten Skills (t08); README für v0.2 mit Abschnitt *Demo assistants*; Tutorial `doc/tutorials/01 Erste Schritte mit den Demo-Assistenten.md`, mitinstalliert (t03), Spec 04 nennt `doc/tutorials/`; 491 Prüfungen grün | 02, 04 | ☑ abgeschlossen |
-| 6 | **Abnahme:** v0.1.0 entfernen, v0.2.0 installieren, `§Demo` neu, Abnahmetest (Spec 01) | Abnahmetest Schritte 1–12 auf dem Arbeitsrechner bestanden (Install aus der README-Formel, `§AIbex` im Legacy-Modus byteidentisch, `~/tmp/§Demo` neu, Chats als Headless-Sessions mit den echten Hooks); Tags **`v0.2.0`** (`c350723`), `gaertner-v0.1.0`, `astronom-v0.1.0`; Testfehler behoben: `sandbox_new` wechselt in den Sandkasten, sonst schlug t02 in einem aktivierten Vault fehl; 491 Prüfungen grün (V0.2, Memo 21) | 01 *Abnahmetest* | ☑ abgeschlossen |
+| 0 | **Repo auf v0.3 umstellen:** `CLAUDE.md`, `STATUS.md`, `VERSION` `0.3.0-dev` | Regeln zeigen auf V0.3 (`~/vault/§AIOS/A-AIOS/AA-AIbex-AIOS/`) und Memo 32, Stand v0.3, 492 Prüfungen grün | — | ☑ abgeschlossen |
+| 1 | **Struktur und Namensregel:** `lib/aios/project.py` (S1–S4, Namensregel, Vorschlag) | | 05 | ☐ |
+| 2 | **`aios --init` und `aios --activate`:** Ergänzen, `--name`, `--accept-name`, Repo darüber, Vault-Root, kein `@Memo/` | | 04, 05 | ☐ |
+| 3 | **Konsistenzprüfung und Dialog:** `PROJECT-INCOMPLETE`, Dialog *Projekt initialisieren* | | 02 | ☐ |
+| 4 | **Integrität:** `aios --integrity`, Skill `aios-integrity` | | 05 | ☐ |
+| 5 | **Zuordnung des Assistenten:** `assistant:`, `aios --assistant`, `aios-context --assignment`, Merker | | 03, 04 | ☐ |
+| 6 | **Assistent der Session in den Hooks:** Kontext, `AIOS-ASSISTANT-CHECK`, Skill `aios-assistant` | | 02, 03 | ☐ |
+| 7 | **`/aios-memo`:** Rumpf von `memo==6.0.0`, Vorrang von `memo` | | 03 | ☐ |
+| 8 | **Oberflächen:** `gui.yaml`, `aios --gui`, Alias `/gui`, `aios-gui`, Gärtner 0.2.0 | | 03, 04 | ☐ |
+| 9 | **Doku:** `--list` mit Assistent, README, Tutorials | | 02, 04 | ☐ |
+| 10 | **Abnahme:** v0.3.0 installieren, `§Demo` neu, Abnahmetest (Spec 01) | | 01 *Abnahmetest* | ☐ |
