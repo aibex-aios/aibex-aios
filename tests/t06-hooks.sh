@@ -1,4 +1,4 @@
-# t06-hooks.sh: step 6 of the plan (memo 18) - aios-context --session/--advise (spec 02, Hooks)
+# t06-hooks.sh: step 6 of the plan (memo 18) - aios-context --session/--advise (spec 02, Hooks); v0.3 steps 3, 6
 
 #===============================================================================
 # setup: activated vault, project, not initialized folder, legacy vault, fake ai-brain
@@ -108,3 +108,76 @@ Give no other answer until the user decides." "uninitialized: dialog, X = projec
    chmod 644 "$D/Garten/@/garten.md"
    assert_eq "$RC" "0" "failure: exit 0"
    assert_contains "$OUT" "AIOS-WARNING: aios-context --session failed:" "failure: one warning line"
+
+#===============================================================================
+# v0.3 step 6: assistant of the session (spec 02, Assistent der Session)
+#===============================================================================
+
+   printf 'aios: 0.1.0\n' > "$D/.aios/config.yaml"
+   mk "$D/@/@!Assistant/gaertner/ASSISTANT.md" $'---\nname: gaertner\ntitle: Gärtner\nversion: 0.1.0\ndescription: Gärtner\n---\n\nNur Äpfel und Birnen.\n'
+   mk "$D/Garten/.aios/config.yaml" $'assistant: gaertner\n'
+   SJ() { printf '{"session_id":"%s","source":"%s","cwd":"%s"}' "$1" "$2" "$3"; }
+   SH() { SJ "$2" "$3" "$4" | (cd "$SANDBOX" && "$AC" "$1"); }       # SH --session|--advise <sid> <source> <cwd>
+   M="$HOME/.aios/sessions"
+   OUT="$(SH --session s1 startup "$D/Garten")"
+   assert_contains "$OUT" "AIOS-ASSISTANT (assistant of this session, from project $D/Garten/.aios/config.yaml):
+ Take on this role for the whole session. In your first answer, confirm
+ briefly \"Gärtner aktiv\" (and mention the model wish, if any).
+<aios-assistant name=\"gaertner\" title=\"Gärtner\" version=\"0.1.0\"" "startup: assistant inline after the master context"
+   assert_contains "$OUT" '</aios-assistant name="gaertner">' "startup: end marker"
+   case "$OUT" in *"AIOS-CONTEXT (loaded"*"AIOS-ASSISTANT ("*) ok ;; *) fail "startup: master context first, then the assistant" ;; esac
+   assert_eq "$(sed -n 2,3p "$M/s1.yaml")" "cwd: \"$D/Garten\"
+assistant: gaertner" "startup: marker written"
+
+   mk "$D/Garten/.aios/config.yaml" $'assistant: none\n'
+   for S in resume compact; do
+      OUT="$(SH --session s1 "$S" "$D/Garten")"
+      assert_contains "$OUT" "AIOS-ASSISTANT (assistant of this session, from session):" "$S: assistant from the marker, not the new assignment"
+   done
+   OUT="$(SH --advise s1 x "$D/Garten")"
+   assert_contains "$OUT" "AIOS-ASSISTANT-CHECK: expected assistant=gaertner version=0.1.0.
+ Verify that BOTH markers <aios-assistant name=\"gaertner\" and
+ </aios-assistant name=\"gaertner\"> are present in your context. If not: run
+ \`aios-context --assistant gaertner --load\` via Bash in \"$D/Garten\", read every
+ listed part file completely, and continue in this role." "advise: assistant check after the context check"
+   case "$OUT" in AIOS-CONTEXT-CHECK*) ok ;; *) fail "advise: context check first" ;; esac
+   OUT="$(SH --session s1 clear "$D/Garten")"
+   case "$OUT" in *AIOS-ASSISTANT*) fail "clear: new chat, assignment none" ;; *) ok ;; esac
+   assert_contains "$(cat "$M/s1.yaml")" "assistant: none" "clear: marker rewritten"
+   case "$(SH --advise s1 x "$D/Garten")" in *AIOS-ASSISTANT-CHECK*) fail "advise: no check for none" ;; *) ok ;; esac
+
+   mk "$D/Garten/.aios/config.yaml" $'assistant: gaertner\n'
+   OUT="$(SH --session s2 resume "$D/Garten")"
+   assert_contains "$OUT" "from project $D/Garten/.aios/config.yaml" "resume without marker: assignment of the project"
+   assert_contains "$(cat "$M/s2.yaml")" "assistant: gaertner" "resume without marker: marker created"
+   assert_contains "$(SH --advise s9 x "$D/Garten")" "AIOS-ASSISTANT-CHECK: expected assistant=gaertner" "advise without marker: assignment"
+   [ ! -e "$M/s9.yaml" ] && ok || fail "advise writes no marker"
+
+   printf '# written by AIOS (session), do not edit\ncwd: "%s"\nassistant: weg\nused: 2026-01-01T00:00:00\n' "$D/Garten" > "$M/s3.yaml"
+   OUT="$(SH --session s3 resume "$D/Garten")"
+   assert_contains "$OUT" "AIOS-WARNING: assistant weg not found, continuing without assistant" "unknown assistant: warning"
+   case "$OUT" in *"AIOS-ASSISTANT ("*) fail "unknown assistant: no role" ;; *) ok ;; esac
+   case "$(SH --advise s3 x "$D/Garten")" in *AIOS-ASSISTANT-CHECK*) fail "unknown assistant: no check" ;; *) ok ;; esac
+
+   printf '# written by AIOS (session), do not edit\ncwd: "/x"\nassistant: none\nused: 2020-01-01T00:00:00\n' > "$M/alt.yaml"
+   SH --session s4 resume "$D/Garten" >/dev/null
+   [ -e "$M/alt.yaml" ] && ok || fail "resume: no cleaning"
+   SH --session s4 startup "$D/Garten" >/dev/null
+   [ ! -e "$M/alt.yaml" ] && [ -e "$M/s1.yaml" ] && ok || fail "startup: markers older than 30 days removed"
+
+   OUT="$(SH --session s5 startup "$D/Garten/Neu")"
+   case "$OUT" in *"AIOS-ASSISTANT ("*) fail "not initialized: no assistant" ;; *) ok ;; esac
+   [ ! -e "$M/s5.yaml" ] && ok || fail "not initialized: no marker"
+   OUT="$(printf '{"source":"startup","cwd":"%s"}' "$D/Garten" | (cd "$SANDBOX" && "$AC" --session))"
+   assert_contains "$OUT" "AIOS-ASSISTANT (assistant of this session" "without session_id: assignment, no marker"
+
+   printf 'inline_limit: 2000\n' > "$HOME/.aios/config.yaml"
+   python3 -c "print('x' * 3000)" >> "$D/@/@!Assistant/gaertner/ASSISTANT.md"
+   OUT="$(SH --session s6 startup "$D/Garten")"
+   assert_contains "$OUT" "AIOS-ASSISTANT-MANDATORY: the assistant gaertner of this session (from project $D/Garten/.aios/config.yaml) is too" "mandatory: header"
+   assert_contains "$OUT" "AIOS-ASSISTANT-LOAD name=gaertner version=0.1.0 parts=1" "mandatory: part files"
+   assert_contains "$OUT" 'The assistant is loaded once </aios-assistant name="gaertner"> (end of the last part) has been read.' "mandatory: end marker named"
+   P1="$(printf '%s\n' "$OUT" | grep -o "$HOME/.aios/cache/a-gaertner-[0-9a-f]*/part-1.md")"
+   assert_file "$P1"
+   case "$OUT" in *"AIOS-ASSISTANT ("*) fail "mandatory: no inline assistant" ;; *) ok ;; esac
+   rm "$HOME/.aios/config.yaml"

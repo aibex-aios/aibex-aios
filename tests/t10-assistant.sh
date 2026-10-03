@@ -235,3 +235,16 @@ assistant: astronom" "marker: header, cwd, assistant"
    printf '# written by AIOS (session), do not edit\ncwd: "/x"\nassistant: none\nused: 2020-01-01T00:00:00\n' > "$HOME/.aios/sessions/alt.yaml"
    PYTHONPATH="$SRC/lib" python3 -c "from aios import session; session.clean()"
    [ ! -e "$HOME/.aios/sessions/alt.yaml" ] && [ -e "$M" ] && ok || fail "clean: old marker removed, recent kept"
+
+#===============================================================================
+# step 6: aios-context --assistant <name> --load (part files like --load)
+#===============================================================================
+
+   OUT="$(AC "$G" --assistant Astronom --load)"
+   assert_contains "$OUT" "AIOS-ASSISTANT-LOAD name=astronom version=0.1.0 parts=1" "--load: header with name and version"
+   P1="$(printf '%s\n' "$OUT" | grep -o "$HOME/.aios/cache/a-astronom-[0-9a-f]*/part-1.md")"
+   assert_file "$P1"
+   assert_eq "$(cat "$P1")" "$(AC "$G" --assistant astronom)" "--load: part = --assistant output"
+   assert_contains "$OUT" 'The assistant is loaded once </aios-assistant name="astronom"> (end of the last part) has been read.' "--load: end marker"
+   assert_contains "$(AC "$G" --assistant nobody --load)" "no assistant named 'nobody'" "--load: unknown name"
+   assert_exit 1 "$SRC/bin/aios-context" --assistant astronom --nope

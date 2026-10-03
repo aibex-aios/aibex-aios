@@ -22,12 +22,29 @@ def strip_frontmatter(text):
     return text.lstrip("\n")
 
 
-def body(name):
-    """Print the body of skills/aios/<name>/SKILL.md of the running version (the valid one)."""
+SESSION = "${CLAUDE_SESSION_ID}"                   # placeholder in a body that needs the session id
+
+
+def needs_session(text):
+    """A skill whose body uses the session id gets a wrapper with --session (spec 04)."""
+    return SESSION in strip_frontmatter(text)
+
+
+def body(name, session_id=None):
+    """Print the body of skills/aios/<name>/SKILL.md of the running version (the valid one);
+    with --session the placeholder ${CLAUDE_SESSION_ID} is replaced by the id."""
     f = source(name)
     if not f.is_file():
         raise Abort(f"AIOS {version()} has no AIOS skill {name}")
-    print(strip_frontmatter(f.read_text(encoding="utf-8")), end="")
+    text = strip_frontmatter(f.read_text(encoding="utf-8"))
+    if session_id is not None:
+        from . import session
+        try:
+            session.file(session_id)
+        except session.BadId as e:
+            raise Abort(str(e))
+        text = text.replace(SESSION, session_id)
+    print(text, end="")
     return 0
 
 
@@ -41,6 +58,20 @@ def number(n):
 
 def plural(n, one, many):
     return f"{n} {one if n == 1 else many}"
+
+
+def assignment_text(ctx):
+    """Line Assistent of the listing: assignment of the project with its origin (spec 02)."""
+    from . import assistant
+    name, src = ctx.cfg.assignment
+    shown = name
+    if name != "none":
+        found, _ = assistant.assistants(ctx)
+        shown = f"{name} {registry.version_of(found[name][1])}" if name in found else f"{name} (nicht gefunden)"
+    if src is None:
+        return f"{shown} (keine Zuordnung)"
+    where = src.parent.parent
+    return f"{shown} (" + ("" if where == ctx.cwd else "inherit, ") + f"zugeordnet in {where.name})"
 
 
 def listing(ctx):
@@ -58,7 +89,8 @@ def listing(ctx):
         f"{ctx.cwd.name} (nicht initialisiert, Kette bis {ctx.project.name})"
     chars = len(ctx.render())
     out = [f"Master-Kontext id {ctx.id}, AIOS {version()} — {name}", "",
-           f"{'Kette':27}{' → '.join(ms.parent.name for ms in ctx.masterspaces)}", "",
+           f"{'Kette':27}{' → '.join(ms.parent.name for ms in ctx.masterspaces)}",
+           f"{'Assistent':27}{assignment_text(ctx)}", "",
            f"{'Master-Kontext (geladen)':27}{plural(len(ctx.loaded), 'Datei', 'Dateien')}, {number(chars)} Zeichen"]
     out += [f"  {rel(p)}" for p in ctx.loaded]
     out.append(f"{'verfügbares Wissen':27}{plural(len(ctx.available), 'Datei', 'Dateien')}"

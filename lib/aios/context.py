@@ -182,19 +182,23 @@ def clean_cache(keep):
             shutil.rmtree(d, ignore_errors=True)
 
 
-def load(ctx):
-    """Write the part files once per id; return their paths."""
-    ident = ctx.id
-    d = paths.cache_dir() / ident
+def write_parts(key, text):
+    """Write the part files of text once per key under ~/.aios/cache/<key>/; return their paths."""
+    d = paths.cache_dir() / key
     if not (d / ".complete").is_file():
         shutil.rmtree(d, ignore_errors=True)
         d.mkdir(parents=True)
-        for i, part in enumerate(split(ctx.render()), 1):
+        for i, part in enumerate(split(text), 1):
             (d / f"part-{i}.md").write_text(part, encoding="utf-8")
         (d / ".complete").touch()
     os.utime(d)                                     # in use: not cleaned for another 7 days
-    clean_cache(ident)
+    clean_cache(key)
     return sorted(d.glob("part-*.md"), key=lambda p: int(p.stem.split("-")[1]))
+
+
+def load(ctx):
+    """Write the part files of the master context once per id; return their paths."""
+    return write_parts(ctx.id, ctx.render())
 
 
 def load_message(ctx, parts):
@@ -221,6 +225,15 @@ def hook_input():
     except (ValueError, AttributeError):
         d = None
     return (d if d and os.path.isdir(d) else None), raw
+
+
+def hook_session_id(raw):
+    """session_id of the hook JSON, or None."""
+    try:
+        sid = json.loads(raw or "{}").get("session_id")
+    except (ValueError, AttributeError):
+        return None
+    return sid if isinstance(sid, str) and sid else None
 
 
 def hook_source(raw):
@@ -257,7 +270,13 @@ def mandatory_message(ctx, size, limit):
             f" \"Master-Kontext geladen (id {ident})\".")
 
 
-def check_message(ctx):
+def check_message(ctx, sid=None):
+    msg = context_check_message(ctx)
+    a = session_assistant(ctx, sid)
+    return msg + ("\n" + assistant_check_message(ctx, *a) if a else "")
+
+
+def context_check_message(ctx):
     ident = ctx.id
     return (f"AIOS-CONTEXT-CHECK: expected id={ident} (files={len(ctx.loaded)}, cwd={ctx.cwd}).\n"
             f" Before answering, verify that BOTH exact markers <aios-context id=\"{ident}\"\n"
@@ -268,9 +287,90 @@ def check_message(ctx):
             f" \"Master-Kontext geladen (id {ident})\". If both markers are present, do nothing.")
 
 
-def session(ctx, source="startup"):
+# ---------------------------------------------------------------------------
+# assistant of the session (spec 02, Assistent der Session)
+# ---------------------------------------------------------------------------
+
+def assistant_of_session(ctx, source, sid):
+    """(name or none, origin) for the SessionStart hook; writes or updates the marker.
+    startup, clear: assignment of the project; resume, compact: the marker (if missing:
+    assignment, marker created). Not initialized folders get no assistant."""
+    from . import session as marker
+    if not ctx.initialized:
+        return "none", None
+    name, src = ctx.cfg.assignment
+    origin = f"project {src}" if src else "project"
+    if sid is None or not marker.ID.match(sid):
+        return name, origin
+    if source == "startup":
+        marker.clean()
+    if source in ("resume", "compact"):
+        m = marker.read(sid)
+        if m:
+            marker.write(sid, m.get("cwd") or ctx.cwd, m["assistant"])      # used
+            return m["assistant"], "session"
+    marker.write(sid, ctx.cwd, name)
+    return name, origin
+
+
+def session_assistant(ctx, sid):
+    """(name, version) of the assistant of the session for the UserPromptSubmit hook, or None:
+    the marker, else the assignment of the project; nothing is written."""
+    from . import assistant, session as marker
+    from .ui import Abort
+    if not ctx.initialized:
+        return None
+    m = marker.read(sid) if sid and marker.ID.match(sid) else None
+    name = m["assistant"] if m else ctx.cfg.assignment[0]
+    if name == "none":
+        return None
+    try:
+        name, (_, meta) = assistant.resolve(ctx, name)
+    except Abort:
+        return None
+    from .registry import version_of
+    return name, version_of(meta)
+
+
+def assistant_check_message(ctx, name, ver):
+    return (f"AIOS-ASSISTANT-CHECK: expected assistant={name} version={ver}.\n"
+            f" Verify that BOTH markers <aios-assistant name=\"{name}\" and\n"
+            f" </aios-assistant name=\"{name}\"> are present in your context. If not: run\n"
+            f" `aios-context --assistant {name} --load` via Bash in \"{ctx.cwd}\", read every\n"
+            f" listed part file completely, and continue in this role.")
+
+
+def assistant_lines(ctx, name, origin):
+    """Lines of the SessionStart hook for the assistant name (not none): inline or part files."""
+    from . import assistant
+    from .ui import Abort
+    try:
+        name, (_, meta) = assistant.resolve(ctx, name)
+    except Abort:
+        return [f"AIOS-WARNING: assistant {name} not found, continuing without assistant"]
+    try:
+        text = assistant.render(ctx, name)
+    except Abort as e:
+        return [f"AIOS-WARNING: assistant {name}: {e}; continuing without assistant"]
+    title_ = meta.get("title", name)
+    limit = ctx.cfg.inline_limit
+    if len(text) <= limit:
+        return [f"AIOS-ASSISTANT (assistant of this session, from {origin}):",
+                " Take on this role for the whole session. In your first answer, confirm",
+                f" briefly \"{title_} aktiv\" (and mention the model wish, if any).",
+                text.rstrip("\n")]
+    ver, parts = assistant.load_parts(ctx, name, text)
+    return [f"AIOS-ASSISTANT-MANDATORY: the assistant {name} of this session (from {origin}) is too",
+            f" large for direct injection ({len(text)} > {limit} characters). Before your first",
+            " answer, read every part file listed below completely with the Read tool, take on",
+            f" this role for the whole session and confirm briefly \"{title_} aktiv\" (and",
+            " mention the model wish, if any).",
+            assistant.load_message(name, ver, parts)]
+
+
+def session(ctx, source="startup", sid=None):
     """SessionStart: warnings, PROJECT-UNINITIALIZED or (at startup) PROJECT-INCOMPLETE,
-    master context inline or part files."""
+    master context inline or part files, then the assistant of the session."""
     from . import project, registry
     out = [f"AIOS-WARNING: {w}" for w in ctx.cfg.warnings]
     if ctx.initialized:                             # registration for the next chat (spec 03)
@@ -293,6 +393,9 @@ def session(ctx, source="startup"):
     else:
         out.append(mandatory_message(ctx, len(text), limit))
         out.append(load_message(ctx, load(ctx)))
+    name, origin = assistant_of_session(ctx, source, sid)
+    if name != "none":
+        out += assistant_lines(ctx, name, origin)
     return "\n".join(out)
 
 
@@ -316,7 +419,7 @@ def legacy(cmd, cwd, stdin=""):
 
 
 USAGE = ("usage: aios-context --session | --advise | --context [<path>] | --load [<path>] | --id [<path>]"
-         " | --list [<path>] | --sync [--yes|--plan] | --assistant <name> | --assistants"
+         " | --list [<path>] | --sync [--yes|--plan] | --assistant <name> [--load] | --assistants"
          " | --assignment [<path>] [--session <id>]")
 
 
@@ -330,7 +433,8 @@ def main(argv):
         if argv[1:] == ["--plan"]:
             ui.MODE = "plan"
         return registry.register(paths.cwd(), yes=argv[1:] == ["--yes"])
-    if cmd in ("--assistant", "--assistants") and len(argv) == (2 if cmd == "--assistant" else 1):
+    if cmd == "--assistants" and len(argv) == 1 or cmd == "--assistant" and (
+            len(argv) == 2 or len(argv) == 3 and argv[2] == "--load"):
         return assistant_cmd(argv)
     if cmd == "--assignment":
         return assignment_cmd(argv[1:])
@@ -382,6 +486,10 @@ def assistant_cmd(argv):
     try:
         if argv[0] == "--assistants":
             print("\n".join(assistant.available_lines(*assistant.assistants(ctx))))
+        elif argv[2:] == ["--load"]:
+            name, _ = assistant.resolve(ctx, argv[1])
+            ver, parts = assistant.load_parts(ctx, name)
+            print(assistant.load_message(name, ver, parts))
         else:
             sys.stdout.write(assistant.render(ctx, argv[1]))
     except Abort as e:
@@ -432,7 +540,8 @@ def hook(cmd):
         return 0
     if ctx.mode == "legacy":
         return legacy(cmd, cwd, raw)
-    print(session(ctx, hook_source(raw)) if cmd == "--session" else check_message(ctx))
+    sid = hook_session_id(raw)
+    print(session(ctx, hook_source(raw), sid) if cmd == "--session" else check_message(ctx, sid))
     return 0
 
 

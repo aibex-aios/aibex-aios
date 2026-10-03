@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import unicodedata
 from pathlib import Path
 
@@ -129,3 +130,21 @@ def render(ctx, query):
         file("skill", s, s.read_text(encoding="utf-8"))
     out.append(f'</aios-assistant name="{name}">\n')
     return "".join(out)
+
+
+def load_parts(ctx, name, text=None):
+    """(version, part files) of the context of the assistant under ~/.aios/cache/a-<name>-<id>/."""
+    from . import context
+    _, (_, meta) = resolve(ctx, name)
+    text = render(ctx, name) if text is None else text
+    key = f"a-{name}-{hashlib.sha256(text.encode()).hexdigest()[:8]}"
+    return registry.version_of(meta), context.write_parts(key, text)
+
+
+def load_message(name, ver, parts):
+    lines = [f"AIOS-ASSISTANT-LOAD name={name} version={ver} parts={len(parts)}",
+             "Read each of the following part files completely (Read tool), in order:"]
+    lines += [f"   {p}" for p in parts]
+    lines.append(f'The assistant is loaded once </aios-assistant name="{name}"> '
+                 f"(end of the last part) has been read.")
+    return "\n".join(lines)

@@ -9,7 +9,7 @@
       echo '          aios-context --id [<path>]        # print id, files, cwd, mode'
       echo '          aios-context --list [<path>]      # listing for /aios-context'
       echo '          aios-context --sync [--yes|--plan] # register the project skills'
-      echo '          aios-context --assistant <name>       # context of an assistant'
+      echo '          aios-context --assistant <name> [--load] # context of an assistant (part files)'
       echo '          aios-context --assistants             # assistants of the chain'
       echo '          aios-context --assignment [<path>] [--session <id>] # assistant that applies'
       echo '          aios-context --version            # print version'

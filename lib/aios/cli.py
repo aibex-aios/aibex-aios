@@ -9,7 +9,7 @@ USAGE = ("usage: aios --prepare | --install [v<version>] | --versions | --remove
          " | --uninstall | --activate v<version> [<path>] | --deactivate [<path>] | --config [<path>]"
          " | --register [<path>] | --init [<path>] [--assistant <value>] [--name <name>] [--accept-name]"
          " | --integrity [<path>] | --assistant <name|none|inherit> [--to <project>] [--session <id>]"
-         " | --skill <name> | --library"
+         " | --skill <name> [--session <id>] | --library"
          " | --deploy [<name>==<version>] [--to <project>] [--assistant <name>] [--from <repo>]"
          "  (writing commands: --plan, --yes)")
 
@@ -67,6 +67,8 @@ def main(argv):
             return deploy.show_library()
         if cmd == "--skill" and len(args) == 1:
             return skills.body(args[0])
+        if cmd == "--skill" and len(args) == 3 and args[1] == "--session":
+            return skills.body(args[0], args[2])
         if cmd == "--init":
             return init_command(args)
         if cmd == "--assistant":

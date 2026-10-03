@@ -19,7 +19,7 @@
       echo '                       [--assistant <name>] [--from <repo>]'
       echo '          aios --deploy [--to <project>]      # blueprints follow skills: and assistants:'
       echo '          aios --library                      # skills and assistants of the library'
-      echo '          aios --skill <name>                 # body of an AIOS skill'
+      echo '          aios --skill <name> [--session <id>] # body of an AIOS skill'
       echo '          aios <writing command> --plan       # show the plan only (for skills)'
       echo '          aios <writing command> --yes        # no question (after asking in the chat)'
       echo '          aios --version                      # print version'

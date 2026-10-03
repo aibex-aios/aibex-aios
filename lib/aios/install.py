@@ -548,11 +548,13 @@ def plan_hooks(plan):
     plan.add(f"hooks in {settings_file()}: " + "; ".join(parts), apply)
 
 
-def wrapper(name, description, tools=""):
-    """Version-neutral wrapper: the body comes from the valid version at load time (spec 04)."""
+def wrapper(name, description, tools="", session=False):
+    """Version-neutral wrapper: the body comes from the valid version at load time (spec 04);
+    a skill that needs the session id gets --session ${CLAUDE_SESSION_ID}."""
     allowed = ", ".join(t for t in ["Bash(aios --skill *)", tools] if t)
+    call = f"aios --skill {name}" + (" --session ${CLAUDE_SESSION_ID}" if session else "")
     return (f"---\nname: {name}\ndescription: {json.dumps(description, ensure_ascii=False)}\n"
-            f"allowed-tools: {allowed}\n---\n\n!`aios --skill {name}`\n")
+            f"allowed-tools: {allowed}\n---\n\n!`{call}`\n")
 
 
 def plan_skills(plan, src):
@@ -560,7 +562,8 @@ def plan_skills(plan, src):
         if group != "aios":
             continue
         meta = frontmatter(skill / "SKILL.md")
-        text = wrapper(name, meta.get("description", ""), meta.get("allowed-tools", ""))
+        session = "${CLAUDE_SESSION_ID}" in (skill / "SKILL.md").read_text(encoding="utf-8").split("\n---", 1)[-1]
+        text = wrapper(name, meta.get("description", ""), meta.get("allowed-tools", ""), session)
         target = paths.claude_dir() / "skills" / name / "SKILL.md"
         if target.is_file():
             old = target.read_text(encoding="utf-8", errors="replace")

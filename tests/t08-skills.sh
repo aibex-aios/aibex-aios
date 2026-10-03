@@ -74,6 +74,7 @@ print(install.wrapper('aios-context', m['description'], m.get('allowed-tools', '
    assert_eq "$OUT" "Master-Kontext id $ID, AIOS $(cat "$SRC/VERSION") — §Demo
 
 Kette                      §Demo
+Assistent                  none (keine Zuordnung)
 
 Master-Kontext (geladen)   1 Datei, $CH Zeichen
   §Demo/@/@Rule/stil.md
@@ -90,6 +91,33 @@ Hinweis: Blueprints und registrierte Skills stimmen nicht überein — /aios-reg
    assert_contains "$("$SRC/bin/aios-context" --list "$D/Wiese")" "Wiese (nicht initialisiert, Kette bis §Demo)" "--list: not initialized"
    assert_eq "$("$SRC/bin/aios-context" --list "$SANDBOX/work/§Alt")" "Legacy-Modus (ai-brain, kein aios: in der Kette) — siehe /masterspace." "--list: legacy"
    assert_eq "$("$SRC/bin/aios-context" --list "$SANDBOX/outside")" "Kein Vault — kein Master-Kontext." "--list: outside a vault"
+   printf 'aios: 0.1.0\nassistant: obstgaertner\n' > "$D/.aios/config.yaml"
+   assert_contains "$("$SRC/bin/aios-context" --list "$D")" "Assistent                  obstgaertner 0.1.0 (zugeordnet in §Demo)" "--list: own assignment"
+   assert_contains "$("$SRC/bin/aios-context" --list "$D/Garten")" "Assistent                  obstgaertner 0.1.0 (inherit, zugeordnet in §Demo)" "--list: inherited assignment"
+   printf 'aios: 0.1.0\nassistant: astronom\n' > "$D/.aios/config.yaml"
+   assert_contains "$("$SRC/bin/aios-context" --list "$D")" "Assistent                  astronom (nicht gefunden) (zugeordnet in §Demo)" "--list: assistant not found"
+   printf 'aios: 0.1.0\n' > "$D/.aios/config.yaml"
+
+#===============================================================================
+# aios --skill --session: the id replaces ${CLAUDE_SESSION_ID}; wrapper with --session
+#===============================================================================
+
+   assert_contains "$(at "$D" aios --skill aios-assistant --session abc-123)" "Die Session-ID dieses Chats ist \`abc-123\`." "--skill --session: id in the body"
+   assert_contains "$(at "$D" aios --skill aios-assistant --session abc-123)" "--yes --session abc-123" "--skill --session: every placeholder"
+   case "$(at "$D" aios --skill aios-assistant --session abc-123)" in *'${CLAUDE_SESSION_ID}'*) fail "--skill --session: no placeholder left" ;; *) ok ;; esac
+   assert_contains "$(at "$D" aios --skill aios-assistant)" '${CLAUDE_SESSION_ID}' "--skill without --session: placeholder stays"
+   assert_contains "$(at "$D" aios --skill aios-assistant --session ../x)" "is not a session id" "--skill --session: bad id"
+   W="$(AIOS_CLAUDE_DIR="$SANDBOX/claude" PYTHONPATH="$SRC/lib" python3 -c "
+from pathlib import Path
+from aios import install
+from aios.ui import Plan
+d = Path('$SANDBOX/claude')
+plan = Plan(); install.plan_skills(plan, Path('$SRC')); plan.run()
+for n in ('aios-assistant', 'aios-context', 'aios-init'):
+    print(n, (d / 'skills' / n / 'SKILL.md').read_text().splitlines()[-1])")"
+   assert_contains "$W" 'aios-assistant !`aios --skill aios-assistant --session ${CLAUDE_SESSION_ID}`' "wrapper of aios-assistant with --session"
+   assert_contains "$W" 'aios-context !`aios --skill aios-context --session ${CLAUDE_SESSION_ID}`' "wrapper of aios-context with --session"
+   assert_contains "$W" 'aios-init !`aios --skill aios-init`' "wrapper without session id stays plain"
 
 #===============================================================================
 # --plan and --yes on writing commands (for skills)

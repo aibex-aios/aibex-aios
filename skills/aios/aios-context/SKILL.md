@@ -32,4 +32,6 @@ Ein AIOS-Skill von AIbex AIOS (Spec 02, *Skill `/aios-context`*). Er ändert nic
 
 6. **Aufstellung zeigen:** Führe `aios-context --list "<cwd>"` aus. Zeige die Ausgabe unverändert in einem Codeblock, ersetze nur die erste Zeile `Master-Kontext id <id>, AIOS <version> — <Projekt>` durch „Master-Kontext geladen (id `<id>`, AIOS `<version>`) — `<Projekt>`".
 
+7. **Assistent der Session:** Führe `aios-context --assignment "<cwd>" --session ${CLAUDE_SESSION_ID}` aus. Steht dort `from=session` und ein anderer Assistent als in der Zeile *Assistent* der Aufstellung (die Zuordnung des Projekts), nenne beide: „Assistent dieses Chats: <name> (Zuordnung des Projekts: <wert>)".
+
 Steht in der Aufstellung ein Hinweis auf `/aios-register`, nenne ihn. Keine weiteren Kommentare, keine Zusammenfassung des Inhalts.
