@@ -42,12 +42,12 @@ import sys; t=open(sys.argv[1],encoding='utf-8').read(); e=t.find('\n---',3); pr
    case "$(at "$D" aios --skill aios-init)" in *"name: aios-init"*|*"allowed-tools"*) fail "--skill: no frontmatter" ;; *) ok ;; esac
    case "$(at "$D" aios --skill aios-init)" in *"Nur in Version 0.2.0"*) fail "--skill in §Demo: version 0.1.0" ;; *) ok ;; esac
    assert_contains "$(at "$D/Garten" aios --skill aios-init)" "Nur in Version 0.2.0" "--skill in Garten: version 0.2.0"
-   for S in aios-context aios-init aios-register aios-status aios-deploy aios-assistant; do
+   for S in aios-context aios-init aios-register aios-status aios-deploy aios-assistant aios-integrity; do
       assert_contains "$(at "$D" aios --skill "$S")" "Ein AIOS-Skill von AIbex AIOS" "--skill $S"
    done
    assert_exit 1 "$SRC/bin/aios" --skill aios-nope
    assert_exit 1 "$SRC/bin/aios" --skill aios-agent
-   assert_eq "$(ls "$SRC/skills/aios" | tr '\n' ' ')" "aios-assistant aios-context aios-deploy aios-init aios-register aios-status " "AIOS skills of v0.2 (aios-assistant, no aios-agent)"
+   assert_eq "$(ls "$SRC/skills/aios" | tr '\n' ' ')" "aios-assistant aios-context aios-deploy aios-init aios-integrity aios-register aios-status " "AIOS skills of v0.3 (aios-assistant, no aios-agent; aios-integrity)"
 
 #===============================================================================
 # wrapper: name, description and allowed-tools from the version, body from aios --skill
