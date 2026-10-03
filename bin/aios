@@ -13,6 +13,8 @@
       echo '          aios --register [<path>]            # register the project skills (spec 03)'
       echo '          aios --init [<path>]                # make a folder a project (@/, @Memo/, git)'
       echo '          aios --integrity [<path>]           # integrity of a project and its subprojects'
+      echo '          aios --assistant <name|none|inherit> # assign the assistant to the project'
+      echo '                       [--to <project>] [--session <id>]'
       echo '          aios --deploy <name>==<version>     # deploy a skill or assistant [--to <project>]'
       echo '                       [--assistant <name>] [--from <repo>]'
       echo '          aios --deploy [--to <project>]      # blueprints follow skills: and assistants:'

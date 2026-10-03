@@ -25,6 +25,8 @@ LEVELS = {                                          # key -> levels where it is 
     "inline_limit": ("home",),
 }
 INLINE_LIMIT = 9000
+ASSISTANT_NAME = re.compile(r"^[a-z0-9][a-z0-9-]*$")
+RESERVED = ("none", "inherit")                     # values of assistant:, never names of assistants
 
 
 class ConfigError(Exception):
@@ -175,6 +177,12 @@ class Config:
         return self.values.get("hosts", ["claude-code"])
 
     @property
+    def assignment(self):
+        """(assistant, config.yaml) of the assignment (spec 03, Zuordnung): a name or none;
+        (none, None) if nobody up to the vault root decides."""
+        return self.values.get("assistant", "none"), self.source.get("assistant")
+
+    @property
     def inline_limit(self):
         return int(self.values.get("inline_limit", INLINE_LIMIT))
 
@@ -202,6 +210,13 @@ class Config:
                     self.warnings.append(f"{file}: aios: {val} is not a version, ignored")
                     continue
                 val = m.group(1)
+            if key == "assistant":
+                val = str(val or "")
+                if val == "inherit":                # counts as no entry: look further up (spec 04)
+                    continue
+                if val != "none" and not ASSISTANT_NAME.match(val):
+                    self.warnings.append(f"{file}: assistant: {val} is not an assistant name (or none, inherit), ignored")
+                    continue
             if key == "hosts" and not isinstance(val, list):
                 val = [val]
             if key == "inline_limit" and not str(val).isdigit():
@@ -250,6 +265,8 @@ def describe(cfg):
         lines.append(f"skill     {name} {cfg.skills[name]} ({cfg.skill_source[name]})")
     for name in sorted(cfg.assistants):
         lines.append(f"assistant {name} {cfg.assistants[name]} ({cfg.assistant_source[name]})")
+    name, source = cfg.assignment
+    lines.append(f"assign    {name} ({where(source)})")
     lines.append(f"hosts     {', '.join(cfg.hosts)} ({where(cfg.source.get('hosts'))})")
     lines.append(f"inline    {cfg.inline_limit} ({where(cfg.source.get('inline_limit'))})")
     lines += [f"warning   {w}" for w in cfg.warnings]

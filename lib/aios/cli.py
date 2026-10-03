@@ -3,12 +3,12 @@
 import subprocess
 import sys
 
-from . import activate, aiosinit, deploy, install, integrity, paths, registry, skills, ui
+from . import activate, aiosinit, assign, deploy, install, integrity, paths, registry, skills, ui
 
 USAGE = ("usage: aios --prepare | --install [v<version>] | --versions | --remove-version v<version>"
          " | --uninstall | --activate v<version> [<path>] | --deactivate [<path>] | --config [<path>]"
          " | --register [<path>] | --init [<path>] [--assistant <value>] [--name <name>] [--accept-name]"
-         " | --integrity [<path>]"
+         " | --integrity [<path>] | --assistant <name|none|inherit> [--to <project>] [--session <id>]"
          " | --skill <name> | --library"
          " | --deploy [<name>==<version>] [--to <project>] [--assistant <name>] [--from <repo>]"
          "  (writing commands: --plan, --yes)")
@@ -69,6 +69,8 @@ def main(argv):
             return skills.body(args[0])
         if cmd == "--init":
             return init_command(args)
+        if cmd == "--assistant":
+            return assign.command(args)
         if cmd == "--integrity" and len(args) <= 1:
             return integrity.run(*args)
         if cmd == "--register" and len(args) <= 1:

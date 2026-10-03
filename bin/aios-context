@@ -11,6 +11,7 @@
       echo '          aios-context --sync [--yes|--plan] # register the project skills'
       echo '          aios-context --assistant <name>       # context of an assistant'
       echo '          aios-context --assistants             # assistants of the chain'
+      echo '          aios-context --assignment [<path>] [--session <id>] # assistant that applies'
       echo '          aios-context --version            # print version'
       echo '   see also: aios, ai-brain'
       exit 1

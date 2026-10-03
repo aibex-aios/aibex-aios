@@ -316,7 +316,8 @@ def legacy(cmd, cwd, stdin=""):
 
 
 USAGE = ("usage: aios-context --session | --advise | --context [<path>] | --load [<path>] | --id [<path>]"
-         " | --list [<path>] | --sync [--yes|--plan] | --assistant <name> | --assistants")
+         " | --list [<path>] | --sync [--yes|--plan] | --assistant <name> | --assistants"
+         " | --assignment [<path>] [--session <id>]")
 
 
 def main(argv):
@@ -331,6 +332,8 @@ def main(argv):
         return registry.register(paths.cwd(), yes=argv[1:] == ["--yes"])
     if cmd in ("--assistant", "--assistants") and len(argv) == (2 if cmd == "--assistant" else 1):
         return assistant_cmd(argv)
+    if cmd == "--assignment":
+        return assignment_cmd(argv[1:])
     if cmd in ("--session", "--advise") and len(argv) == 1:
         try:
             return hook(cmd)
@@ -384,6 +387,40 @@ def assistant_cmd(argv):
     except Abort as e:
         print(f"*** aios-context {argv[0]}: {e}", file=sys.stderr)
         return 1
+    return 0
+
+
+def assignment_cmd(args):
+    """--assignment [<path>] [--session <id>]: assistant=<name|none> from=<config.yaml|session|->
+    (spec 02); with --session the assistant of the session from its marker, if there is one."""
+    from . import session
+    sid, rest = None, list(args)
+    if "--session" in rest:
+        i = rest.index("--session")
+        if i + 1 >= len(rest):
+            print(USAGE, file=sys.stderr)
+            return 1
+        sid = rest[i + 1]
+        del rest[i:i + 2]
+    if len(rest) > 1 or any(r.startswith("--") for r in rest):
+        print(USAGE, file=sys.stderr)
+        return 1
+    cwd = os.path.abspath(rest[0]) if rest else paths.cwd()
+    if not os.path.isdir(cwd):
+        print(f"aios-context: {cwd} is not a directory", file=sys.stderr)
+        return 1
+    if sid is not None:
+        try:
+            marker = session.read(sid)
+        except session.BadId as e:
+            print(f"*** aios-context --assignment: {e}", file=sys.stderr)
+            return 1
+        if marker:
+            print(f"assistant={marker['assistant']} from=session")
+            return 0
+    cfg = config.load(cwd)
+    name, source = cfg.assignment if cfg.vault and cfg.aios else ("none", None)
+    print(f"assistant={name} from={source or '-'}")
     return 0
 
 

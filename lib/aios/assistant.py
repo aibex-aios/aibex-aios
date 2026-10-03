@@ -42,6 +42,9 @@ def assistants(ctx):
             except Abort as e:
                 problems.append(f"{e}, not resolved")
                 continue
+            if f.parent.name in config.RESERVED:
+                problems.append(f"{f}: {f.parent.name} is a reserved name (none, inherit), not resolved")
+                continue
             if meta.get("name") != f.parent.name:
                 problems.append(f"{f}: name {meta.get('name')!r} differs from the folder {f.parent.name!r}, not resolved")
                 continue
