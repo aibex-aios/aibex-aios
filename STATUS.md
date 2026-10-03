@@ -7,7 +7,7 @@ v0.2.0 ist abgeschlossen (Tag `v0.2.0`, Abnahme in Memo 21 von `AAA-AIbex-AIOS-V
 | # | Schritt | Ergebnis | Spec | Stand |
 |---|---|---|---|---|
 | 0 | **Repo auf v0.3 umstellen:** `CLAUDE.md`, `STATUS.md`, `VERSION` `0.3.0-dev` | Regeln zeigen auf V0.3 (`~/vault/§AIOS/A-AIOS/AA-AIbex-AIOS/`) und Memo 32, Stand v0.3, 492 Prüfungen grün | — | ☑ abgeschlossen |
-| 1 | **Struktur und Namensregel:** `lib/aios/project.py` (S1–S4, Namensregel, Vorschlag) | | 05 | ☐ |
+| 1 | **Struktur und Namensregel:** `lib/aios/project.py` (S1–S4, Namensregel, Vorschlag) | `project.check` (S1–S4; S4 mit `git check-ignore --no-index` und `git ls-files`, Repo darüber bis zur Vault-Root), `project.check_name` mit Vorschlag (Prefix aus dem Anfangsbuchstaben, ein gültiger Prefix bleibt); neuer Test t11 (30 Prüfungen); 522 Prüfungen grün | 05 | ☑ abgeschlossen |
 | 2 | **`aios --init` und `aios --activate`:** Ergänzen, `--name`, `--accept-name`, Repo darüber, Vault-Root, kein `@Memo/` | | 04, 05 | ☐ |
 | 3 | **Konsistenzprüfung und Dialog:** `PROJECT-INCOMPLETE`, Dialog *Projekt initialisieren* | | 02 | ☐ |
 | 4 | **Integrität:** `aios --integrity`, Skill `aios-integrity` | | 05 | ☐ |
