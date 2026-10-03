@@ -22,11 +22,17 @@ macOS or Linux with `bash`, `git`, `python3` (3.9 or newer) and
 
 ## Installation
 
+Copy this line into a terminal:
+
 ```sh
-  git clone https://github.com/aibex-hub/aibex-aios ~/git/AIbex/aibex-aios
-  cd ~/git/AIbex/aibex-aios
-  ./bin/aios --install v0.2.0     # prepares the machine, then installs
+R=~/git/AIbex/aibex-aios; ([ -d "$R/.git" ] || git clone https://github.com/aibex-hub/aibex-aios "$R") && "$R/bin/aios" --install v0.2.0
 ```
+
+It clones the repository to `~/git/AIbex/aibex-aios` unless a clone is already
+there (an existing clone is left as it is), then prepares the machine and
+installs. The installed files always come from the tag `v0.2.0`, not from the
+working tree of the clone; without a version, the highest release tag is
+installed.
 
 `aios --install` shows a plan and asks once before it writes anything. It
 installs the version read-only to `/opt/aios/v0.2.0/` (without `sudo`:
