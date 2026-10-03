@@ -92,9 +92,10 @@ def instruction(d, call):
     """How Claude shows the surface (spec 03, Darstellung), with the tiles as data."""
     lines = ["", "## Oberfläche zeigen", "",
              "Zeige diese Oberfläche jetzt, ohne weitere Erklärung:", "",
-             f"- **Desktop-App mit HTML-Oberflächen** (Werkzeug für HTML-Oberflächen im Chat verfügbar): "
-             f"führe `{call} --html` aus und zeige die Ausgabe unverändert mit diesem Werkzeug.",
-             "- **Sonst (CLI, Headless):** Menü mit dem Auswahlwerkzeug (`AskUserQuestion`), Frage = Titel, "
+             f"- **Desktop-App mit HTML-Oberflächen** (ein Werkzeug, das HTML direkt im Chat anzeigt, z. B. "
+             f"`show_widget`): führe `{call} --html` aus und zeige die Ausgabe unverändert mit diesem Werkzeug. "
+             f"Veröffentliche die Oberfläche nie als Artifact, Datei oder Webseite und frag nicht danach.",
+             "- **Sonst (CLI, Headless, kein solches Werkzeug):** Menü mit dem Auswahlwerkzeug (`AskUserQuestion`), Frage = Titel, "
              "höchstens 4 Einträge je Ebene, bei mehr Kacheln als letzter Eintrag „Weitere …“ mit der nächsten Ebene. "
              "Kacheln mit HTML-Teil fehlen im Menü; nenne sie als Hinweis („nur in der Desktop-App“). "
              "Nach der Wahl: einen Prompt so behandeln, als hätte der User ihn getippt; `/<skill>` als Aufruf des Skills.",

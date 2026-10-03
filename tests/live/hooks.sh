@@ -66,7 +66,7 @@ print(json.dumps({"hooks": h}))' "$1" "$2"
       rm "$SB/home/.aios/config.yaml"
 
       A="$(ask "$V/Garten/Neu" "$(hooks on on)" "Was ist 2+2?")"
-      check "L3 not initialized: the chat asks first" "$A" "/aios-init"
+      check "L3 not initialized: the chat shows the dialog Projekt initialisieren first (v0.3)" "$A" "nitialisier"
 
       A="$(ask "$V/Garten" "$(hooks - on)" "$Q")"
       check "L4 advise only: the chat loads the part files itself" "$A" "$SECRET"

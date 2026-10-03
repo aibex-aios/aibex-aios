@@ -26,8 +26,8 @@
       REPO="$(cd "$(dirname "$0")/../.." && pwd)"
       T="${TMPDIR:-/tmp}"; SB="$(cd "$(mktemp -d "${T%/}/aios-live.XXXXXX")" && pwd -P)" || exit 1
       V="$SB/§Live"; G="$V/Garten"
-      mkdir -p "$SB/home/.aios" "$SB/bin" "$V/.aios" "$V/@/@Rule" "$G/@" "$G/@Memo" "$G/Neu"
-      printf 'aios: 0.1.0\n' > "$V/.aios/config.yaml"
+      mkdir -p "$SB/home/.aios" "$SB/bin" "$V/.aios" "$V/@/@Rule" "$G/@" "$G/@Memo" "$G/GN-Neu"
+      printf 'aios: 0.3.0\n' > "$V/.aios/config.yaml"
       printf '# Stil\nSchreib kurz.\n' > "$V/@/@Rule/stil.md"
       printf '# Garten\nIm Garten wachsen Äpfel.\n' > "$G/@/garten.md"
       printf '# 01 Beete planen\n\n**Datum:** 2026-09-01\n**Status:** Entscheidung\n\n## Entscheidung\nDrei Beete.\n\n## Offen\n- Bewässerung der Beete klären\n' > "$G/@Memo/01 Beete planen.md"
@@ -37,6 +37,7 @@
          chmod +x "$SB/bin/$TOOL"
       done
       export GIT_AUTHOR_NAME=live GIT_AUTHOR_EMAIL=live@test GIT_COMMITTER_NAME=live GIT_COMMITTER_EMAIL=live@test
+      printf '.DS_Store\n.claude/skills/\n.aios/manifest\n' > "$G/.gitignore"; git -C "$G" init -q   # Garten complete (S1-S4): no PROJECT-INCOMPLETE
       wrappers() {                                  # version-neutral wrappers into <dir>/.claude/skills
          PYTHONPATH="$REPO/lib" python3 -c '
 import sys
@@ -47,15 +48,16 @@ for f in sorted((repo / "skills" / "aios").glob("*/SKILL.md")):
     m = install.frontmatter(f)
     d = target / ".claude" / "skills" / f.parent.name
     d.mkdir(parents=True, exist_ok=True)
-    (d / "SKILL.md").write_text(install.wrapper(f.parent.name, m["description"], m.get("allowed-tools", "")))' "$REPO" "$1"
+    session = "${CLAUDE_SESSION_ID}" in f.read_text(encoding="utf-8").split("\n---", 1)[-1]
+    (d / "SKILL.md").write_text(install.wrapper(f.parent.name, m["description"], m.get("allowed-tools", ""), session))' "$REPO" "$1"
       }
-      wrappers "$G"; wrappers "$G/Neu"
+      wrappers "$G"; wrappers "$G/GN-Neu"
       HOOKS='{"hooks":{"SessionStart":[{"hooks":[{"type":"command","command":"aios-context --session"}]}],"UserPromptSubmit":[{"hooks":[{"type":"command","command":"aios-context --advise"}]}]}}'
       ask() {                                       # ask <dir> <prompt>
          (cd "$1" && PATH="$SB/bin:$PATH" claude -p "$2" --model "$MODEL" --settings "$HOOKS" \
             --setting-sources project --add-dir "$SB" \
             --allowedTools "Skill" "Read" "Glob" "Bash(aios --skill *)" "Bash(aios-context *)" \
-                           "Bash(aios --init *)" "Bash(aios --register *)" "Bash(git log *)" 2>&1)
+                           "Bash(aios --init *)" "Bash(aios --register *)" "Bash(aios --integrity *)" "Bash(aios --gui *)" "Bash(git log *)" </dev/null 2>&1)
       }
       PASS=0; FAIL=0
       check() {                                     # check <name> <answer> <expected> [<expected> …]
@@ -71,8 +73,8 @@ for f in sorted((repo / "skills" / "aios").glob("*/SKILL.md")):
       A="$(ask "$G" "/aios-context")"
       check "S1 /aios-context: loaded and listed" "$A" "$ID" "Kette" "Garten"
 
-      A="$(ask "$G/Neu" "/aios-init Ich bestätige schon jetzt ausdrücklich: ja, bitte anlegen.")"
-      [ -d "$G/Neu/@" ] && [ "$(git -C "$G/Neu" log --format=%s 2>/dev/null)" == "AIOS: Projekt initialisiert" ] && R2="initialized" || R2="not initialized: $A"
+      A="$(ask "$G/GN-Neu" "/aios-init Ich bestätige schon jetzt ausdrücklich: ja, bitte anlegen, Titel Neu, Assistent inherit.")"
+      [ -d "$G/GN-Neu/@" ] && [ "$(git -C "$G/GN-Neu" log --format=%s 2>/dev/null)" == "AIOS: Projekt initialisiert" ] && R2="initialized" || R2="not initialized: $A"
       check "S2 /aios-init: project created with git and first commit" "$R2" "initialized"
 
       A="$(ask "$G" "/aios-status")"
@@ -92,6 +94,12 @@ for f in sorted((repo / "skills" / "aios").glob("*/SKILL.md")):
             --allowedTools "Skill" "Bash(aios --skill *)" "Bash(aios --deploy *)" "Bash(aios --library *)" 2>&1)"
       [ -f "$V/@/@!Skill/memo/.aios-deploy" ] && grep -q '^  memo: 6.0.0$' "$V/.aios/config.yaml" && R5="deployed" || R5="not deployed: $A"
       check "S5 /aios-deploy memo==6.0.0 to the root project" "$R5" "deployed"
+
+      A="$(ask "$G/GN-Neu" "/aios-integrity")"           # GN-Neu is complete since S2 (Garten would get PROJECT-INCOMPLETE first)
+      check "S6 /aios-integrity: report with result line" "$A" "integer"
+
+      A="$(ask "$G" "/aios-gui")"
+      check "S7 /aios-gui: menu with the tiles of AIOS" "$A" "Integrität prüfen" "Projektstatus"
 
       echo "=> $PASS passed, $FAIL failed"
       rm -rf "$SB"

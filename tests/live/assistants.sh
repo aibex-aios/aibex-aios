@@ -36,6 +36,7 @@
       SORTE="Sternreinette $RANDOM"
       printf '\n## Sandkasten\n\n| Sorte | Genussreife |\n|---|---|\n| %s | nur am 29. Februar eines Schaltjahres |\n' "$SORTE" >> "$O/@Wissen/@@Sortenkunde/sortenkunde.md"
       printf '# Garten\n' > "$G/@/garten.md"
+      printf '.DS_Store\n.claude/skills/\n.aios/manifest\n' > "$G/.gitignore"; git -C "$G" init -q   # Garten complete (S1-S4): no PROJECT-INCOMPLETE
       for TOOL in aios aios-context; do
          printf '#!/bin/bash\nHOME="%s/home" exec "%s/bin/%s" "$@"\n' "$SB" "$REPO" "$TOOL" > "$SB/bin/$TOOL"; chmod +x "$SB/bin/$TOOL"
       done
@@ -48,7 +49,7 @@ m = install.frontmatter(f)
 d = Path(sys.argv[2]) / ".claude/skills/aios-assistant"; d.mkdir(parents=True)
 (d / "SKILL.md").write_text(install.wrapper("aios-assistant", m["description"], m.get("allowed-tools", ""), session=True))' "$REPO" "$G"
       HOOKS="{\"hooks\":{\"SessionStart\":[{\"hooks\":[{\"type\":\"command\",\"command\":\"$SB/bin/aios-context --session\"}]}],\"UserPromptSubmit\":[{\"hooks\":[{\"type\":\"command\",\"command\":\"$SB/bin/aios-context --advise\"}]}]}}"
-      TOOLS=("Skill" "Read" "Bash(aios --skill *)" "Bash(aios --assistant *)" "Bash(aios-context *)")
+      TOOLS=("Skill" "Read" "Bash(aios --skill *)" "Bash(aios --assistant *)" "Bash(aios --gui *)" "Bash(aios-context *)")
       ask() {                                       # ask <prompt> [<claude options>]: new chat with the AIOS hooks
          local P="$1"; shift
          (cd "$G" && PATH="$SB/bin:$PATH" claude -p "$P" --model "$MODEL" --settings "$HOOKS" \
@@ -93,6 +94,10 @@ d = Path(sys.argv[2]) / ".claude/skills/aios-assistant"; d.mkdir(parents=True)
       ANS="$(ask "Wer bist du? Nenne nur deinen Titel." --resume "$SID")"
       check "A5 resume keeps the assistant of the session (Gärtner), not the new assignment" "$ANS" "Gärtner"
       refuse "A5 resume: not Astronom" "$ANS" "Astronom"
+
+      assign gaertner
+      ANS="$(ask "/gui")"
+      check "A7 /gui: surface of the Gärtner as a menu (headless), calculator only as a hint" "$ANS" "Sorte bestimmen" "Rechner"
 
       ANS="$(ask "/aios-assistant --none — und dann: Bist du gerade ein AIOS-Assistent? Antworte mit ja oder nein.")"
       check "A6 --none: assignment none" "$(cat "$G/.aios/config.yaml")" "assistant: none"
