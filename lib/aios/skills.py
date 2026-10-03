@@ -22,7 +22,7 @@ def strip_frontmatter(text):
     return text.lstrip("\n")
 
 
-SESSION = "${CLAUDE_SESSION_ID}"                   # placeholder in a body that needs the session id
+SESSION = "<session-id>"                           # placeholder in a body that needs the session id
 
 
 def needs_session(text):
@@ -39,7 +39,8 @@ def memo_registered():
 
 def body(name, session_id=None):
     """Print the body of skills/aios/<name>/SKILL.md of the running version (the valid one);
-    with --session the placeholder ${CLAUDE_SESSION_ID} is replaced by the id."""
+    with --session the placeholder <session-id> is replaced by the id (wrappers give the id as a
+    line of text instead, spec 04)."""
     f = source(name)
     if not f.is_file():
         raise Abort(f"AIOS {version()} has no AIOS skill {name}")

@@ -235,7 +235,7 @@ allowed-tools: Bash(aios --skill *), <allowed-tools aus derselben SKILL.md>
 !`aios --skill aios-init`
 ```
 
-`aios --skill <name>` gibt den Rumpf (ohne Frontmatter) der `SKILL.md` der **gültigen** Version aus; gültig ist die Version, die der Weiterleiter für `cwd` wählt. Beschreibung und `allowed-tools` werden bei jedem `aios --install` aus der installierten Version übernommen. Der Rumpf eines AIOS-Skills enthält keine `!`-Befehle, weil Claude Code die Ausgabe von `` !`aios --skill …` `` nicht noch einmal auswertet; er weist Claude an, die Befehle selbst auszuführen. Braucht ein Skill die Session-ID (`aios-assistant`), steht in seiner Hülle `` !`aios --skill <name> --session ${CLAUDE_SESSION_ID}` ``; `aios --skill` setzt die ID im Rumpf ein. Claude Code ersetzt den Platzhalter auch innerhalb von `!`-Befehlen (V0.3, Memo 31).
+`aios --skill <name>` gibt den Rumpf (ohne Frontmatter) der `SKILL.md` der **gültigen** Version aus; gültig ist die Version, die der Weiterleiter für `cwd` wählt. Beschreibung und `allowed-tools` werden bei jedem `aios --install` aus der installierten Version übernommen. Der Rumpf eines AIOS-Skills enthält keine `!`-Befehle, weil Claude Code die Ausgabe von `` !`aios --skill …` `` nicht noch einmal auswertet; er weist Claude an, die Befehle selbst auszuführen. Braucht ein Skill die Session-ID (`aios-assistant`, `aios-context`), bleibt der Aufruf `` !`aios --skill <name>` ``, den jede Version versteht, und die Hülle nennt die ID in einer Textzeile nach dem Aufruf: `` Session-ID dieses Chats: `${CLAUDE_SESSION_ID}` ``. Claude Code ersetzt den Platzhalter im Text der Hülle (V0.3, Memo 31); der Rumpf schreibt `<session-id>` und verweist auf diese Zeile. So bleibt die Hülle versionsneutral, auch für Projekte, die noch an eine ältere Version gebunden sind (V0.3, Memo 50). `aios --skill <name> --session <id>` setzt die ID für `<session-id>` direkt in den Rumpf ein (für Tests und Aufrufe von Hand).
 
 Der Alias `/gui` hat dieselbe Form mit festem Text:
 
@@ -316,7 +316,7 @@ Die Weiterleiter lesen nur kleine Dateien und greifen nie auf das Netzwerk zu.
 | `aios --deploy <name>==<version> [--to <projekt>] [--assistant <name>] [--from <pflegeprojekt>]` | eine Version eines Skills oder Assistenten ausrollen (Spec 03) |
 | `aios --deploy [--to <projekt>] [--from <pflegeprojekt>]` | Blueprints mit dem Manifest abgleichen (Spec 03) |
 | `aios --library` | Skills und Assistenten der Bibliothek mit ihren Versionen |
-| `aios --skill <name> [--session <id>]` | Rumpf eines AIOS-Skills der gültigen Version (für die versionsneutralen Skills) |
+| `aios --skill <name> [--session <id>]` | Rumpf eines AIOS-Skills der gültigen Version (für die versionsneutralen Skills); mit `--session` ist `<session-id>` im Rumpf ersetzt |
 | `aios --assistant <name\|none\|inherit> [--to <projekt>] [--session <id>]` | Assistent dem Projekt zuordnen (Spec 03, *Wechsel*) |
 | `aios --gui [--session <id>] [--html]` | Rumpf des Oberflächen-Skills des aktiven Assistenten bzw. mit `--html` das HTML-Fragment (Spec 03, *Oberflächen*); `aios --gui --aios` für die AIOS-Oberfläche |
 | `aios --init [<pfad>] [--assistant <wert>] [--name <name>] [--accept-name]` | Ordner zum Projekt machen oder ein Projekt ergänzen (Spec 05) |

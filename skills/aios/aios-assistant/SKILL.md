@@ -10,7 +10,7 @@ Ein AIOS-Skill von AIbex AIOS (Spec 03, *Wechsel*). Jeder Aufruf ist eine **Zuor
 
 **Arbeitsverzeichnis:** Führe alle Befehle dieses Skills im Arbeitsverzeichnis der Session aus und wechsle nie mit `cd`; AIOS bestimmt das Projekt der Session aus dem aktuellen Verzeichnis. Andere Orte nur als ausdrücklichen Pfad angeben.
 
-Die Session-ID dieses Chats ist `${CLAUDE_SESSION_ID}`.
+`<session-id>` steht im Folgenden für die Session-ID dieses Chats; sie steht in der Zeile *Session-ID dieses Chats* am Ende dieser Anweisung.
 
 ## Ablauf
 
@@ -19,7 +19,7 @@ Die Session-ID dieses Chats ist `${CLAUDE_SESSION_ID}`.
    - Endet der Befehl mit `no assistant named …` oder `more than one assistant …`, zeige die mitgelieferte Liste und frage, welcher gemeint ist. Beende danach.
    - Meldet er „nothing to do", ist die Zuordnung schon gesetzt: weiter mit Schritt 3 ohne Rückfrage.
    - Sonst zeige den Plan (z. B. „Projekt G-Garten: Gärtner → Astronom") und frage einmal, ob du ihn ausführen sollst. Hat der User den Wechsel in seinem Aufruf schon ausdrücklich bestätigt, entfällt die Frage. Bei Nein: abbrechen.
-3. **Zuordnen:** `aios --assistant <wert> [--to <projekt>] --yes --session ${CLAUDE_SESSION_ID}` ausführen. Die letzte Zeile `session …: <name>` nennt den neuen Assistenten dieses Chats; fehlt sie (bei `--to`, wenn sich für diesen Chat nichts ändert), bleibt der bisherige.
+3. **Zuordnen:** `aios --assistant <wert> [--to <projekt>] --yes --session <session-id>` ausführen. Die letzte Zeile `session …: <name>` nennt den neuen Assistenten dieses Chats; fehlt sie (bei `--to`, wenn sich für diesen Chat nichts ändert), bleibt der bisherige.
 4. **Rolle:** Ist der neue Assistent dieses Chats nicht `none`: `aios-context --assistant <name>` ausführen und die Ausgabe zwischen `<aios-assistant name="<name>" …>` und `</aios-assistant name="<name>">` vollständig lesen; fehlt die Endmarke in der Ausgabe des Werkzeugs, lies den Rest nach. Ab jetzt antwortest du als dieser Assistent:
    - `class="prompt"` ist deine Persönlichkeit, `class="assistant"` dein Rollentext mit Handwerk, Wissen und Grenzen. Halte die Grenzen genau ein.
    - `class="load"` ist dein Wissen. Die Zeilen in `<aios-available>` sind Wissen, das du **bei Bedarf** mit dem Read-Tool liest, bevor du eine Frage dazu beantwortest; sag, aus welchem Dokument die Antwort stammt.

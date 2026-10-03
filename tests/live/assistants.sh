@@ -47,7 +47,9 @@ from aios import install
 f = Path(sys.argv[1]) / "skills/aios/aios-assistant/SKILL.md"
 m = install.frontmatter(f)
 d = Path(sys.argv[2]) / ".claude/skills/aios-assistant"; d.mkdir(parents=True)
-(d / "SKILL.md").write_text(install.wrapper("aios-assistant", m["description"], m.get("allowed-tools", ""), session=True))' "$REPO" "$G"
+(d / "SKILL.md").write_text(install.wrapper("aios-assistant", m["description"], m.get("allowed-tools", ""), session=True))
+g = Path(sys.argv[2]) / ".claude/skills/gui"; g.mkdir(parents=True)
+(g / "SKILL.md").write_text(install.ALIAS)' "$REPO" "$G"
       HOOKS="{\"hooks\":{\"SessionStart\":[{\"hooks\":[{\"type\":\"command\",\"command\":\"$SB/bin/aios-context --session\"}]}],\"UserPromptSubmit\":[{\"hooks\":[{\"type\":\"command\",\"command\":\"$SB/bin/aios-context --advise\"}]}]}}"
       TOOLS=("Skill" "Read" "Bash(aios --skill *)" "Bash(aios --assistant *)" "Bash(aios --gui *)" "Bash(aios-context *)")
       ask() {                                       # ask <prompt> [<claude options>]: new chat with the AIOS hooks

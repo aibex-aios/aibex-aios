@@ -256,7 +256,7 @@ Mit `--to <projekt>` schreibt der Aufruf in ein anderes Projekt der Kette, z. B.
    ```
 
    Hat der User den Wechsel in seinem Aufruf schon ausdrücklich bestätigt, entfällt die Rückfrage.
-3. Nach Ja `aios --assistant <wert> [--to <projekt>] --yes --session <session-id>`: schreibt `assistant:` in `.aios/config.yaml` (nur diese Zeile; Kommentare und andere Zeilen bleiben) und setzt den Merker der Session auf den neuen wirksamen Assistenten (Spec 02). Die Session-ID kommt aus dem Platzhalter `${CLAUDE_SESSION_ID}` der Hülle; Claude Code ersetzt ihn im Text und in `!`-Befehlen eines Skills (V0.3, Memo 31).
+3. Nach Ja `aios --assistant <wert> [--to <projekt>] --yes --session <session-id>`: schreibt `assistant:` in `.aios/config.yaml` (nur diese Zeile; Kommentare und andere Zeilen bleiben) und setzt den Merker der Session auf den neuen wirksamen Assistenten (Spec 02). Die Session-ID nennt die Hülle in einer Textzeile mit dem Platzhalter `${CLAUDE_SESSION_ID}`, den Claude Code im Text eines Skills ersetzt (V0.3, Memo 31; Spec 04).
 4. Ist der neue wirksame Assistent nicht `none`: `aios-context --assistant <name>` ausführen und die Ausgabe vollständig lesen. Bei `none`: die bisherige Rolle ablegen.
 5. Titel setzen, wenn einer angegeben ist (unten).
 6. Kurz bestätigen („Astronom aktiv" bzw. „kein Assistent"), `model` gegebenenfalls als Hinweis nennen, danach in der Rolle antworten.

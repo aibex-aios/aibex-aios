@@ -48,7 +48,7 @@ for f in sorted((repo / "skills" / "aios").glob("*/SKILL.md")):
     m = install.frontmatter(f)
     d = target / ".claude" / "skills" / f.parent.name
     d.mkdir(parents=True, exist_ok=True)
-    session = "${CLAUDE_SESSION_ID}" in f.read_text(encoding="utf-8").split("\n---", 1)[-1]
+    session = "<session-id>" in f.read_text(encoding="utf-8").split("\n---", 1)[-1]
     (d / "SKILL.md").write_text(install.wrapper(f.parent.name, m["description"], m.get("allowed-tools", ""), session))' "$REPO" "$1"
       }
       wrappers "$G"; wrappers "$G/GN-Neu"

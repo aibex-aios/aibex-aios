@@ -99,13 +99,13 @@ Hinweis: Blueprints und registrierte Skills stimmen nicht überein — /aios-reg
    printf 'aios: 0.1.0\n' > "$D/.aios/config.yaml"
 
 #===============================================================================
-# aios --skill --session: the id replaces ${CLAUDE_SESSION_ID}; wrapper with --session
+# aios --skill --session: the id replaces <session-id>; wrapper: id as a line of text (version-neutral)
 #===============================================================================
 
-   assert_contains "$(at "$D" aios --skill aios-assistant --session abc-123)" "Die Session-ID dieses Chats ist \`abc-123\`." "--skill --session: id in the body"
-   assert_contains "$(at "$D" aios --skill aios-assistant --session abc-123)" "--yes --session abc-123" "--skill --session: every placeholder"
-   case "$(at "$D" aios --skill aios-assistant --session abc-123)" in *'${CLAUDE_SESSION_ID}'*) fail "--skill --session: no placeholder left" ;; *) ok ;; esac
-   assert_contains "$(at "$D" aios --skill aios-assistant)" '${CLAUDE_SESSION_ID}' "--skill without --session: placeholder stays"
+   assert_contains "$(at "$D" aios --skill aios-assistant --session abc-123)" "--yes --session abc-123" "--skill --session: id in the body"
+   case "$(at "$D" aios --skill aios-assistant --session abc-123)" in *'<session-id>'*) fail "--skill --session: no placeholder left" ;; *) ok ;; esac
+   assert_contains "$(at "$D" aios --skill aios-assistant)" '<session-id>' "--skill without --session: placeholder stays"
+   assert_contains "$(at "$D" aios --skill aios-assistant)" 'Zeile *Session-ID dieses Chats* am Ende dieser Anweisung' "body points to the line of the wrapper"
    assert_contains "$(at "$D" aios --skill aios-assistant --session ../x)" "is not a session id" "--skill --session: bad id"
    W="$(AIOS_CLAUDE_DIR="$SANDBOX/claude" PYTHONPATH="$SRC/lib" python3 -c "
 from pathlib import Path
@@ -114,10 +114,14 @@ from aios.ui import Plan
 d = Path('$SANDBOX/claude')
 plan = Plan(); install.plan_skills(plan, Path('$SRC')); plan.run()
 for n in ('aios-assistant', 'aios-context', 'aios-init'):
-    print(n, (d / 'skills' / n / 'SKILL.md').read_text().splitlines()[-1])")"
-   assert_contains "$W" 'aios-assistant !`aios --skill aios-assistant --session ${CLAUDE_SESSION_ID}`' "wrapper of aios-assistant with --session"
-   assert_contains "$W" 'aios-context !`aios --skill aios-context --session ${CLAUDE_SESSION_ID}`' "wrapper of aios-context with --session"
-   assert_contains "$W" 'aios-init !`aios --skill aios-init`' "wrapper without session id stays plain"
+    print('==', n); print((d / 'skills' / n / 'SKILL.md').read_text())")"
+   WA="$(printf '%s\n' "$W" | sed -n '/^== aios-assistant/,/^== aios-context/p')"
+   WI="$(printf '%s\n' "$W" | sed -n '/^== aios-init/,$p')"
+   assert_contains "$WA" '!`aios --skill aios-assistant`' "wrapper calls only aios --skill <name> (every version understands it)"
+   assert_contains "$WA" 'Session-ID dieses Chats: `${CLAUDE_SESSION_ID}`' "wrapper: session id as a line of text"
+   case "$W" in *"--skill aios-assistant --session"*|*"--skill aios-context --session"*) fail "wrapper: no --session flag (v0.2 does not know it)" ;; *) ok ;; esac
+   assert_contains "$(printf '%s\n' "$W" | sed -n '/^== aios-context/,/^== aios-init/p')" 'Session-ID dieses Chats' "wrapper of aios-context with the session line"
+   case "$WI" in *"Session-ID"*) fail "wrapper without session id stays plain" ;; *) ok ;; esac
 
 #===============================================================================
 # --plan and --yes on writing commands (for skills)
