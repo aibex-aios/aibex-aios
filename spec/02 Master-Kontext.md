@@ -1,21 +1,23 @@
 ---
 title: "Master-Kontext"
-date: 2026-10-01
+date: 2026-10-03
 author: iHux
 status: Spec
-tags: [spec, aios, v0.2, master-kontext]
+tags: [spec, aios, v0.3, master-kontext]
 number: 02
 related:
-  - "Spec 01 AIbex AIOS v0.2 — Überblick"
+  - "Spec 01 AIbex AIOS v0.3 — Überblick"
   - "Spec 03 Skills und Assistenten"
   - "Spec 04 Installation und Konfiguration"
-  - "Memo 01 Brainstorming — Masterspace-Klassen und Agenten (Konzeptprojekt PAA-AIbex-AIOS-V0.1)"
-  - "Memo 06 Projekt, Root-Projekt und Projektstatus (Konzeptprojekt PAA-AIbex-AIOS-V0.1)"
+  - "Spec 05 Projekte"
+  - "Memo 01 Brainstorming — Masterspace-Klassen und Agenten (Konzeptprojekt AAA-AIbex-AIOS-V0.1)"
+  - "Memo 06 Projekt, Root-Projekt und Projektstatus (Konzeptprojekt AAA-AIbex-AIOS-V0.1)"
+  - "Memos 01, 06, 08, 14, 15, 22 (Konzeptprojekt AAA-AIbex-AIOS-V0.3)"
 ---
 
 # Master-Kontext
 
-Diese Spec regelt, welches Wissen ein Chat bekommt, den **Master-Kontext** (geladen) und das **verfügbare Wissen** (bei Bedarf gelesen): wie AIOS Vault, Projekt und Kette bestimmt, wie die Klassen eines Masterspace wirken, was das CLI `aios-context` ausgibt, was die Hooks tun und was der Skill `/aios-context` zeigt. Begriffe siehe Spec 01, Dateistrukturen und Formate siehe Spec 04.
+Diese Spec regelt, welches Wissen ein Chat bekommt, den **Master-Kontext** (geladen) und das **verfügbare Wissen** (bei Bedarf gelesen): wie AIOS Vault, Projekt und Kette bestimmt, wie die Klassen eines Masterspace wirken, was das CLI `aios-context` ausgibt, was die Hooks tun (einschließlich des Assistenten der Session und der Konsistenzprüfung) und was der Skill `/aios-context` zeigt. Begriffe siehe Spec 01, Dateistrukturen und Formate siehe Spec 04, Assistenten siehe Spec 03, Struktur eines Projekts siehe Spec 05.
 
 ## Vault, Projekt und Kette
 
@@ -34,14 +36,37 @@ Ein Chat im Root-Projekt ist erlaubt; die Kette besteht dann nur aus dem Root-Ma
 
 Liegt `cwd` in einem aktivierten Vault und hat kein `@/`, gilt:
 
-1. `X` ist das nächste Verzeichnis oberhalb von `cwd` mit `@/`. Weil die Vault-Root ein `@/` hat, gibt es `X` immer.
-2. Der SessionStart-Hook lädt den Master-Kontext der Kette bis `X` und gibt zusätzlich die Anweisung `PROJECT-UNINITIALIZED` aus (Format siehe *Ausgabe*).
-3. Claude stellt vor der ersten inhaltlichen Antwort die Wahl:
-   - **(1) Projekt initialisieren** → `/aios-init` (Spec 03)
-   - **(2) ins Projekt `X` wechseln** → in der Desktop-App über das Werkzeug zum Wechsel des Arbeitsverzeichnisses; in der CLI: Chat beenden und in `X` neu starten
+1. `X` ist das nächste Verzeichnis oberhalb von `cwd` mit `@/`. Weil `aios --activate` an der Vault-Root `@/` anlegt (Spec 04), gibt es `X` in der Regel. Fehlt es (die Vault-Root ist ein Container, weil `@/` dort entfernt wurde), ist die Kette leer und die Wahl (2) entfällt.
+2. Der SessionStart-Hook lädt den Master-Kontext der Kette bis `X` und gibt zusätzlich die Anweisung `PROJECT-UNINITIALIZED` aus (Format siehe *Ausgabe*). Eine Vault-Root ohne `@/` ist ein Container und löst kein `PROJECT-UNINITIALIZED` aus.
+3. Claude zeigt vor der ersten inhaltlichen Antwort den **Dialog *Projekt initialisieren*** (unten).
 4. Bis zur Entscheidung gibt der Chat keine inhaltlichen Antworten.
 
-Eine dritte Wahl („ohne AIOS fortfahren") gibt es nicht.
+Eine Wahl „ohne AIOS fortfahren" gibt es nicht.
+
+### Dialog *Projekt initialisieren*
+
+Claude zeigt den Dialog mit dem Auswahlwerkzeug des Hosts (Claude Code: `AskUserQuestion`; Desktop-App als Dialog, CLI als Auswahlliste). Je Frage gibt es höchstens 4 Antworten und immer eine freie Eingabe.
+
+```
+Projekt initialisieren — G-Garten
+  Titel:      [Garten]  [<Vorschlag>]  [freie Eingabe …]
+  Assistent:  [inherit (Gärtner)]  [none]  [<Assistent>]  [freie Eingabe …]
+  Anlegen:    [Ja, initialisieren]  [Ins Projekt §Demo wechseln]
+```
+
+| Frage | Antworten | Wirkung |
+|---|---|---|
+| **Titel** | Name des Ordners ohne Prefix, ein Vorschlag, freie Eingabe | Titel **dieses Chats** (Spec 03, *Titel*); wird nicht gespeichert |
+| **Assistent** | `inherit` mit dem Assistenten, der geerbt würde, `none` und bis zu zwei Assistenten aus `aios-context --assistants`; andere über die freie Eingabe | Zuordnung des neuen Projekts (Spec 03); `inherit` wird nicht geschrieben |
+| **Anlegen** | initialisieren oder ins Projekt `X` wechseln | initialisieren: `aios --init --yes` mit `--assistant <wert>` (außer bei `inherit`), danach Titel setzen; die Antwort ist die Rückfrage nach I7. Wechseln: in der Desktop-App über das Werkzeug zum Wechsel des Arbeitsverzeichnisses, in der CLI Chat beenden und in `X` neu starten |
+
+Vor dem Dialog ruft Claude `aios --init --plan` auf. Meldet der Plan einen Verstoß gegen die Namensregel, folgt nach dem Dialog der Namensdialog von Spec 05. In Sessions ohne Fenster (`claude -p`) stellt Claude die Fragen als Text. Ein Hook kann keinen Dialog öffnen: Der Dialog erscheint nach der ersten Nachricht des Users im neuen Chat.
+
+### Unvollständiges Projekt — Konsistenzprüfung
+
+Hat `cwd` ein `@/`, prüft der SessionStart-Hook beim **ersten Start einer Session** (`source` `startup`) die Struktur des Projekts nach Spec 05. Nach Resume, Clear und Compaction prüft er nicht; eine abgelehnte Ergänzung wird in derselben Session also nicht erneut angeboten. Fehlt etwas, gibt der Hook vor dem Master-Kontext `PROJECT-INCOMPLETE` mit der Liste der Lücken aus. Claude bietet vor der ersten inhaltlichen Antwort an, die Lücken mit `aios --init` zu ergänzen (Plan und Rückfrage, Spec 05). Anders als beim nicht initialisierten Projekt arbeitet der Chat auch weiter, wenn der User ablehnt.
+
+Geprüft wird nur die Struktur, keine Inhalte; ob Blueprints zum Manifest fehlen, meldet `/aios-deploy`. Eine Vault-Root ohne `@/` wird nicht geprüft.
 
 ## Klassen
 
@@ -59,15 +84,15 @@ Die Klassifikation ist rekursiv: Innerhalb eines Verzeichnisses einer Klasse kö
 
 ### Vorläufige Regeln der Klassen
 
-Die Detailregeln sind offen (Spec 01, O2). Für v0.2 gilt vorläufig:
+Die Detailregeln sind offen (Spec 01, O2). Für v0.3 gilt vorläufig:
 
 | # | Regel |
 |---|---|
 | K1 | Ein Unterverzeichnis ohne Präfix erbt die Klasse seines übergeordneten Verzeichnisses. |
 | K2 | Mit der Ordnung *Laden* < *Verfügbar* < *Verborgen* gilt auf einem Pfad die strengste Klasse: ein `@X` innerhalb von `@!Skill` bleibt verborgen, ein `@@X` innerhalb von `@Wissen` ist verfügbar. |
 | K3 | Dateien direkt in `@/` gehören zur Klasse *Laden*. |
-| K4 | Berücksichtigt werden nur Dateien mit der Endung `.md`. Andere Dateien (Bilder, PDFs) bleiben liegen und werden nicht geladen. Dateien und Verzeichnisse, deren Name mit `.` beginnt (z. B. `.obsidian/`), werden übergangen. |
-| K5 | Die id des Master-Kontexts wird aus `cwd`, den Pfaden und Inhalten aller geladenen Dateien und den Pfaden des verfügbaren Wissens gebildet, also genau aus dem, was der Master-Kontext enthält (siehe `aios-context --id`). Inhalte des verfügbaren Wissens und verborgene Dateien gehen nicht ein. Genau: die ersten 8 Hex-Zeichen von SHA-256 über `cwd <cwd>⏎`, je geladener Datei `load <pfad>⏎<inhalt>⏎` und je Datei des verfügbaren Wissens `available <pfad>⏎`, in der Reihenfolge des Master-Kontexts. |
+| K4 | Berücksichtigt werden nur Dateien mit der Endung `.md`. Andere Dateien (Bilder, PDFs) bleiben liegen und werden nicht geladen. Dateien und Verzeichnisse, deren Name mit `.` beginnt (z. B. `.obsidian/`, `.gitkeep`), werden übergangen. |
+| K5 | Die id des Master-Kontexts wird aus `cwd`, den Pfaden und Inhalten aller geladenen Dateien und den Pfaden des verfügbaren Wissens gebildet, also genau aus dem, was der Master-Kontext enthält (siehe `aios-context --id`). Inhalte des verfügbaren Wissens und verborgene Dateien gehen nicht ein. Genau: die ersten 8 Hex-Zeichen von SHA-256 über `cwd <cwd>⏎`, je geladener Datei `load <pfad>⏎<inhalt>⏎` und je Datei des verfügbaren Wissens `available <pfad>⏎`, in der Reihenfolge des Master-Kontexts. Der Assistent geht nicht ein; er hat eigene Marken. |
 
 **Reihenfolge:** Masterspaces von der Vault-Root zum Projekt; innerhalb eines Masterspace je Verzeichnis nach Namen sortiert (Dateien und Verzeichnisse gemeinsam, Zeichencode), rekursiv. `files` zählt die geladenen Dateien.
 
@@ -89,16 +114,16 @@ Ein handgeschriebenes Inhaltsverzeichnis mit der Spalte „Lesen, wenn …" kann
 
 | Aufruf | Wirkung |
 |---|---|
-| `aios-context --session` | SessionStart-Hook (liest Hook-JSON von stdin, nimmt dessen `cwd`), siehe *Hooks* |
-| `aios-context --advise` | UserPromptSubmit-Hook, siehe *Hooks* |
+| `aios-context --session` | SessionStart-Hook (liest Hook-JSON von stdin, nimmt dessen `cwd`, `session_id` und `source`), siehe *Hooks* |
+| `aios-context --advise` | UserPromptSubmit-Hook (liest Hook-JSON von stdin), siehe *Hooks* |
 | `aios-context --context [<pfad>]` | gibt den Master-Kontext von `cwd` bzw. `<pfad>` aus (Format siehe *Ausgabe*) |
 | `aios-context --load [<pfad>]` | schreibt den Master-Kontext in Part-Dateien unter `~/.aios/cache/<id>/` (je höchstens 40.000 Zeichen, geschnitten an Zeilenenden) und gibt die Liste aus; einmal je id, Cache-Einträge älter als 7 Tage werden entfernt |
-| `aios-context --id [<pfad>]` | gibt `id=<id> files=<n> cwd=<cwd> mode=<aios-0.2.0 | legacy | none>` aus; `aios-<version>` ist die Version des laufenden Programms |
+| `aios-context --id [<pfad>]` | gibt `id=<id> files=<n> cwd=<cwd> mode=<aios-0.3.0 | legacy | none>` aus; `aios-<version>` ist die Version des laufenden Programms |
 | `aios-context --list [<pfad>]` | Aufstellung für `/aios-context` (siehe dort) |
-| `aios-context --sync [--yes\|--plan]` | Registrierung (Spec 03) |
-| `aios-context --sync` | Registrierung der Projekt-Skills (Spec 03, *Registrieren*), mit Vorschau; mit `--yes` ohne Rückfrage |
-| `aios-context --assistant <name>` | gibt den Kontext eines Assistenten aus (Spec 03, *Assistenten*) |
+| `aios-context --sync [--yes\|--plan]` | Registrierung der Projekt-Skills (Spec 03, *Registrieren*), mit Vorschau; mit `--yes` ohne Rückfrage |
+| `aios-context --assistant <name> [--load]` | gibt den Kontext eines Assistenten aus (Spec 03, *Assistenten*); mit `--load` als Part-Dateien unter `~/.aios/cache/a-<name>-<id>/` wie bei `--load` |
 | `aios-context --assistants` | Assistenten der Kette mit Titel, Version und Beschreibung |
+| `aios-context --assignment [<pfad>] [--session <id>]` | wirksamer Assistent: `assistant=<name\|none> from=<pfad der config.yaml\|->`; mit `--session` der Assistent der Session aus dem Merker, sonst die Zuordnung des Projekts (Spec 03) |
 | `aios-context --version` | Version des laufenden Programms |
 | `aios-context -?`, `--help` | Hilfe |
 
@@ -114,10 +139,12 @@ Read each of the following part files completely (Read tool), in order:
 The master context is loaded once </aios-context id="<id>"> (end of the last part) has been read.
 ```
 
+`--assistant <name> --load` meldet dasselbe mit `AIOS-ASSISTANT-LOAD name=<name> version=<version> parts=<p>` und der Endmarke `</aios-assistant name="<name>">`.
+
 ### Ausgabe
 
 ```
-<aios-context id="3fa91c02" files="12" cwd="/…/§Demo/Garten" version="0.2.0">
+<aios-context id="3fa91c02" files="12" cwd="/…/§Demo/G-Garten" version="0.3.0">
 <aios-file class="load" src="/…/§Demo/@/@Rule/stil.md">
 … Inhalt …
 </aios-file>
@@ -134,13 +161,23 @@ The master context is loaded once </aios-context id="<id>"> (end of the last par
 | `<aios-file class="load" src=…>` | eine geladene Datei mit absolutem Pfad |
 | `<aios-available>` | Inhaltsverzeichnis des verfügbaren Wissens (Teil des Master-Kontexts) |
 
-Die Anweisung bei nicht initialisiertem Projekt steht vor dem Master-Kontext:
+Die Anweisungen zur Struktur des Projekts stehen vor dem Master-Kontext:
 
 ```
 PROJECT-UNINITIALIZED: <cwd> has no local masterspace (@/). Before your first
-answer, ask the user: (1) initialize this folder as a project (/aios-init),
-(2) continue in the project <X>. Give no other answer until the user decides.
+answer, run `aios --init "<cwd>" --plan` and show the dialog "Projekt
+initialisieren" (title, assistant, initialize or continue in the project <X>).
+Give no other answer until the user decides.
 ```
+
+```
+PROJECT-INCOMPLETE: <cwd> is an AIOS project but lacks: <lücke>, <lücke>.
+Before your first answer, offer the user to complete it with
+`aios --init "<cwd>"` (show the plan from --plan, run with --yes after yes).
+If the user declines, continue normally and do not offer it again.
+```
+
+Die Lücken werden mit den Namen aus Spec 05 genannt (z. B. `own git repo`, `.gitignore lines: .aios/manifest`, `exclusion in parent repo /…/§Demo`).
 
 ## Hooks
 
@@ -148,10 +185,26 @@ answer, ask the user: (1) initialize this folder as a project (/aios-init),
 
 | Hook | Aufruf | Verhalten |
 |---|---|---|
-| **SessionStart** (Start, Resume, Clear, nach Compaction) | `aios-context --session` | 1. außerhalb eines Vaults: nichts. 2. Legacy-Modus: Verhalten von `ai-brain --session`. 3. aktiviert: Registrierung der Projekt-Skills ohne Rückfrage (`--sync --yes`), bei Änderungen eine Zeile `AIOS-SKILLS: … — wirksam ab dem nächsten Chat` (Spec 03). 4. bei nicht initialisiertem Projekt: `PROJECT-UNINITIALIZED`. 5. Master-Kontext inline, wenn er höchstens `inline_limit` Zeichen hat (Standard 9000), sonst `AIOS-CONTEXT-MANDATORY` mit der Liste der Part-Dateien |
-| **UserPromptSubmit** | `aios-context --advise` | außerhalb eines Vaults: nichts. Legacy-Modus: Verhalten von `ai-brain --advise`. Aktiviert: `AIOS-CONTEXT-CHECK: expected id=<id>` mit der Anweisung, bei fehlenden Marken „Lade Master-Kontext" zu sagen, `aios-context --load "<cwd>"` auszuführen, alle Part-Dateien vollständig zu lesen und „Master-Kontext geladen (id <id>)" zu melden |
+| **SessionStart** (Start, Resume, Clear, nach Compaction) | `aios-context --session` | 1. außerhalb eines Vaults: nichts. 2. Legacy-Modus: Verhalten von `ai-brain --session`. 3. aktiviert: Registrierung der Projekt-Skills ohne Rückfrage (`--sync --yes`), bei Änderungen eine Zeile `AIOS-SKILLS: … — wirksam ab dem nächsten Chat` (Spec 03). 4. bei nicht initialisiertem Projekt: `PROJECT-UNINITIALIZED`; sonst bei `source` `startup` die Konsistenzprüfung, bei Lücken `PROJECT-INCOMPLETE`. 5. Master-Kontext inline, wenn er höchstens `inline_limit` Zeichen hat (Standard 9000), sonst `AIOS-CONTEXT-MANDATORY` mit der Liste der Part-Dateien. 6. Assistent der Session bestimmen und den Merker schreiben (unten); ist es nicht `none`, seinen Kontext ausgeben, inline mit `AIOS-ASSISTANT` oder bei mehr als `inline_limit` Zeichen `AIOS-ASSISTANT-MANDATORY` mit Part-Dateien |
+| **UserPromptSubmit** | `aios-context --advise` | außerhalb eines Vaults: nichts. Legacy-Modus: Verhalten von `ai-brain --advise`. Aktiviert: `AIOS-CONTEXT-CHECK: expected id=<id>` mit der Anweisung, bei fehlenden Marken „Lade Master-Kontext" zu sagen, `aios-context --load "<cwd>"` auszuführen, alle Part-Dateien vollständig zu lesen und „Master-Kontext geladen (id <id>)" zu melden. Ist der Assistent der Session nicht `none`, zusätzlich `AIOS-ASSISTANT-CHECK` |
 
-Die Hooks erzeugen außer der Registrierung keine Dateien im Projekt und fragen nie nach. Beide nehmen `cwd` aus dem Hook-JSON auf stdin, ohne JSON das Arbeitsverzeichnis des Prozesses; im Legacy-Modus erhält `ai-brain` dasselbe JSON. Warnungen der Konfigurationskette gibt `--session` als Zeilen `AIOS-WARNING: …` aus. Scheitert ein Hook, gibt er eine Zeile `AIOS-WARNING: aios-context --session failed: …` aus und endet mit Exit 0: Ein Hook bricht nie die Session ab.
+Die Hooks erzeugen außer der Registrierung und dem Merker der Session keine Dateien und fragen nie nach. Beide nehmen `cwd` aus dem Hook-JSON auf stdin, ohne JSON das Arbeitsverzeichnis des Prozesses; im Legacy-Modus erhält `ai-brain` dasselbe JSON. Warnungen der Konfigurationskette gibt `--session` als Zeilen `AIOS-WARNING: …` aus. Scheitert ein Hook, gibt er eine Zeile `AIOS-WARNING: aios-context --session failed: …` aus und endet mit Exit 0: Ein Hook bricht nie die Session ab.
+
+### Assistent der Session
+
+`source` im Hook-JSON entscheidet, woher der Assistent der Session kommt (V0.3, Memo 06):
+
+| `source` | Bedeutung | Assistent der Session |
+|---|---|---|
+| `startup` | neuer Chat | Zuordnung des Projekts (Spec 03, *Zuordnung*) |
+| `clear` | `/clear`, gilt als neuer Chat | Zuordnung des Projekts |
+| `resume` | fortgesetzter Chat | der Assistent aus dem Merker der Session |
+| `compact` | nach einer Compaction | der Assistent aus dem Merker der Session |
+
+- **Merker:** `~/.aios/sessions/<session_id>.yaml` mit `cwd`, `assistant` (Name oder `none`) und `used` (Zeitpunkt der letzten Verwendung). Der Hook schreibt ihn bei `startup` und `clear` neu und aktualisiert `used` bei jedem Aufruf; `aios --assistant` schreibt ihn beim Wechsel (Spec 03). Fehlt der Merker bei `resume` oder `compact` (z. B. Session aus der Zeit vor v0.3), gilt die Zuordnung des Projekts und der Merker wird angelegt.
+- **Definition:** Geladen wird der Name aus dem Merker mit seiner aktuellen Definition aus der Kette. Ist der Name nicht auflösbar, gibt der Hook `AIOS-WARNING: assistant <name> not found, continuing without assistant` aus, und die Session läuft ohne Assistent.
+- **Aufräumen:** Merker, deren `used` mehr als 30 Tage zurückliegt, entfernt der Hook bei `startup`.
+- Der Merker ist lokal, weil Sessions lokal sind, und gilt nur für diese Session. Er ist keine persönliche Zuordnung (Spec 01, Grundregel 8).
 
 **Texte der Hooks:**
 
@@ -170,6 +223,15 @@ AIOS-CONTEXT-LOAD … (Ausgabe von --load)
 ```
 
 ```
+AIOS-ASSISTANT (assistant of this session, from <herkunft>):
+ Take on this role for the whole session. In your first answer, confirm
+ briefly "<Titel> aktiv" (and mention the model wish, if any).
+<aios-assistant name="…" …> … </aios-assistant name="…">
+```
+
+`<herkunft>` ist `project <pfad der config.yaml>` bzw. `session`. Bei `AIOS-ASSISTANT-MANDATORY` steht statt des Kontexts die Ausgabe von `--assistant <name> --load` mit der Anweisung, alle Part-Dateien vollständig zu lesen.
+
+```
 AIOS-CONTEXT-CHECK: expected id=<id> (files=<n>, cwd=<cwd>).
  Before answering, verify that BOTH exact markers <aios-context id="<id>"
  and </aios-context id="<id>"> are present in your context (memory or a
@@ -179,7 +241,15 @@ AIOS-CONTEXT-CHECK: expected id=<id> (files=<n>, cwd=<cwd>).
  "Master-Kontext geladen (id <id>)". If both markers are present, do nothing.
 ```
 
-Die Anweisung nennt den Pfad ausdrücklich, damit die id nicht davon abhängt, in welchem Verzeichnis das Bash-Werkzeug gerade steht. Die Zeichenzahl für `inline_limit` zählt Zeichen, nicht Bytes.
+```
+AIOS-ASSISTANT-CHECK: expected assistant=<name> version=<version>.
+ Verify that BOTH markers <aios-assistant name="<name>" and
+ </aios-assistant name="<name>"> are present in your context. If not: run
+ `aios-context --assistant <name> --load` via Bash in "<cwd>", read every
+ listed part file completely, and continue in this role.
+```
+
+Die Anweisungen nennen den Pfad ausdrücklich, damit die id nicht davon abhängt, in welchem Verzeichnis das Bash-Werkzeug gerade steht. Die Zeichenzahl für `inline_limit` zählt Zeichen, nicht Bytes und gilt für Master-Kontext und Assistent getrennt.
 
 ## Legacy-Modus
 
@@ -190,7 +260,8 @@ Ohne Aktivierung in der Kette verhält sich `aios-context` exakt wie `ai-brain` 
 | geladen | alle `.md`-Dateien aller `@/` entlang des Pfads, ohne Klassen |
 | Marken | `<masterspace id="…">` wie bei `ai-brain` |
 | Skills | keine Registrierung |
-| Projekt | keine Prüfung auf `@/`, kein `PROJECT-UNINITIALIZED` |
+| Projekt | keine Prüfung auf `@/`, kein `PROJECT-UNINITIALIZED`, keine Konsistenzprüfung |
+| Assistent | keiner, kein Merker |
 | Skill `/masterspace` | funktioniert weiter |
 
 Damit laufen Vaults, die noch nicht auf AIOS umgestellt sind (z. B. `§AIbex`), unverändert weiter.
@@ -210,9 +281,10 @@ AIOS-Skill, Nachfolger von `/masterspace`. Auslöser: `/aios-context`, „Master
 **Aufstellung:**
 
 ```
-Master-Kontext geladen (id 3fa91c02, AIOS 0.2.0) — Garten
+Master-Kontext geladen (id 3fa91c02, AIOS 0.3.0) — G-Garten
 
-Kette                      §Demo → Garten
+Kette                      §Demo → G-Garten
+Assistent                  gaertner 0.2.0 (inherit, zugeordnet in §Demo)
 
 Master-Kontext (geladen)   3 Dateien, 4.120 Zeichen
   §Demo/@/@Rule/stil.md
@@ -223,7 +295,7 @@ verfügbares Wissen         1 Datei (nicht geladen, Inhaltsverzeichnis im Master
 Verborgen                  Blueprints: 2 Skills, 1 Assistent, 1 Prompt
   Skills       memo 6.0.0 (§Demo) — registriert
                apfel-birnen-algebra 0.1.0 (Assistent gaertner, privat)
-  Assistenten  gaertner 0.1.0 (§Demo)
+  Assistenten  gaertner 0.2.0 (§Demo)
 ```
 
-Der Skill ändert nichts außer dem Nachladen. Stimmen Blueprints und registrierte Skills nicht überein, weist er auf `/aios-register` hin.
+Die Zeile *Assistent* zeigt die Zuordnung des Projekts (`<name>`, `none` oder `inherit` mit Herkunft). Weicht der Assistent der Session davon ab (Spec 03, *Wechsel*), nennt der Skill beide. Der Skill ändert nichts außer dem Nachladen. Stimmen Blueprints und registrierte Skills nicht überein, weist er auf `/aios-register` hin.

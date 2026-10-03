@@ -123,10 +123,11 @@ installed to `/opt/aios/v<version>/doc/spec/`; tutorials are installed from
 
 | Spec | Content |
 |---|---|
-| `01 AIbex AIOS v0.2 — Überblick` | definition, terms, scope, pre-releases, invariants, acceptance test |
-| `02 Master-Kontext` | projects, chain, classes, `aios-context`, hooks |
-| `03 Skills und Assistenten` | skills, versions, deploy, register, assistants, init, status |
+| `01 AIbex AIOS v0.3 — Überblick` | definition, terms, scope, pre-releases, invariants, acceptance test |
+| `02 Master-Kontext` | projects, chain, classes, `aios-context`, hooks, assistant of the session, consistency check |
+| `03 Skills und Assistenten` | skills, versions, deploy, register, assistants and their assignment, GUIs, `aios-memo` |
 | `04 Installation und Konfiguration` | files, formats, forwarders, the command `aios` |
+| `05 Projekte` | project structure and naming, init, integrity, status |
 
 
 ## Development
