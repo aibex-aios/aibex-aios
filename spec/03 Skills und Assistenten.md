@@ -324,7 +324,7 @@ tiles:
 
 | Host | Darstellung |
 |---|---|
-| Desktop-App mit HTML-Oberflächen | `aios --gui --html` erzeugt aus der Beschreibung ein HTML-Fragment: Überschrift, Intro, Kacheln als Schaltflächen (`prompt` und `skill` über `sendPrompt`, verbunden in einem `<script>`-Block, weil Hosts Inline-Handler wie `onclick` entfernen), HTML-Teile eingebettet. Claude zeigt es mit dem Werkzeug des Hosts für HTML-Oberflächen im Chat |
+| Desktop-App mit HTML-Oberflächen | `aios --gui --html` erzeugt aus der Beschreibung ein HTML-Fragment: Überschrift, Intro, Kacheln als Schaltflächen (`prompt` und `skill` über `sendPrompt`, verbunden in einem `<script>`-Block, weil Hosts Inline-Handler wie `onclick` entfernen; alle Skripte, auch die der HTML-Teile, stehen am Ende auf oberster Ebene, weil die Desktop-App nur solche Skripte ausführt (V0.3, Memo 60)), HTML-Teile eingebettet. Claude zeigt es mit dem Werkzeug des Hosts für HTML-Oberflächen im Chat |
 | CLI und Desktop-App ohne HTML-Oberflächen (Spec 01, O4) | Menü mit dem Auswahlwerkzeug (`AskUserQuestion`), höchstens 4 Einträge je Ebene, bei mehr Kacheln mit „Weitere …"; Kacheln mit `html` fehlen dort und werden als Hinweis genannt |
 
 Die Oberfläche erscheint, wenn `/aios-gui` oder `/gui` aufgerufen wird; sie ist nicht dauerhaft sichtbar.

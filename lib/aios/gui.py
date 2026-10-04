@@ -9,6 +9,7 @@ extended by the instruction how to show it; with --html an HTML fragment.
 from __future__ import annotations
 
 import html
+import re
 from pathlib import Path
 
 from . import assistant, context, paths, session, skills
@@ -136,15 +137,18 @@ def fragment(d, folder):
             target = f' data-prompt="{e(value)}"'
         out.append(f'<button type="button" class="tile"{icon}{target}><b>{e(t["title"])}</b>{text}</button>')
     out.append("</div>")
+    scripts = []
     for i, (t, name) in enumerate(parts, 1):
         out.append(f'<section class="part" id="aios-part-{i}"><h3>{e(t["title"])}</h3>')
-        out.append((folder / name).read_text(encoding="utf-8").rstrip("\n"))
+        body = SCRIPT_TAG.sub(lambda m: scripts.append(m.group(0)) or "", (folder / name).read_text(encoding="utf-8"))
+        out.append(body.rstrip("\n"))
         out.append("</section>")
-    out.append(SCRIPT)                              # hosts drop inline handlers (onclick); scripts run
     out.append("</div>")
-    return "\n".join(out) + "\n"
+    # hosts drop inline handlers (onclick) and run only top-level scripts: all scripts go last
+    return "\n".join(out + scripts + [SCRIPT]) + "\n"
 
 
+SCRIPT_TAG = re.compile(r"<script\b[^>]*>.*?</script>", re.S | re.I)
 SCRIPT = """<script>
 (function () {
   document.querySelectorAll(".aios-gui button.tile").forEach(function (b) {

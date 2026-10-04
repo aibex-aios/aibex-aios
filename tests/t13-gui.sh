@@ -53,6 +53,11 @@
    assert_contains "$OUT" 'data-part="aios-part-1"' "--html: HTML tile jumps to its part"
    assert_contains "$OUT" 'sendPrompt(b.dataset.prompt)' "--html: one script connects the tiles (sendPrompt)"
    case "$OUT" in *onclick*) fail "--html: no inline handlers (hosts drop them)" ;; *) ok ;; esac
+   assert_eq "$(printf '%s\n' "$OUT" | python3 -c '
+import sys, re
+t = sys.stdin.read()
+inner = t[:t.rindex("</div>")]                      # everything up to the end of the container
+print(len(re.findall("<script", inner)), len(re.findall("<script", t)))')" "0 2" "--html: no script inside the container, part script and tile script at top level"
    assert_contains "$OUT" '<section class="part" id="aios-part-1"><h3>Apfel-Birnen-Rechner</h3>' "--html: HTML part embedded"
    assert_contains "$OUT" 'id="abr-out"' "--html: content of rechner.html"
 
