@@ -36,7 +36,7 @@
 # forwarder: own options, arguments passed unchanged
 #===============================================================================
 
-   assert_eq "$(aios ---version)" "0.1.3" "---version"
+   assert_eq "$(aios ---version)" "0.1.4" "---version"
    assert_exit 1 aios ---help
    assert_contains "$(aios-context ---help)" "aios-context ---which" "---help names the tool"
 
@@ -102,8 +102,8 @@
    assert_eq "$(run "$SANDBOX/outside" aios-context --id "$V/Aktiv")" "dev-0.1.0 aios-context --id $V/Aktiv" "path argument: version follows the path, not cwd"
    assert_eq "$(run "$V/Aktiv" aios-context --id "$V/Garten")" "id=abcd1234 files=3 cwd=$V/Garten mode=legacy" "path argument: legacy path, ai-brain runs in it"
    assert_eq "$(run "$V/Aktiv" aios-context --load "$V/Garten")" "ai-brain --load" "path argument: ai-brain gets no path"
-   assert_eq "$(run "$V/Garten" aios-context --list)" "Legacy-Modus (ai-brain, kein aios: in der Kette) — siehe /masterspace." "legacy --list"
-   assert_eq "$(run "$SANDBOX/outside" aios-context --list)" "Kein Vault — kein Master-Kontext." "--list outside a vault"
+   assert_eq "$(run "$V/Garten" aios-context --list)" "Legacy mode (ai-brain, no aios: in the chain) — see /masterspace." "legacy --list"
+   assert_eq "$(run "$SANDBOX/outside" aios-context --list)" "No vault — no master context." "--list outside a vault"
    rm -rf "$V/Aktiv"
    rm "$SANDBOX/fake/ai-brain"
    assert_eq "$(run "$V/Garten" aios-context --id)" "id=- files=0 cwd=$V/Garten mode=legacy" "legacy --id without ai-brain"
@@ -119,6 +119,18 @@
 
    printf 'v0.2.0-dev: %s\n' "$HOME/dev/v0.2.0-dev" > "$HOME/.aios/installations.yaml"
    assert_eq "$(run "$SANDBOX/outside" aios --z)" "sys-0.2.0 aios --z" "0.2.0 is higher than 0.2.0-dev"
+
+#===============================================================================
+# aios --activate v<version>: that version, whatever cwd is bound to (V0.3, memo 54, A1)
+#===============================================================================
+
+   mkdir -p "$V/Sterne/.aios"; printf 'aios: 0.1.0\n' > "$V/Sterne/.aios/config.yaml"
+   assert_eq "$(run "$V/Sterne" aios --z)" "sys-0.1.0 aios --z" "activated project: its version"
+   assert_eq "$(run "$V/Sterne" aios --activate v0.2.0 /x)" "sys-0.2.0 aios --activate v0.2.0 /x" "--activate v0.2.0 from a 0.1.0 project: v0.2.0"
+   assert_contains "$(run "$V/Sterne" aios ---which)" "why=aios: 0.1.0" "---which: other commands follow cwd"
+   assert_eq "$(run "$V/Sterne" aios --activate v9.9.9 /x)" "sys-0.1.0 aios --activate v9.9.9 /x" "--activate of a version not installed: cwd decides (it reports the missing version)"
+   assert_eq "$(run "$V/Sterne" aios-context --activate v0.2.0)" "sys-0.1.0 aios-context --activate v0.2.0" "only aios, not aios-context"
+   rm -rf "$V/Sterne/.aios"
 
    rm -f "$HOME/.aios/installations.yaml" "$AIOS_PREFIX/installations.yaml"
    assert_exit 1 aios --z

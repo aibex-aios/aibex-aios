@@ -9,8 +9,9 @@
       echo "          $TOOL ---which    # show the chosen installation and why"
       echo "          $TOOL ---version  # print version of this forwarder"
       echo "          $TOOL ---help     # this help"
-      echo '   order: AIOS_HOME, aios: in .aios/config.yaml up to the vault root,'
-      echo '          otherwise aios: highest installed version, aios-context: ai-brain'
+      echo '   order: AIOS_HOME, aios --activate v<version> (that version), aios: in'
+      echo '          .aios/config.yaml up to the vault root, otherwise aios: highest'
+      echo '          installed version, aios-context: ai-brain'
       echo '   see also: aios, aios-context, ai-brain'
       exit 1
    fi
@@ -20,7 +21,7 @@
 #===============================================================================
 
    if [ "$*" == "---version" ]; then
-      echo "0.1.3"; exit 0
+      echo "0.1.4"; exit 0
    fi
 
 #===============================================================================
@@ -103,11 +104,15 @@
       return 1
    }
 
-   choose() {                                       # set KIND, TARGET, WHY
+   choose() {                                       # set KIND, TARGET, WHY (ARG1, ARG2: the first arguments)
       local A E
       KIND=""; TARGET=""; WHY=""
       if [ -n "$AIOS_HOME" ]; then
          KIND=aios; TARGET="$AIOS_HOME/bin/$TOOL"; WHY="AIOS_HOME=$AIOS_HOME"; return 0
+      fi
+      if [ "$TOOL" == "aios" ] && [ "$ARG1" == "--activate" ] && [[ "$ARG2" =~ ^v([0-9][^[:space:]]*)$ ]] \
+            && E="$(lookup "${BASH_REMATCH[1]}")"; then
+         KIND=aios; TARGET="$E/bin/$TOOL"; WHY="aios --activate $ARG2"; return 0   # V0.3, memo 54 (A1)
       fi
       if A="$(activation)"; then
          WHY="aios: ${A%%|*} in ${A#*|}"
@@ -126,6 +131,8 @@
       fi
       KIND=none; WHY="no installation of AIOS found"
    }
+
+   ARG1="$1"; ARG2="$2"
 
 #===============================================================================
 # aios-context --context|--load|--id|--list <path>: the version follows <path>
@@ -162,8 +169,8 @@
          ;;
       legacy)
          if [ "$*" == "--list" ]; then              # spec 02: listing of /aios-context
-            if vault_root >/dev/null; then echo "Legacy-Modus (ai-brain, kein aios: in der Kette) — siehe /masterspace."
-            else echo "Kein Vault — kein Master-Kontext."; fi
+            if vault_root >/dev/null; then echo "Legacy mode (ai-brain, no aios: in the chain) — see /masterspace."
+            else echo "No vault — no master context."; fi
             exit 0
          fi
          if [ "$*" == "--id" ]; then                # spec 02: --id names the mode

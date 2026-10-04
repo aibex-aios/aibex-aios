@@ -281,9 +281,10 @@ Weiterleiter, `aios` und `aios-context` verwenden ausschließlich diese Variable
 `~/bin/aios` und `~/bin/aios-context` enthalten keine Logik außer der Wahl der Version. Beide sind Kopien desselben Skripts `templates/forwarder`, das `aios --install` unter beiden Namen nach `~/bin` legt; das Werkzeug ergibt sich aus dem Namen, unter dem es aufgerufen wird.
 
 1. Ist `AIOS_HOME` gesetzt: `$AIOS_HOME/bin/<tool>` aufrufen.
-2. Sonst vom physischen `cwd` (`pwd -P`) aufwärts bis zur Vault-Root die erste Zeile `aios: <version>` in einer `.aios/config.yaml` suchen. Außerhalb eines Vaults wird nicht gesucht, und `~/.aios/config.yaml` zählt nie, auch wenn `~` in einem Vault liegt.
-3. Gefunden: `v<version>` in `~/.aios/installations.yaml`, danach in `/opt/aios/installations.yaml` nachschlagen und `<pfad>/bin/<tool>` mit allen Argumenten aufrufen. Nicht installiert: Fehler mit Hinweis auf `aios --install v<version>`.
-4. Nicht gefunden:
+2. `aios --activate v<version> …`: Ist diese Version installiert, wird sie aufgerufen, unabhängig davon, an welche Version `cwd` gebunden ist; so aktiviert immer die genannte Version (V0.3, Memo 54, A1). Ist sie nicht installiert, gilt die übliche Wahl, und die gewählte Version meldet die fehlende Installation.
+3. Sonst vom physischen `cwd` (`pwd -P`) aufwärts bis zur Vault-Root die erste Zeile `aios: <version>` in einer `.aios/config.yaml` suchen. Außerhalb eines Vaults wird nicht gesucht, und `~/.aios/config.yaml` zählt nie, auch wenn `~` in einem Vault liegt.
+4. Gefunden: `v<version>` in `~/.aios/installations.yaml`, danach in `/opt/aios/installations.yaml` nachschlagen und `<pfad>/bin/<tool>` mit allen Argumenten aufrufen. Nicht installiert: Fehler mit Hinweis auf `aios --install v<version>`.
+5. Nicht gefunden:
    - `aios`: die höchste installierte Version aufrufen.
    - `aios-context`: **Legacy-Modus**, d. h. `ai-brain` mit denselben Argumenten aufrufen, falls vorhanden (`--session`, `--advise`, `--load`, `--context`); sonst nichts ausgeben. Ausnahme `--id`: Ausgabe von `ai-brain --id` mit angehängtem `mode=legacy`, außerhalb eines Vaults `mode=none` (Spec 02).
 

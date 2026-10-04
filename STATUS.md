@@ -26,6 +26,6 @@ Patch-Version nach der angehaltenen Abnahme von v0.3.0 (V0.3, Memos 52–55): en
 |---|---|---|---|---|
 | 1 | **Englische Ausgaben** | `aios --integrity`, `aios --assistant`, `aios --gui` (Meldungen, Anweisung *Show the surface*), Vorrang von `aios-memo`, `aios-context --list`, Hook-Zeile `AIOS-SKILLS` englisch; Commit-Nachrichten und Skill-Rümpfe bleiben deutsch (Rümpfe zitieren die englischen Texte); Specs 01–05 und Tutorials nachgezogen; Tests angepasst; 757 Prüfungen grün | 02–05 | ☑ abgeschlossen |
 | 2 | **A2, A3:** Hook-Meldungen verlangen `/aios-init` | `PROJECT-UNINITIALIZED` und `PROJECT-INCOMPLETE` verlangen, den Skill `/aios-init` aufzurufen und ihm zu folgen (Dialog, `--plan`, nach Ja `--yes`, nie selbst eine Rückfrage von `aios` beantworten); Spec 02, t06; 757 Prüfungen grün | 02 | ☑ abgeschlossen |
-| 3 | **A1:** Weiterleiter nimmt bei `--activate v<version>` die genannte Version | | 04 | ☐ |
+| 3 | **A1:** Weiterleiter nimmt bei `--activate v<version>` die genannte Version | `templates/forwarder` 0.1.4: `aios --activate v<version>` ruft diese Version auf, wenn sie installiert ist (sonst die übliche Wahl); Legacy-Texte von `--list` englisch; Spec 04, t02 (+5); 762 Prüfungen grün | 04 | ☑ abgeschlossen |
 | 4 | **Version 0.3.1**, Tags lokal, Live-Tests | | — | ☐ |
 | 5 | **Abnahme** v0.3.1 | | 01 | ☐ |
