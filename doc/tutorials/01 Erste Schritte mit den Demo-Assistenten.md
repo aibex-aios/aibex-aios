@@ -2,7 +2,7 @@
 
 Dieses Tutorial führt in etwa 20 Minuten durch einen kleinen Vault mit zwei Projekten und den beiden Demo-Assistenten von AIbex AIOS: dem **Gärtner**, der nur mit Äpfeln und Birnen rechnet, und dem **Astronomen**, der nur mit Sonne und Mond rechnet. Am Ende weißt du, wie ein Chat sein Wissen bekommt, wie Assistenten ausgerollt und einem Projekt zugeordnet werden, warum ein Assistent nur in seinem Teil des Vaults sichtbar ist und wie du seine Oberfläche öffnest.
 
-Voraussetzung: AIOS v0.3 ist installiert (`aios --install v0.3.0`, siehe README) und Claude Code läuft als Desktop-App oder CLI.
+Voraussetzung: AIOS v0.3 ist installiert (`aios --install v0.3.1`, siehe README) und Claude Code läuft als Desktop-App oder CLI.
 
 ## 1. Vault anlegen und aktivieren
 
@@ -10,10 +10,10 @@ Ein Vault ist ein Verzeichnis, dessen Name mit `§` beginnt. Lege ihn an und bin
 
 ```bash
 mkdir -p ~/tmp/§Demo
-aios --activate v0.3.0 ~/tmp/§Demo
+aios --activate v0.3.1 ~/tmp/§Demo
 ```
 
-`aios --activate` zeigt einen Plan und fragt nach. Danach gibt es `§Demo/.aios/config.yaml` mit `aios: 0.3.0`, den **Root-Masterspace** `§Demo/@/` und ein Git-Repo mit einem ersten Commit: Die Vault-Root ist das Root-Projekt.
+`aios --activate` zeigt einen Plan und fragt nach. Danach gibt es `§Demo/.aios/config.yaml` mit `aios: 0.3.1`, den **Root-Masterspace** `§Demo/@/` und ein Git-Repo mit einem ersten Commit: Die Vault-Root ist das Root-Projekt.
 
 Lege eine Regel an, die jeder Chat im Vault laden soll:
 
@@ -77,7 +77,7 @@ aios --deploy gaertner==0.2.0 --to ~/tmp/§Demo
 Danach liegt der Gärtner in `§Demo/@/@!Assistant/gaertner/`, und `§Demo/.aios/config.yaml` enthält:
 
 ```yaml
-aios: 0.3.0
+aios: 0.3.1
 assistants:
   gaertner: 0.2.0
 ```
@@ -143,7 +143,7 @@ Willst du einen Assistenten nur ausprobieren, ohne die Zuordnung eines Projekts 
 
 | Begriff | im Tutorial |
 |---|---|
-| Vault, Aktivierung | `§Demo`, `aios --activate v0.3.0` |
+| Vault, Aktivierung | `§Demo`, `aios --activate v0.3.1` |
 | Projekt, Kette, Name | `G-Garten`, `S-Sternwarte`; ein Chat sieht von der Vault-Root bis zu seinem Projekt |
 | Klassen | `@Rule` geladen, `@@Sortenkunde` verfügbar, `@!Assistant` verborgen |
 | Bibliothek, Ausrollen | `aios --library`, `/aios-deploy gaertner==0.2.0`, Manifest `assistants:` |
@@ -158,4 +158,4 @@ Willst du einen Assistenten nur ausprobieren, ohne die Zuordnung eines Projekts 
 - Gib dem Gärtner einen weiteren Skill: `aios --deploy memo==6.0.0 --assistant gaertner --to ~/tmp/§Demo`.
 - Zum Aufräumen: `aios --deactivate ~/tmp/§Demo` schaltet AIOS für den Vault wieder aus; die Dateien bleiben.
 
-Die vollständigen Regeln stehen in der Spec, installiert unter `/opt/aios/v0.3.0/doc/spec/`.
+Die vollständigen Regeln stehen in der Spec, installiert unter `/opt/aios/v0.3.1/doc/spec/`.

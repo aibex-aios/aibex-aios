@@ -142,13 +142,13 @@ AIOS v0.3 hält diese Regeln in jedem Befehl ein:
 
 ## Abnahmetest
 
-v0.3 ist fertig, wenn dieser Ablauf auf einem Rechner gelingt, auf dem v0.3.0 noch nicht installiert ist. Jeder Schritt nennt das erwartete Ergebnis. Chats laufen in der Desktop-App; wo ein Dialog erwartet wird, gilt in Sessions ohne Fenster die Textform (Spec 02).
+v0.3 ist fertig, wenn dieser Ablauf auf einem Rechner gelingt, auf dem v0.3.1 noch nicht installiert ist. Jeder Schritt nennt das erwartete Ergebnis. Chats laufen in der Desktop-App; wo ein Dialog erwartet wird, gilt in Sessions ohne Fenster die Textform (Spec 02).
 
 | # | Schritt | erwartet |
 |---|---|---|
-| 1 | Repo `aibex-aios` klonen, `./bin/aios --install v0.3.0` | Plan; nach Ja: `/opt/aios/v0.3.0/`, Weiterleiter in `~/bin`, Hooks und AIOS-Skills in `~/.claude/` (darunter `aios-integrity`, `aios-memo`, `aios-gui`) und der Alias `~/.claude/skills/gui/` |
+| 1 | Repo `aibex-aios` klonen, `./bin/aios --install v0.3.1` | Plan; nach Ja: `/opt/aios/v0.3.1/`, Weiterleiter in `~/bin`, Hooks und AIOS-Skills in `~/.claude/` (darunter `aios-integrity`, `aios-memo`, `aios-gui`) und der Alias `~/.claude/skills/gui/` |
 | 2 | Chat in einem bestehenden Vault ohne Aktivierung (z. B. `§AIbex`) | Master-Kontext wie mit `ai-brain` (Legacy-Modus) |
-| 3 | leeres Verzeichnis `§Demo` anlegen, `aios --activate v0.3.0 <§Demo>` | Plan, nach Ja: `§Demo/.aios/config.yaml` mit `aios: 0.3.0`, `§Demo/@/`, `.gitignore`, `git init`, erster Commit; `§Demo` ist das Root-Projekt |
+| 3 | leeres Verzeichnis `§Demo` anlegen, `aios --activate v0.3.1 <§Demo>` | Plan, nach Ja: `§Demo/.aios/config.yaml` mit `aios: 0.3.1`, `§Demo/@/`, `.gitignore`, `git init`, erster Commit; `§Demo` ist das Root-Projekt |
 | 4 | `§Demo/@/@Rule/stil.md`, `§Demo/@/@Wissen/@Content/inhalt.md` und `§Demo/@/@Wissen/@@Kapitel/kapitel.md` anlegen und committen | — |
 | 5 | Ordner `§Demo/G-Garten` anlegen, Chat darin öffnen, „hi" | Dialog *Projekt initialisieren* mit Titel, Assistent (`inherit`, `none`, …) und den Antworten initialisieren oder ins Projekt `§Demo` wechseln |
 | 6 | Titel „Garten", Assistent `inherit`, initialisieren | `G-Garten/@/`, `.gitignore`, eigenes Repo, erster Commit, kein `@Memo/`; in `§Demo/.gitignore` die Zeile `/G-Garten/`, im Repo `§Demo` committet; Chat-Titel „Garten" |

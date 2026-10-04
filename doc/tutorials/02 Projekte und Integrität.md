@@ -2,7 +2,7 @@
 
 Dieses Tutorial zeigt in etwa 15 Minuten, was zu einem Projekt gehört, wie AIOS beim Start eines Chats Lücken erkennt und wie `/aios-integrity` ein Projekt mit allen Unterprojekten prüft. Es baut auf dem Vault `~/tmp/§Demo` aus Tutorial 01 auf; ein frisch aktivierter Vault genügt aber auch.
 
-Voraussetzung: AIOS v0.3 ist installiert, der Vault ist mit `aios --activate v0.3.0 ~/tmp/§Demo` aktiviert.
+Voraussetzung: AIOS v0.3 ist installiert, der Vault ist mit `aios --activate v0.3.1 ~/tmp/§Demo` aktiviert.
 
 ## 1. Was zu einem Projekt gehört
 
@@ -103,4 +103,4 @@ endet mit Exit 0, wenn alle Projekte integer sind, sonst mit Exit 1, und eignet 
 | Integrität | `/aios-integrity`: Init und Commit für alle Projekte, Hinweise zu Push und Namen |
 | Ergänzen | `aios --init` ergänzt nur, was fehlt, und committet nur die Dateien von AIOS |
 
-Die vollständigen Regeln stehen in Spec 05 *Projekte*, installiert unter `/opt/aios/v0.3.0/doc/spec/`.
+Die vollständigen Regeln stehen in Spec 05 *Projekte*, installiert unter `/opt/aios/v0.3.1/doc/spec/`.

@@ -25,17 +25,17 @@ macOS or Linux with `bash`, `git`, `python3` (3.9 or newer) and
 Copy this line into a terminal:
 
 ```sh
-R=~/git/AIbex/aibex-aios; ([ -d "$R/.git" ] || git clone https://github.com/aibex-hub/aibex-aios "$R") && "$R/bin/aios" --install v0.3.0
+R=~/git/AIbex/aibex-aios; ([ -d "$R/.git" ] || git clone https://github.com/aibex-hub/aibex-aios "$R") && "$R/bin/aios" --install v0.3.1
 ```
 
 It clones the repository to `~/git/AIbex/aibex-aios` unless a clone is already
 there (an existing clone is left as it is), then prepares the machine and
-installs. The installed files always come from the tag `v0.3.0`, not from the
+installs. The installed files always come from the tag `v0.3.1`, not from the
 working tree of the clone; without a version, the highest release tag is
 installed.
 
 `aios --install` shows a plan and asks once before it writes anything. It
-installs the version read-only to `/opt/aios/v0.3.0/` (without `sudo`:
+installs the version read-only to `/opt/aios/v0.3.1/` (without `sudo`:
 `~/.aios/versions/`), puts the forwarders `aios` and `aios-context` into
 `~/bin`, adds two hooks to `~/.claude/settings.json`, the AIOS skills and the
 alias `/gui` to `~/.claude/skills/`. Hooks of `ai-brain` are saved and restored by
@@ -49,7 +49,7 @@ been **activated**; all other vaults keep working as before (legacy mode).
 
 ```sh
   mkdir ~/Vaults/§Demo
-  aios --activate v0.3.0 ~/Vaults/§Demo      # writes §Demo/.aios/config.yaml, creates §Demo/@/ and a git repo
+  aios --activate v0.3.1 ~/Vaults/§Demo      # writes §Demo/.aios/config.yaml, creates §Demo/@/ and a git repo
 ```
 
 Put knowledge into the **masterspace** `@/` of a project. The prefix of a
@@ -150,15 +150,15 @@ installed to `/opt/aios/v<version>/doc/spec/`; tutorials are installed from
 ```
 
 A clone can be used without installing: point `AIOS_HOME` to it, or add a
-line `v0.3.0-dev: ~/git/AIbex/aibex-aios` to `~/.aios/installations.yaml`.
+line `v0.3.2-dev: ~/git/AIbex/aibex-aios` to `~/.aios/installations.yaml`.
 `CLAUDE.md` holds the rules for working on the repository, `STATUS.md` the
 state of the implementation.
 
 
 ## Status
 
-Version **0.3.0** in development (`STATUS.md`): the assistant is assigned to the
+Version **0.3.1** (`STATUS.md`): all output of `aios` and `aios-context` is in English; the assistant is assigned to the
 project and inherited, projects get a fixed structure with a consistency check
 and `/aios-integrity`, assistants and AIOS get surfaces, `/aios-memo` always
 provides a memo style. Versions 0.1.0 and 0.2.0 are released (tags `v0.1.0`,
-`v0.2.0`). All versions below 1.0 are alpha and beta versions.
+`v0.2.0`); 0.3.0 was not released. All versions below 1.0 are alpha and beta versions.
