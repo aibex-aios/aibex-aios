@@ -9,7 +9,6 @@ extended by the instruction how to show it; with --html an HTML fragment.
 from __future__ import annotations
 
 import html
-import json
 from pathlib import Path
 
 from . import assistant, context, paths, session, skills
@@ -131,19 +130,30 @@ def fragment(d, folder):
         icon = f' data-icon="{e(t["icon"])}"' if t.get("icon") else ""
         if kind == "html":
             parts.append((t, value))
-            anchor = "aios-part-" + str(len(parts))
-            out.append(f'<button class="tile"{icon} onclick="document.getElementById(\'{anchor}\')'
-                       f'.scrollIntoView({{behavior:\'smooth\'}})"><b>{e(t["title"])}</b>{text}</button>')
+            target = f' data-part="aios-part-{len(parts)}"'
         else:
-            out.append(f'<button class="tile"{icon} onclick=\'sendPrompt({e(json.dumps(value, ensure_ascii=False))})\'>'
-                       f"<b>{e(t['title'])}</b>{text}</button>")
+            target = f' data-prompt="{e(value)}"'
+        out.append(f'<button type="button" class="tile"{icon}{target}><b>{e(t["title"])}</b>{text}</button>')
     out.append("</div>")
     for i, (t, name) in enumerate(parts, 1):
         out.append(f'<section class="part" id="aios-part-{i}"><h3>{e(t["title"])}</h3>')
         out.append((folder / name).read_text(encoding="utf-8").rstrip("\n"))
         out.append("</section>")
+    out.append(SCRIPT)                              # hosts drop inline handlers (onclick); scripts run
     out.append("</div>")
     return "\n".join(out) + "\n"
+
+
+SCRIPT = """<script>
+(function () {
+  document.querySelectorAll(".aios-gui button.tile").forEach(function (b) {
+    b.addEventListener("click", function () {
+      if (b.dataset.prompt) { sendPrompt(b.dataset.prompt); }
+      else if (b.dataset.part) { document.getElementById(b.dataset.part).scrollIntoView({behavior: "smooth"}); }
+    });
+  });
+})();
+</script>"""
 
 
 # ---------------------------------------------------------------------------

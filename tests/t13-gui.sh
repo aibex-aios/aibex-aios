@@ -47,8 +47,11 @@
    case "$OUT" in *"<html"*|*"<head"*|*"<body"*) fail "--html: no html, head, body" ;; *) ok ;; esac
    assert_contains "$OUT" "<h2>Gärtner</h2>" "--html: title"
    assert_contains "$OUT" "<p>Was möchtest du heute im Garten wissen?</p>" "--html: intro"
-   assert_contains "$OUT" "onclick='sendPrompt(&quot;/apfel-birnen-algebra&quot;)'" "--html: skill tile via sendPrompt"
-   assert_contains "$OUT" "sendPrompt(&quot;Hilf mir, eine Apfelsorte zu bestimmen." "--html: prompt tile via sendPrompt"
+   assert_contains "$OUT" 'data-prompt="/apfel-birnen-algebra"' "--html: skill tile sends /<skill>"
+   assert_contains "$OUT" 'data-prompt="Hilf mir, eine Apfelsorte zu bestimmen. Frag mich nach den Merkmalen."' "--html: prompt tile"
+   assert_contains "$OUT" 'data-part="aios-part-1"' "--html: HTML tile jumps to its part"
+   assert_contains "$OUT" 'sendPrompt(b.dataset.prompt)' "--html: one script connects the tiles (sendPrompt)"
+   case "$OUT" in *onclick*) fail "--html: no inline handlers (hosts drop them)" ;; *) ok ;; esac
    assert_contains "$OUT" '<section class="part" id="aios-part-1"><h3>Apfel-Birnen-Rechner</h3>' "--html: HTML part embedded"
    assert_contains "$OUT" 'id="abr-out"' "--html: content of rechner.html"
 
