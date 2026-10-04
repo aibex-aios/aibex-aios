@@ -51,10 +51,12 @@ $CTX" "session: inline = header + --context"
 #===============================================================================
 
    OUT="$(HOOK --session "$D/Garten/Neu")"
-   assert_eq "$(printf '%s\n' "$OUT" | head -4)" "PROJECT-UNINITIALIZED: $D/Garten/Neu has no local masterspace (@/). Before your first
-answer, run \`aios --init \"$D/Garten/Neu\" --plan\` and show the dialog \"Projekt
-initialisieren\" (title, assistant, initialize or continue in the project $D/Garten).
-Give no other answer until the user decides." "uninitialized: dialog, X = project above"
+   assert_eq "$(printf '%s\n' "$OUT" | head -6)" "PROJECT-UNINITIALIZED: $D/Garten/Neu has no local masterspace (@/). Before your first
+answer, call the skill /aios-init (Skill tool) and follow it: it runs
+\`aios --init \"$D/Garten/Neu\" --plan\`, shows the dialog \"Projekt initialisieren\"
+(title, assistant, initialize or continue in the project $D/Garten) and, after the user's choice,
+runs aios --init with --yes. Never answer a question of aios yourself (no echo y).
+Give no other answer until the user decides." "uninitialized: skill /aios-init, dialog, X = project above, --yes (A2, A3)"
    assert_contains "$OUT" "src=\"$D/Garten/@/garten.md\"" "uninitialized: master context up to X"
    case "$OUT" in *PROJECT-INCOMPLETE*) fail "uninitialized: no consistency check" ;; *) ok ;; esac
 
@@ -64,7 +66,9 @@ Give no other answer until the user decides." "uninitialized: dialog, X = projec
 
    OUT="$(HOOK --session "$D/Wiese")"
    assert_eq "$(printf '%s\n' "$OUT" | head -1)" "PROJECT-INCOMPLETE: $D/Wiese is an AIOS project but lacks: own git repo, .gitignore lines: .DS_Store, .claude/skills/, .aios/manifest." "incomplete: gaps named"
-   assert_contains "$OUT" "\`aios --init \"$D/Wiese\"\` (show the plan from --plan" "incomplete: offer aios --init"
+   assert_contains "$OUT" "call the skill /aios-init
+(Skill tool) for \"$D/Wiese\" and follow it (plan from --plan, after yes run with
+--yes; never answer a question of aios yourself)." "incomplete: offer /aios-init (A2, A3)"
    assert_contains "$OUT" "src=\"$D/Wiese/@/wiese.md\"" "incomplete: master context follows"
    for S in resume clear compact; do
       case "$(SRCE=$S HOOK --session "$D/Wiese")" in *PROJECT-INCOMPLETE*) fail "incomplete: no check at $S" ;; *) ok ;; esac

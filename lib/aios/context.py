@@ -248,16 +248,19 @@ def uninitialized_message(ctx):
     choices = (f"(title, assistant, initialize or continue in the project {ctx.project})"
                if ctx.project else "(title, assistant, initialize)")
     return (f"PROJECT-UNINITIALIZED: {ctx.cwd} has no local masterspace (@/). Before your first\n"
-            f"answer, run `aios --init \"{ctx.cwd}\" --plan` and show the dialog \"Projekt\n"
-            f"initialisieren\" {choices}.\n"
+            f"answer, call the skill /aios-init (Skill tool) and follow it: it runs\n"
+            f"`aios --init \"{ctx.cwd}\" --plan`, shows the dialog \"Projekt initialisieren\"\n"
+            f"{choices} and, after the user's choice,\n"
+            f"runs aios --init with --yes. Never answer a question of aios yourself (no echo y).\n"
             f"Give no other answer until the user decides.")
 
 
 def incomplete_message(ctx, gaps):
     return (f"PROJECT-INCOMPLETE: {ctx.cwd} is an AIOS project but lacks: "
             + ", ".join(g.text for g in gaps) + ".\n"
-            f"Before your first answer, offer the user to complete it with\n"
-            f"`aios --init \"{ctx.cwd}\"` (show the plan from --plan, run with --yes after yes).\n"
+            f"Before your first answer, offer the user to complete it: call the skill /aios-init\n"
+            f"(Skill tool) for \"{ctx.cwd}\" and follow it (plan from --plan, after yes run with\n"
+            f"--yes; never answer a question of aios yourself).\n"
             f"If the user declines, continue normally and do not offer it again.")
 
 

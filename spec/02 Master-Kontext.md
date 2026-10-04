@@ -38,7 +38,7 @@ Liegt `cwd` in einem aktivierten Vault und hat kein `@/`, gilt:
 
 1. `X` ist das nächste Verzeichnis oberhalb von `cwd` mit `@/`. Weil `aios --activate` an der Vault-Root `@/` anlegt (Spec 04), gibt es `X` in der Regel. Fehlt es (die Vault-Root ist ein Container, weil `@/` dort entfernt wurde), ist die Kette leer und die Wahl (2) entfällt.
 2. Der SessionStart-Hook lädt den Master-Kontext der Kette bis `X` und gibt zusätzlich die Anweisung `PROJECT-UNINITIALIZED` aus (Format siehe *Ausgabe*). Eine Vault-Root ohne `@/` ist ein Container und löst kein `PROJECT-UNINITIALIZED` aus.
-3. Claude zeigt vor der ersten inhaltlichen Antwort den **Dialog *Projekt initialisieren*** (unten).
+3. Claude ruft vor der ersten inhaltlichen Antwort den Skill `/aios-init` auf und zeigt mit ihm den **Dialog *Projekt initialisieren*** (unten); `aios --init` läuft danach mit `--yes`, Claude beantwortet nie selbst eine Rückfrage von `aios` (V0.3, Memo 54, A2, A3).
 4. Bis zur Entscheidung gibt der Chat keine inhaltlichen Antworten.
 
 Eine Wahl „ohne AIOS fortfahren" gibt es nicht.
@@ -165,15 +165,18 @@ Die Anweisungen zur Struktur des Projekts stehen vor dem Master-Kontext:
 
 ```
 PROJECT-UNINITIALIZED: <cwd> has no local masterspace (@/). Before your first
-answer, run `aios --init "<cwd>" --plan` and show the dialog "Projekt
-initialisieren" (title, assistant, initialize or continue in the project <X>).
+answer, call the skill /aios-init (Skill tool) and follow it: it runs
+`aios --init "<cwd>" --plan`, shows the dialog "Projekt initialisieren"
+(title, assistant, initialize or continue in the project <X>) and, after the user's choice,
+runs aios --init with --yes. Never answer a question of aios yourself (no echo y).
 Give no other answer until the user decides.
 ```
 
 ```
 PROJECT-INCOMPLETE: <cwd> is an AIOS project but lacks: <lücke>, <lücke>.
-Before your first answer, offer the user to complete it with
-`aios --init "<cwd>"` (show the plan from --plan, run with --yes after yes).
+Before your first answer, offer the user to complete it: call the skill /aios-init
+(Skill tool) for "<cwd>" and follow it (plan from --plan, after yes run with
+--yes; never answer a question of aios yourself).
 If the user declines, continue normally and do not offer it again.
 ```
 
