@@ -75,11 +75,12 @@ def check(d, folder):
 
 
 def action(t):
-    """(kind, value) of a tile; skill becomes the prompt /<skill>."""
+    """(kind, value) of a tile. A skill tile sends a sentence naming /<skill>: the desktop app
+    drops messages from sendPrompt that start with / (V0.3, acceptance of v0.3.1)."""
     if "html" in t:
         return "html", t["html"]
     if "skill" in t:
-        return "prompt", "/" + t["skill"]
+        return "prompt", f"Run the skill /{t['skill']}."
     return "prompt", t["prompt"]
 
 
@@ -97,7 +98,7 @@ def instruction(d, call):
              "- **Otherwise (CLI, headless, no such tool):** a menu with the question tool (`AskUserQuestion`), "
              "question = title, at most 4 entries per level, with more tiles a last entry \"More …\" leading to the "
              "next level. Tiles with an HTML part are missing in the menu; mention them as a hint (\"desktop app only\"). "
-             "After the choice: treat a prompt as if the user had typed it; `/<skill>` calls that skill. "
+             "After the choice: treat the text as if the user had typed it (\"Run the skill /<skill>.\" calls that skill). "
              "Talk to the user in the user's language.",
              "", f"Title: {d['title']}"]
     if d.get("intro"):

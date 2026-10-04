@@ -35,7 +35,7 @@
    assert_contains "$OUT" "run \`aios --gui --html\` and show" "instruction: HTML in the desktop app"
    assert_contains "$OUT" "at most 4 entries per level" "instruction: menu otherwise"
    assert_contains "$OUT" "- Apfel-Birnen-Rechner — Rechnet mit Äpfeln und Birnen, ohne Claude (HTML part rechner.html)" "tile with HTML part"
-   assert_contains "$OUT" "- Aufgabe rechnen — Eine Apfel-Birnen-Aufgabe mit Rechenweg (sends: /apfel-birnen-algebra)" "skill tile sends /<skill>"
+   assert_contains "$OUT" "- Aufgabe rechnen — Eine Apfel-Birnen-Aufgabe mit Rechenweg (sends: Run the skill /apfel-birnen-algebra.)" "skill tile sends /<skill>"
    assert_contains "$OUT" "(sends: Hilf mir, eine Apfelsorte zu bestimmen. Frag mich nach den Merkmalen.)" "prompt tile"
 
 #===============================================================================
@@ -47,7 +47,8 @@
    case "$OUT" in *"<html"*|*"<head"*|*"<body"*) fail "--html: no html, head, body" ;; *) ok ;; esac
    assert_contains "$OUT" "<h2>Gärtner</h2>" "--html: title"
    assert_contains "$OUT" "<p>Was möchtest du heute im Garten wissen?</p>" "--html: intro"
-   assert_contains "$OUT" 'data-prompt="/apfel-birnen-algebra"' "--html: skill tile sends /<skill>"
+   assert_contains "$OUT" 'data-prompt="Run the skill /apfel-birnen-algebra."' "--html: skill tile sends a sentence (the app drops messages starting with /)"
+   case "$OUT" in *'data-prompt="/'*) fail "--html: no data-prompt starting with /" ;; *) ok ;; esac
    assert_contains "$OUT" 'data-prompt="Hilf mir, eine Apfelsorte zu bestimmen. Frag mich nach den Merkmalen."' "--html: prompt tile"
    assert_contains "$OUT" 'data-part="aios-part-1"' "--html: HTML tile jumps to its part"
    assert_contains "$OUT" 'sendPrompt(b.dataset.prompt)' "--html: one script connects the tiles (sendPrompt)"
@@ -76,8 +77,8 @@
       assert_contains "$OUT" "- $T — " "--aios: tile $T"
    done
    assert_eq "$(printf '%s\n' "$OUT" | grep -c '^- .*(sends: ')" "7" "--aios: 7 tiles"
-   assert_contains "$OUT" "(sends: /aios-init)" "--aios: /aios-init"
-   assert_contains "$OUT" "(sends: /aios-integrity)" "--aios: /aios-integrity"
+   assert_contains "$OUT" "(sends: Run the skill /aios-init.)" "--aios: /aios-init"
+   assert_contains "$OUT" "(sends: Run the skill /aios-integrity.)" "--aios: /aios-integrity"
    assert_contains "$OUT" "\`aios --gui --aios --html\`" "--aios: instruction for HTML"
    case "$(GUI "$SANDBOX" --aios --html)" in "<div class=\"aios-gui\">"*"<h2>AIbex AIOS</h2>"*) ok ;; *) fail "--aios --html outside a vault" ;; esac
    assert_contains "$(at "$G" "$SRC/bin/aios" --skill aios-gui)" "Führe \`aios --gui --aios\` über das Bash-Werkzeug aus." "skill aios-gui calls aios --gui --aios"

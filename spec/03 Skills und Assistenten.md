@@ -314,7 +314,7 @@ tiles:
 | `tiles[].title` | ja | Titel der Kachel |
 | `tiles[].text` | nein | eine Zeile Erklärung |
 | `tiles[].prompt` | eines von drei | Nachricht, die die Kachel an Claude sendet, als hätte der User sie getippt |
-| `tiles[].skill` | eines von drei | Skill, den die Kachel aufruft (sendet `/<skill>`) |
+| `tiles[].skill` | eines von drei | Skill, den die Kachel aufruft; sie sendet den Satz `Run the skill /<skill>.`, weil die Desktop-App über `sendPrompt` gesendete Nachrichten verwirft, die mit `/` beginnen (V0.3, Memo 60) |
 | `tiles[].html` | eines von drei | Dateiname eines HTML-Teils im Ordner des Oberflächen-Skills; läuft in der Oberfläche ohne Claude, z. B. ein Rechner |
 | `tiles[].icon` | nein | ein neutrales Wort für ein Symbol, z. B. `calculator`, `book`, `gear` |
 
@@ -324,7 +324,7 @@ tiles:
 
 | Host | Darstellung |
 |---|---|
-| Desktop-App mit HTML-Oberflächen | `aios --gui --html` erzeugt aus der Beschreibung ein HTML-Fragment: Überschrift, Intro, Kacheln als Schaltflächen (`prompt` und `skill` über `sendPrompt`), HTML-Teile eingebettet. Claude zeigt es mit dem Werkzeug des Hosts für HTML-Oberflächen im Chat |
+| Desktop-App mit HTML-Oberflächen | `aios --gui --html` erzeugt aus der Beschreibung ein HTML-Fragment: Überschrift, Intro, Kacheln als Schaltflächen (`prompt` und `skill` über `sendPrompt`, verbunden in einem `<script>`-Block, weil Hosts Inline-Handler wie `onclick` entfernen), HTML-Teile eingebettet. Claude zeigt es mit dem Werkzeug des Hosts für HTML-Oberflächen im Chat |
 | CLI und Desktop-App ohne HTML-Oberflächen (Spec 01, O4) | Menü mit dem Auswahlwerkzeug (`AskUserQuestion`), höchstens 4 Einträge je Ebene, bei mehr Kacheln mit „Weitere …"; Kacheln mit `html` fehlen dort und werden als Hinweis genannt |
 
 Die Oberfläche erscheint, wenn `/aios-gui` oder `/gui` aufgerufen wird; sie ist nicht dauerhaft sichtbar.
