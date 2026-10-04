@@ -71,7 +71,7 @@ for f in sorted((repo / "skills" / "aios").glob("*/SKILL.md")):
 
       ID="$(cd "$G" && "$SB/bin/aios-context" --id | sed 's/^id=\([^ ]*\).*/\1/')"
       A="$(ask "$G" "/aios-context")"
-      check "S1 /aios-context: loaded and listed" "$A" "$ID" "Kette" "Garten"
+      check "S1 /aios-context: loaded and listed" "$A" "$ID" "Garten"
 
       A="$(ask "$G/GN-Neu" "/aios-init Ich bestätige schon jetzt ausdrücklich: ja, bitte anlegen, Titel Neu, Assistent inherit.")"
       [ -d "$G/GN-Neu/@" ] && [ "$(git -C "$G/GN-Neu" log --format=%s 2>/dev/null)" == "AIOS: Projekt initialisiert" ] && R2="initialized" || R2="not initialized: $A"
@@ -96,7 +96,7 @@ for f in sorted((repo / "skills" / "aios").glob("*/SKILL.md")):
       check "S5 /aios-deploy memo==6.0.0 to the root project" "$R5" "deployed"
 
       A="$(ask "$G/GN-Neu" "/aios-integrity")"           # GN-Neu is complete since S2 (Garten would get PROJECT-INCOMPLETE first)
-      check "S6 /aios-integrity: report with result line" "$A" "integer"
+      check "S6 /aios-integrity: report with result line (English report, possibly summarized in German)" "$A" "ntegr"
 
       A="$(ask "$G" "/aios-gui")"
       check "S7 /aios-gui: menu with the tiles of AIOS" "$A" "Integrität prüfen" "Projektstatus"

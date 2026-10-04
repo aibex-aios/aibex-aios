@@ -251,7 +251,8 @@ def uninitialized_message(ctx):
             f"answer, call the skill /aios-init (Skill tool) and follow it: it runs\n"
             f"`aios --init \"{ctx.cwd}\" --plan`, shows the dialog \"Projekt initialisieren\"\n"
             f"{choices} and, after the user's choice,\n"
-            f"runs aios --init with --yes. Never answer a question of aios yourself (no echo y).\n"
+            f"runs aios --init with --yes. Without that skill, do the same yourself: run the plan,\n"
+            f"ask these questions, then run with --yes. Never answer a question of aios yourself.\n"
             f"Give no other answer until the user decides.")
 
 

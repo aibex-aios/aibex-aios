@@ -51,11 +51,12 @@ $CTX" "session: inline = header + --context"
 #===============================================================================
 
    OUT="$(HOOK --session "$D/Garten/Neu")"
-   assert_eq "$(printf '%s\n' "$OUT" | head -6)" "PROJECT-UNINITIALIZED: $D/Garten/Neu has no local masterspace (@/). Before your first
+   assert_eq "$(printf '%s\n' "$OUT" | head -7)" "PROJECT-UNINITIALIZED: $D/Garten/Neu has no local masterspace (@/). Before your first
 answer, call the skill /aios-init (Skill tool) and follow it: it runs
 \`aios --init \"$D/Garten/Neu\" --plan\`, shows the dialog \"Projekt initialisieren\"
 (title, assistant, initialize or continue in the project $D/Garten) and, after the user's choice,
-runs aios --init with --yes. Never answer a question of aios yourself (no echo y).
+runs aios --init with --yes. Without that skill, do the same yourself: run the plan,
+ask these questions, then run with --yes. Never answer a question of aios yourself.
 Give no other answer until the user decides." "uninitialized: skill /aios-init, dialog, X = project above, --yes (A2, A3)"
    assert_contains "$OUT" "src=\"$D/Garten/@/garten.md\"" "uninitialized: master context up to X"
    case "$OUT" in *PROJECT-INCOMPLETE*) fail "uninitialized: no consistency check" ;; *) ok ;; esac

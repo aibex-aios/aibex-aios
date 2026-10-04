@@ -168,7 +168,8 @@ PROJECT-UNINITIALIZED: <cwd> has no local masterspace (@/). Before your first
 answer, call the skill /aios-init (Skill tool) and follow it: it runs
 `aios --init "<cwd>" --plan`, shows the dialog "Projekt initialisieren"
 (title, assistant, initialize or continue in the project <X>) and, after the user's choice,
-runs aios --init with --yes. Never answer a question of aios yourself (no echo y).
+runs aios --init with --yes. Without that skill, do the same yourself: run the plan,
+ask these questions, then run with --yes. Never answer a question of aios yourself.
 Give no other answer until the user decides.
 ```
 

@@ -31,8 +31,10 @@
       printf 'aios: 0.1.0\n' > "$V/.aios/config.yaml"
       printf '# Geheimwort\nDas Geheimwort lautet: %s\n' "$SECRET" > "$V/@/@Rule/geheim.md"
       printf '# Garten\nIm Garten wachsen Äpfel.\n' > "$V/Garten/@/garten.md"
-      printf '#!/bin/bash\nHOME="%s/home" exec "%s/bin/aios-context" "$@"\n' "$SB" "$REPO" > "$SB/bin/aios-context"
-      chmod +x "$SB/bin/aios-context"
+      for TOOL in aios aios-context; do
+         printf '#!/bin/bash\nHOME="%s/home" exec "%s/bin/%s" "$@"\n' "$SB" "$REPO" "$TOOL" > "$SB/bin/$TOOL"
+         chmod +x "$SB/bin/$TOOL"
+      done
       hooks() {                                     # hooks <SessionStart|-> <UserPromptSubmit|->
          python3 -c '
 import json, sys
@@ -44,7 +46,7 @@ print(json.dumps({"hooks": h}))' "$1" "$2"
       ask() {                                       # ask <dir> <settings> <prompt>
          (cd "$1" && PATH="$SB/bin:$PATH" claude -p "$3" --model "$MODEL" --settings "$2" \
             --setting-sources project --add-dir "$SB" \
-            --allowedTools "Read" "Bash(aios-context --load:*)" 2>&1)
+            --allowedTools "Read" "Bash(aios-context --load:*)" "Bash(aios --init *)" </dev/null 2>&1)
       }
       PASS=0; FAIL=0
       check() {                                     # check <name> <answer> <expected> [<expected> …]
