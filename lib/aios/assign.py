@@ -29,7 +29,7 @@ def after(target, value, vault):
 
 def label(ctx, name):
     if name == "none":
-        return "kein Assistent"
+        return "no assistant"
     found, _ = assistant.assistants(ctx)
     return str(found[name][1].get("title", name)) if name in found else f"{name} (not found)"
 
@@ -92,9 +92,9 @@ def assign(value, to=None, session_id=None):
     name = target.name
     plan = Plan()
     if current != value:
-        plan.add(f"Projekt {name}: {label(tctx, old)} → {label(tctx, new)}  (assistant: {value} in {file})",
+        plan.add(f"project {name}: {label(tctx, old)} → {label(tctx, new)}  (assistant: {value} in {file})",
                  lambda: config.set_key(file, "assistant", value))
-        plan.add(f"gilt für alle neuen Chats in {name} und in den Unterprojekten mit inherit")
+        plan.add(f"applies to all new chats in {name} and in its subprojects with inherit")
     if plan and ui.MODE == "yes":
         plan.run()
     elif plan:

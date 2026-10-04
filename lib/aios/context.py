@@ -378,7 +378,7 @@ def session(ctx, source="startup", sid=None):
         out += [f"AIOS-WARNING: {p}" for p in s.problems]
         if s:
             s.apply()
-            out.append(f"AIOS-SKILLS: {s.summary()} — wirksam ab dem nächsten Chat")
+            out.append(f"AIOS-SKILLS: {s.summary()} — effective from the next chat")
     if not ctx.initialized:
         out.append(uninitialized_message(ctx))
     elif source == "startup":                       # consistency check, first start only (spec 02)

@@ -71,31 +71,31 @@ print(install.wrapper('aios-context', m['description'], m.get('allowed-tools', '
    OUT="$("$SRC/bin/aios-context" --list "$D")"
    ID="$("$SRC/bin/aios-context" --id "$D" | sed 's/^id=\([^ ]*\).*/\1/')"
    CH="$("$SRC/bin/aios-context" --context "$D" | python3 -c 'import sys; print(f"{len(sys.stdin.read()):,}".replace(",", "."))')"
-   assert_eq "$OUT" "Master-Kontext id $ID, AIOS $(cat "$SRC/VERSION") — §Demo
+   assert_eq "$OUT" "Master context id $ID, AIOS $(cat "$SRC/VERSION") — §Demo
 
-Kette                      §Demo
-Assistent                  none (keine Zuordnung)
+Chain                      §Demo
+Assistant                  none (no assignment)
 
-Master-Kontext (geladen)   1 Datei, $CH Zeichen
+Master context (loaded)    1 file, $CH characters
   §Demo/@/@Rule/stil.md
-verfügbares Wissen         1 Datei (nicht geladen, Inhaltsverzeichnis im Master-Kontext)
+Available knowledge        1 file (not loaded, table of contents in the master context)
   §Demo/@/@@Buch/kapitel.md
-Verborgen                  Blueprints: 3 Skills, 1 Assistent, 1 Prompt
-  Skills       memo 6.0.0 (§Demo) — registriert
-               notiz 0.1.0 (§Demo) — nicht registriert
-               apfel 0.1.0 (Assistent obstgaertner, privat)
-  Assistenten  obstgaertner 0.1.0 (§Demo)
+Hidden                     Blueprints: 3 skills, 1 assistant, 1 prompt
+  Skills       memo 6.0.0 (§Demo) — registered
+               notiz 0.1.0 (§Demo) — not registered
+               apfel 0.1.0 (assistant obstgaertner, private)
+  Assistants   obstgaertner 0.1.0 (§Demo)
   Prompts      obstgaertner (§Demo)
-Hinweis: Blueprints und registrierte Skills stimmen nicht überein — /aios-register" "--list: exact listing"
-   assert_contains "$("$SRC/bin/aios-context" --list "$D/Garten")" "Kette                      §Demo → Garten" "--list: chain"
-   assert_contains "$("$SRC/bin/aios-context" --list "$D/Wiese")" "Wiese (nicht initialisiert, Kette bis §Demo)" "--list: not initialized"
-   assert_eq "$("$SRC/bin/aios-context" --list "$SANDBOX/work/§Alt")" "Legacy-Modus (ai-brain, kein aios: in der Kette) — siehe /masterspace." "--list: legacy"
-   assert_eq "$("$SRC/bin/aios-context" --list "$SANDBOX/outside")" "Kein Vault — kein Master-Kontext." "--list: outside a vault"
+Note: blueprints and registered skills differ — /aios-register" "--list: exact listing"
+   assert_contains "$("$SRC/bin/aios-context" --list "$D/Garten")" "Chain                      §Demo → Garten" "--list: chain"
+   assert_contains "$("$SRC/bin/aios-context" --list "$D/Wiese")" "Wiese (not initialized, chain up to §Demo)" "--list: not initialized"
+   assert_eq "$("$SRC/bin/aios-context" --list "$SANDBOX/work/§Alt")" "Legacy mode (ai-brain, no aios: in the chain) — see /masterspace." "--list: legacy"
+   assert_eq "$("$SRC/bin/aios-context" --list "$SANDBOX/outside")" "No vault — no master context." "--list: outside a vault"
    printf 'aios: 0.1.0\nassistant: obstgaertner\n' > "$D/.aios/config.yaml"
-   assert_contains "$("$SRC/bin/aios-context" --list "$D")" "Assistent                  obstgaertner 0.1.0 (zugeordnet in §Demo)" "--list: own assignment"
-   assert_contains "$("$SRC/bin/aios-context" --list "$D/Garten")" "Assistent                  obstgaertner 0.1.0 (inherit, zugeordnet in §Demo)" "--list: inherited assignment"
+   assert_contains "$("$SRC/bin/aios-context" --list "$D")" "Assistant                  obstgaertner 0.1.0 (assigned in §Demo)" "--list: own assignment"
+   assert_contains "$("$SRC/bin/aios-context" --list "$D/Garten")" "Assistant                  obstgaertner 0.1.0 (inherit, assigned in §Demo)" "--list: inherited assignment"
    printf 'aios: 0.1.0\nassistant: astronom\n' > "$D/.aios/config.yaml"
-   assert_contains "$("$SRC/bin/aios-context" --list "$D")" "Assistent                  astronom (nicht gefunden) (zugeordnet in §Demo)" "--list: assistant not found"
+   assert_contains "$("$SRC/bin/aios-context" --list "$D")" "Assistant                  astronom (not found) (assigned in §Demo)" "--list: assistant not found"
    printf 'aios: 0.1.0\n' > "$D/.aios/config.yaml"
 
 #===============================================================================
@@ -226,8 +226,8 @@ import sys; t=open(sys.argv[1],encoding='utf-8').read(); e=t.find('\n---',3); pr
    assert_contains "$OUT" "Fehlt \`@Memo/\` im Projekt, lege ihn beim ersten Memo an." "aios-memo: creates @Memo/"
    assert_contains "$(sed -n 1,10p "$SRC/skills/aios/aios-memo/SKILL.md")" 'Nur verwenden, wenn kein Skill `memo` verfügbar ist.' "aios-memo: description defers to memo"
    mk "$D/Notiz/.aios/manifest" $'# written by AIOS (registration), do not edit\nschema: 1\nregistered:\n  memo:\n    source: "x"\n    version: 6.0.0\n    digest: sha256:0\n'
-   assert_eq "$(at "$D/Notiz" aios --skill aios-memo)" "Verwende \`/memo\` — in diesem Projekt ist der Skill \`memo\` registriert." "memo registered: precedence"
-   assert_eq "$(at "$D/Notiz/@" aios --skill aios-memo)" "Verwende \`/memo\` — in diesem Projekt ist der Skill \`memo\` registriert." "precedence from a folder inside the project"
+   assert_eq "$(at "$D/Notiz" aios --skill aios-memo)" "Use \`/memo\` — the skill \`memo\` is registered in this project." "memo registered: precedence"
+   assert_eq "$(at "$D/Notiz/@" aios --skill aios-memo)" "Use \`/memo\` — the skill \`memo\` is registered in this project." "precedence from a folder inside the project"
    mk "$D/Notiz/.aios/manifest" $'# written by AIOS (registration), do not edit\nschema: 1\nregistered:\n  notiz:\n    source: "x"\n    version: 0.1.0\n    digest: sha256:0\n'
    case "$(at "$D/Notiz" aios --skill aios-memo)" in *"$MEMO_BODY"*) ok ;; *) fail "other skills registered: body" ;; esac
    case "$(at "$SANDBOX/outside" "$SRC/bin/aios" --skill aios-memo)" in *"$MEMO_BODY"*) ok ;; *) fail "outside a vault: body" ;; esac

@@ -137,7 +137,7 @@ Registrieren macht die geltenden Projekt-Skills **für Claude Code aufrufbar**.
 | `aios --init` | mit dem Plan von `aios --init` | Initialisieren und Ergänzen eines Projekts (Spec 05) |
 | `/aios-register`, `aios --register [<pfad>]`, `aios-context --sync` | ja, mit Vorschau | manueller Anstoß, z. B. nach `/aios-deploy`; der Skill holt mit `--plan` die Vorschau, fragt im Chat und führt nach Ja `--yes` aus |
 
-**Wirksamkeit:** Claude Code übernimmt Skills, die nach dem Start einer Session angelegt werden, nicht zuverlässig in diese Session (V0.1, Memo 16). Die Registrierung beim Session-Start stellt deshalb den Stand für den **nächsten** Chat her. Ändert sie etwas, meldet der Hook `AIOS-SKILLS: <Änderungen> — wirksam ab dem nächsten Chat` (z. B. `AIOS-SKILLS: new memo; changed shared — wirksam ab dem nächsten Chat`); übersprungene Blueprints meldet er als `AIOS-WARNING`, z. B. `AIOS-WARNING: skill ohne-version has no version, not registered`. Weil die Kopie im Projekt selbst liegt, ist ein Skill aus einem Masterspace oberhalb auch dann verfügbar, wenn das Projekt ein eigenes Git-Repo ist (V0.1, Memo 27). `/aios-register`, `/aios-deploy` und `/aios-init` sagen nach dem Registrieren: „Der Skill ist ab dem nächsten Chat verfügbar (oder nach `/reload-skills`)." Ob `/reload-skills` das zuverlässig leistet, ist offen (Spec 01, O1).
+**Wirksamkeit:** Claude Code übernimmt Skills, die nach dem Start einer Session angelegt werden, nicht zuverlässig in diese Session (V0.1, Memo 16). Die Registrierung beim Session-Start stellt deshalb den Stand für den **nächsten** Chat her. Ändert sie etwas, meldet der Hook `AIOS-SKILLS: <Änderungen> — effective from the next chat` (z. B. `AIOS-SKILLS: new memo; changed shared — effective from the next chat`); übersprungene Blueprints meldet er als `AIOS-WARNING`, z. B. `AIOS-WARNING: skill ohne-version has no version, not registered`. Weil die Kopie im Projekt selbst liegt, ist ein Skill aus einem Masterspace oberhalb auch dann verfügbar, wenn das Projekt ein eigenes Git-Repo ist (V0.1, Memo 27). `/aios-register`, `/aios-deploy` und `/aios-init` sagen nach dem Registrieren: „Der Skill ist ab dem nächsten Chat verfügbar (oder nach `/reload-skills`)." Ob `/reload-skills` das zuverlässig leistet, ist offen (Spec 01, O1).
 
 ## Assistenten
 
@@ -251,8 +251,8 @@ Mit `--to <projekt>` schreibt der Aufruf in ein anderes Projekt der Kette, z. B.
 2. `aios --assistant <wert> [--to <projekt>] --plan` zeigt, was sich ändert, und fragt einmal nach (I7), z. B.
 
    ```
-   Projekt G-Garten: Gärtner → Astronom
-   gilt für alle neuen Chats in G-Garten und in den Unterprojekten mit inherit
+   project G-Garten: Gärtner → Astronom
+   applies to all new chats in G-Garten and in its subprojects with inherit
    ```
 
    Hat der User den Wechsel in seinem Aufruf schon ausdrücklich bestätigt, entfällt die Rückfrage.
@@ -335,7 +335,7 @@ Die Oberfläche erscheint, wenn `/aios-gui` oder `/gui` aufgerufen wird; sie ist
 
 1. Assistent bestimmen: der Assistent der Session aus dem Merker (Spec 02); ohne Merker die Zuordnung des Projekts.
 2. Hat er ein `gui:`, gibt `aios --gui` den Rumpf des Oberflächen-Skills aus, erweitert um die Anweisung, die Oberfläche nach *Darstellung* zu zeigen.
-3. Ist kein Assistent aktiv oder nennt er kein `gui:`: „Der Assistent <Titel> hat keine Oberfläche." bzw. „Kein Assistent aktiv.", jeweils mit „AIOS-Oberfläche: `/aios-gui`".
+3. Ist kein Assistent aktiv oder nennt er kein `gui:`: „The assistant <title> has no surface." bzw. „No assistant active.", jeweils mit „AIOS surface: `/aios-gui`".
 
 Weil der Rumpf beim Aufruf aufgelöst wird, zeigt `/gui` nach einem Wechsel des Assistenten sofort die neue Oberfläche, ohne neue Registrierung.
 
@@ -362,5 +362,5 @@ AIOS-Skill, damit in jedem Projekt eines aktivierten Vaults ein wohldefinierter 
 | Inhalt | der Rumpf von `memo==6.0.0` (Nummer, Dateiname, Header-Block, Struktur, Formatierung, Obsidian-LaTeX); er wird nicht an spätere Versionen von `memo` angeglichen |
 | Version | wie bei allen AIOS-Skills: versionsneutrale Hülle, Rumpf aus der für das Projekt gültigen AIOS-Version |
 | `@Memo/` | legt der Skill an, wenn er das erste Memo eines Projekts schreibt und der Ordner fehlt; `aios --init` legt ihn nicht an (Spec 05) |
-| Vorrang | Ist im Projekt ein Skill `memo` registriert (`memo` in `.aios/manifest`), gibt `aios --skill aios-memo` statt des Rumpfs nur aus: „Verwende `/memo` — in diesem Projekt ist der Skill `memo` registriert." Zusätzlich sagt die Beschreibung von `aios-memo`: „Nur verwenden, wenn kein Skill `memo` verfügbar ist." |
+| Vorrang | Ist im Projekt ein Skill `memo` registriert (`memo` in `.aios/manifest`), gibt `aios --skill aios-memo` statt des Rumpfs nur aus: „Use `/memo` — the skill `memo` is registered in this project." Zusätzlich sagt die Beschreibung von `aios-memo`: „Nur verwenden, wenn kein Skill `memo` verfügbar ist." |
 | Regeln, die auf `memo` verweisen | gelten ersatzweise mit `aios-memo`, wenn `memo` nicht ausgerollt oder nicht registriert ist |

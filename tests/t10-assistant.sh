@@ -179,8 +179,8 @@ version: 0.1.0
 
    skill "$D/@/@!Skill/sonne-mond-zahlen" sonne-mond-zahlen "Zahlen des Vaults"
    OUT="$(AI "$G" obstgaertner --plan)"
-   assert_contains "$OUT" "Projekt Garten: Astronom → Obstgärtner" "plan: old and new assistant by title"
-   assert_contains "$OUT" "gilt für alle neuen Chats in Garten und in den Unterprojekten mit inherit" "plan: scope"
+   assert_contains "$OUT" "project Garten: Astronom → Obstgärtner" "plan: old and new assistant by title"
+   assert_contains "$OUT" "applies to all new chats in Garten and in its subprojects with inherit" "plan: scope"
    assert_contains "$OUT" "(plan only, nothing written)" "--plan writes nothing"
    [ ! -e "$G/.aios/config.yaml" ] && ok || fail "--plan: no config.yaml"
    OUT="$(cd "$G" && echo n | "$SRC/bin/aios" --assistant obstgaertner 2>&1)"
@@ -201,7 +201,7 @@ version: 0.1.0
 #===============================================================================
 
    OUT="$(AI "$G" inherit --plan)"
-   assert_contains "$OUT" "Projekt Garten: Obstgärtner → Astronom" "inherit: plan shows the assistant of the parent"
+   assert_contains "$OUT" "project Garten: Obstgärtner → Astronom" "inherit: plan shows the assistant of the parent"
    assert_eq "$(AI "$G" inherit --yes --session S-1)" $'=> Garten: assistant inherit, applies: Astronom\n   session S-1: astronom' "inherit with session"
    assert_contains "$(cat "$G/.aios/config.yaml")" "assistant: inherit" "inherit is written by aios --assistant"
    M="$HOME/.aios/sessions/S-1.yaml"
@@ -212,7 +212,7 @@ assistant: astronom" "marker: header, cwd, assistant"
    assert_contains "$(sed -n 4p "$M")" "used: $(date +%Y-%m-%d)T" "marker: used"
    assert_eq "$(AS "$G" --session S-1)" "assistant=astronom from=session" "--assignment --session: from the marker"
    assert_eq "$(AS "$G" --session S-none)" "assistant=astronom from=$CFGF" "no marker: assignment of the project"
-   assert_contains "$(AI "$G" none --to "$D" --plan)" "Projekt §Demo: Astronom → kein Assistent" "--to the vault root"
+   assert_contains "$(AI "$G" none --to "$D" --plan)" "project §Demo: Astronom → no assistant" "--to the vault root"
    assert_eq "$(AI "$G" none --to "$D" --yes --session S-1)" $'=> §Demo: assistant none\n   session S-1: none' "--to: the session follows when its assistant changes"
    assert_contains "$(cat "$CFGF")" $'aios: 0.1.0\nassistant: none' "vault: line replaced, aios kept"
    assert_eq "$(AI "$G" obstgaertner --yes --session S-1)" $'=> Garten: assistant obstgaertner\n   session S-1: obstgaertner' "switch with session"

@@ -65,15 +65,15 @@ printf '# Notiz\n' > ~/tmp/§Demo/G-Garten/@/notiz.md
 Der Bericht prüft die Vault-Root und alle Projekte darunter, beliebig tief und auch durch Ordner ohne `@/` hindurch:
 
 ```
-Integrität §Demo — 2026-10-04
+Integrity §Demo — 2026-10-04
 
-Projekt          Init                                                      Commit
-§Demo            ok                                                        ok
-  G-Garten       ok                                                        0 geändert, 1 neu
-    GB-Beet      ok                                                        ok
-  S-Sternwarte   fehlt: .gitignore lines: .DS_Store, .claude/skills/, …   1 geändert, 0 neu
+Project          Init                                                        Commit
+§Demo            ok                                                          ok
+  G-Garten       ok                                                          0 changed, 1 new
+    GB-Beet      ok                                                          ok
+  S-Sternwarte   missing: .gitignore lines: .DS_Store, .claude/skills/, …   1 changed, 0 new
 
-Ergebnis: 2 von 4 Projekten integer
+Result: 2 of 4 projects integer
 ```
 
 | Spalte | erfüllt, wenn |
@@ -81,7 +81,7 @@ Ergebnis: 2 von 4 Projekten integer
 | Init | S1–S4 erfüllt |
 | Commit | `git status` des eigenen Repos ist leer; neue Dateien zählen mit |
 
-Ein Projekt ist **integer**, wenn beides erfüllt ist. **Hinweise** ändern daran nichts: Commits, die noch nicht gepusht sind oder lokal fehlen (aus dem lokalen Stand, ohne Netz), und Namen, die gegen die Namensregel verstoßen.
+Ein Projekt ist **integer**, wenn beides erfüllt ist. **Hinweise** (`Notes`) ändern daran nichts: Commits, die noch nicht gepusht sind oder lokal fehlen (aus dem lokalen Stand, ohne Netz), und Namen, die gegen die Namensregel verstoßen.
 
 Für `S-Sternwarte` bietet der Skill an, die fehlenden Teile mit `aios --init` zu ergänzen: Er zeigt den Plan, fragt einmal und prüft danach erneut. Die neue Datei im Garten nennt er nur; committen musst du selbst, denn die Commit-Nachricht gehört dir.
 

@@ -17,3 +17,15 @@ v0.2.0 ist abgeschlossen (Tag `v0.2.0`, Abnahme in Memo 21 von `AAA-AIbex-AIOS-V
 | 8 | **Oberflächen:** `gui.yaml`, `aios --gui`, Alias `/gui`, `aios-gui`, Gärtner 0.2.0 | `lib/aios/gui.py`: `gui.yaml` mit PyYAML gelesen und geprüft (Schlüssel, 1–12 Kacheln, genau eines von prompt/skill/html, HTML-Teil vorhanden); `aios --gui [--session] [--html] [--aios]`: Assistent aus dem Merker, sonst Zuordnung; ohne Assistent bzw. ohne `gui:` Hinweis auf `/aios-gui`; Rumpf des Oberflächen-Skills plus Anweisung *Oberfläche zeigen* mit den Kacheln (HTML-Werkzeug oder Menü mit höchstens 4 Einträgen je Ebene); `--html`: Fragment mit Kacheln als Schaltflächen (`sendPrompt`) und eingebetteten HTML-Teilen; `gui` in der Meta der Assistenten, `gui` muss in `skills` stehen; Alias `~/.claude/skills/gui/` in `--install` (fremden Ordner nicht überschreiben) und `--uninstall` (auch `~/.aios/sessions/`); reservierter Name `gui` für Blueprints; AIOS-Skill `aios-gui` mit `gui.yaml` (7 Kacheln); Gärtner 0.2.0 mit `gaertner-gui` 0.1.0 (Apfel-Birnen-Rechner `rechner.html`); neuer Test t13 (57), t01, t03, t08, t09, t10 angepasst; 754 Prüfungen grün | 03, 04 | ☑ abgeschlossen |
 | 9 | **Doku:** README, Tutorials (`--list` mit Assistent schon in Schritt 6); knappe Ausgabe mit `--yes` für alle schreibenden Befehle (Spec 04) | `ui.confirm` zeigt mit `--yes` keinen Plan mehr (alle schreibenden Befehle: nur Ergebnis und Fehler), t09 prüft Pläne mit `--plan` und dass `--yes` keinen Plan zeigt; README für v0.3 (Zuordnung, Struktur und Integrität, Oberflächen, `/aios-memo`, CLI); Tutorial 01 auf v0.3 (Namen mit Prefix, Zuordnung statt Aktivierung, Gärtner 0.2.0, `/gui`, `/aios-gui`); neues Tutorial 02 *Projekte und Integrität*; Hilfe von `aios --init` ohne `@Memo/`; 755 Prüfungen grün | 02, 04 | ☑ abgeschlossen |
 | 10 | **Abnahme:** v0.3.0 installieren, `§Demo` neu, Abnahmetest (Spec 01) | | 01 *Abnahmetest* | ☐ |
+
+## v0.3.1
+
+Patch-Version nach der angehaltenen Abnahme von v0.3.0 (V0.3, Memos 52–55): englische Ausgaben und die Befunde A1–A3 der Abnahme. v0.3.0 wird nicht veröffentlicht.
+
+| # | Schritt | Ergebnis | Spec | Stand |
+|---|---|---|---|---|
+| 1 | **Englische Ausgaben** | `aios --integrity`, `aios --assistant`, `aios --gui` (Meldungen, Anweisung *Show the surface*), Vorrang von `aios-memo`, `aios-context --list`, Hook-Zeile `AIOS-SKILLS` englisch; Commit-Nachrichten und Skill-Rümpfe bleiben deutsch (Rümpfe zitieren die englischen Texte); Specs 01–05 und Tutorials nachgezogen; Tests angepasst; 757 Prüfungen grün | 02–05 | ☑ abgeschlossen |
+| 2 | **A2, A3:** Hook-Meldungen verlangen `/aios-init` | | 02 | ☐ |
+| 3 | **A1:** Weiterleiter nimmt bei `--activate v<version>` die genannte Version | | 04 | ☐ |
+| 4 | **Version 0.3.1**, Tags lokal, Live-Tests | | — | ☐ |
+| 5 | **Abnahme** v0.3.1 | | 01 | ☐ |

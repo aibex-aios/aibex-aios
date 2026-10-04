@@ -45,7 +45,7 @@ def body(name, session_id=None):
     if not f.is_file():
         raise Abort(f"AIOS {version()} has no AIOS skill {name}")
     if name == "aios-memo" and memo_registered():
-        print("Verwende `/memo` — in diesem Projekt ist der Skill `memo` registriert.")
+        print("Use `/memo` — the skill `memo` is registered in this project.")
         return 0
     text = strip_frontmatter(f.read_text(encoding="utf-8"))
     if session_id is not None:
@@ -64,7 +64,7 @@ def body(name, session_id=None):
 # ---------------------------------------------------------------------------
 
 def number(n):
-    return f"{n:,}".replace(",", ".")
+    return f"{n:,}"
 
 
 def plural(n, one, many):
@@ -78,34 +78,34 @@ def assignment_text(ctx):
     shown = name
     if name != "none":
         found, _ = assistant.assistants(ctx)
-        shown = f"{name} {registry.version_of(found[name][1])}" if name in found else f"{name} (nicht gefunden)"
+        shown = f"{name} {registry.version_of(found[name][1])}" if name in found else f"{name} (not found)"
     if src is None:
-        return f"{shown} (keine Zuordnung)"
+        return f"{shown} (no assignment)"
     where = src.parent.parent
-    return f"{shown} (" + ("" if where == ctx.cwd else "inherit, ") + f"zugeordnet in {where.name})"
+    return f"{shown} (" + ("" if where == ctx.cwd else "inherit, ") + f"assigned in {where.name})"
 
 
 def listing(ctx):
     """Lines of the listing for /aios-context (spec 02, Aufstellung)."""
     if ctx.mode == "none":
-        return ["Kein Vault — kein Master-Kontext."]
+        return ["No vault — no master context."]
     if ctx.mode == "legacy":
-        return ["Legacy-Modus (ai-brain, kein aios: in der Kette) — siehe /masterspace."]
+        return ["Legacy mode (ai-brain, no aios: in the chain) — see /masterspace."]
     base = ctx.vault.parent
 
     def rel(p):
         return str(Path(p).relative_to(base))
 
     name = ctx.cwd.name if ctx.initialized else \
-        f"{ctx.cwd.name} (nicht initialisiert, Kette bis {ctx.project.name})"
+        f"{ctx.cwd.name} (not initialized, chain up to {ctx.project.name})"
     chars = len(ctx.render())
-    out = [f"Master-Kontext id {ctx.id}, AIOS {version()} — {name}", "",
-           f"{'Kette':27}{' → '.join(ms.parent.name for ms in ctx.masterspaces)}",
-           f"{'Assistent':27}{assignment_text(ctx)}", "",
-           f"{'Master-Kontext (geladen)':27}{plural(len(ctx.loaded), 'Datei', 'Dateien')}, {number(chars)} Zeichen"]
+    out = [f"Master context id {ctx.id}, AIOS {version()} — {name}", "",
+           f"{'Chain':27}{' → '.join(ms.parent.name for ms in ctx.masterspaces)}",
+           f"{'Assistant':27}{assignment_text(ctx)}", "",
+           f"{'Master context (loaded)':27}{plural(len(ctx.loaded), 'file', 'files')}, {number(chars)} characters"]
     out += [f"  {rel(p)}" for p in ctx.loaded]
-    out.append(f"{'verfügbares Wissen':27}{plural(len(ctx.available), 'Datei', 'Dateien')}"
-               + (" (nicht geladen, Inhaltsverzeichnis im Master-Kontext)" if ctx.available else ""))
+    out.append(f"{'Available knowledge':27}{plural(len(ctx.available), 'file', 'files')}"
+               + (" (not loaded, table of contents in the master context)" if ctx.available else ""))
     out += [f"  {rel(p)}" for p in ctx.available]
 
     chain, problems = registry.blueprints(ctx)
@@ -113,21 +113,21 @@ def listing(ctx):
     pending = {n for n, *_ in (sync.new + sync.changed)} if sync else set()
     skills, assistants, prompts = [], [], []
     for name_, (d, ver) in sorted(chain.items()):
-        state = "nicht registriert" if name_ in pending or sync is None else "registriert"
+        state = "not registered" if name_ in pending or sync is None else "registered"
         skills.append(f"{name_} {ver}".rstrip() + f" ({d.parents[2].name}) — {state}")
     for ms in ctx.masterspaces:
         for a in sorted((ms / "@!Assistant").glob("*/ASSISTANT.md")):
             assistants.append(f"{a.parent.name} {registry.version_of(frontmatter(a))}".rstrip() + f" ({ms.parent.name})")
             for s in sorted((a.parent / "@!Skill").glob("*/SKILL.md")):
                 skills.append(f"{s.parent.name} {registry.version_of(frontmatter(s))}".rstrip()
-                              + f" (Assistent {a.parent.name}, privat)")
+                              + f" (assistant {a.parent.name}, private)")
         prompts += [f"{p.stem} ({ms.parent.name})" for p in sorted((ms / "@!Prompt").glob("*.md"))]
-    out.append(f"{'Verborgen':27}Blueprints: {plural(len(skills), 'Skill', 'Skills')}, "
-               f"{plural(len(assistants), 'Assistent', 'Assistenten')}, {plural(len(prompts), 'Prompt', 'Prompts')}")
-    for label, items in (("Skills", skills), ("Assistenten", assistants), ("Prompts", prompts)):
+    out.append(f"{'Hidden':27}Blueprints: {plural(len(skills), 'skill', 'skills')}, "
+               f"{plural(len(assistants), 'assistant', 'assistants')}, {plural(len(prompts), 'prompt', 'prompts')}")
+    for label, items in (("Skills", skills), ("Assistants", assistants), ("Prompts", prompts)):
         for i, item in enumerate(items):
             out.append(f"  {label if i == 0 else '':13}{item}")
     if sync and (sync or sync.removed):
-        out.append("Hinweis: Blueprints und registrierte Skills stimmen nicht überein — /aios-register")
-    out += [f"Übersprungen: {p}" for p in problems]
+        out.append("Note: blueprints and registered skills differ — /aios-register")
+    out += [f"Skipped: {p}" for p in problems]
     return out

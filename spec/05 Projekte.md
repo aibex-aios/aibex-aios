@@ -102,10 +102,10 @@ Prüft auf Anforderung des Users die **Integrität** eines Projekts und aller se
 
 | Prüfung | erfüllt, wenn | Bericht |
 |---|---|---|
-| **Init** | S1–S4 erfüllt | `ok` oder `fehlt: <Lücken>` |
-| **Commit** | `git status --porcelain` des eigenen Repos ist leer; neue, nicht versionierte Dateien zählen mit | `ok`, `<n> geändert, <m> neu` oder `—` (kein eigenes Repo) |
+| **Init** | S1–S4 erfüllt | `ok` oder `missing: <Lücken>` |
+| **Commit** | `git status --porcelain` des eigenen Repos ist leer; neue, nicht versionierte Dateien zählen mit | `ok`, `<n> changed, <m> new` oder `—` (kein eigenes Repo) |
 
-Ein Projekt ist **integer**, wenn Init und Commit erfüllt sind. **Hinweise** ändern daran nichts:
+Ein Projekt ist **integer**, wenn Init und Commit erfüllt sind. **Hinweise** (`Notes`) ändern daran nichts:
 
 - **Push-Stand:** Hat ein Repo einen Upstream, nennt der Bericht Commits, die noch nicht gepusht sind (voraus), und Commits, die lokal fehlen (hinter). Grundlage ist der lokale Stand ohne `git fetch`, also ohne Netz. Ein Repo ohne Remote ist zulässig.
 - **Namensregel:** ein Verstoß nach *Namensregel*.
@@ -115,19 +115,19 @@ Registrierte Skills, Manifest und Blueprints gehören nicht zur Integrität; den
 **Bericht:**
 
 ```
-Integrität §Demo — 2026-10-03
+Integrity §Demo — 2026-10-03
 
-Projekt                 Init                                   Commit
-§Demo                   ok                                     ok
-  G-Garten              ok                                     2 geändert, 1 neu
-    B-Beet              fehlt: own git repo, exclusion in …    —
-  S-Sternwarte          ok                                     ok
+Project                 Init                                    Commit
+§Demo                   ok                                      ok
+  G-Garten              ok                                      2 changed, 1 new
+    B-Beet              missing: own git repo, exclusion in …   —
+  S-Sternwarte          ok                                      ok
 
-Hinweise
-- §Demo: 3 Commits nicht gepusht
-- G-Garten: 1 Commit hinter origin
+Notes
+- §Demo: 3 commits not pushed
+- G-Garten: 1 commit behind origin
 
-Ergebnis: 2 von 4 Projekten integer
+Result: 2 of 4 projects integer
 ```
 
 Die Einrückung zeigt die Verschachtelung. `aios --integrity` endet mit Exit 0, wenn alle Projekte integer sind, sonst mit Exit 1.

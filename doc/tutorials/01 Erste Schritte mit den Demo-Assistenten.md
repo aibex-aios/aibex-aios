@@ -42,7 +42,7 @@ Ein Chat sieht immer die **Master-Space-Kette**: die Masterspaces von der Vault-
 /aios-context
 ```
 
-Die Aufstellung zeigt die Kette `§Demo → G-Garten`, die Zeile *Assistent* `none (keine Zuordnung)` und `stil.md` als geladene Datei.
+Die Aufstellung zeigt die Kette `§Demo → G-Garten`, die Zeile *Assistant* `none (no assignment)` und `stil.md` als geladene Datei.
 
 ## 3. Die Bibliothek
 
@@ -94,7 +94,7 @@ In einem Chat in `G-Garten`:
 /aios-assistant Gärtner: Erste Schritte
 ```
 
-Der Skill zeigt den Plan „Projekt G-Garten: kein Assistent → Gärtner" und fragt einmal nach. Nach deinem Ja steht in `G-Garten/.aios/config.yaml` die Zeile `assistant: gaertner`, der Gärtner meldet sich („Gärtner aktiv"), und der Chat bekommt den Titel „Erste Schritte". Probiere:
+Der Skill zeigt den Plan `project G-Garten: no assistant → Gärtner` und fragt einmal nach. Nach deinem Ja steht in `G-Garten/.aios/config.yaml` die Zeile `assistant: gaertner`, der Gärtner meldet sich („Gärtner aktiv"), und der Chat bekommt den Titel „Erste Schritte". Probiere:
 
 | Frage | Was du sehen solltest |
 |---|---|
@@ -133,7 +133,7 @@ In einem Chat in `S-Sternwarte`:
 /aios-assistant Astronom
 ```
 
-Frage ihn nach **Mond · Mond** (Antwort: **−Sonne**) und nach **Apfel * Birne** (freundliche Absage). `/gui` meldet: „Der Assistent Astronom hat keine Oberfläche." Auch der Gärtner ist hier verfügbar, denn er liegt im Root-Projekt und damit in der Kette jedes Projekts.
+Frage ihn nach **Mond · Mond** (Antwort: **−Sonne**) und nach **Apfel * Birne** (freundliche Absage). `/gui` meldet: `The assistant Astronom has no surface.` Auch der Gärtner ist hier verfügbar, denn er liegt im Root-Projekt und damit in der Kette jedes Projekts.
 
 Öffne nun einen Chat in `G-Garten` und versuche `/aios-assistant Astronom`: AIOS findet keinen Astronomen und listet nur den Gärtner. Die Sternwarte gehört nicht zur Kette des Gartens.
 

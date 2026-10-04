@@ -13,5 +13,5 @@ Ein AIOS-Skill von AIbex AIOS (Spec 03, *Oberflächen*). Die Oberfläche ist ein
 ## Ablauf
 
 1. Führe `aios --gui --aios` über das Bash-Werkzeug aus.
-2. Folge der Anweisung *Oberfläche zeigen* in der Ausgabe: in der Desktop-App mit HTML-Oberflächen das Fragment von `aios --gui --aios --html` zeigen, sonst das Menü mit dem Auswahlwerkzeug.
+2. Folge der Anweisung *Show the surface* in der Ausgabe: in der Desktop-App mit HTML-Oberflächen das Fragment von `aios --gui --aios --html` zeigen, sonst das Menü mit dem Auswahlwerkzeug.
 3. Nach der Wahl einer Kachel: Ihr Text gilt, als hätte der User ihn getippt; `/<skill>` ist ein Aufruf dieses Skills.

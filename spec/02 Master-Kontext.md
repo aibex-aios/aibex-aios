@@ -185,7 +185,7 @@ Die Lücken werden mit den Namen aus Spec 05 genannt (z. B. `own git repo`, `.gi
 
 | Hook | Aufruf | Verhalten |
 |---|---|---|
-| **SessionStart** (Start, Resume, Clear, nach Compaction) | `aios-context --session` | 1. außerhalb eines Vaults: nichts. 2. Legacy-Modus: Verhalten von `ai-brain --session`. 3. aktiviert: Registrierung der Projekt-Skills ohne Rückfrage (`--sync --yes`), bei Änderungen eine Zeile `AIOS-SKILLS: … — wirksam ab dem nächsten Chat` (Spec 03). 4. bei nicht initialisiertem Projekt: `PROJECT-UNINITIALIZED`; sonst bei `source` `startup` die Konsistenzprüfung, bei Lücken `PROJECT-INCOMPLETE`. 5. Master-Kontext inline, wenn er höchstens `inline_limit` Zeichen hat (Standard 9000), sonst `AIOS-CONTEXT-MANDATORY` mit der Liste der Part-Dateien. 6. Assistent der Session bestimmen und den Merker schreiben (unten); ist es nicht `none`, seinen Kontext ausgeben, inline mit `AIOS-ASSISTANT` oder bei mehr als `inline_limit` Zeichen `AIOS-ASSISTANT-MANDATORY` mit Part-Dateien |
+| **SessionStart** (Start, Resume, Clear, nach Compaction) | `aios-context --session` | 1. außerhalb eines Vaults: nichts. 2. Legacy-Modus: Verhalten von `ai-brain --session`. 3. aktiviert: Registrierung der Projekt-Skills ohne Rückfrage (`--sync --yes`), bei Änderungen eine Zeile `AIOS-SKILLS: … — effective from the next chat` (Spec 03). 4. bei nicht initialisiertem Projekt: `PROJECT-UNINITIALIZED`; sonst bei `source` `startup` die Konsistenzprüfung, bei Lücken `PROJECT-INCOMPLETE`. 5. Master-Kontext inline, wenn er höchstens `inline_limit` Zeichen hat (Standard 9000), sonst `AIOS-CONTEXT-MANDATORY` mit der Liste der Part-Dateien. 6. Assistent der Session bestimmen und den Merker schreiben (unten); ist es nicht `none`, seinen Kontext ausgeben, inline mit `AIOS-ASSISTANT` oder bei mehr als `inline_limit` Zeichen `AIOS-ASSISTANT-MANDATORY` mit Part-Dateien |
 | **UserPromptSubmit** | `aios-context --advise` | außerhalb eines Vaults: nichts. Legacy-Modus: Verhalten von `ai-brain --advise`. Aktiviert: `AIOS-CONTEXT-CHECK: expected id=<id>` mit der Anweisung, bei fehlenden Marken „Lade Master-Kontext" zu sagen, `aios-context --load "<cwd>"` auszuführen, alle Part-Dateien vollständig zu lesen und „Master-Kontext geladen (id <id>)" zu melden. Ist der Assistent der Session nicht `none`, zusätzlich `AIOS-ASSISTANT-CHECK` |
 
 Die Hooks erzeugen außer der Registrierung und dem Merker der Session keine Dateien und fragen nie nach. Beide nehmen `cwd` aus dem Hook-JSON auf stdin, ohne JSON das Arbeitsverzeichnis des Prozesses; im Legacy-Modus erhält `ai-brain` dasselbe JSON. Warnungen der Konfigurationskette gibt `--session` als Zeilen `AIOS-WARNING: …` aus. Scheitert ein Hook, gibt er eine Zeile `AIOS-WARNING: aios-context --session failed: …` aus und endet mit Exit 0: Ein Hook bricht nie die Session ab.
@@ -276,26 +276,26 @@ AIOS-Skill, Nachfolger von `/masterspace`. Auslöser: `/aios-context`, „Master
 2. `mode=none`: „Kein Vault — kein Master-Kontext." und beenden. `mode=legacy`: auf `/masterspace` verweisen und beenden.
 3. Prüfen, ob beide Marken `<aios-context id="<id>"` und `</aios-context id="<id>">` im Kontext stehen. Erinnerungen, Zusammenfassungen und Hook-Meldungen zählen nicht.
 4. Fehlen sie oder steht eine andere id im Kontext: „Master-Kontext veraltet (`<alt>` → `<neu>`)" bzw. „Lade Master-Kontext", `aios-context --load "<cwd>"`, alle Part-Dateien vollständig lesen, Endmarke prüfen.
-5. `aios-context --list "<cwd>"` ausführen und die Aufstellung zeigen. `--list` beginnt mit `Master-Kontext id <id>, AIOS <version> — <Projekt>`; der Skill ersetzt diese Zeile durch „Master-Kontext geladen (id …)". Im Legacy-Modus gibt `--list` nur einen Verweis auf `/masterspace` aus, außerhalb eines Vaults „Kein Vault — kein Master-Kontext.".
+5. `aios-context --list "<cwd>"` ausführen und die Aufstellung zeigen. `--list` beginnt mit `Master context id <id>, AIOS <version> — <Projekt>`; der Skill ersetzt diese Zeile durch „Master-Kontext geladen (id …)". Im Legacy-Modus gibt `--list` nur einen Verweis auf `/masterspace` aus, außerhalb eines Vaults „No vault — no master context.".
 
 **Aufstellung:**
 
 ```
 Master-Kontext geladen (id 3fa91c02, AIOS 0.3.0) — G-Garten
 
-Kette                      §Demo → G-Garten
-Assistent                  gaertner 0.2.0 (inherit, zugeordnet in §Demo)
+Chain                      §Demo → G-Garten
+Assistant                  gaertner 0.2.0 (inherit, assigned in §Demo)
 
-Master-Kontext (geladen)   3 Dateien, 4.120 Zeichen
+Master context (loaded)    3 files, 4,120 characters
   §Demo/@/@Rule/stil.md
   §Demo/@/@Wissen/@Content/inhalt.md
   …
-verfügbares Wissen         1 Datei (nicht geladen, Inhaltsverzeichnis im Master-Kontext)
+Available knowledge        1 file (not loaded, table of contents in the master context)
   §Demo/@/@Wissen/@@Kapitel/kapitel.md
-Verborgen                  Blueprints: 2 Skills, 1 Assistent, 1 Prompt
-  Skills       memo 6.0.0 (§Demo) — registriert
-               apfel-birnen-algebra 0.1.0 (Assistent gaertner, privat)
-  Assistenten  gaertner 0.2.0 (§Demo)
+Hidden                     Blueprints: 2 skills, 1 assistant, 1 prompt
+  Skills       memo 6.0.0 (§Demo) — registered
+               apfel-birnen-algebra 0.1.0 (assistant gaertner, private)
+  Assistants   gaertner 0.2.0 (§Demo)
 ```
 
-Die Zeile *Assistent* zeigt die Zuordnung des Projekts (`<name>`, `none` oder `inherit` mit Herkunft). Weicht der Assistent der Session davon ab (Spec 03, *Wechsel*), nennt der Skill beide. Der Skill ändert nichts außer dem Nachladen. Stimmen Blueprints und registrierte Skills nicht überein, weist er auf `/aios-register` hin.
+Die Zeile *Assistant* zeigt die Zuordnung des Projekts (`<name>`, `none` oder `inherit` mit Herkunft). Weicht der Assistent der Session davon ab (Spec 03, *Wechsel*), nennt der Skill beide. Der Skill ändert nichts außer dem Nachladen. Stimmen Blueprints und registrierte Skills nicht überein, weist er auf `/aios-register` hin.

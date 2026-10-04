@@ -24,19 +24,19 @@
 # /gui: no assistant, assistant without surface, Gärtner with surface
 #===============================================================================
 
-   assert_eq "$(GUI "$G")" $'Kein Assistent aktiv.\nAIOS-Oberfläche: `/aios-gui`' "no assignment: no assistant"
+   assert_eq "$(GUI "$G")" $'No assistant active.\nAIOS surface: `/aios-gui`' "no assignment: no assistant"
    mk "$D/.aios/config.yaml" $'aios: 0.3.0\nassistant: astronom\n'
-   assert_eq "$(GUI "$D/Wiese")" $'Der Assistent Astronom hat keine Oberfläche.\nAIOS-Oberfläche: `/aios-gui`' "assistant without gui"
+   assert_eq "$(GUI "$D/Wiese")" $'The assistant Astronom has no surface.\nAIOS surface: `/aios-gui`' "assistant without gui"
    mk "$G/.aios/config.yaml" $'assistant: gaertner\n'
    OUT="$(GUI "$G")"
    assert_contains "$OUT" "# Oberfläche des Gärtners" "body of the surface skill"
    case "$OUT" in *"version: 0.1.0"*|*"name: gaertner-gui"*) fail "body without frontmatter" ;; *) ok ;; esac
-   assert_contains "$OUT" "## Oberfläche zeigen" "instruction appended"
-   assert_contains "$OUT" "führe \`aios --gui --html\` aus" "instruction: HTML in the desktop app"
-   assert_contains "$OUT" "höchstens 4 Einträge je Ebene" "instruction: menu otherwise"
-   assert_contains "$OUT" "- Apfel-Birnen-Rechner — Rechnet mit Äpfeln und Birnen, ohne Claude (HTML-Teil rechner.html)" "tile with HTML part"
-   assert_contains "$OUT" "- Aufgabe rechnen — Eine Apfel-Birnen-Aufgabe mit Rechenweg (sendet: /apfel-birnen-algebra)" "skill tile sends /<skill>"
-   assert_contains "$OUT" "(sendet: Hilf mir, eine Apfelsorte zu bestimmen. Frag mich nach den Merkmalen.)" "prompt tile"
+   assert_contains "$OUT" "## Show the surface" "instruction appended"
+   assert_contains "$OUT" "run \`aios --gui --html\` and show" "instruction: HTML in the desktop app"
+   assert_contains "$OUT" "at most 4 entries per level" "instruction: menu otherwise"
+   assert_contains "$OUT" "- Apfel-Birnen-Rechner — Rechnet mit Äpfeln und Birnen, ohne Claude (HTML part rechner.html)" "tile with HTML part"
+   assert_contains "$OUT" "- Aufgabe rechnen — Eine Apfel-Birnen-Aufgabe mit Rechenweg (sends: /apfel-birnen-algebra)" "skill tile sends /<skill>"
+   assert_contains "$OUT" "(sends: Hilf mir, eine Apfelsorte zu bestimmen. Frag mich nach den Merkmalen.)" "prompt tile"
 
 #===============================================================================
 # --html: fragment with buttons (sendPrompt) and embedded HTML parts
@@ -58,7 +58,7 @@
 
    mkdir -p "$HOME/.aios/sessions"
    printf '# written by AIOS (session), do not edit\ncwd: "%s"\nassistant: astronom\nused: 2026-10-03T10:00:00\n' "$G" > "$HOME/.aios/sessions/s1.yaml"
-   assert_contains "$(GUI "$G" --session s1)" "Der Assistent Astronom hat keine Oberfläche." "--session: assistant of the session"
+   assert_contains "$(GUI "$G" --session s1)" "The assistant Astronom has no surface." "--session: assistant of the session"
    assert_contains "$(GUI "$G" --session s2)" "# Oberfläche des Gärtners" "--session without marker: assignment"
    assert_contains "$(GUI "$G" --session ../x)" "is not a session id" "--session: bad id"
    assert_contains "$(GUI "$G" --session s2)" "\`aios --gui --session s2 --html\`" "instruction keeps --session"
@@ -72,9 +72,9 @@
    for T in "Projekt initialisieren" "Kontext und Konfiguration" "Assistent zuordnen" "Skills ausrollen und registrieren" "Integrität prüfen" "Projektstatus" "Memo schreiben"; do
       assert_contains "$OUT" "- $T — " "--aios: tile $T"
    done
-   assert_eq "$(printf '%s\n' "$OUT" | grep -c '^- .*(sendet: ')" "7" "--aios: 7 tiles"
-   assert_contains "$OUT" "(sendet: /aios-init)" "--aios: /aios-init"
-   assert_contains "$OUT" "(sendet: /aios-integrity)" "--aios: /aios-integrity"
+   assert_eq "$(printf '%s\n' "$OUT" | grep -c '^- .*(sends: ')" "7" "--aios: 7 tiles"
+   assert_contains "$OUT" "(sends: /aios-init)" "--aios: /aios-init"
+   assert_contains "$OUT" "(sends: /aios-integrity)" "--aios: /aios-integrity"
    assert_contains "$OUT" "\`aios --gui --aios --html\`" "--aios: instruction for HTML"
    case "$(GUI "$SANDBOX" --aios --html)" in "<div class=\"aios-gui\">"*"<h2>AIbex AIOS</h2>"*) ok ;; *) fail "--aios --html outside a vault" ;; esac
    assert_contains "$(at "$G" "$SRC/bin/aios" --skill aios-gui)" "Führe \`aios --gui --aios\` über das Bash-Werkzeug aus." "skill aios-gui calls aios --gui --aios"

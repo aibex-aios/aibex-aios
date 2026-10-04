@@ -112,7 +112,7 @@ registered:
    skill "$D/@/@!Skill/neu" neu 1.0.0
    json() { printf '{"hook_event_name":"SessionStart","cwd":"%s"}' "$1"; }
    OUT="$(json "$G" | "$SRC/bin/aios-context" --session)"
-   assert_contains "$OUT" "AIOS-SKILLS: new neu — wirksam ab dem nächsten Chat" "session: AIOS-SKILLS line"
+   assert_contains "$OUT" "AIOS-SKILLS: new neu — effective from the next chat" "session: AIOS-SKILLS line"
    assert_contains "$OUT" "AIOS-WARNING: $D/@/@!Skill/aios-evil: the name aios-evil is reserved" "session: problems as warnings"
    assert_file "$K/neu/SKILL.md"
    case "$(json "$G" | "$SRC/bin/aios-context" --session)" in *AIOS-SKILLS*) fail "second session: no AIOS-SKILLS line" ;; *) ok ;; esac

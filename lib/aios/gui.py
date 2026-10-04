@@ -20,7 +20,7 @@ TILE_KEYS = {"title", "text", "prompt", "skill", "html", "icon"}
 ACTIONS = ("prompt", "skill", "html")
 MAX_TILES = 12
 AIOS_GUI = Path(__file__).resolve().parents[2] / "skills" / "aios" / "aios-gui"
-HINT = "AIOS-Oberfläche: `/aios-gui`"
+HINT = "AIOS surface: `/aios-gui`"
 
 
 # ---------------------------------------------------------------------------
@@ -90,22 +90,23 @@ def action(t):
 
 def instruction(d, call):
     """How Claude shows the surface (spec 03, Darstellung), with the tiles as data."""
-    lines = ["", "## Oberfläche zeigen", "",
-             "Zeige diese Oberfläche jetzt, ohne weitere Erklärung:", "",
-             f"- **Desktop-App mit HTML-Oberflächen** (ein Werkzeug, das HTML direkt im Chat anzeigt, z. B. "
-             f"`show_widget`): führe `{call} --html` aus und zeige die Ausgabe unverändert mit diesem Werkzeug. "
-             f"Veröffentliche die Oberfläche nie als Artifact, Datei oder Webseite und frag nicht danach.",
-             "- **Sonst (CLI, Headless, kein solches Werkzeug):** Menü mit dem Auswahlwerkzeug (`AskUserQuestion`), Frage = Titel, "
-             "höchstens 4 Einträge je Ebene, bei mehr Kacheln als letzter Eintrag „Weitere …“ mit der nächsten Ebene. "
-             "Kacheln mit HTML-Teil fehlen im Menü; nenne sie als Hinweis („nur in der Desktop-App“). "
-             "Nach der Wahl: einen Prompt so behandeln, als hätte der User ihn getippt; `/<skill>` als Aufruf des Skills.",
-             "", f"Titel: {d['title']}"]
+    lines = ["", "## Show the surface", "",
+             "Show this surface now, without further explanation:", "",
+             f"- **Desktop app with HTML surfaces** (a tool that shows HTML directly in the chat, e.g. "
+             f"`show_widget`): run `{call} --html` and show its output unchanged with this tool. "
+             f"Never publish the surface as an artifact, file or web page and do not ask for it.",
+             "- **Otherwise (CLI, headless, no such tool):** a menu with the question tool (`AskUserQuestion`), "
+             "question = title, at most 4 entries per level, with more tiles a last entry \"More …\" leading to the "
+             "next level. Tiles with an HTML part are missing in the menu; mention them as a hint (\"desktop app only\"). "
+             "After the choice: treat a prompt as if the user had typed it; `/<skill>` calls that skill. "
+             "Talk to the user in the user's language.",
+             "", f"Title: {d['title']}"]
     if d.get("intro"):
         lines.append(f"Intro: {d['intro']}")
-    lines.append("Kacheln:")
+    lines.append("Tiles:")
     for t in d["tiles"]:
         kind, value = action(t)
-        what = f"HTML-Teil {value}" if kind == "html" else f"sendet: {value}"
+        what = f"HTML part {value}" if kind == "html" else f"sends: {value}"
         lines.append(f"- {t['title']}" + (f" — {t['text']}" if t.get("text") else "") + f" ({what})")
     return "\n".join(lines) + "\n"
 
@@ -185,21 +186,21 @@ def show(html=False, aios=False, session=None):
     else:
         ctx = context.Context(paths.cwd())
         if ctx.mode != "aios":
-            print(f"Kein Assistent aktiv.\n{HINT}")
+            print(f"No assistant active.\n{HINT}")
             return 0
         name = session_assistant(ctx, session)
         if name == "none":
-            print(f"Kein Assistent aktiv.\n{HINT}")
+            print(f"No assistant active.\n{HINT}")
             return 0
         try:
             name, (d, meta) = assistant.resolve(ctx, name)
         except Abort:
-            print(f"Der Assistent {name} wurde nicht gefunden.\n{HINT}")
+            print(f"The assistant {name} was not found.\n{HINT}")
             return 0
         title = meta.get("title", name)
         gui_name = meta.get("gui")
         if not gui_name:
-            print(f"Der Assistent {title} hat keine Oberfläche.\n{HINT}")
+            print(f"The assistant {title} has no surface.\n{HINT}")
             return 0
         if gui_name not in assistant.as_list(meta.get("skills")):
             raise Abort(f"gui {gui_name} of the assistant {name} is not in its skills")

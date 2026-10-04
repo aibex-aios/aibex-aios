@@ -30,8 +30,8 @@ Ein AIOS-Skill von AIbex AIOS (Spec 02, *Skill `/aios-context`*). Er ändert nic
    - Lies **jede** aufgelistete Part-Datei vollständig mit dem Read-Tool, in der angegebenen Reihenfolge.
    - Prüfe, dass die Endmarke `</aios-context id="<id>">` gelesen wurde.
 
-6. **Aufstellung zeigen:** Führe `aios-context --list "<cwd>"` aus. Zeige die Ausgabe unverändert in einem Codeblock, ersetze nur die erste Zeile `Master-Kontext id <id>, AIOS <version> — <Projekt>` durch „Master-Kontext geladen (id `<id>`, AIOS `<version>`) — `<Projekt>`".
+6. **Aufstellung zeigen:** Führe `aios-context --list "<cwd>"` aus. Zeige die Ausgabe unverändert in einem Codeblock, ersetze nur die erste Zeile `Master context id <id>, AIOS <version> — <Projekt>` durch „Master-Kontext geladen (id `<id>`, AIOS `<version>`) — `<Projekt>`".
 
-7. **Assistent der Session:** Führe `aios-context --assignment "<cwd>" --session <session-id>` aus; `<session-id>` ist die Session-ID aus der Zeile *Session-ID dieses Chats* am Ende dieser Anweisung. Steht dort `from=session` und ein anderer Assistent als in der Zeile *Assistent* der Aufstellung (die Zuordnung des Projekts), nenne beide: „Assistent dieses Chats: <name> (Zuordnung des Projekts: <wert>)".
+7. **Assistent der Session:** Führe `aios-context --assignment "<cwd>" --session <session-id>` aus; `<session-id>` ist die Session-ID aus der Zeile *Session-ID dieses Chats* am Ende dieser Anweisung. Steht dort `from=session` und ein anderer Assistent als in der Zeile *Assistant* der Aufstellung (die Zuordnung des Projekts), nenne beide: „Assistent dieses Chats: <name> (Zuordnung des Projekts: <wert>)".
 
-Steht in der Aufstellung ein Hinweis auf `/aios-register`, nenne ihn. Keine weiteren Kommentare, keine Zusammenfassung des Inhalts.
+Steht in der Aufstellung ein Hinweis auf `/aios-register` (`Note: …`), nenne ihn. Die Aufstellung ist englisch; erkläre sie bei Bedarf in der Sprache des Users. Keine weiteren Kommentare, keine Zusammenfassung des Inhalts.

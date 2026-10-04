@@ -39,14 +39,14 @@ class Result:
         return self.init_ok and self.commit_ok
 
     def init_text(self):
-        return "ok" if self.init_ok else "fehlt: " + ", ".join(g.text for g in self.gaps)
+        return "ok" if self.init_ok else "missing: " + ", ".join(g.text for g in self.gaps)
 
     def commit_text(self):
         if not self.repo:
             return "—"
         if self.commit_ok:
             return "ok"
-        return f"{self.changed} geändert, {self.new} neu"
+        return f"{self.changed} changed, {self.new} new"
 
 
 def projects(start):
@@ -81,7 +81,7 @@ def commit_state(p):
 
 
 def commits(n):
-    return f"{n} Commit" + ("" if n == 1 else "s")
+    return f"{n} commit" + ("" if n == 1 else "s")
 
 
 def push_hints(p):
@@ -94,9 +94,9 @@ def push_hints(p):
     remote = upstream.split("/", 1)[0] or upstream
     hints = []
     if ahead:
-        hints.append(f"{commits(ahead)} nicht gepusht")
+        hints.append(f"{commits(ahead)} not pushed")
     if behind:
-        hints.append(f"{commits(behind)} hinter {remote}")
+        hints.append(f"{commits(behind)} behind {remote}")
     return hints
 
 
@@ -107,18 +107,18 @@ def check(p, depth):
         r.hints += push_hints(p)
     name = project.check_name(p)
     if not name.ok:
-        r.hints.append("Name nicht regelkonform (" + "; ".join(name.problems)
-                       + (f"), Vorschlag {name.proposal}" if name.proposal else ")"))
+        r.hints.append("name violates the name rule (" + "; ".join(name.problems)
+                       + (f"), proposal {name.proposal}" if name.proposal else ")"))
     return r
 
 
 def report(start, results):
-    print(f"Integrität {start.name} — {datetime.date.today().isoformat()}")
+    print(f"Integrity {start.name} — {datetime.date.today().isoformat()}")
     print()
     if not results:
-        print(f"Keine Projekte in {start}")
+        print(f"No projects in {start}")
         return
-    rows = [("Projekt", "Init", "Commit")]
+    rows = [("Project", "Init", "Commit")]
     rows += [("  " * r.depth + r.path.name, r.init_text(), r.commit_text()) for r in results]
     w1 = max(len(a) for a, _, _ in rows) + 2
     w2 = max(len(b) for _, b, _ in rows) + 2
@@ -127,11 +127,11 @@ def report(start, results):
     hints = [f"- {r.path.name}: {h}" for r in results for h in r.hints]
     if hints:
         print()
-        print("Hinweise")
+        print("Notes")
         print("\n".join(hints))
     print()
     good = sum(1 for r in results if r.ok)
-    print(f"Ergebnis: {good} von {len(results)} " + ("Projekt" if len(results) == 1 else "Projekten")
+    print(f"Result: {good} of {len(results)} " + ("project" if len(results) == 1 else "projects")
           + " integer")
 
 
