@@ -21,7 +21,7 @@ Konzeptprojekte mit den Memos, unter `~/vault/§AIOS/A-AIOS/AA-AIbex-AIOS/` (Pro
 
 | Projekt | Inhalt |
 |---|---|
-| `AAA-AIbex-AIOS-V0.3/@Memo/` | **laufende Version v0.3**: Memos 01–33 (Wünsche, Entscheidungen, Spec, Plan); in Memos 01–11 heißt der Assistent noch *Agent* (Memo 13) |
+| `AAA-AIbex-AIOS-V0.3/@Memo/` | **laufende Version v0.3**: Memos 01–33 (Wünsche, Entscheidungen, Spec, Plan), 34–62 (Umsetzung, v0.3.1, Abnahme), 63 (Veröffentlichung v0.3.1); in Memos 01–11 heißt der Assistent noch *Agent* (Memo 13) |
 | `AAA-AIbex-AIOS-V0.2/@Memo/` | v0.2 (abgeschlossen, Tag `v0.2.0`) |
 | `AAA-AIbex-AIOS-V0.1/@Memo/` | Grundlage aus v0.1 (abgeschlossen, Tag `v0.1.0`) |
 | `AAA-AIbex-AIOS-V0.4/@ToDo/` | Wünsche für v0.4, nicht Teil der laufenden Arbeit |
