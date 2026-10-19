@@ -378,7 +378,7 @@ Entfernt die Benutzereinrichtung: Weiterleiter, AIOS-Skills in `~/.claude/skills
 ## Repo `aibex-aios` und Abbildung auf die Installation
 
 ```
-aibex-aios/                          GitHub aibex-hub/aibex-aios, Tags v<version>
+aibex-aios/                          GitHub aibex-aios/aibex-aios, Tags v<version>
 ├── README.md
 ├── CLAUDE.md                        Regeln für die Arbeit am Repo
 ├── VERSION                          Entwicklungsstand, z. B. 0.3.0-dev

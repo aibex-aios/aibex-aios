@@ -25,7 +25,7 @@ macOS or Linux with `bash`, `git`, `python3` (3.9 or newer) and
 Copy this line into a terminal:
 
 ```sh
-R=~/git/AIbex/aibex-aios; ([ -d "$R/.git" ] || git clone https://github.com/aibex-hub/aibex-aios "$R") && "$R/bin/aios" --install v0.3.1
+R=~/git/AIbex/aibex-aios; ([ -d "$R/.git" ] || git clone https://github.com/aibex-aios/aibex-aios "$R") && "$R/bin/aios" --install v0.3.1
 ```
 
 It clones the repository to `~/git/AIbex/aibex-aios` unless a clone is already
