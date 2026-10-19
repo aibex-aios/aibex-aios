@@ -1,8 +1,8 @@
 # Stand der Umsetzung AIOS v0.3.0 / v0.3.1
 
-Umsetzungsschritte nach dem Implementierungsplan v0.3 (Memo 32 im Konzeptprojekt `AAA-AIbex-AIOS-V0.3`, freigegeben in Memo 33, ergänzt durch spätere Memos). Jeder Schritt wird im selben Commit `Schritt N: …` abgehakt, der ihn abschließt. Vor jedem Schritt kommt ein Fragepaket nach der Regel *Weiter*.
+Umsetzungsschritte nach dem Implementierungsplan v0.3 (Memo 32 in `AA-AIbex-AIOS/@Memo/V0.3/`, freigegeben in Memo 33, ergänzt durch spätere Memos). Jeder Schritt wird im selben Commit `Schritt N: …` abgehakt, der ihn abschließt. Vor jedem Schritt kommt ein Fragepaket nach der Regel *Weiter*.
 
-v0.2.0 ist abgeschlossen (Tag `v0.2.0`, Abnahme in Memo 21 von `AAA-AIbex-AIOS-V0.2`); sein Stand steht in `STATUS.md` dieses Tags.
+v0.2.0 ist abgeschlossen (Tag `v0.2.0`, Abnahme in Memo 21 von `AA-AIbex-AIOS/@Memo/V0.2/`); sein Stand steht in `STATUS.md` dieses Tags.
 
 | # | Schritt | Ergebnis | Spec | Stand |
 |---|---|---|---|---|

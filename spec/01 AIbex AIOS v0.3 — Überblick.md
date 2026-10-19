@@ -10,10 +10,10 @@ related:
   - "Spec 03 Skills und Assistenten"
   - "Spec 04 Installation und Konfiguration"
   - "Spec 05 Projekte"
-  - "Memo 12 Umfang von AIOS v0.1.0 — Entscheidungen vor der Spec (Konzeptprojekt AAA-AIbex-AIOS-V0.1)"
-  - "Memo 13 Umfang von v0.2, Memos 01–12 nach V0.3 (Konzeptprojekt AAA-AIbex-AIOS-V0.2)"
-  - "Memo 13 Herkunft der Memos und Begriffe von v0.2 (Konzeptprojekt AAA-AIbex-AIOS-V0.3)"
-  - "Memos 22–28 (Konzeptprojekt AAA-AIbex-AIOS-V0.3)"
+  - "Memo 12 Umfang von AIOS v0.1.0 — Entscheidungen vor der Spec (AA-AIbex-AIOS, @Memo/V0.1)"
+  - "Memo 13 Umfang von v0.2, Memos 01–12 nach V0.3 (AA-AIbex-AIOS, @Memo/V0.2)"
+  - "Memo 13 Herkunft der Memos und Begriffe von v0.2 (AA-AIbex-AIOS, @Memo/V0.3)"
+  - "Memos 22–28 (AA-AIbex-AIOS, @Memo/V0.3)"
 ---
 
 # AIbex AIOS v0.3 — Überblick
@@ -46,7 +46,7 @@ Die Spec v0.3 besteht aus fünf Dokumenten, die sich nicht wiederholen:
 | **04 Installation und Konfiguration** | Dateistrukturen, Formate, CLI `aios`, Versionen und Aktivierung, Weiterleiter |
 | **05 Projekte** | Struktur und Name eines Projekts, `/aios-init`, Konsistenzprüfung, `/aios-integrity`, `/aios-status` |
 
-Die Begründungen stehen in den Memos der Konzeptprojekte unter `§AIOS/A-AIOS/AA-AIbex-AIOS/`: `AAA-AIbex-AIOS-V0.1/@Memo/` für die Grundlage, `AAA-AIbex-AIOS-V0.2/@Memo/` (Memos 13–18) für die Änderungen in v0.2, `AAA-AIbex-AIOS-V0.3/@Memo/` (Memos 01–28) für die Änderungen in v0.3. In den Memos 01–11 von V0.3 heißt der Assistent noch *Agent* (V0.3, Memo 13). Die Spec beschreibt nur den Soll-Stand. Sie wird im Repo `aibex-aios` unter `spec/` gepflegt und mit jeder Version nach `doc/spec/` ausgeliefert.
+Die Begründungen stehen in den Memos der Konzeptprojekte unter `§AIOS/A-AIOS/AA-AIbex-AIOS/`: `@Memo/V0.1/` für die Grundlage, `@Memo/V0.2/` (Memos 13–18) für die Änderungen in v0.2, `@Memo/V0.3/` (Memos 01–28) für die Änderungen in v0.3. In den Memos 01–11 von V0.3 heißt der Assistent noch *Agent* (V0.3, Memo 13). Die Spec beschreibt nur den Soll-Stand. Sie wird im Repo `aibex-aios` unter `spec/` gepflegt und mit jeder Version nach `doc/spec/` ausgeliefert.
 
 ## Begriffe
 

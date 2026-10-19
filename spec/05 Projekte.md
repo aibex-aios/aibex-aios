@@ -10,8 +10,8 @@ related:
   - "Spec 02 Master-Kontext"
   - "Spec 03 Skills und Assistenten"
   - "Spec 04 Installation und Konfiguration"
-  - "Memo 06 Projekt, Root-Projekt und Projektstatus (Konzeptprojekt AAA-AIbex-AIOS-V0.1)"
-  - "Memos 08, 14–18, 21–24, 27, 28 (Konzeptprojekt AAA-AIbex-AIOS-V0.3)"
+  - "Memo 06 Projekt, Root-Projekt und Projektstatus (AA-AIbex-AIOS, @Memo/V0.1)"
+  - "Memos 08, 14–18, 21–24, 27, 28 (AA-AIbex-AIOS, @Memo/V0.3)"
 ---
 
 # Projekte

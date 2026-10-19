@@ -7,8 +7,8 @@ Regeln für Sessions, die an AIbex AIOS arbeiten, ob sie im Repo laufen oder im 
 | Was | Ort |
 |---|---|
 | Spec (Soll-Stand, verbindlich) | `spec/` |
-| Memos (Begründungen, Verlauf) | Konzeptprojekte, siehe unten |
-| Implementierungsplan | v0.3: Memo 32 im Konzeptprojekt V0.3, freigegeben in Memo 33; spätere Memos gehen ihm vor (v0.2: Memo 20 in V0.2, v0.1: Memo 18 in V0.1) |
+| Memos (Begründungen, Verlauf) | Projekt `AA-AIbex-AIOS`, Versionsordner, siehe unten |
+| Implementierungsplan | v0.3: Memo 32 in V0.3, freigegeben in Memo 33; spätere Memos gehen ihm vor (v0.2: Memo 20 in V0.2, v0.1: Memo 18 in V0.1) |
 | Stand der Umsetzung | `STATUS.md` |
 | Code | `bin/` (Bash: `aios`, `aios-context`), `lib/aios/` (Python) |
 | Skills | `skills/<gruppe>/<name>/SKILL.md`: `aios` (AIOS-Skills), `basic` (Grundausstattung) |
@@ -17,15 +17,15 @@ Regeln für Sessions, die an AIbex AIOS arbeiten, ob sie im Repo laufen oder im 
 
 Das Repo enthält keinen Vault. Vaults legt der User an und bindet sie mit `aios --activate` an eine installierte Version; Tests legen ihre Vaults im Sandkasten an.
 
-Konzeptprojekte mit den Memos, unter `~/vault/§AIOS/A-AIOS/AA-AIbex-AIOS/` (Projekt `AA-AIbex-AIOS` mit der Regel `@/@Rule/Weiter.md`):
+Memos und ToDos im Projekt `~/vault/§AIOS/A-AIOS/AA-AIbex-AIOS/` (Regeln `@/@Rule/Weiter.md` und `@/@Rule/01 Implementierung im Repo aibex-aios (Rule).md`), je Version ein Unterordner. Bis 2026-10-19 waren das eigene Unterprojekte `AAA-AIbex-AIOS-V0.<n>`; die Zuordnung alt → neu steht in `@Memo/03` von `AA-AIbex-AIOS`. Das ganze Projekt liegt im Repo `A-AIOS` (`aibex-aios/A-AIOS`):
 
-| Projekt | Inhalt |
+| Ordner | Inhalt |
 |---|---|
-| `AAA-AIbex-AIOS-V0.3/@Memo/` | **laufende Version v0.3**: Memos 01–33 (Wünsche, Entscheidungen, Spec, Plan), 34–62 (Umsetzung, v0.3.1, Abnahme), 63 (Veröffentlichung v0.3.1); in Memos 01–11 heißt der Assistent noch *Agent* (Memo 13) |
-| `AAA-AIbex-AIOS-V0.2/@Memo/` | v0.2 (abgeschlossen, Tag `v0.2.0`) |
-| `AAA-AIbex-AIOS-V0.1/@Memo/` | Grundlage aus v0.1 (abgeschlossen, Tag `v0.1.0`) |
-| `AAA-AIbex-AIOS-V0.4/@ToDo/` | Wünsche für v0.4, nicht Teil der laufenden Arbeit |
-| `AAA-AIbex-AIOS-V0.99/@Memo/` | Ideen ohne Version, nicht Teil der laufenden Arbeit |
+| `@Memo/V0.3/`, `@ToDo/V0.3/` | **laufende Version v0.3**: Memos 01–33 (Wünsche, Entscheidungen, Spec, Plan), 34–62 (Umsetzung, v0.3.1, Abnahme), 63–64 (Veröffentlichung v0.3.1, Repo in der Organisation); in Memos 01–11 heißt der Assistent noch *Agent* (Memo 13) |
+| `@Memo/V0.2/` | v0.2 (abgeschlossen, Tag `v0.2.0`) |
+| `@Memo/V0.1/`, `@Spec/V0.1/` | Grundlage aus v0.1 (abgeschlossen, Tag `v0.1.0`) |
+| `@Memo/V0.4/`, `@ToDo/V0.4/` | Wünsche für v0.4, nicht Teil der laufenden Arbeit |
+| `@Memo/V0.5/`, `@Memo/V0.6/`, `@Memo/V0.99/` | Ideen ohne Version, nicht Teil der laufenden Arbeit |
 
 ## Stand ermitteln
 
@@ -42,7 +42,7 @@ Vorher den Skill `memo` vollständig lesen und befolgen (Nummerierung, Header-Bl
 ~/vault/§AIOS/@/@!Skill/memo/SKILL.md
 ```
 
-Das Memo wird im Konzeptprojekt der laufenden Version (V0.3) angelegt und dort committet, die Spec-Änderung im Repo.
+Das Memo wird im Versionsordner der laufenden Version angelegt (`AA-AIbex-AIOS/@Memo/V0.3/`, nächste Nummer dieses Ordners; der Skill kennt keine Unterordner, deshalb den Ordner ausdrücklich nennen) und im Repo `A-AIOS` committet, die Spec-Änderung in diesem Repo.
 
 ## Regeln
 

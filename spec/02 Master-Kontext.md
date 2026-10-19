@@ -10,9 +10,9 @@ related:
   - "Spec 03 Skills und Assistenten"
   - "Spec 04 Installation und Konfiguration"
   - "Spec 05 Projekte"
-  - "Memo 01 Brainstorming — Masterspace-Klassen und Agenten (Konzeptprojekt AAA-AIbex-AIOS-V0.1)"
-  - "Memo 06 Projekt, Root-Projekt und Projektstatus (Konzeptprojekt AAA-AIbex-AIOS-V0.1)"
-  - "Memos 01, 06, 08, 14, 15, 22 (Konzeptprojekt AAA-AIbex-AIOS-V0.3)"
+  - "Memo 01 Brainstorming — Masterspace-Klassen und Agenten (AA-AIbex-AIOS, @Memo/V0.1)"
+  - "Memo 06 Projekt, Root-Projekt und Projektstatus (AA-AIbex-AIOS, @Memo/V0.1)"
+  - "Memos 01, 06, 08, 14, 15, 22 (AA-AIbex-AIOS, @Memo/V0.3)"
 ---
 
 # Master-Kontext

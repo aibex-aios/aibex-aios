@@ -10,12 +10,12 @@ related:
   - "Spec 02 Master-Kontext"
   - "Spec 03 Skills und Assistenten"
   - "Spec 05 Projekte"
-  - "Memo 04 Der Vault §AIOS, Repo und Installation (Konzeptprojekt AAA-AIbex-AIOS-V0.1)"
-  - "Memo 09 Parallele Versionen und Aktivierung je Projekt (Konzeptprojekt AAA-AIbex-AIOS-V0.1)"
-  - "Memo 10 Das Verzeichnis .aios — global, Vault und Projekt (Konzeptprojekt AAA-AIbex-AIOS-V0.1)"
-  - "Memo 21 Repo ohne Vault und Skill-Gruppen (Konzeptprojekt AAA-AIbex-AIOS-V0.1)"
-  - "Memos 15–17 Versionen, Demo-Assistenten (Konzeptprojekt AAA-AIbex-AIOS-V0.2)"
-  - "Memos 03, 06, 11, 15, 23 (Konzeptprojekt AAA-AIbex-AIOS-V0.3)"
+  - "Memo 04 Der Vault §AIOS, Repo und Installation (AA-AIbex-AIOS, @Memo/V0.1)"
+  - "Memo 09 Parallele Versionen und Aktivierung je Projekt (AA-AIbex-AIOS, @Memo/V0.1)"
+  - "Memo 10 Das Verzeichnis .aios — global, Vault und Projekt (AA-AIbex-AIOS, @Memo/V0.1)"
+  - "Memo 21 Repo ohne Vault und Skill-Gruppen (AA-AIbex-AIOS, @Memo/V0.1)"
+  - "Memos 15–17 Versionen, Demo-Assistenten (AA-AIbex-AIOS, @Memo/V0.2)"
+  - "Memos 03, 06, 11, 15, 23 (AA-AIbex-AIOS, @Memo/V0.3)"
 ---
 
 # Installation und Konfiguration

@@ -10,10 +10,10 @@ related:
   - "Spec 02 Master-Kontext"
   - "Spec 04 Installation und Konfiguration"
   - "Spec 05 Projekte"
-  - "Memo 02 Aktivierung eines Agenten in Claude Code (Konzeptprojekt AAA-AIbex-AIOS-V0.1)"
-  - "Memo 03 Registrierung der Skills in Claude Code (Konzeptprojekt AAA-AIbex-AIOS-V0.1)"
-  - "Memos 14–17 Assistent, Versionen, Demo-Assistenten (Konzeptprojekt AAA-AIbex-AIOS-V0.2)"
-  - "Memos 01–07, 09–11, 13, 18–20, 25, 26 (Konzeptprojekt AAA-AIbex-AIOS-V0.3)"
+  - "Memo 02 Aktivierung eines Agenten in Claude Code (AA-AIbex-AIOS, @Memo/V0.1)"
+  - "Memo 03 Registrierung der Skills in Claude Code (AA-AIbex-AIOS, @Memo/V0.1)"
+  - "Memos 14–17 Assistent, Versionen, Demo-Assistenten (AA-AIbex-AIOS, @Memo/V0.2)"
+  - "Memos 01–07, 09–11, 13, 18–20, 25, 26 (AA-AIbex-AIOS, @Memo/V0.3)"
 ---
 
 # Skills und Assistenten
