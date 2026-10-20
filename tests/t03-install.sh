@@ -249,6 +249,6 @@ EOF
 # documentation in the installation (step 11)
 #===============================================================================
 
-   for F in "01 AIbex AIOS v0.3 — Überblick.md" "02 Master-Kontext.md" "03 Skills und Assistenten.md" "04 Installation und Konfiguration.md" "05 Projekte.md"; do
+   for F in "01 AIbex AIOS v0.4 — Überblick.md" "02 Master-Kontext.md" "03 Skills und Assistenten.md" "04 Installation und Konfiguration.md" "05 Projekte.md" "06 Pakete und Workspaces.md"; do
       assert_eq "$(cat "$I/doc/spec/$F")" "$(cat "$S/spec/$F")" "doc/spec: $F"
    done

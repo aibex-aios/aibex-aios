@@ -1,15 +1,16 @@
 ---
 title: "Projekte"
-date: 2026-10-03
+date: 2026-10-21
 author: iHux
-status: Spec
-tags: [spec, aios, v0.3, projekte]
+status: Entwurf
+tags: [spec, aios, v0.4, projekte]
 number: 05
 related:
-  - "Spec 01 AIbex AIOS v0.3 — Überblick"
+  - "Spec 01 AIbex AIOS v0.4 — Überblick"
   - "Spec 02 Master-Kontext"
   - "Spec 03 Skills und Assistenten"
   - "Spec 04 Installation und Konfiguration"
+  - "Spec 06 Pakete und Workspaces"
   - "Memo 06 Projekt, Root-Projekt und Projektstatus (AA-AIbex-AIOS, @Memo/V0.1)"
   - "Memos 08, 14–18, 21–24, 27, 28 (AA-AIbex-AIOS, @Memo/V0.3)"
 ---
@@ -31,7 +32,7 @@ Ein Projekt ist ein Ordner mit `@/` (Spec 01). Seine **Struktur** ist vollständ
 
 Jedes Projekt hat damit ein eigenes Repo, auch das Root-Projekt und jedes Unterprojekt eines Projekts mit Repo (Spec 01, Grundregel 9). Ein gemeinsames Repo für mehrere Projekte ist nicht vorgesehen. Ein Ausschluss darüber darf breiter sein als das Projekt, z. B. `/P-Projekte/` für alle Projekte darunter.
 
-Nicht zur Struktur gehören `@Memo/` (legt der Memo-Skill an, Spec 03), der Name (Hinweis, siehe *Namensregel*) und der Abgleich der Skills mit dem Manifest (`/aios-deploy`, Spec 03).
+Nicht zur Struktur gehören `@Memo/` (legt der Memo-Skill an, Spec 03), `@Data/` (legen Apps an, Spec 06), der Name (Hinweis, siehe *Namensregel*) und der Abgleich der Pakete mit `lock.yaml` (`/aios-deploy`, Spec 06).
 
 ## Namensregel
 
@@ -105,12 +106,14 @@ Prüft auf Anforderung des Users die **Integrität** eines Projekts und aller se
 | **Init** | S1–S4 erfüllt | `ok` oder `missing: <Lücken>` |
 | **Commit** | `git status --porcelain` des eigenen Repos ist leer; neue, nicht versionierte Dateien zählen mit | `ok`, `<n> changed, <m> new` oder `—` (kein eigenes Repo) |
 
+**Workspace:** Hat `<pfad>` oder ein Projekt darüber eine `.aios/workspace.yaml` (Spec 06), prüft `aios --integrity` zusätzlich jedes Projekt daraus, das unter `<pfad>` liegt (F2; V0.4, Memo 15). Ein fehlender Klon erscheint als eigene Zeile mit Init `missing: clone (workspace)` und gilt als nicht integer. Ist die Revision im ausgecheckten Zweig nicht enthalten oder zeigt `origin` auf ein anderes Repo als `workspace.yaml`, nennt der Bericht das unter *Notes*.
+
 Ein Projekt ist **integer**, wenn Init und Commit erfüllt sind. **Hinweise** (`Notes`) ändern daran nichts:
 
 - **Push-Stand:** Hat ein Repo einen Upstream, nennt der Bericht Commits, die noch nicht gepusht sind (voraus), und Commits, die lokal fehlen (hinter). Grundlage ist der lokale Stand ohne `git fetch`, also ohne Netz. Ein Repo ohne Remote ist zulässig.
 - **Namensregel:** ein Verstoß nach *Namensregel*.
 
-Registrierte Skills, Manifest und Blueprints gehören nicht zur Integrität; den Abgleich macht `/aios-deploy` (Spec 03).
+Registrierte Skills, installierte Pakete und Blueprints gehören nicht zur Integrität; den Abgleich macht `/aios-deploy` (Spec 06).
 
 **Bericht:**
 

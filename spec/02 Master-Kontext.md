@@ -1,15 +1,16 @@
 ---
 title: "Master-Kontext"
-date: 2026-10-03
+date: 2026-10-21
 author: iHux
-status: Spec
-tags: [spec, aios, v0.3, master-kontext]
+status: Entwurf
+tags: [spec, aios, v0.4, master-kontext]
 number: 02
 related:
-  - "Spec 01 AIbex AIOS v0.3 — Überblick"
+  - "Spec 01 AIbex AIOS v0.4 — Überblick"
   - "Spec 03 Skills und Assistenten"
   - "Spec 04 Installation und Konfiguration"
   - "Spec 05 Projekte"
+  - "Spec 06 Pakete und Workspaces"
   - "Memo 01 Brainstorming — Masterspace-Klassen und Agenten (AA-AIbex-AIOS, @Memo/V0.1)"
   - "Memo 06 Projekt, Root-Projekt und Projektstatus (AA-AIbex-AIOS, @Memo/V0.1)"
   - "Memos 01, 06, 08, 14, 15, 22 (AA-AIbex-AIOS, @Memo/V0.3)"
@@ -74,7 +75,7 @@ Die Klasse eines Unterverzeichnisses eines Masterspace steht im Namen. Erkannt w
 
 | Präfix | Klasse | Wirkung |
 |---|---|---|
-| `@!` | **Verborgen** | nie Kontext; Blueprints (`@!Skill`, `@!Prompt`, `@!Assistant`) |
+| `@!` | **Verborgen** | nie Kontext; Blueprints (`@!Skill`, `@!Prompt`, `@!Assistant`) und installierte Pakete (`@!Package`, Ausnahme K6) |
 | `@@` | **Verfügbar** | verfügbares Wissen: gehört **nicht** zum Master-Kontext und wird nur bei Bedarf gelesen; im Master-Kontext steht sein Inhaltsverzeichnis |
 | `@` | **Laden** | bildet den Master-Kontext; wird zu Beginn des Chats vollständig geladen |
 
@@ -84,7 +85,7 @@ Die Klassifikation ist rekursiv: Innerhalb eines Verzeichnisses einer Klasse kö
 
 ### Vorläufige Regeln der Klassen
 
-Die Detailregeln sind offen (Spec 01, O2). Für v0.3 gilt vorläufig:
+Die Detailregeln sind offen (Spec 01, O2). Für v0.4 gilt vorläufig:
 
 | # | Regel |
 |---|---|
@@ -93,6 +94,7 @@ Die Detailregeln sind offen (Spec 01, O2). Für v0.3 gilt vorläufig:
 | K3 | Dateien direkt in `@/` gehören zur Klasse *Laden*. |
 | K4 | Berücksichtigt werden nur Dateien mit der Endung `.md`. Andere Dateien (Bilder, PDFs) bleiben liegen und werden nicht geladen. Dateien und Verzeichnisse, deren Name mit `.` beginnt (z. B. `.obsidian/`, `.gitkeep`), werden übergangen. |
 | K5 | Die id des Master-Kontexts wird aus `cwd`, den Pfaden und Inhalten aller geladenen Dateien und den Pfaden des verfügbaren Wissens gebildet, also genau aus dem, was der Master-Kontext enthält (siehe `aios-context --id`). Inhalte des verfügbaren Wissens und verborgene Dateien gehen nicht ein. Genau: die ersten 8 Hex-Zeichen von SHA-256 über `cwd <cwd>⏎`, je geladener Datei `load <pfad>⏎<inhalt>⏎` und je Datei des verfügbaren Wissens `available <pfad>⏎`, in der Reihenfolge des Master-Kontexts. Der Assistent geht nicht ein; er hat eigene Marken. |
+| K6 | Ausnahme zu K2: Der Ordner `@!Package/<paket>/knowledge/` eines installierten Pakets wird eingeteilt, als läge sein Inhalt direkt in `@/` desselben Masterspace (K1–K4 gelten darin). Er folgt in der Reihenfolge auf die übrigen Einträge des Masterspace, Pakete nach Namen sortiert (Spec 06). |
 
 **Reihenfolge:** Masterspaces von der Vault-Root zum Projekt; innerhalb eines Masterspace je Verzeichnis nach Namen sortiert (Dateien und Verzeichnisse gemeinsam, Zeichencode), rekursiv. `files` zählt die geladenen Dateien.
 
@@ -181,7 +183,7 @@ Before your first answer, offer the user to complete it: call the skill /aios-in
 If the user declines, continue normally and do not offer it again.
 ```
 
-Die Lücken werden mit den Namen aus Spec 05 genannt (z. B. `own git repo`, `.gitignore lines: .aios/manifest`, `exclusion in parent repo /…/§Demo`).
+Die Lücken werden mit den Namen aus Spec 05 genannt (z. B. `own git repo`, `.gitignore lines: .aios/registry`, `exclusion in parent repo /…/§Demo`).
 
 ## Hooks
 

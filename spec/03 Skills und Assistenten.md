@@ -1,15 +1,16 @@
 ---
 title: "Skills und Assistenten"
-date: 2026-10-03
+date: 2026-10-21
 author: iHux
-status: Spec
-tags: [spec, aios, v0.3, skills, assistenten]
+status: Entwurf
+tags: [spec, aios, v0.4, skills, assistenten]
 number: 03
 related:
-  - "Spec 01 AIbex AIOS v0.3 — Überblick"
+  - "Spec 01 AIbex AIOS v0.4 — Überblick"
   - "Spec 02 Master-Kontext"
   - "Spec 04 Installation und Konfiguration"
   - "Spec 05 Projekte"
+  - "Spec 06 Pakete und Workspaces"
   - "Memo 02 Aktivierung eines Agenten in Claude Code (AA-AIbex-AIOS, @Memo/V0.1)"
   - "Memo 03 Registrierung der Skills in Claude Code (AA-AIbex-AIOS, @Memo/V0.1)"
   - "Memos 14–17 Assistent, Versionen, Demo-Assistenten (AA-AIbex-AIOS, @Memo/V0.2)"
@@ -18,7 +19,7 @@ related:
 
 # Skills und Assistenten
 
-Diese Spec regelt die Arten von Skills, ihre Versionen, das Ausrollen und Registrieren, die Assistenten mit ihrer Zuordnung zum Projekt, die Oberflächen sowie die AIOS-Skills `/aios-deploy`, `/aios-register`, `/aios-assistant`, `/aios-gui`, `/aios-memo` und den Alias `/gui`. Der Skill `/aios-context` und die Hooks stehen in Spec 02, `/aios-init`, `/aios-integrity` und `/aios-status` in Spec 05, Dateistrukturen, Formate und das CLI `aios` in Spec 04.
+Diese Spec regelt die Arten von Skills, ihre Versionen, das Registrieren, die Assistenten mit ihrer Zuordnung zum Projekt, die Oberflächen sowie die AIOS-Skills `/aios-register`, `/aios-assistant`, `/aios-gui`, `/aios-memo` und den Alias `/gui`. Der Skill `/aios-context` und die Hooks stehen in Spec 02, `/aios-init`, `/aios-integrity` und `/aios-status` in Spec 05, Dateistrukturen, Formate und das CLI `aios` in Spec 04, Pakete und `/aios-deploy` in Spec 06.
 
 ## Arten von Skills
 
@@ -26,17 +27,17 @@ Diese Spec regelt die Arten von Skills, ihre Versionen, das Ausrollen und Regist
 |---|---|---|---|
 | **AIOS-Skill** | `/opt/aios/v<version>/skills/aios/` | global `~/.claude/skills/aios-*/` (versionsneutral, Spec 04) | `aios --install` |
 | **Alias** | in `aios` eingebaut | global `~/.claude/skills/gui/` (versionsneutral, Spec 04) | `aios --install` |
-| **Projekt-Skill** | `@!Skill/<name>/` eines Masterspace der Kette | `<Projekt>/.claude/skills/<name>/` | Registrierung (siehe unten) |
+| **Projekt-Skill** | `@!Skill/<name>/` oder `@!Package/<paket>/skills/<name>/` eines Masterspace der Kette | `<Projekt>/.claude/skills/<name>/` | Registrierung (siehe unten) |
 | **Assistenten-Skill** | `@!Assistant/<assistant>/@!Skill/<name>/` oder `@!Skill/<name>/` der Kette, genannt in `skills:` oder `gui:` der `ASSISTANT.md` | nicht registriert; der Kontext des Assistenten enthält ihn | Assistent (siehe unten) |
 
 Innerhalb der Projekt- und Assistenten-Skills wird unterschieden:
 
 | | installiert | lokal |
 |---|---|---|
-| Herkunft | über `/aios-deploy` aus Bibliothek oder Pflegeprojekt | im Projekt geschrieben |
-| Manifest | steht in `skills:` einer `.aios/config.yaml` | steht in keinem Manifest |
+| Herkunft | aus einem Paket, installiert mit `/aios-deploy` (Spec 06) | im Projekt geschrieben (`@!Skill/`) |
+| Manifest | das Paket steht in `packages:` bzw. `lock.yaml` | steht in keinem Manifest |
 | Version | Pflicht | Pflicht; ein neuer lokaler Skill beginnt mit `0.1.0` |
-| Änderungen | nur über `/aios-deploy`; direkte Änderungen meldet `/aios-deploy` | frei |
+| Änderungen | nur über eine neue Version des Pakets; direkte Änderungen meldet `/aios-deploy` | frei |
 
 **Reservierte Namen:** Namen mit dem Präfix `aios-` sind AIOS-Skills vorbehalten, der Name `gui` dem Alias. Ein Blueprint `@!Skill/aios-…/` oder `@!Skill/gui/` in einer Kette wird nicht registriert; `/aios-context` und `/aios-register` melden ihn. `none` und `inherit` sind als Namen von Assistenten reserviert; ein Assistent mit einem dieser Namen wird nicht aufgelöst und gemeldet.
 
@@ -67,58 +68,31 @@ Ein Blueprint ohne gültige `version` gilt wie ein Blueprint mit falschem `name`
 
 | Aspekt | Regel |
 |---|---|
-| **Veröffentlichung** | Eine Version eines Skills aus einem Pflegeprojekt ist ein Git-Tag `<name>-v<version>` (z. B. `memo-v6.0.0`); `version` im Frontmatter des getaggten Stands muss übereinstimmen. Das gilt auch, wenn das Pflegeprojekt das Projekt der Session ist: Ausgerollt wird nur eine getaggte Version (V0.3, Memo 26) |
-| **Bibliothek** | Skills liegen in `/opt/aios/v<version>/skills/<gruppe>/<name>/<skill-version>/`, Assistenten in `/opt/aios/v<version>/assistants/<gruppe>/<name>/<assistant-version>/` (v0.3: Gruppen `basic` und `demo`, Spec 04); ihre Versionen sind unabhängig von der AIOS-Version. Im Repo tragen sie die Tags `<name>-v<version>` |
-| **Manifest** | `skills:` und `assistants:` in `.aios/config.yaml` nennen je Name eine **exakte** Version; Bereiche gibt es nicht |
+| **Veröffentlichung** | Ein Skill oder Assistent wird als Paket veröffentlicht: Tag `v<version>` im Repo des Pakets (Spec 06). Die `version` im Frontmatter eines Skills bzw. Assistenten ist seine eigene Version und muss nicht der des Pakets gleichen |
+| **Manifest** | `packages:` in `.aios/config.yaml` nennt je Paket einen Bereich, `lock.yaml` die aufgelöste Version (Spec 06) |
 | **Übertrumpfung** | je Name: der nächstgelegene Eintrag in der Konfigurationskette gewinnt (Spec 04) |
-| **Ort** | Das Manifest eines Projekts gehört zu den Blueprints in `@/@!Skill/` und `@/@!Assistant/` genau dieses Projekts |
+| **Ort** | Die Pakete eines Projekts liegen in `@/@!Package/` genau dieses Projekts |
 
-## Ausrollen — `/aios-deploy`
+## Installieren — `/aios-deploy`
 
-Ausrollen legt fest, **wo** ein Skill oder Assistent gilt: Es kopiert eine Version als Blueprint in einen Masterspace und trägt sie ins Manifest ein.
+Skills und Assistenten kommen als **Pakete** in ein Projekt: `/aios-deploy` (`aios --deploy`) löst die gewünschten Pakete auf, holt sie vom Hub und spiegelt sie nach `@/@!Package/<name>/`. Aufruf, Ablauf, Marke, Abgleich, Entfernen und Vorrang regelt Spec 06. Für diese Spec gilt:
 
-**Aufruf:**
+- Ein Skill aus `@!Package/<paket>/skills/<name>/` ist ein Projekt-Skill wie ein Blueprint `@!Skill/<name>/` desselben Masterspace, ein Assistent aus `@!Package/<paket>/assistants/<name>/` ein Assistent wie `@!Assistant/<name>/`.
+- Innerhalb eines Masterspace gewinnt der lokale Blueprint vor dem Element aus einem Paket; über Masterspaces hinweg gewinnt der nächstgelegene (Spec 06, *Vorrang*).
+- Lokale Blueprints in `@!Skill/` und `@!Assistant/` schreibt nur der User; AIOS schreibt sie nicht (Spec 01, I2).
 
-| Skill | CLI | Wirkung |
-|---|---|---|
-| `/aios-deploy memo==6.0.0` | `aios --deploy memo==6.0.0 [--to <projekt>] [--assistant <name>] [--from <pflegeprojekt>]` | eine Version eines Skills ausrollen |
-| `/aios-deploy gaertner==0.2.0` | `aios --deploy gaertner==0.2.0 [--to <projekt>]` | eine Version eines Assistenten der Bibliothek ausrollen |
-| `/aios-deploy` | `aios --deploy [--to <projekt>] [--from <pflegeprojekt>]` | das Projekt mit seinem Manifest abgleichen |
-| — | `aios --library` | Skills und Assistenten der Bibliothek mit ihren Versionen |
+**Pakete der Grundausstattung in v0.4** (Hub `aibex-aios`):
 
-| Option | Bedeutung | Standard |
-|---|---|---|
-| `--to <projekt>` | Zielprojekt (ein Ordner mit `@/`) | das Projekt der Session; der Skill fragt nach und schlägt das Root-Projekt vor |
-| `--assistant <name>` | nur für Skills: Ziel ist `@!Assistant/<name>/@!Skill/` des Zielprojekts | — |
-| `--from <pflegeprojekt>` | nur für Skills: Quelle ist ein Git-Repo mit `@Skill/<name>/` und dem Tag `<name>-v<version>`, auch das Projekt der Session selbst | Bibliothek der gültigen AIOS-Version |
+| Paket | Typ | Version | Inhalt |
+|---|---|---|---|
+| `memo` | `skill` | 6.0.0 | neutrale Fassung des Memo-Stils ohne Bezüge auf einen bestimmten Vault |
+| `gaertner` | `assistant` | 0.2.0 | Titel „Gärtner"; bodenständig, rechnet nur mit Äpfeln und Birnen; private Skills `apfel-birnen-algebra` 0.1.0 und `gaertner-gui` 0.1.0 (Oberfläche mit Apfel-Birnen-Rechner als HTML-Teil); Wissen: Grundlagen (Laden), Sortenkunde und Veredelung (Verfügbar) |
+| `astronom` | `assistant` | 0.1.0 | Titel „Astronom"; poetisch-präzise, rechnet nur mit Sonne und Mond; privater Skill `sonne-mond-zahlen` 0.1.0; keine Oberfläche |
+| `taschenrechner` | `app` | 0.1.0 | Demo-App (Spec 06) |
 
-**Skill oder Assistent:** Ohne `--from` wird `<name>` in der Bibliothek gesucht. Namen sind über alle Skills und Assistenten der Bibliothek eindeutig; ein Name ist also entweder ein Skill oder ein Assistent. Assistenten werden in v0.3 nur aus der Bibliothek ausgerollt.
+Die Demo-Assistenten liegen in eigenen Paket-Repos. Ihre Inhalte enthalten keine Pfade oder Bezüge auf einen bestimmten Vault; der Rollentext nennt in einem Satz, dass es sich um einen Demo-Assistenten handelt, dessen Inhalte der Veranschaulichung dienen. Ihre Grenzen sind gewollt: Der Gärtner lehnt Sonne-Mond-Aufgaben freundlich ab, der Astronom Apfel-Birne-Aufgaben. So zeigt das Ergebnis, welcher Assistent und welcher Skill aktiv sind.
 
-**Ablauf:**
-
-1. Quelle bestimmen und prüfen: Version vorhanden (Bibliothek) bzw. Tag vorhanden und Frontmatter passend (Pflegeprojekt). Fehlt der Tag, bricht `aios --deploy` mit dem Hinweis ab, die Version zu taggen (`git tag <name>-v<version>`).
-2. Ziel bestimmen: `<ziel>/@/@!Skill/<name>/`, `<ziel>/@/@!Assistant/<assistant>/@!Skill/<name>/` bzw. für einen Assistenten `<ziel>/@/@!Assistant/<name>/`.
-3. Vorschau: `new`, `changed`, `remove` je Datei, dazu die Änderung am Manifest (`memo: 5.2.0 -> 6.0.0`). Weicht der vorhandene Blueprint vom ausgerollten Stand ab (Prüfsumme in der Marke), wird er als „direkt geändert" gemeldet; ein gleichnamiger lokaler Blueprint ohne Marke ebenfalls. Beide werden ersetzt.
-4. Nach Ja: Blueprint spiegeln (nur dieser eine Ordner) mit der Marke `.aios-deploy`, Manifest `<ziel>/.aios/config.yaml` schreiben (nur die Zeile des Skills bzw. Assistenten; Kommentare und andere Zeilen bleiben).
-5. Bei einem Projekt-Skill die Projekt-Skills im Projekt der Session registrieren (wie `/aios-register`); bei Assistenten und Assistenten-Skills entfällt das, weil sie nicht registriert werden.
-
-**Marke `.aios-deploy`:** Jeder ausgerollte Blueprint enthält die Datei `.aios-deploy` mit `name`, `version`, `source` (`library` oder Pfad des Pflegeprojekts) und `digest` (Prüfsumme der ausgerollten Dateien ohne die Marke, Verfahren wie Spec 04, *Manifest*). Sie wird mit dem Blueprint versioniert und unterscheidet ausgerollte von lokalen Blueprints. Bei einem Assistenten umfasst `digest` den ganzen Ordner einschließlich seiner privaten Skills, seiner Oberfläche und seines Wissens, ausgenommen Unterordner `@!Skill/<name>/` mit eigener Marke (Skills, die später mit `--assistant` hinzugefügt wurden).
-
-**Manifeste:** Ein Assistent steht in `assistants:` als `<name>: <version>`. Ein Skill, der mit `--assistant <name>` ausgerollt wurde, steht in `skills:` als `<assistant>/<skill>: <version>`. Die privaten Skills eines ausgerollten Assistenten gehören zu seiner Version und stehen nicht einzeln im Manifest.
-
-Ohne Argument gleicht `/aios-deploy` alle Einträge in `skills:` und `assistants:` des Zielprojekts mit den Blueprints ab (z. B. nach `git pull` oder auf einem anderen Rechner): Ein fehlender, direkt geänderter oder in einer anderen Version vorliegender Blueprint wird aus seiner Quelle neu ausgerollt. Quelle ist das mit `--from` genannte Pflegeprojekt, sonst das Pflegeprojekt aus der Marke, sonst die Bibliothek; ist keine Quelle zu finden, wird das mit Warnung gemeldet. Ein Blueprint mit Marke, dessen Eintrag aus dem Manifest entfernt wurde, wird nach Rückfrage entfernt; lokale Blueprints ohne Marke bleiben unberührt.
-
-**Bibliothek in v0.3:**
-
-| Name | Art | Gruppe | Version | Inhalt |
-|---|---|---|---|---|
-| `memo` | Skill | `basic` | 6.0.0 | neutrale Fassung des Memo-Stils ohne Bezüge auf einen bestimmten Vault |
-| `gaertner` | Assistent | `demo` | 0.2.0 | Titel „Gärtner"; bodenständig, rechnet nur mit Äpfeln und Birnen; private Skills `apfel-birnen-algebra` 0.1.0 und `gaertner-gui` 0.1.0 (Oberfläche mit Apfel-Birnen-Rechner als HTML-Teil); Wissen: Grundlagen (Laden), Sortenkunde und Veredelung (Verfügbar) |
-| `astronom` | Assistent | `demo` | 0.1.0 | Titel „Astronom"; poetisch-präzise, rechnet nur mit Sonne und Mond; privater Skill `sonne-mond-zahlen` 0.1.0; keine Oberfläche |
-
-Die Demo-Assistenten werden im Repo `aibex-aios` gepflegt. Ihre Inhalte enthalten keine Pfade oder Bezüge auf einen bestimmten Vault; der Rollentext nennt in einem Satz, dass es sich um einen Demo-Assistenten handelt, dessen Inhalte der Veranschaulichung dienen. Ihre Grenzen sind gewollt: Der Gärtner lehnt Sonne-Mond-Aufgaben freundlich ab, der Astronom Apfel-Birne-Aufgaben. So zeigt das Ergebnis, welcher Assistent und welcher Skill aktiv sind.
-
-Skills und Assistenten der Bibliothek rollt nur der User aus; `aios --install` bietet es nicht an.
+Pakete installiert nur der User; `aios --install` bietet es nicht an.
 
 ## Registrieren — `/aios-register`
 
@@ -126,10 +100,10 @@ Registrieren macht die geltenden Projekt-Skills **für Claude Code aufrufbar**.
 
 **Algorithmus** (für das Projekt der Session; registriert wird nur, wenn `cwd` ein initialisiertes Projekt mit `@/` in einem aktivierten Vault ist, sonst nichts):
 
-1. Alle `<D>/@/@!Skill/<name>/` der Master-Space-Kette sammeln (private Skills eines Assistenten in `@!Assistant/…/@!Skill/` gehören nicht dazu). Bei gleichem Namen gewinnt der nächstgelegene Masterspace. Übersprungen und gemeldet werden reservierte Namen (`aios-*`, `gui`), ungültige Namen, Ordner ohne `SKILL.md`, Skills, deren `name` nicht dem Verzeichnisnamen entspricht, und Skills ohne gültige `version`.
-2. Mit `<Projekt>/.claude/skills/` und `<Projekt>/.aios/manifest` vergleichen.
-3. **neu**: kopieren; **geändert** (anderer Inhalt oder andere Quelle des Blueprints, oder die Kopie in `.claude/skills/` wurde verändert): ersetzen; **weggefallen** (im Manifest, aber nicht mehr in der Kette oder nicht mehr gültig): entfernen. Skills in `.claude/skills/`, die nicht im Manifest stehen, bleiben unberührt und werden gemeldet, wenn ein Blueprint denselben Namen hat.
-4. `.aios/manifest` schreiben (Format Spec 04).
+1. Alle `<D>/@/@!Skill/<name>/` und `<D>/@/@!Package/<paket>/skills/<name>/` der Master-Space-Kette sammeln (private Skills eines Assistenten in `@!Assistant/…/@!Skill/` bzw. `…/assistants/…/@!Skill/` gehören nicht dazu). Bei gleichem Namen gewinnt der nächstgelegene Masterspace, darin der lokale Blueprint vor dem Paket (Spec 06). Übersprungen und gemeldet werden reservierte Namen (`aios-*`, `gui`), ungültige Namen, Ordner ohne `SKILL.md`, Skills, deren `name` nicht dem Verzeichnisnamen entspricht, und Skills ohne gültige `version`.
+2. Mit `<Projekt>/.claude/skills/` und `<Projekt>/.aios/registry` vergleichen.
+3. **neu**: kopieren; **geändert** (anderer Inhalt oder andere Quelle des Blueprints, oder die Kopie in `.claude/skills/` wurde verändert): ersetzen; **weggefallen** (in der Registry, aber nicht mehr in der Kette oder nicht mehr gültig): entfernen. Skills in `.claude/skills/`, die nicht in der Registry stehen, bleiben unberührt und werden gemeldet, wenn ein Blueprint denselben Namen hat.
+4. `.aios/registry` schreiben (Format Spec 04). Eine alte `.aios/manifest` aus v0.3 wird dabei entfernt.
 
 | Aufruf | Rückfrage | Anlass |
 |---|---|---|
@@ -141,7 +115,7 @@ Registrieren macht die geltenden Projekt-Skills **für Claude Code aufrufbar**.
 
 ## Assistenten
 
-Ein Assistent ist eine Rolle, die AIOS dem KI-Assistenten des Hosts gibt: wer spricht, was er weiß, welche Skills und welche Oberfläche er hat. **Abbildung auf Claude Code (v0.3):** Der Assistent ist dem Projekt zugeordnet; die Hooks laden ihn als Kontext in jeden Chat des Projekts (Spec 02, *Assistent der Session*). Die Agentenfunktion von Claude Code (`.claude/agents/`, Subagenten) wird nicht verwendet.
+Ein Assistent ist eine Rolle, die AIOS dem KI-Assistenten des Hosts gibt: wer spricht, was er weiß, welche Skills und welche Oberfläche er hat. **Abbildung auf Claude Code (v0.4):** Der Assistent ist dem Projekt zugeordnet; die Hooks laden ihn als Kontext in jeden Chat des Projekts (Spec 02, *Assistent der Session*). Die Agentenfunktion von Claude Code (`.claude/agents/`, Subagenten) wird nicht verwendet.
 
 ### Aufbau
 
@@ -151,7 +125,6 @@ Ein Assistent ist eine Rolle, die AIOS dem KI-Assistenten des Hosts gibt: wer sp
 ├── @!Skill/<skill>/SKILL.md               geteilte Skills
 └── @!Assistant/<assistant>/
     ├── ASSISTANT.md                       Bündel und Rollentext
-    ├── .aios-deploy                       nur bei ausgerollten Assistenten
     ├── @!Skill/<skill>/SKILL.md           private Skills (optional)
     ├── @!Skill/<gui-skill>/               Oberfläche (optional): SKILL.md, gui.yaml, HTML-Teile
     └── @Wissen/                           Wissen des Assistenten, mit Klassen
@@ -193,11 +166,11 @@ tools: [read, search]
 | `skills` | nein | Namen von Skills |
 | `gui` | nein | Name des Skills mit der Oberfläche des Assistenten; muss in `skills` stehen (siehe *Oberflächen*) |
 | `model` | nein | Wunsch an den Host, Modell je Host; in der Desktop-App nur ein Hinweis an den User |
-| `tools` | nein | Wunsch an den Host, neutrale Namen; in v0.3 nur dokumentierend, nicht erzwungen |
+| `tools` | nein | Wunsch an den Host, neutrale Namen; in v0.4 nur dokumentierend, nicht erzwungen |
 
-**Auflösung von `prompt`, `skills` und `gui`:** zuerst im Assistentenordner (`<assistant>/@!Prompt/<prompt>.md`, `<assistant>/@!Skill/<skill>/SKILL.md`), danach in den Masterspaces der Kette vom Projekt aufwärts (`<D>/@/@!Prompt/…`, `<D>/@/@!Skill/…`); der nächstgelegene Treffer gewinnt. Ein nicht gefundener Name, ein Skill ohne gültige `version` und ein `gui`, das nicht in `skills` steht, sind Fehler, die `aios-context --assistant` meldet.
+**Auflösung von `prompt`, `skills` und `gui`:** zuerst im Assistentenordner (`<assistant>/@!Prompt/<prompt>.md`, `<assistant>/@!Skill/<skill>/SKILL.md`), danach in den Masterspaces der Kette vom Projekt aufwärts (`<D>/@/@!Prompt/…`, `<D>/@/@!Skill/…`, `<D>/@/@!Package/<paket>/skills/…`); der nächstgelegene Treffer gewinnt. Ein nicht gefundener Name, ein Skill ohne gültige `version` und ein `gui`, das nicht in `skills` steht, sind Fehler, die `aios-context --assistant` meldet.
 
-**Assistenten der Kette:** alle `<D>/@/@!Assistant/<name>/ASSISTANT.md`; bei gleichem Namen gewinnt der nächstgelegene Masterspace. `name` muss dem Verzeichnisnamen entsprechen, `version` muss gültig sein; ein Assistent, der das nicht erfüllt, wird nicht aufgelöst und von `aios-context --assistants` und `/aios-assistant` gemeldet. Das Frontmatter wird mit der YAML-Untermenge von Spec 04 gelesen (mit Blocktexten wie `description: >`); `model` darf ein einzelner Wert (`model: opus`) oder je Host angegeben sein. Assistenten gibt es nur in einem mit AIOS aktivierten Vault. `aios-context --assistants` listet sie mit Titel, Version und Beschreibung.
+**Assistenten der Kette:** alle `<D>/@/@!Assistant/<name>/ASSISTANT.md` und `<D>/@/@!Package/<paket>/assistants/<name>/ASSISTANT.md`; bei gleichem Namen gewinnt der nächstgelegene Masterspace, darin der lokale Assistent vor dem Paket. `name` muss dem Verzeichnisnamen entsprechen, `version` muss gültig sein; ein Assistent, der das nicht erfüllt, wird nicht aufgelöst und von `aios-context --assistants` und `/aios-assistant` gemeldet. Das Frontmatter wird mit der YAML-Untermenge von Spec 04 gelesen (mit Blocktexten wie `description: >`); `model` darf ein einzelner Wert (`model: opus`) oder je Host angegeben sein. Assistenten gibt es nur in einem mit AIOS aktivierten Vault. `aios-context --assistants` listet sie mit Titel, Version und Beschreibung.
 
 **Wissen des Assistenten:** Der Assistentenordner wird nach den Klassen von Spec 02 eingeteilt, als wäre er ein Masterspace: Dateien und Ordner ohne Präfix werden geladen (ohne `ASSISTANT.md`), `@@…` ist verfügbar, `@!…` (auch `@!Prompt`, `@!Skill`) verborgen. Dateien, deren Name mit `.` beginnt (z. B. `.aios-deploy`), werden übergangen.
 
@@ -348,7 +321,7 @@ AIOS-Skill mit der Oberfläche von AIOS selbst. Ihre Beschreibung liegt im AIOS-
 | Projekt initialisieren | `/aios-init` (Dialog *Projekt initialisieren*, Spec 02) |
 | Kontext und Konfiguration | `/aios-context`, danach `aios --config` |
 | Assistent zuordnen | `/aios-assistant` mit Auswahl aus `aios-context --assistants`, `none`, `inherit` |
-| Skills ausrollen und registrieren | `/aios-deploy` (Abgleich), `/aios-register` |
+| Pakete abgleichen und Skills registrieren | `/aios-deploy` (Abgleich), `/aios-register` |
 | Integrität prüfen | `/aios-integrity` |
 | Projektstatus | `/aios-status` |
 | Memo schreiben | `/memo` oder `/aios-memo` (Vorrang siehe unten) |
@@ -362,5 +335,5 @@ AIOS-Skill, damit in jedem Projekt eines aktivierten Vaults ein wohldefinierter 
 | Inhalt | der Rumpf von `memo==6.0.0` (Nummer, Dateiname, Header-Block, Struktur, Formatierung, Obsidian-LaTeX); er wird nicht an spätere Versionen von `memo` angeglichen |
 | Version | wie bei allen AIOS-Skills: versionsneutrale Hülle, Rumpf aus der für das Projekt gültigen AIOS-Version |
 | `@Memo/` | legt der Skill an, wenn er das erste Memo eines Projekts schreibt und der Ordner fehlt; `aios --init` legt ihn nicht an (Spec 05) |
-| Vorrang | Ist im Projekt ein Skill `memo` registriert (`memo` in `.aios/manifest`), gibt `aios --skill aios-memo` statt des Rumpfs nur aus: „Use `/memo` — the skill `memo` is registered in this project." Zusätzlich sagt die Beschreibung von `aios-memo`: „Nur verwenden, wenn kein Skill `memo` verfügbar ist." |
+| Vorrang | Ist im Projekt ein Skill `memo` registriert (`memo` in `.aios/registry`), gibt `aios --skill aios-memo` statt des Rumpfs nur aus: „Use `/memo` — the skill `memo` is registered in this project." Zusätzlich sagt die Beschreibung von `aios-memo`: „Nur verwenden, wenn kein Skill `memo` verfügbar ist." |
 | Regeln, die auf `memo` verweisen | gelten ersatzweise mit `aios-memo`, wenn `memo` nicht ausgerollt oder nicht registriert ist |
