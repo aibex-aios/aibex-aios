@@ -161,4 +161,3 @@ Der Abnahmetest von v0.4 wird mit dem Implementierungsplan festgelegt (V0.4, Mem
 | O2 | Detailregeln der Klassen | siehe Spec 02, *Vorläufige Regeln der Klassen* |
 | O4 | Stehen HTML-Oberflächen im Chat in jeder Installation der Desktop-App bereit? (V0.3, Memo 10, 25, 31) | Geprüft: in der Desktop-App vorhanden, in Headless-Sessions und der CLI nicht. Ohne HTML-Oberfläche zeigen `/gui` und `/aios-gui` das Menü der CLI |
 | O5 | Abnahmetest von v0.4 | wird mit dem Implementierungsplan festgelegt |
-| O6 | Festlegungen S1–S9 aus Spec 06 | im Entwurf, zu bestätigen |

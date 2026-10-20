@@ -119,7 +119,7 @@ Der Index nennt je Paket nur `name`, `repo`, `type` und `description`. Die verf�
 
 ## Resolver
 
-Der Resolver bestimmt aus den gewünschten Paketen (`packages:` der Konfigurationskette, Spec 04) die zu installierenden Versionen (V0.4, Memo 15, F5):
+Der Resolver bestimmt aus den gewünschten Paketen eines Projekts (`packages:` in seiner eigenen `.aios/config.yaml`) die zu installierenden Versionen (V0.4, Memo 15, F5). Pakete der Projekte darüber zählen nicht (V0.4, Memo 17):
 
 1. Für jedes gewünschte Paket die Versionen aus dem Hub holen.
 2. Je Paket die **höchste Version** wählen, die alle Bereiche erfüllt, die bis jetzt dafür gelten (aus `packages:` und aus `depends` bereits gewählter Pakete).
@@ -146,24 +146,24 @@ Ohne Bereich gilt `~=<höchste Version>` mit den ersten beiden Stellen (`taschen
 
 **Pflegeprojekte:** Mit `--from <repo>` (lokaler Pfad oder URL eines Git-Repos mit `manifest.yaml` und Tags `v<version>`) kommt ein Paket nicht aus dem Hub, sondern aus diesem Repo, z. B. aus einem Projekt, in dem der Skill gepflegt wird. `lock.yaml` hält das Repo fest; der Abgleich ohne Argument holt das Paket wieder von dort. Installiert wird auch hier nur eine getaggte Version.
 
-**Ziel** ist das Projekt der Session oder `--to <projekt>` (F4). Ein Paket in einem Projekt gilt für dieses Projekt und alle Projekte der Kette darunter. Der Skill fragt nach dem Ziel und schlägt das Root-Projekt vor.
+**Ziel** ist das Projekt der Session oder `--to <projekt>` (F4). Ein Paket in einem Projekt gilt für dieses Projekt und alle Projekte der Kette darunter, solange dort kein näheres Paket gleichen Namens liegt. Der Skill fragt nach dem Ziel und schlägt das Root-Projekt vor.
 
 **Ablauf:**
 
-1. `packages:` in `<ziel>/.aios/config.yaml` mit dem neuen Eintrag lesen, zusammen mit den `packages:` der Kette darüber (je Name gewinnt der nächstgelegene Eintrag, Spec 04).
+1. `packages:` in `<ziel>/.aios/config.yaml` mit dem neuen Eintrag lesen. `packages:` der Projekte darüber wird nicht berücksichtigt.
 2. Auflösen (*Resolver*).
 3. Pakete in den Cache holen: `git clone --depth 1 --branch v<version> <repo>` nach `~/.aios/packages/<name>/<version>/`, Commit-SHA merken. Ein vorhandener Cache-Eintrag wird wiederverwendet, wenn sein Commit zu `lock.yaml` passt.
 4. Vorschau: je Paket `new`, `upgrade X → Y`, `remove`, `unchanged`; Dateien, die sich in `@!Package/<name>/` ändern; direkt geänderte Kopien; Arbeitspferde mit ihren Skripten; Änderungen an `config.yaml` und `lock.yaml`.
 5. Nach Ja: je Paket den Inhalt ohne `.git` nach `<ziel>/@/@!Package/<name>/` spiegeln (nur dieser Ordner), die Marke schreiben, `install` der Arbeitspferde nach eigener Bestätigung ausführen (*Arbeitspferde*), `packages:` und `lock.yaml` schreiben.
 6. Projekt-Skills im Projekt der Session registrieren (Spec 03).
 
-Abhängigkeiten werden in dasselbe Ziel installiert wie das Paket, das sie verlangt, außer sie liegen dort schon oder in einem Projekt der Kette darüber in einer passenden Version.
+**Jedes Projekt ist in sich vollständig** (V0.4, Memo 17): Abhängigkeiten werden immer in dasselbe Ziel installiert wie das Paket, das sie verlangt, auch wenn ein Projekt darüber dasselbe Paket schon hat. `lock.yaml` eines Projekts beschreibt damit alles, was es braucht, und Änderungen an Paketen darüber können es nicht brechen. Liegt dasselbe Paket in der Kette mehrfach, gilt das nächstgelegene (*Vorrang*).
 
 **Marke `.aios-deploy`** (F3): `@!Package/<name>/.aios-deploy` mit `name`, `version`, `repo`, `commit` und `digest` (Verfahren wie Spec 04, *`.aios/registry`*, über alle Dateien des Pakets ohne die Marke). Weicht der Inhalt vom `digest` ab, meldet `aios --deploy` die Kopie als „direkt geändert" und ersetzt sie nach Rückfrage.
 
 **Abgleich ohne Argument:** Für jedes Paket aus `lock.yaml` des Ziels prüfen, ob `@!Package/<name>/` mit Version und `digest` übereinstimmt. Fehlende, abweichende und direkt geänderte Kopien werden aus dem Cache bzw. dem Hub neu gespiegelt. Ein Paketordner mit Marke, der in `lock.yaml` nicht mehr steht, wird nach Rückfrage entfernt.
 
-**Entfernen:** `--remove <name>` entfernt den Eintrag aus `packages:`, löst neu auf, ruft `remove` der Arbeitspferde des Pakets nach Bestätigung auf und entfernt `@!Package/<name>/` sowie Pakete, die nur noch als Abhängigkeit dieses Pakets im Ziel lagen. Verlangt ein anderes Paket es noch, bricht `--remove` mit dieser Angabe ab.
+**Entfernen:** `--remove <name>` entfernt den Eintrag aus `packages:`, löst neu auf, ruft `remove` der Arbeitspferde des Pakets nach Bestätigung auf und entfernt `@!Package/<name>/` sowie Pakete, die nur noch als Abhängigkeit dieses Pakets im Ziel lagen. Projekte darunter sind davon nicht betroffen, weil sie ihre Abhängigkeiten selbst enthalten. Verlangt ein anderes Paket es noch, bricht `--remove` mit dieser Angabe ab.
 
 ### Wirkung installierter Pakete
 
@@ -357,18 +357,6 @@ Zusätzlich zu Spec 01 (I1–I9):
 | P5 | `aios --contribute` schreibt nur in einen neuen Zweig; es pusht nie auf den Standardzweig. |
 | P6 | `@Data/` wird von keinem Befehl außer der App selbst geändert; `--remove` lässt ihn stehen. |
 
-## Festlegungen dieses Entwurfs (zu bestätigen)
+## Entschiedene Festlegungen
 
-Beim Schreiben getroffen, nicht in den Memos entschieden (Regel *Weiter*, *Offenlegen*):
-
-| # | Festlegung |
-|---|---|
-| S1 | Aufbau eines Paket-Repos mit `skills/`, `assistants/`, `knowledge/`, `commands/`, `workers/`, `contrib/` |
-| S2 | Hooks (`contents.hooks`) in v0.4 ohne Wirkung, nur gemeldet |
-| S3 | Befehle eines Pakets über `aios --run <name>`, Arbeitspferde über `aios --worker <paket>/<name> start\|stop` |
-| S4 | Cache `~/.aios/packages/<name>/<version>/`, Index in `~/.aios/hub/index/`, Schlüssel `hub` und Variable `AIOS_HUB` |
-| S5 | kein stilles Update: Versionen aus `lock.yaml` bleiben, bis `--upgrade` aufgerufen wird; ohne Bereich `~=` der höchsten Version mit zwei Stellen |
-| S6 | Vorrang: zuerst der nächstgelegene Masterspace, darin der lokale Blueprint vor dem Paket |
-| S7 | Tag oder Commit als Revision im Workspace: lokaler Zweig `ws/<revision>` statt *detached HEAD* |
-| S8 | Wissen eines Pakets (`knowledge/`) wird nach den Klassen eingeteilt, als läge es direkt in `@/` |
-| S9 | Abhängigkeiten werden ins selbe Ziel installiert, außer sie liegen in der Kette darüber schon in passender Version |
+Die beim Schreiben getroffenen Festlegungen S1–S9 sind in V0.4, Memo 17 entschieden: S1–S8 wie in dieser Spec beschrieben, S9 als „jedes Projekt ist in sich vollständig“ (*Installation als Kopie*).

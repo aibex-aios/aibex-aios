@@ -166,7 +166,7 @@ hosts: [claude-code]
 | Schlüssel | erlaubt in | Wert | Regel |
 |---|---|---|---|
 | `aios` | Vault, Projekt | Version ohne `v` | aktiviert AIOS (Spec 02); muss als einzelne Zeile `aios: <version>` stehen, weil die Weiterleiter sie ohne YAML-Parser lesen |
-| `packages` | Vault, Projekt | Name → Bereich | gewünschte Pakete (Spec 06) |
+| `packages` | Vault, Projekt | Name → Bereich | gewünschte Pakete dieses Projekts, nicht vererbt (Spec 06) |
 | `skills`, `assistants` | Vault, Projekt | Name → exakte Version | aus v0.3; gelten als `packages` mit `==<version>` (Spec 06, *Umstellung von v0.3*) |
 | `assistant` | Vault, Projekt | `<name>`, `none` oder `inherit` | Zuordnung des Assistenten (Spec 03, *Zuordnung*); fehlt der Schlüssel, gilt `inherit` |
 | `hosts` | alle Ebenen | Liste | in v0.4 nur `claude-code` |
@@ -179,7 +179,7 @@ hosts: [claude-code]
 
 ### Konfigurationskette
 
-Gelesen wird von `cwd` aufwärts jede `.aios/config.yaml` bis zur Vault-Root, danach `~/.aios/config.yaml`. **Je Schlüssel gilt der nächstgelegene Eintrag**; bei `packages` je Name. Beim Schlüssel `assistant` zählt der Wert `inherit` als „kein Eintrag": Die Suche geht weiter nach oben (Spec 03). Außerhalb eines Vaults gilt nur `~/.aios/config.yaml`; liegt `~` in einem Vault, zählt `~/.aios/config.yaml` trotzdem als Ebene *Home*. `aios --config [<pfad>]` zeigt die wirksamen Werte mit ihrer Herkunft.
+Gelesen wird von `cwd` aufwärts jede `.aios/config.yaml` bis zur Vault-Root, danach `~/.aios/config.yaml`. **Je Schlüssel gilt der nächstgelegene Eintrag**. Ausnahme `packages`: Es gilt nur im eigenen Projekt und wird nicht vererbt, weil jedes Projekt seine Pakete vollständig selbst enthält (Spec 06); die installierten Pakete wirken trotzdem über die Kette. Beim Schlüssel `assistant` zählt der Wert `inherit` als „kein Eintrag": Die Suche geht weiter nach oben (Spec 03). Außerhalb eines Vaults gilt nur `~/.aios/config.yaml`; liegt `~` in einem Vault, zählt `~/.aios/config.yaml` trotzdem als Ebene *Home*. `aios --config [<pfad>]` zeigt die wirksamen Werte mit ihrer Herkunft.
 
 | Rang | Quelle |
 |---|---|
