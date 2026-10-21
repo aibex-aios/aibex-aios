@@ -378,11 +378,15 @@ Die Datei wird mit PyYAML gelesen und vom User gepflegt.
 | `aios --workspace freeze [<pfad>]` | Commit-SHA jedes Projekts in `lock.yaml` des Wurzelprojekts schreiben (Abschnitt `workspace`) |
 | `aios --workspace status [<pfad>]` | je Projekt: vorhanden, Zweig, Revision enthalten, voraus/hinter dem Remote, offene Änderungen |
 
+**Init:** Das geklonte Wurzelprojekt wird wie ein Projekt des Workspace behandelt: Ziel ist `<ordner>` im Ordner der Session, in einem aktivierten Vault (I4); liegt darüber ein Repo, trägt AIOS `/<ordner>/` in dessen `.gitignore` ein und committet nur diese Zeile (I9). Gibt es `<ordner>` schon, bricht `init` ab; für einen bestehenden Workspace gilt `update` (V0.4, Memo 57).
+
 `<pfad>` ist das Wurzelprojekt oder ein Ordner darunter; AIOS sucht die nächste `workspace.yaml` aufwärts. Ohne `--group` gelten alle Projekte; mit `--group` nur Projekte dieser Gruppen und Projekte ohne Gruppe.
 
 **Klonen:** `git clone <url> <path>`. Ist `revision` ein Zweig, wird er ausgecheckt. Ist sie ein Tag oder Commit, legt AIOS einen lokalen Zweig `ws/<revision>` an diesem Commit an und checkt ihn aus. Es gibt kein *detached HEAD* (V0.4, Memo 10). Danach trägt AIOS `/<path>/` in die `.gitignore` des Repos darüber ein, wenn sie fehlt, und committet nur diese Zeile („AIOS: <path> als Projekt des Workspace ausgeschlossen", I9).
 
-**Update** (nur fast-forward): Ist `revision` ein Zweig, `git fetch` und `git merge --ff-only origin/<zweig>`. Ist sie ein Tag oder Commit und enthält der ausgecheckte Zweig ihn nicht, wird der Zweig per fast-forward auf diesen Commit gesetzt, wenn das möglich ist. Ist ein fast-forward nicht möglich (eigene Commits, nicht committete Änderungen, anderer Zweig ausgecheckt), lässt AIOS das Projekt unverändert und meldet es mit dem Grund. `update` schreibt nichts in die Projekte außer durch Klonen und fast-forward.
+**Update** (nur fast-forward): Ist `revision` ein Zweig, `git fetch` und `git merge --ff-only origin/<zweig>`. Ist sie ein Tag oder Commit und enthält der ausgecheckte Zweig ihn nicht, wird der Zweig per fast-forward auf diesen Commit gesetzt, wenn das möglich ist. Ist ein fast-forward nicht möglich (eigene Commits, nicht committete Änderungen, anderer Zweig ausgecheckt), lässt AIOS das Projekt unverändert und meldet es mit dem Grund. Ebenso unverändert bleibt ein Ordner am Pfad, der kein Git-Repo ist oder dessen `origin` auf ein anderes Repo zeigt als `workspace.yaml`; `status` und `aios --integrity` zeigen ihn weiter an (V0.4, Memo 57). `update` schreibt nichts in die Projekte außer durch Klonen und fast-forward.
+
+**Freeze** schreibt in `lock.yaml` des Wurzelprojekts den Abschnitt `workspace:` mit `<name>: <commit-sha>` je geklontem Projekt; der Abschnitt `packages:` bleibt, und `aios --fetch` lässt `workspace:` stehen.
 
 **Status** zeigt eine Tabelle wie `aios --integrity` (Spec 05):
 

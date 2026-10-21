@@ -3,7 +3,7 @@
 import subprocess
 import sys
 
-from . import activate, aiosinit, assign, contribute, deploy, fetch, gui, hub, install, integrity, paths, registry, resolver, skills, ui, worker
+from . import activate, aiosinit, assign, contribute, deploy, fetch, gui, hub, install, integrity, paths, registry, resolver, skills, ui, worker, workspace
 
 USAGE = ("usage: aios --prepare | --install [v<version>] | --versions | --remove-version v<version>"
          " | --uninstall | --activate v<version> [<path>] | --deactivate [<path>] | --config [<path>]"
@@ -16,6 +16,7 @@ USAGE = ("usage: aios --prepare | --install [v<version>] | --versions | --remove
          " | --fetch --upgrade [<package>] | --fetch --remove <package>"
          " | --worker [<package>/<name> install|remove|start|stop] | --run <command> [args]"
          " | --contribute <file>... --to <package> [--message <text>]"
+         " | --workspace init <repo> [<folder>] | update | freeze | status [<path>] [--group <g>]"
          " | --deploy [<name>==<version>] [--to <project>] [--assistant <name>] [--from <repo>]"
          "  (writing commands: --plan, --yes)")
 
@@ -73,6 +74,8 @@ def main(argv):
             return hub.library(*args)
         if cmd == "--fetch":
             return fetch.command(args)
+        if cmd == "--workspace":
+            return workspace.command(args)
         if cmd == "--contribute":
             return contribute.command(args)
         if cmd == "--worker":

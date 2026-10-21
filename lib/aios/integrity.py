@@ -25,10 +25,11 @@ class Result:
     new: int = 0
     repo: bool = False
     hints: list = field(default_factory=list)
+    init_note: str = ""                             # workspace: missing: clone, foreign repo (spec 05)
 
     @property
     def init_ok(self):
-        return not self.gaps
+        return not self.gaps and self.init_note != "missing: clone"
 
     @property
     def commit_ok(self):
@@ -40,6 +41,8 @@ class Result:
 
     def init_text(self):
         """Short, so that the table does not wrap in the chat; the gaps are listed under Notes (A15)."""
+        if self.init_note:
+            return self.init_note
         if self.init_ok:
             return "ok"
         return f"missing: {len(self.gaps)} part" + ("" if len(self.gaps) == 1 else "s")
@@ -146,5 +149,7 @@ def run(path=None):
     if not start.is_dir():
         raise ui.Abort(f"{start} is not a directory")
     results = [check(p, depth) for p, depth in projects(start)]
+    from . import workspace
+    workspace.integrity(start, results)             # projects of a workspace.yaml (spec 05, F2)
     report(start, results)
     return 0 if all(r.ok for r in results) else 1
