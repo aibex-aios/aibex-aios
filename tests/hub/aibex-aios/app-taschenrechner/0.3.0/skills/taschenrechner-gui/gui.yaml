@@ -1,8 +1,8 @@
 title: Taschenrechner
-intro: Rechnen, mit Lernen eine Tastenfolge aufnehmen und auf eine Kachel legen.
+intro: Rechnen in umgekehrter polnischer Notation (ENTER wie beim HP-15C), mit Lernen eine Tastenfolge auf eine Kachel legen.
 tiles:
   - title: Rechner
-    text: Ziffern, Grundrechenarten und die Kacheln K1 bis K4
+    text: Stack X, Y, Z, T; ENTER, CHS und die Kacheln A bis D
     html: rechner.html
     icon: calculator
   - title: Kacheln anzeigen

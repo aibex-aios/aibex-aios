@@ -156,10 +156,10 @@ plan = ui.Plan(); install.plan_alias(plan); plan.run(); print(len(plan.steps))" 
    W="$SANDBOX/work/§Apps"; mkdir -p "$W/@" "$W/.aios"; printf 'aios: 0.4.0\n' > "$W/.aios/config.yaml"
    assert_contains "$(at "$W" "$SRC/bin/aios" --gui --apps)" "No apps in this project." "--apps: none yet"
    at "$W" "$SRC/bin/aios" --fetch app-taschenrechner --yes >/dev/null
-   assert_contains "$(at "$W" "$SRC/bin/aios" --gui --apps)" "- /taschenrechner-gui — app-taschenrechner 0.1.1" "--apps: the app with its surface"
+   assert_contains "$(at "$W" "$SRC/bin/aios" --gui --apps)" "- /taschenrechner-gui — app-taschenrechner 0.3.1" "--apps: the app with its surface"
    assert_contains "$(at "$W" "$SRC/bin/aios" --gui --skill taschenrechner-gui)" "run \`aios --gui --skill taschenrechner-gui --html\`" "--skill: instruction"
    assert_contains "$(at "$W" "$SRC/bin/aios" --gui --skill taschenrechner-gui --html)" "var saved = null;" "placeholder without data: null"
-   mkdir -p "$W/@Data/app-taschenrechner"; printf 'K1:\n  title: Quadrat\n  keys: ["×", "="]\n' > "$W/@Data/app-taschenrechner/kacheln.yaml"
-   assert_contains "$(at "$W" "$SRC/bin/aios" --gui --skill taschenrechner-gui --html)" 'var saved = {"K1": {"title": "Quadrat", "keys": ["×", "="]}};' "placeholder: kacheln.yaml as JSON"
+   mkdir -p "$W/@Data/app-taschenrechner"; printf 'A:\n  title: Quadrat\n  keys: ["ENTER", "×"]\n' > "$W/@Data/app-taschenrechner/kacheln.yaml"
+   assert_contains "$(at "$W" "$SRC/bin/aios" --gui --skill taschenrechner-gui --html)" 'var saved = {"A": {"title": "Quadrat", "keys": ["ENTER", "×"]}};' "placeholder: kacheln.yaml as JSON"
    assert_contains "$(at "$W" "$SRC/bin/aios" --gui --skill gibtsnicht)" "no deployed app with the surface gibtsnicht" "--skill: unknown surface"
    unset AIOS_HUBS

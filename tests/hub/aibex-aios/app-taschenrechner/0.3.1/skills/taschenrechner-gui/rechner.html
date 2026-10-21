@@ -1,71 +1,66 @@
 <div class="tr" style="font-family:system-ui,sans-serif;max-width:320px">
 <style>
-.tr .disp{font-size:1.8em;text-align:right;padding:8px 12px;border:1px solid #8886;border-radius:10px;margin-bottom:8px;min-height:1.4em;overflow:hidden}
+.tr .disp{text-align:right;padding:6px 12px;border:1px solid #8886;border-radius:10px;margin-bottom:8px}
+.tr .y{font-size:.95em;opacity:.6;min-height:1.2em}
+.tr .x{font-size:1.8em;min-height:1.3em;overflow:hidden}
 .tr .state{font-size:.85em;opacity:.75;min-height:1.2em;margin-bottom:6px}
 .tr .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
 .tr button{font:inherit;padding:10px 0;border-radius:8px;border:1px solid #8886;background:transparent;color:inherit;cursor:pointer}
 .tr button:hover{background:#8882}
 .tr button.k{font-size:.85em}
+.tr button.wide{grid-column:span 2}
 .tr button.on{background:#c4302b33;border-color:#c4302b}
 </style>
-<div class="disp" id="tr-disp">0</div>
+<div class="disp"><div class="y" id="tr-y"></div><div class="x" id="tr-x">0</div></div>
 <div class="state" id="tr-state"></div>
 <div class="grid">
-  <button class="k" data-k="K1">K1</button><button class="k" data-k="K2">K2</button><button class="k" data-k="K3">K3</button><button class="k" data-k="K4">K4</button>
+  <button class="k" data-k="A">A</button><button class="k" data-k="B">B</button><button class="k" data-k="C">C</button><button class="k" data-k="D">D</button>
   <button data-key="7">7</button><button data-key="8">8</button><button data-key="9">9</button><button data-key="÷">÷</button>
   <button data-key="4">4</button><button data-key="5">5</button><button data-key="6">6</button><button data-key="×">×</button>
   <button data-key="1">1</button><button data-key="2">2</button><button data-key="3">3</button><button data-key="−">−</button>
-  <button data-key="0">0</button><button data-key=".">.</button><button data-key="=">=</button><button data-key="+">+</button>
-  <button data-key="C">C</button><button id="tr-learn" style="grid-column:span 3">Lernen</button>
+  <button data-key="0">0</button><button data-key=".">.</button><button data-key="CHS">CHS</button><button data-key="+">+</button>
+  <button class="wide" id="tr-learn">Lernen</button><button class="wide" data-key="ENTER">ENTER</button>
 </div>
 <script>
 (function () {
+  // RPN after the HP-15C: stack X, Y, Z, T with stack lift (V0.4, memo 51)
   var saved = {{aios-data kacheln.yaml}};
   var tiles = (saved && typeof saved === "object") ? saved : {};
-  var disp = document.getElementById("tr-disp"), state = document.getElementById("tr-state");
-  var learnBtn = document.getElementById("tr-learn");
-  var cur = "", acc = null, op = null, last = null, fresh = true;
+  var xEl = document.getElementById("tr-x"), yEl = document.getElementById("tr-y");
+  var state = document.getElementById("tr-state"), learnBtn = document.getElementById("tr-learn");
+  var X = 0, Y = 0, Z = 0, T = 0;
+  var entry = null;          // digits typed into X, null when no entry is running
+  var lift = false;          // a new number lifts the stack (false after ENTER and at the start)
   var learning = false, recorded = null, pending = null;
-  function num(s) { return parseFloat(s); }
-  function show(v) { disp.textContent = (typeof v === "number") ? (isFinite(v) ? String(Math.round(v * 1e10) / 1e10) : "Fehler") : v; }
-  function calc(a, o, b) {
-    if (o === "+") return a + b;
-    if (o === "−") return a - b;
-    if (o === "×") return a * b;
-    if (o === "÷") return b === 0 ? NaN : a / b;
-    return b;
+  function fmt(v) { return isFinite(v) ? String(Math.round(v * 1e10) / 1e10) : "Fehler"; }
+  function show() {
+    xEl.textContent = entry !== null ? entry : fmt(X);
+    yEl.textContent = "y: " + fmt(Y);
   }
-  function value() { return cur !== "" ? num(cur) : (acc !== null ? acc : 0); }
+  function up() { T = Z; Z = Y; Y = X; }
+  function finish() { if (entry !== null) { X = parseFloat(entry); entry = null; } }
+  function calc(o) {
+    if (o === "+") return Y + X;
+    if (o === "−") return Y - X;
+    if (o === "×") return Y * X;
+    return X === 0 ? NaN : Y / X;
+  }
   function press(k) {
     if (/^[0-9]$/.test(k) || k === ".") {
-      if (fresh) { cur = ""; fresh = false; }
-      if (k === "." && cur.indexOf(".") >= 0) return;
-      cur = (cur === "" && k === ".") ? "0." : cur + k;
-      show(cur);
-    } else if (k === "C") {
-      cur = ""; acc = null; op = null; last = null; fresh = true; show("0");
-    } else if (k === "=") {
-      if (op !== null) {
-        var b = cur !== "" ? num(cur) : acc;      // "× =" uses the current number (square)
-        acc = calc(acc, op, b); last = [op, b]; op = null;
-      } else if (last) {
-        acc = calc(value(), last[0], last[1]);
-      } else {
-        acc = value();
-      }
-      cur = ""; fresh = true; show(acc);
-    } else {                                      // + − × ÷
-      if (op !== null && cur !== "") { acc = calc(acc, op, num(cur)); }
-      else if (cur !== "") { acc = num(cur); }
-      else if (acc === null) { acc = 0; }
-      op = k; cur = ""; fresh = false; show(acc);
+      if (entry === null) { if (lift) up(); entry = ""; }
+      if (k === "." && entry.indexOf(".") >= 0) return;
+      entry = (entry === "" || entry === "-") && k === "." ? entry + "0." : entry + k;
+      X = parseFloat(entry);
+    } else if (k === "CHS") {
+      if (entry !== null) { entry = entry.charAt(0) === "-" ? entry.slice(1) : "-" + entry; X = parseFloat(entry) || 0; }
+      else { X = -X; }
+    } else if (k === "ENTER") {
+      finish(); up(); lift = false;
+    } else {                                      // + − × ÷: Y op X, the stack drops, T stays
+      finish(); X = calc(k); Y = Z; Z = T; lift = true;
     }
   }
-  function key(k) {
-    if (learning) recorded.push(k);
-    press(k);
-    status();
-  }
+  function key(k) { if (learning) recorded.push(k); press(k); show(); status(); }
   function status() {
     var names = Object.keys(tiles).filter(function (t) { return tiles[t] && tiles[t].keys; });
     if (learning) state.textContent = "Aufnahme: " + recorded.join(" ");
@@ -97,10 +92,14 @@
         return;
       }
       var t = tiles[name];
-      if (t && t.keys) { t.keys.forEach(function (k) { press(k); }); status(); }
+      if (t && t.keys) {                          // a tile ends the entry first (memo 51, R1)
+        if (entry !== null) { finish(); lift = true; }
+        t.keys.forEach(function (k) { press(k); });
+        show(); status();
+      }
     });
   });
-  status();
+  show(); status();
 })();
 </script>
 </div>

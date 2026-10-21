@@ -1,6 +1,6 @@
 ---
 name: taschenrechner
-version: 0.1.0
+version: 0.3.0
 description: >
   Kacheln des programmierbaren Taschenrechners von AIbex AIOS speichern, anzeigen und
   übernehmen: Belegungen aus der Oberfläche in @Data/app-taschenrechner/kacheln.yaml
@@ -23,25 +23,25 @@ Ein Skill der Demo-App `app-taschenrechner` von AIbex AIOS (Spec 06, *Demo-App*)
 | eigene Kacheln | `@Data/app-taschenrechner/kacheln.yaml` im Projekt der Session; den Ordner legst du beim ersten Speichern an |
 | mitgelieferte Kacheln | `@/@!Package/app-taschenrechner/knowledge/@!Kacheln/*.yaml` im Projekt, in dem das Paket geholt ist (das Projekt der Session oder eines darüber; `aios --deploy` zeigt die Pakete) |
 
-`kacheln.yaml` hat je Kachel `K1` bis `K4` einen Eintrag mit `title` und `keys` (Liste der Tasten: `0`–`9`, `.`, `+`, `−`, `×`, `÷`, `=`, `C`):
+`kacheln.yaml` hat je Kachel `A` bis `D` einen Eintrag mit `title` und `keys` (Liste der Tasten: `0`–`9`, `.`, `+`, `−`, `×`, `÷`, `CHS`, `ENTER`). Der Rechner arbeitet mit umgekehrter polnischer Notation wie der HP-15C (Stack X, Y, Z, T):
 
 ```yaml
-K1:
+A:
   title: Quadrat
-  keys: ["×", "="]
+  keys: ["ENTER", "×"]
 ```
 
 ## Kachel speichern
 
-Kommt aus der Oberfläche „Speichere die Kachel K<n> mit den Tasten [...] und dem Titel ...":
-1. Zeige, was gespeichert wird: Kachel, Titel, Tasten, Datei. Frage, ob der Titel so bleiben soll, und biete einen sprechenden Titel an (z. B. „Quadrat" für `× =`).
+Kommt aus der Oberfläche „Speichere die Kachel <A–D> mit den Tasten [...] und dem Titel ...":
+1. Zeige, was gespeichert wird: Kachel, Titel, Tasten, Datei. Frage, ob der Titel so bleiben soll, und biete einen sprechenden Titel an (z. B. „Quadrat" für `ENTER ×`).
 2. Nach Ja lies die Datei (falls vorhanden), setze oder ersetze den Eintrag der Kachel und schreibe die Datei. Andere Kacheln bleiben.
 3. Sag, dass die Belegung beim nächsten Öffnen von `/taschenrechner-gui` geladen wird.
 
 ## Kacheln zeigen und übernehmen
 
 - **Zeigen:** eigene Kacheln aus `kacheln.yaml` und mitgelieferte aus `knowledge/@!Kacheln/` als Tabelle (Kachel bzw. Datei, Titel, Tasten).
-- **Übernehmen:** Will der User eine mitgelieferte Kachel, frage nach der Kachel `K1`–`K4`, zeige den Eintrag und schreibe ihn nach Ja in `kacheln.yaml`.
+- **Übernehmen:** Will der User eine mitgelieferte Kachel, frage nach der Kachel `A`–`D`, zeige den Eintrag und schreibe ihn nach Ja in `kacheln.yaml`.
 
 ## Zurückspielen
 

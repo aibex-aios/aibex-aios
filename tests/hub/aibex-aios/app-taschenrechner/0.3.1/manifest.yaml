@@ -1,7 +1,7 @@
 name: app-taschenrechner
-version: 0.1.1
+version: 0.3.1
 type: app
-description: Programmierbarer Taschenrechner mit lernenden Kacheln (Demo-App von AIbex AIOS)
+description: Programmierbarer RPN-Taschenrechner nach dem Vorbild des HP-15C mit lernenden Kacheln (Demo-App von AIbex AIOS)
 requires:
   aios: ">=0.4,<0.5"
 depends:

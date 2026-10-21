@@ -1,9 +1,9 @@
 ---
 name: taschenrechner-gui
-version: 0.1.0
+version: 0.3.0
 description: >
-  Oberfläche des programmierbaren Taschenrechners von AIbex AIOS: Rechner mit Ziffern,
-  Grundrechenarten, vier belegbaren Kacheln und der Taste Lernen. Verwenden bei
+  Oberfläche des programmierbaren RPN-Taschenrechners von AIbex AIOS (nach dem Vorbild
+  des HP-15C): Ziffern, Grundrechenarten, CHS, ENTER, vier belegbare Kacheln A bis D und Lernen. Verwenden bei
   "/taschenrechner-gui", "Taschenrechner öffnen", "zeig den Rechner".
 allowed-tools: Bash(aios --gui *)
 ---
