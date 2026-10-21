@@ -15,7 +15,7 @@ import sys
 import time
 from pathlib import Path
 
-from . import config, paths, version
+from . import config, elements, paths, version
 
 LOAD, AVAILABLE, HIDDEN = 0, 1, 2                   # K2: order Laden < Verfuegbar < Verborgen
 CLASS_NAMES = {LOAD: "load", AVAILABLE: "available", HIDDEN: "hidden"}
@@ -104,6 +104,11 @@ class Context:
         self.loaded, self.available, self.hidden = [], [], []
         for ms in self.masterspaces:
             found = classify(ms)
+            for p in elements.packages(ms):         # K6: knowledge of deployed packages, after @/
+                if (p.dir / "knowledge").is_dir() and p.deployed("knowledge"):
+                    k = classify(p.dir / "knowledge")
+                    for cls in (LOAD, AVAILABLE, HIDDEN):
+                        found[cls] = [f for f in found[cls] if p.dir / "knowledge" not in f.parents] + k[cls]
             self.loaded += found[LOAD]
             self.available += found[AVAILABLE]
             self.hidden += found[HIDDEN]

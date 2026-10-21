@@ -145,24 +145,6 @@ noversion refused: assistant demo/x has no version MAJOR.MINOR.PATCH" "library: 
    assert_contains "$(cd "$SANDBOX" && aios --versions)" "v0.2.0" "--versions"
 
 #===============================================================================
-# deploy and register from the read-only library of the installation (acceptance, memo 32)
-#===============================================================================
-
-   VD="$SANDBOX/vault/§Demo"; mkdir -p "$VD/@" "$VD/Garten/@" "$VD/.aios"; printf 'aios: 0.2.0\n' > "$VD/.aios/config.yaml"
-   OUT="$(cd "$VD/Garten" && aios --deploy memo==6.1.0 --to "$VD" --yes 2>&1)"; RC=$?
-   assert_eq "$RC" "0" "deploy from the installation: exit 0"
-   assert_file "$VD/@/@!Skill/memo/.aios-deploy"
-   [ -w "$VD/@/@!Skill/memo/SKILL.md" ] && [ -w "$VD/@/@!Skill/memo" ] && ok || fail "deployed blueprint is writable"
-   assert_file "$VD/Garten/.claude/skills/memo/SKILL.md"
-   assert_eq "$(ls -a "$VD/@/@!Skill" | grep -c '^\.memo')" "0" "no temporary folder left"
-   OUT="$(cd "$VD/Garten" && aios --deploy memo==6.1.0 --to "$VD" </dev/null 2>&1)"
-   assert_contains "$OUT" "already deployed" "deploy again: nothing to do"
-   OUT="$(cd "$VD/Garten" && aios --deploy gaertner==0.2.0 --to "$VD" --yes 2>&1)"; RC=$?
-   assert_eq "$RC" "0" "deploy an assistant from the installation: exit 0"
-   [ -w "$VD/@/@!Assistant/gaertner/ASSISTANT.md" ] && [ -w "$VD/@/@!Assistant/gaertner/@!Skill/apfel-birnen-algebra" ] && ok || fail "deployed assistant is writable"
-   assert_eq "$(ls -a "$VD/@/@!Assistant" | grep -c '^\.gaertner')" "0" "assistant: no temporary folder left"
-
-#===============================================================================
 # --install via the forwarder: older version, idempotent user setup
 #===============================================================================
 

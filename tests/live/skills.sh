@@ -37,7 +37,7 @@
          chmod +x "$SB/bin/$TOOL"
       done
       export GIT_AUTHOR_NAME=live GIT_AUTHOR_EMAIL=live@test GIT_COMMITTER_NAME=live GIT_COMMITTER_EMAIL=live@test
-      printf '.DS_Store\n.claude/skills/\n.aios/manifest\n' > "$G/.gitignore"; git -C "$G" init -q   # Garten complete (S1-S4): no PROJECT-INCOMPLETE
+      printf '.DS_Store\n.claude/skills/\n.aios/registry\n' > "$G/.gitignore"; git -C "$G" init -q   # Garten complete (S1-S4): no PROJECT-INCOMPLETE
       wrappers() {                                  # version-neutral wrappers into <dir>/.claude/skills
          PYTHONPATH="$REPO/lib" python3 -c '
 import sys

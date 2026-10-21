@@ -13,9 +13,13 @@ tiles:
     text: Einen Assistenten, none oder inherit für dieses Projekt wählen
     prompt: "Zeige mit /aios-assistant die verfügbaren Assistenten und die Zuordnung, lass mich mit dem Auswahlwerkzeug einen Assistenten, none oder inherit wählen und ordne ihn dann zu."
     icon: person
-  - title: Skills ausrollen und registrieren
-    text: Blueprints mit dem Manifest abgleichen, Skills registrieren
-    prompt: "Gleiche mit /aios-deploy die Blueprints mit dem Manifest ab und registriere danach die Skills mit /aios-register."
+  - title: Pakete
+    text: Pakete und Apps suchen, holen, zeigen, was geholt ist
+    skill: aios-package
+    icon: box
+  - title: Pakete abgleichen und Skills registrieren
+    text: Pakete mit lock.yaml abgleichen, Skills registrieren
+    prompt: "Gleiche mit /aios-fetch die Pakete dieses Projekts mit lock.yaml ab und registriere danach die Skills mit /aios-register."
     icon: gear
   - title: Integrität prüfen
     text: Struktur und Commit-Stand aller Projekte

@@ -1,7 +1,7 @@
 ---
 name: aios-package
 description: Paketmanager von AIbex AIOS für Anwender - installiert (holt), entfernt und aktualisiert Pakete, Apps, Assistenten und Wissenspakete aus den Hubs, sucht Pakete, zeigt, was installiert ist, und pflegt die Hub-Liste. Verwenden bei "/aios-package", "installiere ...", "hole ...", "entferne ...", "deinstalliere ...", "aktualisiere ...", "welche Pakete gibt es?", "welche Apps gibt es?", "was ist installiert?", "Hub hinzufügen", "install ...", "remove ...", "update ...", "list packages".
-allowed-tools: Bash(aios --fetch *), Bash(aios --library *), Bash(aios --hubs *)
+allowed-tools: Bash(aios --fetch *), Bash(aios --deploy *), Bash(aios --library *), Bash(aios --hubs *)
 ---
 
 # Pakete
@@ -18,7 +18,7 @@ Ein AIOS-Skill von AIbex AIOS (Spec 03, *Pakete*; Spec 06). Er versteht Wünsche
 | „entferne …", „deinstalliere …", *remove* | wie `/aios-fetch --remove <paket>` |
 | „aktualisiere …", *update* | wie `/aios-fetch --upgrade [<paket>]` |
 | „welche Pakete bzw. Apps gibt es?", Suche | `aios --library [<suchwort>]` zeigen |
-| „was ist installiert?" | `aios --fetch --plan` ausführen und die Zeilen `unchanged …` als Liste der Pakete zeigen; ohne `lock.yaml`: „Im Projekt sind keine Pakete." |
+| „was ist installiert?" | `aios --deploy` ausführen und die Pakete mit ihren ausgerollten Elementen zeigen |
 | „füge den Hub … hinzu", „entferne den Hub …" | `aios --hubs add <name> [<url>]` bzw. `remove <name>` mit `--plan`, Rückfrage, `--yes`; mit `--vault`, wenn der Hub für den ganzen Vault gelten soll (fragen) |
 | nur einen Teil eines Pakets nutzen | `/aios-deploy` |
 

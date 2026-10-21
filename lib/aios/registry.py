@@ -1,7 +1,8 @@
-"""Registration of the project skills (spec 03, Registrieren; manifest format spec 04).
+"""Registration of the project skills (spec 03, Registrieren; registry format spec 04).
 
-The blueprints @/@!Skill/<name>/ of the chain are copied to <project>/.claude/skills/<name>/
-and recorded in <project>/.aios/manifest. Standard library only.
+The blueprints @/@!Skill/<name>/ and the deployed skills of fetched packages
+@/@!Package/<paket>/skills/<name>/ of the chain are copied to <project>/.claude/skills/<name>/
+and recorded in <project>/.aios/registry (in v0.3: .aios/manifest). Standard library only.
 """
 
 from __future__ import annotations
@@ -13,7 +14,7 @@ import shutil
 import tempfile
 from pathlib import Path
 
-from . import context
+from . import context, elements
 from .install import frontmatter, make_writable
 
 NAME = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}$")
@@ -53,43 +54,54 @@ def version_problem(kind, name, meta):
 
 
 def blueprints(ctx):
-    """({name: (dir, version)}, [problems]); the nearest masterspace wins (spec 03)."""
+    """({name: (dir, version)}, [problems]); the nearest masterspace wins, within a masterspace
+    the local blueprint before the skill of a package (spec 03, spec 06 Vorrang)."""
     found, problems = {}, []
-    for ms in ctx.masterspaces:                     # vault root -> project, later wins
-        base = ms / "@!Skill"
-        if not base.is_dir():
+    for _, d, _ in elements.candidates(ctx.masterspaces, "skills", "@!Skill"):
+        if d.name.startswith(RESERVED):
+            problems.append(f"{d}: the name {d.name} is reserved for AIOS skills, not registered")
             continue
-        for d in sorted(p for p in base.iterdir() if p.is_dir() and not p.name.startswith(".")):
-            if d.name.startswith(RESERVED):
-                problems.append(f"{d}: the name {d.name} is reserved for AIOS skills, not registered")
-                continue
-            if d.name == "gui":
-                problems.append(f"{d}: the name gui is reserved for the alias /gui, not registered")
-                continue
-            if not NAME.match(d.name):
-                problems.append(f"{d}: {d.name} is not a valid skill name, not registered")
-                continue
-            if not (d / "SKILL.md").is_file():
-                problems.append(f"{d}: no SKILL.md, not registered")
-                continue
-            meta = frontmatter(d / "SKILL.md")
-            if meta.get("name") != d.name:
-                problems.append(f"{d}: name in SKILL.md is {meta.get('name')!r}, not {d.name!r}; not registered")
-                continue
-            problem = version_problem("skill", d.name, meta)
-            if problem:
-                problems.append(f"{problem}, not registered ({d})")
-                continue
-            found[d.name] = (d, version_of(meta))
+        if d.name == "gui":
+            problems.append(f"{d}: the name gui is reserved for the alias /gui, not registered")
+            continue
+        if not NAME.match(d.name):
+            problems.append(f"{d}: {d.name} is not a valid skill name, not registered")
+            continue
+        if not (d / "SKILL.md").is_file():
+            problems.append(f"{d}: no SKILL.md, not registered")
+            continue
+        meta = frontmatter(d / "SKILL.md")
+        if meta.get("name") != d.name:
+            problems.append(f"{d}: name in SKILL.md is {meta.get('name')!r}, not {d.name!r}; not registered")
+            continue
+        problem = version_problem("skill", d.name, meta)
+        if problem:
+            problems.append(f"{problem}, not registered ({d})")
+            continue
+        found[d.name] = (d, version_of(meta))
     return found, problems
 
 
 # ---------------------------------------------------------------------------
-# manifest (fixed format of spec 04)
+# registry (fixed format of spec 04; .aios/manifest in v0.3)
 # ---------------------------------------------------------------------------
 
+def registry_file(project):
+    return Path(project) / ".aios" / "registry"
+
+
+def old_file(project):
+    return Path(project) / ".aios" / "manifest"
+
+
+def read_registry(project):
+    """Registered skills of a project: .aios/registry, else the .aios/manifest of v0.3."""
+    f = registry_file(project)
+    return read_manifest(f if f.is_file() else old_file(project))
+
+
 def read_manifest(file):
-    """{name: {source, version, digest}}; an unreadable manifest counts as empty."""
+    """{name: {source, version, digest}}; an unreadable registry counts as empty."""
     result, name = {}, None
     if not file.is_file():
         return result
@@ -133,8 +145,9 @@ class Sync:
         self.ctx = ctx
         self.project = ctx.cwd
         self.skills_dir = self.project / ".claude" / "skills"
-        self.manifest_file = self.project / ".aios" / "manifest"
-        self.manifest = read_manifest(self.manifest_file)
+        self.manifest_file = registry_file(self.project)
+        self.manifest = read_registry(self.project)
+        self.old = old_file(self.project).is_file()      # .aios/manifest of v0.3, removed on apply
         self.chain, self.problems = blueprints(ctx)
         self.new, self.changed, self.removed, self.foreign = [], [], [], []
         for name, (src, version) in self.chain.items():
@@ -156,12 +169,14 @@ class Sync:
             self.problems.append(f"{self.skills_dir / name} exists and is not managed by AIOS, left untouched")
 
     def __bool__(self):
-        return bool(self.new or self.changed or self.removed)
+        return bool(self.new or self.changed or self.removed or self.old)
 
     def lines(self):
         out = [f"new      {n} {v}".rstrip() + f"  ({s})" for n, s, v, _ in self.new]
         out += [f"changed  {n} {v}".rstrip() + f"  ({s})" for n, s, v, _ in self.changed]
         out += [f"remove   {n}" for n in self.removed]
+        if self.old:
+            out.append("rename   .aios/manifest -> .aios/registry")
         return out
 
     def summary(self):
@@ -172,6 +187,8 @@ class Sync:
             parts.append("changed " + ", ".join(n for n, *_ in self.changed))
         if self.removed:
             parts.append("removed " + ", ".join(self.removed))
+        if self.old and not parts:
+            parts.append(".aios/manifest renamed to .aios/registry")
         return "; ".join(parts)
 
     def apply(self):
@@ -197,8 +214,10 @@ class Sync:
                 make_writable(target)
                 shutil.rmtree(target)
             entries.pop(name, None)
-        if entries or self.manifest_file.exists():
+        if entries or self.manifest_file.exists() or self.old:
             write_manifest(self.manifest_file, entries)
+        if self.old:
+            old_file(self.project).unlink()
 
 
 def sync_for(cwd):

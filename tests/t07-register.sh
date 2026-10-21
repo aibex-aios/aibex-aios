@@ -49,7 +49,7 @@
    assert_contains "$OUT" "name in SKILL.md is 'other', not 'wrongname'" "wrong name reported"
    assert_contains "$OUT" "skill noversion has no version, not registered ($D/@/@!Skill/noversion)" "skill without version reported"
    assert_contains "$OUT" "skill badversion has an invalid version '1.0' (MAJOR.MINOR.PATCH), not registered" "invalid version reported"
-   [ ! -e "$K/memo" ] && [ ! -e "$G/.aios/manifest" ] && ok || fail "cancelled: nothing written"
+   [ ! -e "$K/memo" ] && [ ! -e "$G/.aios/registry" ] && ok || fail "cancelled: nothing written"
 
    OUT="$(echo y | SY "$G")"
    assert_contains "$OUT" "=> registered: new memo, shared" "registered"
@@ -59,7 +59,7 @@
    assert_eq "$(cat "$K/own/SKILL.md")" "$(printf -- '---\nname: own\ndescription: test\n---\n\n# own\n')" "foreign skill untouched"
    [ ! -e "$K/privat" ] && [ ! -e "$K/aios-evil" ] && ok || fail "assistant skill and reserved name not registered"
    DIG="$(cd "$G/@/@!Skill/memo" && find . -type f | sed 's|^\./||' | sort | while IFS= read -r F; do printf '%s\n' "$F"; cat "$F"; printf '\n'; done | shasum -a 256 | cut -c1-64)"
-   assert_eq "$(cat "$G/.aios/manifest")" "# written by AIOS (registration), do not edit
+   assert_eq "$(cat "$G/.aios/registry")" "# written by AIOS (registration), do not edit
 schema: 1
 registered:
   memo:
@@ -69,7 +69,7 @@ registered:
   shared:
     source: \"$D/@/@!Skill/shared\"
     version: 0.1.0
-    digest: $(sed -n 's/^    digest: //p' "$G/.aios/manifest" | tail -1)" "manifest: format and digest"
+    digest: $(sed -n 's/^    digest: //p' "$G/.aios/registry" | tail -1)" "manifest: format and digest"
    assert_contains "$(SY "$G" </dev/null)" "are up to date" "second sync: up to date, no question"
 
 #===============================================================================
@@ -102,7 +102,7 @@ registered:
    OUT="$(SY "$G" --yes)"
    assert_contains "$OUT" "remove   shared" "blueprint removed: remove"
    [ ! -e "$K/shared" ] && ok || fail "removed skill deleted"
-   case "$(cat "$G/.aios/manifest")" in *shared*) fail "manifest without shared" ;; *) ok ;; esac
+   case "$(cat "$G/.aios/registry")" in *shared*) fail "manifest without shared" ;; *) ok ;; esac
    assert_file "$K/own/SKILL.md"
 
 #===============================================================================

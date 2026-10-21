@@ -78,10 +78,10 @@ print(len(re.findall("<script", inner)), len(re.findall("<script", t)))')" "0 2"
 
    OUT="$(GUI "$G" --aios)"
    assert_contains "$OUT" "# AIbex AIOS" "--aios: title"
-   for T in "Projekt initialisieren" "Kontext und Konfiguration" "Assistent zuordnen" "Skills ausrollen und registrieren" "Integrität prüfen" "Projektstatus" "Memo schreiben"; do
+   for T in "Projekt initialisieren" "Kontext und Konfiguration" "Assistent zuordnen" "Pakete" "Pakete abgleichen und Skills registrieren" "Integrität prüfen" "Projektstatus" "Memo schreiben"; do
       assert_contains "$OUT" "- $T — " "--aios: tile $T"
    done
-   assert_eq "$(printf '%s\n' "$OUT" | grep -c '^- .*(sends: ')" "7" "--aios: 7 tiles"
+   assert_eq "$(printf '%s\n' "$OUT" | grep -c '^- .*(sends: ')" "8" "--aios: 8 tiles"
    assert_contains "$OUT" "(sends: Run the skill /aios-init.)" "--aios: /aios-init"
    assert_contains "$OUT" "(sends: Run the skill /aios-integrity.)" "--aios: /aios-integrity"
    assert_contains "$OUT" "\`aios --gui --aios --html\`" "--aios: instruction for HTML"

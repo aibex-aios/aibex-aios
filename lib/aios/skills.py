@@ -31,10 +31,10 @@ def needs_session(text):
 
 
 def memo_registered():
-    """The project of cwd has a skill memo in its .aios/manifest (precedence of memo, spec 03)."""
+    """The project of cwd has a skill memo in its .aios/registry (precedence of memo, spec 03)."""
     from . import context, paths
     ctx = context.Context(paths.cwd())
-    return ctx.project is not None and "memo" in registry.read_manifest(ctx.project / ".aios" / "manifest")
+    return ctx.project is not None and "memo" in registry.read_registry(ctx.project)
 
 
 def body(name, session_id=None):
@@ -114,7 +114,9 @@ def listing(ctx):
     skills, assistants, prompts = [], [], []
     for name_, (d, ver) in sorted(chain.items()):
         state = "not registered" if name_ in pending or sync is None else "registered"
-        skills.append(f"{name_} {ver}".rstrip() + f" ({d.parents[2].name}) — {state}")
+        where = d.parents[2].name if d.parent.name == "@!Skill" else \
+            f"{d.parents[4].name}, package {d.parents[1].name}"
+        skills.append(f"{name_} {ver}".rstrip() + f" ({where}) — {state}")
     for ms in ctx.masterspaces:
         for a in sorted((ms / "@!Assistant").glob("*/ASSISTANT.md")):
             assistants.append(f"{a.parent.name} {registry.version_of(frontmatter(a))}".rstrip() + f" ({ms.parent.name})")
@@ -127,7 +129,35 @@ def listing(ctx):
     for label, items in (("Skills", skills), ("Assistants", assistants), ("Prompts", prompts)):
         for i, item in enumerate(items):
             out.append(f"  {label if i == 0 else '':13}{item}")
+    out += package_lines(ctx)
     if sync and (sync or sync.removed):
         out.append("Note: blueprints and registered skills differ — /aios-register")
     out += [f"Skipped: {p}" for p in problems]
+    return out
+
+
+def package_lines(ctx):
+    """Section Packages of the listing: fetched packages of the chain with their deployed,
+    covered and not deployed elements (spec 02, spec 06 Vorrang and H3)."""
+    from . import elements
+    pkgs = [p for ms in ctx.masterspaces for p in elements.packages(ms)]
+    if not pkgs:
+        return []
+    covered = {}
+    for kind, local in (("skills", "@!Skill"), ("assistants", "@!Assistant")):
+        for name, old, new in elements.covered(ctx.masterspaces, kind, local):
+            covered.setdefault(old, []).append(f"{kind[:-1]} {name}: covered by {new}")
+    out = [f"{'Packages':27}{plural(len(pkgs), 'package', 'packages')}"]
+    for p in pkgs:
+        on, off = p.split()
+        kinds = {}
+        for kind, name in on:
+            kinds.setdefault(kind, []).append(name)
+        what = "; ".join(("knowledge" if k == "knowledge" else f"{k} " + ", ".join(n))
+                         for k, n in kinds.items()) or "no elements deployed"
+        out.append(f"  {p.name} {p.version} ({p.hub}, {p.masterspace.parent.name}) — {what}")
+        out += [f"      {c}" for c in covered.get(f"package {p.name} ({p.masterspace.parent.name})", [])]
+        if off:
+            out.append("      fetched, not deployed: " + ", ".join(f"{k[:-1] if k != 'knowledge' else k} {n}"
+                                                             if k != "knowledge" else "knowledge" for k, n in off))
     return out

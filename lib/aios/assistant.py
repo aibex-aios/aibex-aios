@@ -6,7 +6,7 @@ import hashlib
 import unicodedata
 from pathlib import Path
 
-from . import config, registry
+from . import config, elements, registry
 from .context import AVAILABLE, LOAD, classify, title
 from .skills import strip_frontmatter
 from .ui import Abort
@@ -36,29 +36,36 @@ def assistants(ctx):
     """({name: (dir, meta)}, [problems]) of the chain; the nearest masterspace wins (spec 03).
     An assistant with a wrong name or without a valid version is skipped and reported."""
     found, problems = {}, []
-    for ms in ctx.masterspaces:
-        for f in sorted((ms / "@!Assistant").glob("*/ASSISTANT.md")):
-            try:
-                meta = meta_of(f)
-            except Abort as e:
-                problems.append(f"{e}, not resolved")
-                continue
-            if f.parent.name in config.RESERVED:
-                problems.append(f"{f}: {f.parent.name} is a reserved name (none, inherit), not resolved")
-                continue
-            if meta.get("name") != f.parent.name:
-                problems.append(f"{f}: name {meta.get('name')!r} differs from the folder {f.parent.name!r}, not resolved")
-                continue
-            problem = registry.version_problem("assistant", f.parent.name, meta)
-            if problem:
-                problems.append(f"{problem}, not resolved ({f.parent})")
-                continue
-            found[f.parent.name] = (f.parent, meta)
+    for _, d, _ in elements.candidates(ctx.masterspaces, "assistants", "@!Assistant"):
+        f = d / "ASSISTANT.md"
+        try:
+            meta = meta_of(f)
+        except Abort as e:
+            problems.append(f"{e}, not resolved")
+            continue
+        if f.parent.name in config.RESERVED:
+            problems.append(f"{f}: {f.parent.name} is a reserved name (none, inherit), not resolved")
+            continue
+        if meta.get("name") != f.parent.name:
+            problems.append(f"{f}: name {meta.get('name')!r} differs from the folder {f.parent.name!r}, not resolved")
+            continue
+        problem = registry.version_problem("assistant", f.parent.name, meta)
+        if problem:
+            problems.append(f"{problem}, not resolved ({f.parent})")
+            continue
+        found[f.parent.name] = (f.parent, meta)
     return found, problems
 
 
+def origin(d):
+    """Project of an assistant folder, with the package it comes from."""
+    ms = next(p for p in d.parents if p.name == "@")
+    pkg = d.parents[1].name if d.parent.name == "assistants" else None
+    return ms.parent.name + (f", package {pkg}" if pkg else "")
+
+
 def available_lines(found, problems=()):
-    lines = [f"{n:20} {m.get('title', n)} {registry.version_of(m)} — {m.get('description', '')}  ({d.parents[2].name})"
+    lines = [f"{n:20} {m.get('title', n)} {registry.version_of(m)} — {m.get('description', '')}  ({origin(d)})"
              for n, (d, m) in sorted(found.items())]
     if not found:
         lines = ["no assistants in the chain (@!Assistant/<name>/ASSISTANT.md)"]
@@ -76,15 +83,22 @@ def resolve(ctx, query):
 
 
 def lookup(assistant_dir, ctx, kind, name):
-    """Prompt or skill: first in the assistant folder, then in the chain from the project upwards."""
+    """Prompt or skill: first in the assistant folder, then in the chain from the project upwards;
+    per masterspace the local blueprint before a deployed skill of a package (spec 03)."""
     rel = Path("@!Prompt") / f"{name}.md" if kind == "prompt" else Path("@!Skill") / name / "SKILL.md"
-    for base in [assistant_dir] + [ms for ms in reversed(ctx.masterspaces)]:
-        if (base / rel).is_file():
+    files = [assistant_dir / rel]
+    for ms in reversed(ctx.masterspaces):
+        files.append(ms / rel)
+        if kind == "skill":
+            files += [d / "SKILL.md" for p in reversed(elements.packages(ms)) for d in p.dirs("skills")
+                      if d.name == name]
+    for f in files:
+        if f.is_file():
             if kind == "skill":
-                problem = registry.version_problem("skill", name, meta_of(base / rel))
+                problem = registry.version_problem("skill", name, meta_of(f))
                 if problem:
-                    raise Abort(f"{problem} ({base / rel}); a skill of the assistant {assistant_dir.name} needs a version")
-            return base / rel
+                    raise Abort(f"{problem} ({f}); a skill of the assistant {assistant_dir.name} needs a version")
+            return f
     raise Abort(f"{kind} {name} of the assistant {assistant_dir.name} not found "
                 f"(looked in {assistant_dir} and the masterspaces of the chain)")
 

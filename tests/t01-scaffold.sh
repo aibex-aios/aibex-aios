@@ -25,7 +25,7 @@
    assert_exec "$SRC/bin/aios-context"
 
    assert_contains "$(cat "$SRC/python/requirements.txt")" "pyyaml" "requirements"
-   assert_eq "$(cat "$SRC/templates/gitignore")" "$(printf '.DS_Store\n.claude/skills/\n.aios/manifest')" "gitignore template"
+   assert_eq "$(cat "$SRC/templates/gitignore")" "$(printf '.DS_Store\n.claude/skills/\n.aios/registry')" "gitignore template"
 
 #===============================================================================
 # bash scripts: syntax, help and version (bash convention)
