@@ -2,7 +2,7 @@
 title: "Skills und Assistenten"
 date: 2026-10-21
 author: iHux
-status: Entwurf
+status: Spec
 tags: [spec, aios, v0.4, skills, assistenten]
 number: 03
 related:

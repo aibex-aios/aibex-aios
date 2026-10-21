@@ -60,7 +60,7 @@ GH
    assert_eq "$(git -C "$HUB" show "contrib/tester/$DAY-funktionstasten:contrib/tester/funktionstasten.yaml" | sed -n 2p)" "  title: Quadrat" "file in the new branch"
    assert_eq "$(git -C "$HUB" rev-parse main)" "$MAIN" "default branch untouched (P5)"
    assert_contains "$(cat "$GH_LOG")" "gh pr create --repo aibex-aios/app-taschenrechner --base main --head contrib/tester/$DAY-funktionstasten --title Beitrag: funktionstasten.yaml von tester" "gh pr create"
-   assert_contains "$(cat "$GH_LOG")" "geholte Version: 0.4.1" "body: version from lock.yaml"
+   assert_contains "$(cat "$GH_LOG")" "geholte Version: 0.4.2" "body: version from lock.yaml"
    A "$D" --contribute "$F" --to app-taschenrechner --message "Quadrat neu" --yes >/dev/null
    assert_eq "$(git -C "$HUB" log -1 --format=%s "contrib/tester/$DAY-funktionstasten-2")" "Quadrat neu" "second contribution: own branch, --message"
 

@@ -2,7 +2,7 @@
 title: "Projekte"
 date: 2026-10-21
 author: iHux
-status: Entwurf
+status: Spec
 tags: [spec, aios, v0.4, projekte]
 number: 05
 related:

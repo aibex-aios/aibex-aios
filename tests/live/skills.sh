@@ -2,7 +2,7 @@
 # skills.sh: live test of the AIOS skills with real headless Claude sessions (steps 8, 9; costs tokens)
 
    if [ "$*" == "-?" ] || [ "$*" == "--help" ]; then
-      echo '   usage: tests/live/skills.sh [<model>]   # headless sessions S1-S5, default model haiku'
+      echo '   usage: tests/live/skills.sh [<model>]   # headless sessions S1-S9, default model haiku'
       echo '          tests/live/skills.sh --version   # print version'
       echo '   not part of tests/run: needs a logged-in claude CLI and uses tokens'
       echo '   see also: tests/live/hooks.sh, aios --skill'
@@ -14,7 +14,7 @@
 #===============================================================================
 
    if [ "$*" == "--version" ]; then
-      echo "0.1.0"; exit 0
+      echo "0.4.0"; exit 0
    fi
 
 #===============================================================================
@@ -27,7 +27,7 @@
       T="${TMPDIR:-/tmp}"; SB="$(cd "$(mktemp -d "${T%/}/aios-live.XXXXXX")" && pwd -P)" || exit 1
       V="$SB/§Live"; G="$V/Garten"
       mkdir -p "$SB/home/.aios" "$SB/bin" "$V/.aios" "$V/@/@Rule" "$G/@" "$G/@Memo" "$G/GN-Neu"
-      printf 'aios: 0.3.0\n' > "$V/.aios/config.yaml"
+      printf 'aios: 0.4.0\n' > "$V/.aios/config.yaml"
       printf '# Stil\nSchreib kurz.\n' > "$V/@/@Rule/stil.md"
       printf '# Garten\nIm Garten wachsen Äpfel.\n' > "$G/@/garten.md"
       printf '# 01 Beete planen\n\n**Datum:** 2026-09-01\n**Status:** Entscheidung\n\n## Entscheidung\nDrei Beete.\n\n## Offen\n- Bewässerung der Beete klären\n' > "$G/@Memo/01 Beete planen.md"
@@ -36,6 +36,7 @@
          printf '#!/bin/bash\nHOME="%s/home" exec "%s/bin/%s" "$@"\n' "$SB" "$REPO" "$TOOL" > "$SB/bin/$TOOL"
          chmod +x "$SB/bin/$TOOL"
       done
+      export AIOS_HUBS="$("$REPO/tests/hub/build" "$SB/hubs")"   # packages from the test hub (spec 04)
       export GIT_AUTHOR_NAME=live GIT_AUTHOR_EMAIL=live@test GIT_COMMITTER_NAME=live GIT_COMMITTER_EMAIL=live@test
       printf '.DS_Store\n.claude/skills/\n.aios/registry\n' > "$G/.gitignore"; git -C "$G" init -q   # Garten complete (S1-S4): no PROJECT-INCOMPLETE
       wrappers() {                                  # version-neutral wrappers into <dir>/.claude/skills
@@ -89,17 +90,30 @@ for f in sorted((repo / "skills" / "aios").glob("*/SKILL.md")):
       [ -f "$G/.claude/skills/giesskanne/SKILL.md" ] && R4="registered" || R4="not registered: $A"
       check "S4 /aios-register: blueprint registered" "$R4" "registered"
 
-      A="$(cd "$G" && PATH="$SB/bin:$PATH" claude -p "/aios-deploy memo==6.0.0 --to $V Ich bestätige schon jetzt ausdrücklich: ja, ausrollen." \
+      A="$(cd "$G" && PATH="$SB/bin:$PATH" claude -p "/aios-fetch skill-memo --to $V Ich bestätige schon jetzt ausdrücklich: ja, holen." \
             --model "$MODEL" --settings '{"hooks":{}}' --setting-sources project --add-dir "$SB" \
-            --allowedTools "Skill" "Bash(aios --skill *)" "Bash(aios --deploy *)" "Bash(aios --library *)" 2>&1)"
-      [ -f "$V/@/@!Skill/memo/.aios-deploy" ] && grep -q '^  memo: 6.0.0$' "$V/.aios/config.yaml" && R5="deployed" || R5="not deployed: $A"
-      check "S5 /aios-deploy memo==6.0.0 to the root project" "$R5" "deployed"
+            --allowedTools "Skill" "Bash(aios --skill *)" "Bash(aios --fetch *)" "Bash(aios --library *)" "Bash(aios --register *)" 2>&1)"
+      [ -f "$V/@/@!Package/skill-memo/.aios-deploy" ] && grep -q '^  skill-memo: ' "$V/.aios/config.yaml" && R5="fetched" || R5="not fetched: $A"
+      check "S5 /aios-fetch skill-memo into the root project" "$R5" "fetched"
 
       A="$(ask "$G/GN-Neu" "/aios-integrity")"           # GN-Neu is complete since S2 (Garten would get PROJECT-INCOMPLETE first)
-      check "S6 /aios-integrity: report with result line (English report, possibly summarized in German)" "$A" "ntegr"
+      check "S6 /aios-integrity: report with result line (English report, possibly summarized in German)" "$A" "nteg"
 
       A="$(ask "$G" "/aios-gui")"
       check "S7 /aios-gui: menu with the tiles of AIOS" "$A" "Integrität prüfen" "Projektstatus"
+
+      (cd "$G" && PATH="$SB/bin:$PATH" aios --fetch app-taschenrechner --yes >/dev/null 2>&1)   # no tokens
+      A="$(cd "$G" && PATH="$SB/bin:$PATH" claude -p '/taschenrechner Speichere die Funktionstaste A mit den Tasten ["ENTER", "×"] und dem Titel "Quadrat". Ich bestätige schon jetzt ausdrücklich: ja, so speichern.' \
+            --model "$MODEL" --settings '{"hooks":{}}' --setting-sources project --add-dir "$SB" \
+            --allowedTools "Skill" "Read" "Write" "Edit" "Glob" "Bash(mkdir *)" "Bash(aios *)" 2>&1)"
+      F="$G/@Data/app-taschenrechner/funktionstasten.yaml"
+      [ -f "$F" ] && grep -q "ENTER" "$F" && grep -q "Quadrat" "$F" && R8="saved" || R8="not saved: $A"
+      check "S8 /taschenrechner: function key A saved in @Data/" "$R8" "saved"
+
+      A="$(cd "$G" && PATH="$SB/bin:$PATH" claude -p "Führe \`aios --gui --apps\` aus und nenne mir die Apps dieses Projekts mit dem Skill ihrer Oberfläche." \
+            --model "$MODEL" --settings '{"hooks":{}}' --setting-sources project --add-dir "$SB" \
+            --allowedTools "Bash(aios --gui *)" 2>&1)"
+      check "S9 tile Apps: aios --gui --apps names the calculator" "$A" "taschenrechner-gui"
 
       echo "=> $PASS passed, $FAIL failed"
       rm -rf "$SB"

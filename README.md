@@ -190,7 +190,7 @@ installed to `/opt/aios/v<version>/doc/spec/`; tutorials are installed from
 ```
 
 A clone can be used without installing: point `AIOS_HOME` to it, or add a
-line `v0.4.0-dev: ~/git/AIbex/aibex-aios` to `~/.aios/installations.yaml`.
+line `v0.4.1-dev: ~/git/AIbex/aibex-aios` to `~/.aios/installations.yaml`.
 `AIOS_HUBS` and `AIOS_GITHUB` redirect hubs for tests (spec 04).
 `CLAUDE.md` holds the rules for working on the repository, `STATUS.md` the
 state of the implementation.

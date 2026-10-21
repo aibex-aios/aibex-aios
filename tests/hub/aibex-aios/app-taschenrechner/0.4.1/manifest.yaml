@@ -1,7 +1,7 @@
 name: app-taschenrechner
 version: 0.4.1
 type: app
-description: Programmierbarer RPN-Taschenrechner nach dem Vorbild des HP-15C mit lernenden Funktionstasten (Demo-App von AIbex AIOS) (Testversion des Test-Hubs)
+description: Programmierbarer RPN-Taschenrechner nach dem Vorbild des HP-15C mit lernenden Funktionstasten (Demo-App von AIbex AIOS)
 requires:
   aios: ">=0.4,<0.5"
 depends:

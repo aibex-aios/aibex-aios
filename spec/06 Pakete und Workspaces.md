@@ -2,7 +2,7 @@
 title: "Pakete und Workspaces"
 date: 2026-10-21
 author: iHux
-status: Entwurf
+status: Spec
 tags: [spec, aios, v0.4, pakete, workspaces]
 number: 06
 related:
@@ -419,7 +419,7 @@ Der Maintainer prüft und übernimmt den Beitrag in den Inhalt des Pakets, beim 
 
 ## Demo-App Taschenrechner
 
-Paket `app-taschenrechner` (`type: app`) im Repo `aibex-aios/app-taschenrechner`, Version `0.4.0` (Funktionstasten statt Kacheln, V0.4, Memo 54; ältere Versionen 0.1.x–0.3.x bleiben im Hub). Ein programmierbarer Taschenrechner mit umgekehrter polnischer Notation nach dem Vorbild des HP-15C. Er zeigt Holen, Version, Abgleich und Rückfluss (V0.4, Memos 01, 05, 51).
+Paket `app-taschenrechner` (`type: app`) im Repo `aibex-aios/app-taschenrechner`, Version `0.4.1` (Funktionstasten statt Kacheln, V0.4, Memo 54; README mit *LEARN* in 0.4.1, Memo 61; ältere Versionen 0.1.x–0.3.x bleiben im Hub). Ein programmierbarer Taschenrechner mit umgekehrter polnischer Notation nach dem Vorbild des HP-15C. Er zeigt Holen, Version, Abgleich und Rückfluss (V0.4, Memos 01, 05, 51).
 
 | Element | Inhalt |
 |---|---|

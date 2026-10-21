@@ -28,7 +28,7 @@
       SECRET="Quittenbaum-$RANDOM$RANDOM"
       V="$SB/§Live"
       mkdir -p "$SB/home/.aios" "$SB/bin" "$V/.aios" "$V/@/@Rule" "$V/Garten/@" "$V/Garten/Neu"
-      printf 'aios: 0.1.0\n' > "$V/.aios/config.yaml"
+      printf 'aios: 0.4.0\n' > "$V/.aios/config.yaml"
       printf '# Geheimwort\nDas Geheimwort lautet: %s\n' "$SECRET" > "$V/@/@Rule/geheim.md"
       printf '# Garten\nIm Garten wachsen Äpfel.\n' > "$V/Garten/@/garten.md"
       for TOOL in aios aios-context; do

@@ -29,7 +29,7 @@
       T="${TMPDIR:-/tmp}"; SB="$(cd "$(mktemp -d "${T%/}/aios-live.XXXXXX")" && pwd -P)" || exit 1
       V="$SB/§Live"; G="$V/Garten"; O="$G/@/@!Assistant/gaertner"; A="$V/@/@!Assistant/astronom"
       mkdir -p "$SB/bin" "$SB/home" "$V/.aios" "$V/@/@Rule" "$G/@/@!Assistant" "$V/@/@!Assistant"
-      printf 'aios: 0.3.0\n' > "$V/.aios/config.yaml"
+      printf 'aios: 0.4.0\n' > "$V/.aios/config.yaml"
       printf '# Stil\nAntworte auf Deutsch.\n' > "$V/@/@Rule/stil.md"
       cp -R "$LIB/assistent-gaertner/0.2.0/assistants/gaertner" "$O"   # demo assistants (packages, spec 03)
       cp -R "$LIB/assistent-astronom/0.2.0/assistants/astronom" "$A"

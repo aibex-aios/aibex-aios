@@ -2,7 +2,7 @@
 title: "Installation und Konfiguration"
 date: 2026-10-21
 author: iHux
-status: Entwurf
+status: Spec
 tags: [spec, aios, v0.4, installation, konfiguration]
 number: 04
 related:
