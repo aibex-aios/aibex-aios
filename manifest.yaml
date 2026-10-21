@@ -1,0 +1,9 @@
+# Paket-Manifest des Kernels von AIbex AIOS (Spec 06). Der Kernel wird mit
+# aios --install installiert, nicht geholt; beim Installieren wird version
+# mit der Version des Tags überschrieben (Spec 04).
+name: aios
+version: 0.4.0-dev
+type: kernel
+description: Kernel von AIbex AIOS mit CLI, Hooks und AIOS-Skills
+requires:
+  aios: "*"
