@@ -321,7 +321,11 @@ Arbeitspferde gehören zum Paket, nicht zu einem Element; `only` schaltet sie ni
 
 ## Umstellung von v0.3
 
-`skills:` und `assistants:` aus v0.3 gehen in `packages:` auf (V0.4, Memo 09). v0.4 liest beide Schlüssel weiter: `skills: {memo: 6.0.0}` gilt als `packages: {memo: "==6.0.0"}`, `assistants:` ebenso; Einträge der Form `<assistant>/<skill>` werden mit Warnung übergangen. `aios --activate v0.4.<n>` bietet an, die Schlüssel umzuschreiben und die Blueprints mit Marke aus `@!Skill/` und `@!Assistant/` durch geholte Pakete in `@!Package/` zu ersetzen. Lokale Blueprints ohne Marke bleiben. Weil die `.gitignore`-Vorlage jetzt `.aios/registry` statt `.aios/manifest` enthält (Spec 04), melden Konsistenzprüfung und `/aios-integrity` in Projekten aus v0.3 die fehlende Zeile; `aios --init` ergänzt sie.
+`skills:` und `assistants:` aus v0.3 gehen in `packages:` auf (V0.4, Memos 09, 47). Die Namen werden nach der Art abgebildet: `skills: <name>` ist das Paket `skill-<name>`, `assistants: <name>` das Paket `assistent-<name>` (`memo` → `skill-memo`, `gaertner` → `assistent-gaertner`). Einträge der Form `<assistant>/<skill>` haben kein Paket und werden mit Warnung übergangen.
+
+**Lesen:** Bis zur Umstellung liest v0.4 beide Schlüssel als gewünschte Pakete mit dem Standardbereich der alten Version (`memo: 6.0.0` gilt als `skill-memo: "~=6.0"`). Ein Eintrag ohne Paket in der Hub-Liste wird mit Warnung übergangen. Geschrieben wird dabei nichts.
+
+**Umstellung:** `aios --activate v0.4.<n> <pfad>` bietet sie für `<pfad>` und alle Projekte darunter an, im selben Plan wie die Aktivierung und mit derselben Bestätigung. Je Eintrag gilt: Gibt es die alte Version im Hub, wird der Standardbereich dieser Version eingetragen; sonst die höchste Version, und der Plan nennt den Wechsel (z. B. `astronom` 0.1.0 → `assistent-astronom` 0.2.0). Die Umstellung schreibt die Einträge nach `packages:`, entfernt sie aus `skills:` bzw. `assistants:`, entfernt die Blueprints mit Marke aus `@!Skill/` und `@!Assistant/` und holt die Pakete (wie `aios --fetch`). Lokale Blueprints ohne Marke und Einträge ohne Paket bleiben. Weil die `.gitignore`-Vorlage jetzt `.aios/registry` statt `.aios/manifest` enthält (Spec 04), melden Konsistenzprüfung und `/aios-integrity` in Projekten aus v0.3 die fehlende Zeile; `aios --init` ergänzt sie.
 
 ## Daten von Apps — `@Data/`
 

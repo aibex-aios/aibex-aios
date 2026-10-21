@@ -178,14 +178,24 @@ class Fetch:
         self.hubs = hub.hub_list(self.cfg)
         self.source = hub.GitSource(self.hubs)
         self.packages = wanted(self.project)
+        from . import migrate
+        self.legacy = {n: r for n, r in migrate.legacy(self.project).items() if n not in self.packages}
         self.lock = read_lock(self.project)
         self.kernel = self.cfg.aios
 
     def resolve(self, packages, upgrade=()):
-        requests = {n: request(e) for n, e in packages.items()}
-        r = resolver.Resolver(self.source, [h.name for h in self.hubs], self.kernel,
-                              locked(self.lock), upgrade)
-        return r.resolve(requests)
+        """Picks for packages: and the not yet changed over skills:/assistants: of v0.3."""
+        while True:
+            requests = {n: request(e) for n, e in {**self.legacy, **packages}.items()}
+            r = resolver.Resolver(self.source, [h.name for h in self.hubs], self.kernel,
+                                  locked(self.lock), upgrade)
+            try:
+                return r.resolve(requests)
+            except resolver.NotFound as e:            # an entry of v0.3 without package: pass over
+                if e.name not in self.legacy or e.name in packages:
+                    raise
+                warn(f"{e}; the entry of v0.3 is passed over")
+                del self.legacy[e.name]
 
     def from_lock(self, packages):
         """Picks from lock.yaml without the network: all versions in the cache and every range of
@@ -354,7 +364,7 @@ def add(spec, hub_name=None, repo=None, to=None):
 def sync(to=None):
     """aios --fetch without a package: the project follows lock.yaml (spec 06, Abgleich)."""
     f = Fetch(to)
-    picks = f.from_lock(f.packages)
+    picks = f.from_lock({**f.legacy, **f.packages})
     if picks is None:
         picks = f.resolve(f.packages)
     return f.plan(picks, f.packages, f"=> reconcile the packages of {f.project} with lock.yaml",

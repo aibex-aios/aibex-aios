@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from . import aiosinit, config, install, paths
+from . import aiosinit, config, install, migrate, paths, semver
 from .ui import Abort, Plan, confirm, say
 
 
@@ -35,7 +35,9 @@ def activate(version, path=None):
     known = install.installations()
     if tag not in known or not known[tag][0].is_dir():
         raise Abort(f"AIOS {tag} is not installed; run: aios --install {tag}")
-    plan = Plan()
+    plan, later = Plan(), Plan()
+    changes = migrate.plan(p, later, m.group(1)) \
+        if semver.Version.parse(m.group(1)).release() >= semver.Version(0, 4) else []   # from v0.3
     steps = None
     if p == root:                                   # the vault root becomes the root project (spec 04)
         steps = aiosinit.Steps(p, plan, root=True)
@@ -51,7 +53,7 @@ def activate(version, path=None):
             raise Abort(f"{e}; fix the file first")
         if config.VERSION.match(str(data.get("aios") or "")) and \
                 config.VERSION.match(str(data["aios"])).group(1) == m.group(1):
-            if not (steps and steps.changes):
+            if not (steps and steps.changes) and not changes:
                 say(f"=> {effective(p)}, nothing to do")
                 return 0
             what = None
@@ -63,6 +65,7 @@ def activate(version, path=None):
         plan.add(what, lambda: config.set_aios(file, m.group(1)))
     if steps and steps.changes:
         steps.commit(extra=[".aios/config.yaml"])
+    plan.steps += later.steps                       # changeover from v0.3 after the activation (spec 06)
     say(f"=> activate AIOS {tag} for {p}")
     if not confirm(plan, "activate?", "activation cancelled"):
         return 1
