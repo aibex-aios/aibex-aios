@@ -163,11 +163,11 @@ Der Abnahmetest von v0.4 läuft auf dem Arbeitsrechner mit v0.4.0 in einem neuen
 | # | Schritt | erwartet |
 |---|---|---|
 | 1 | v0.4.0 installieren, `§Demo` anlegen und aktivieren | `aios: 0.4.0`, Struktur vollständig |
-| 2 | `aios --hubs`, `aios --library`, `aios --library app-taschenrechner` | Hub-Liste mit Herkunft; Pakete beider Hubs; Versionen 0.3.0–0.3.2, 0.4.0 und die Testversion 0.4.1 (im echten Hub zusätzlich 0.1.x und 0.2.x, ohne 0.4.1) |
+| 2 | `aios --hubs`, `aios --library`, `aios --library app-taschenrechner` | Hub-Liste mit Herkunft; Pakete beider Hubs; Versionen 0.3.0–0.3.2, 0.4.0, 0.4.1 und die Testversion 0.4.2 (im echten Hub zusätzlich 0.1.x und 0.2.x, ohne 0.4.2) |
 | 3 | im Code-Tab: „Installiere mir den Taschenrechner", Version 0.4.0, Ziel Root-Projekt | `/aios-package` findet das Paket, zeigt den Plan mit `skill-memo` als Abhängigkeit; `@!Package/` mit Marken, `packages:`, `lock.yaml` mit `hub` und `required_by` |
 | 4 | im nächsten Chat `/taschenrechner-gui` bzw. Kachel *Apps* in `/aios-gui`: rechnen, mit *LEARN* eine Funktionstaste belegen, speichern | `@Data/app-taschenrechner/funktionstasten.yaml`; die Funktionstaste spielt die Folge ab |
 | 5 | Vault committen, an anderen Ort klonen, `aios --fetch` ohne Argument, dann ohne Netz | gleicher Stand aus `lock.yaml`; ohne Netz aus dem Cache |
-| 6 | `aios --fetch --upgrade app-taschenrechner`, mitgelieferte Funktionstaste übernehmen | 0.4.0 → 0.4.1 (Testversion) mit Plan; der Skill bietet die Funktionstaste *doppelt* aus `knowledge/@!Funktionstasten/` an |
+| 6 | `aios --fetch --upgrade app-taschenrechner`, mitgelieferte Funktionstaste übernehmen | 0.4.0 → 0.4.2 (Testversion) mit Plan; der Skill bietet die Funktionstaste *doppelt* aus `knowledge/@!Funktionstasten/` an |
 | 7 | `aios --fetch --remove app-taschenrechner` | Paket und `skill-memo` entfernt, `@Data/` bleibt |
 | 8 | in `S-Sternwarte`: `aios --fetch assistent-astronom`, `/aios-assistant Astronom`, dann `aios --fetch knowledge-orion` und `aios --fetch aibex-hub/knowledge-scorpio` | Astronom aus dem Paket; Orion aus der Hub-Liste, Skorpion aus dem genannten Hub ohne Hinweis; `lock.yaml` mit beiden Hubs |
 | 9 | im nächsten Chat: „Daten des Sterns Rigel", „die drei hellsten Orion-Sterne", „der hellste Stern im Skorpion" | Werte aus den Tabellen der Wissenspakete mit Quelle |
