@@ -407,6 +407,8 @@ Ein Rückfluss bringt Dateien von der Anwender-Site zurück in ein Paket-Repo se
 2. Plan: Repo, Zweig `contrib/<gh-user>/<datum>-<kurzname>`, Ziel `contrib/<gh-user>/<dateiname>`, Titel des Pull Requests.
 3. Nach Ja: Repo in ein temporäres Verzeichnis klonen (bei fehlenden Schreibrechten einen Fork), Zweig anlegen, Dateien kopieren, committen, pushen und mit `gh pr create` den Pull Request gegen den Standardzweig anlegen. Ausgabe: URL des Pull Requests.
 
+Jeder Beitrag bekommt einen eigenen Zweig und einen eigenen Pull Request; gibt es den Zweig schon, hängt AIOS `-2`, `-3` … an. Im neuen Zweig ersetzt die Datei `contrib/<gh-user>/<dateiname>` eine frühere desselben Namens; den Verlauf hält Git. Der Pull Request heißt „Beitrag: <dateiname> von <gh-user>" (oder `--message`) und nennt im Text das Paket, die geholte Version und den Commit aus `lock.yaml` (V0.4, Memo 55). Ohne Schreibrechte (`gh api repos/<owner>/<repo>` ohne `permissions.push`) legt AIOS mit `gh repo fork` einen Fork an und pusht den Zweig dorthin.
+
 Der Maintainer prüft und übernimmt den Beitrag in den Inhalt des Pakets, beim Taschenrechner nach `knowledge/@!Funktionstasten/` (unten), und taggt eine neue Version. Mit `aios --fetch --upgrade` kommt er zu anderen Usern (V0.4, Memo 19, L3). Wird ein Beitrag als eigenes Paket veröffentlicht (z. B. `type: knowledge`), ist er ein Paket, aber kein Modul (V0.4, Memo 11).
 
 **Tests:** `gh` wird nicht umgelenkt. Die Tests legen eine Attrappe für `gh` in den `PATH` des Sandkastens, Zweig und Push gehen in einen Hub unter `file://` (V0.4, Memo 19, L4).
