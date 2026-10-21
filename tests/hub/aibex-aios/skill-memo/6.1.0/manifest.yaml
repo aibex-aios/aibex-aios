@@ -1,5 +1,5 @@
-name: memo
-version: 6.0.0
+name: skill-memo
+version: 6.1.0
 type: skill
 description: Memo-Stil (Attrappe des Test-Hubs)
 requires:

@@ -228,8 +228,8 @@ for n in ('aios-assistant', 'aios-context', 'aios-init'):
 #===============================================================================
 
    MEMO_BODY="$(python3 -c "
-import sys; t=open(sys.argv[1],encoding='utf-8').read(); e=t.find('\n---',3); print(t[t.find('\n',e+4)+1:].lstrip('\n'),end='')" "$SRC/skills/basic/memo/SKILL.md")"
-   assert_contains "$(head -5 "$SRC/skills/basic/memo/SKILL.md")" "version: 6.0.0" "library memo is 6.0.0 (aios-memo carries its body)"
+import sys; t=open(sys.argv[1],encoding='utf-8').read(); e=t.find('\n---',3); print(t[t.find('\n',e+4)+1:].lstrip('\n'),end='')" "$SRC/tests/hub/aibex-aios/skill-memo/6.0.0/skills/memo/SKILL.md")"
+   assert_contains "$(head -5 "$SRC/tests/hub/aibex-aios/skill-memo/6.0.0/skills/memo/SKILL.md")" "version: 6.0.0" "package skill-memo 6.0.0 (aios-memo carries its body)"
    mkdir -p "$D/Notiz/@"
    OUT="$(at "$D/Notiz" aios --skill aios-memo)"
    case "$OUT" in *"$MEMO_BODY"*) ok ;; *) fail "aios-memo: body of memo==6.0.0" ;; esac

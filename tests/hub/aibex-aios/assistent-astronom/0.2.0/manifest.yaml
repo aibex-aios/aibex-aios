@@ -1,0 +1,8 @@
+name: assistent-astronom
+version: 0.2.0
+type: assistant
+description: Demo-Assistent Astronom, rechnet nur mit Sonne und Mond, nennt Sterndaten aus verfügbarem Wissen
+requires:
+  aios: ">=0.4,<0.5"
+contents:
+  assistants: [astronom]

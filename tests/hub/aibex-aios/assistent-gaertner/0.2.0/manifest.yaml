@@ -1,0 +1,8 @@
+name: assistent-gaertner
+version: 0.2.0
+type: assistant
+description: Demo-Assistent Gärtner, rechnet nur mit Äpfeln und Birnen, mit Oberfläche
+requires:
+  aios: ">=0.4,<0.5"
+contents:
+  assistants: [gaertner]

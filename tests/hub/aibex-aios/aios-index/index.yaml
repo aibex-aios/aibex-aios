@@ -1,9 +1,15 @@
 schema: 1
 packages:
-  - name: memo
+  - name: skill-memo
     type: skill
-    description: Memo-Stil (Attrappe)
-  - name: taschenrechner
+    description: Memo-Stil für Projekte in AIOS-Vaults
+  - name: assistent-gaertner
+    type: assistant
+    description: Demo-Assistent Gärtner, rechnet nur mit Äpfeln und Birnen
+  - name: assistent-astronom
+    type: assistant
+    description: Demo-Assistent Astronom, rechnet nur mit Sonne und Mond, nennt Sterndaten
+  - name: app-taschenrechner
     type: app
     description: Programmierbarer Taschenrechner mit lernenden Kacheln
   - name: knowledge-orion

@@ -330,49 +330,16 @@ def extract(repo, tag):
 
 
 def skills_of(src):
-    """[(group, name, dir, version)] of skills/<group>/<name>/SKILL.md; names are unique."""
-    result, seen = [], {}
-    base = src / "skills"
+    """[(name, dir)] of the AIOS skills skills/aios/<name>/SKILL.md (spec 04). Other skills and the
+    library of v0.3 are not part of the kernel any more; they are packages (spec 06)."""
+    result = []
+    base = src / "skills" / "aios"
     if not base.is_dir():
         return result
-    for group in sorted(p for p in base.iterdir() if p.is_dir()):
-        for skill in sorted(p for p in group.iterdir() if (p / "SKILL.md").is_file()):
-            if skill.name in seen:
-                raise Abort(f"skill {skill.name} exists in {seen[skill.name]}/ and {group.name}/")
-            seen[skill.name] = group.name
-            meta = frontmatter(skill / "SKILL.md")
-            if group.name == "aios":
-                if not skill.name.startswith("aios-"):
-                    raise Abort(f"AIOS skill {skill.name} must start with aios-")
-                version = None
-            else:
-                version = meta.get("version")
-                if not version:
-                    raise Abort(f"skill {group.name}/{skill.name} has no version in its frontmatter")
-            result.append((group.name, skill.name, skill, version))
-    return result
-
-
-def assistants_of(src):
-    """[(group, name, dir, version)] of assistants/<group>/<name>/ASSISTANT.md (spec 04, Assistenten-Gruppen).
-    Every assistant has a version; names are unique across all skills and assistants of the library."""
-    result, seen = [], {name: f"skills/{group}" for group, name, _, _ in skills_of(src)}
-    base = src / "assistants"
-    if not base.is_dir():
-        return result
-    for group in sorted(p for p in base.iterdir() if p.is_dir()):
-        for a in sorted(p for p in group.iterdir() if (p / "ASSISTANT.md").is_file()):
-            if a.name in seen:
-                raise Abort(f"assistant {a.name} of assistants/{group.name}/ has the name of {seen[a.name]}/{a.name}; "
-                            "names of the library are unique")
-            seen[a.name] = f"assistants/{group.name}"
-            meta = frontmatter(a / "ASSISTANT.md")
-            if meta.get("name") != a.name:
-                raise Abort(f"assistant {group.name}/{a.name}: name in ASSISTANT.md is {meta.get('name')!r}")
-            version = str(meta.get("version") or "")
-            if not re.match(r"^\d+\.\d+\.\d+$", version):
-                raise Abort(f"assistant {group.name}/{a.name} has no version MAJOR.MINOR.PATCH in its frontmatter")
-            result.append((group.name, a.name, a, version))
+    for skill in sorted(p for p in base.iterdir() if (p / "SKILL.md").is_file()):
+        if not skill.name.startswith("aios-"):
+            raise Abort(f"AIOS skill {skill.name} must start with aios-")
+        result.append((skill.name, skill))
     return result
 
 
@@ -387,11 +354,12 @@ def build(stage, tag, root, entries):
             if (stage / d).is_dir():
                 shutil.copytree(stage / d, inst / d, symlinks=True)
         (inst / "VERSION").write_text(tag[1:] + "\n", encoding="utf-8")
-        for group, name, src, version in skills_of(stage):
-            dst = inst / "skills" / group / name
-            shutil.copytree(src, dst / version if version else dst)
-        for group, name, src, version in assistants_of(stage):
-            shutil.copytree(src, inst / "assistants" / group / name / version)
+        if (stage / "manifest.yaml").is_file():           # package manifest of the kernel (spec 06)
+            text = (stage / "manifest.yaml").read_text(encoding="utf-8")
+            text = re.sub(r"(?m)^version:.*$", f"version: {tag[1:]}", text, count=1)
+            (inst / "manifest.yaml").write_text(text, encoding="utf-8")
+        for name, src in skills_of(stage):
+            shutil.copytree(src, inst / "skills" / "aios" / name)
         if (stage / "spec").is_dir():
             shutil.copytree(stage / "spec", inst / "doc" / "spec")
         for d in ("tutorials", "wiki"):
@@ -567,9 +535,7 @@ def wrapper(name, description, tools="", session=False):
 
 
 def plan_skills(plan, src):
-    for group, name, skill, _ in skills_of(src):
-        if group != "aios":
-            continue
+    for name, skill in skills_of(src):
         meta = frontmatter(skill / "SKILL.md")
         session = "<session-id>" in (skill / "SKILL.md").read_text(encoding="utf-8").split("\n---", 1)[-1]
         text = wrapper(name, meta.get("description", ""), meta.get("allowed-tools", ""), session)

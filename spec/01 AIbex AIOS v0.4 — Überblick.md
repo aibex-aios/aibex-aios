@@ -93,7 +93,7 @@ Die Begründungen stehen in den Memos der Konzeptprojekte unter `§AIOS/A-AIOS/A
 | **Workspace** | Projekt mit `.aios/workspace.yaml`, das Repos mit Revision und Pfad nennt (Spec 06) |
 | **Fremd-Repo** | Repo eines Workspace ohne `@/`, z. B. ein Paket-Repo; kein Projekt und kein Container (Spec 06) |
 | **Lock** | `.aios/lock.yaml`: aufgelöste Pakete und eingefrorener Stand eines Workspace |
-| **Demo-Assistent** | Assistent als Paket zum Ausprobieren und für Tutorials (`gaertner`, `astronom`) |
+| **Demo-Assistent** | Assistent als Paket zum Ausprobieren und für Tutorials (`assistent-gaertner`, `assistent-astronom`) |
 | **Paket-Skill** | ausgerollter Skill aus einem geholten Paket in `@!Package/` |
 | **lokaler Skill** | Skill, der im Projekt selbst geschrieben wurde (`@!Skill/`) und aus keinem Paket stammt |
 | **Struktur eines Projekts** | was ein Projekt nach `aios --init` hat: `@/`, eigenes Repo, `.gitignore`, Ausschluss im Repo darüber (Spec 05) |
@@ -130,7 +130,7 @@ v0.4 baut auf v0.3 auf und macht AIOS **modular** (Spec 06): Pakete und Module m
 | Workspaces: `.aios/workspace.yaml`, `aios --workspace init`, `update`, `freeze`, `status`, Gruppen | `import` von Manifesten (nur im Format), `diff`, `forall`, Blobs |
 | Rückfluss `aios --contribute` als Pull Request | Workflows (v0.6), `@Chat/` (v0.5) |
 | `@Data/` für Daten von Apps, Demo-App Taschenrechner, Kachel *Apps* in `/aios-gui` | `camp` statt `stup`, Antwort-Prefix der Demo-Assistenten, `memo` mit Unterordnern |
-| `skills:` und `assistants:` gehen in `packages:` auf; `memo`, `gaertner`, `astronom` als Pakete; Testpakete `knowledge-orion`, `knowledge-scorpio` | Bibliothek in der Installation, Paket `toolbox` (v0.4.1) |
+| `skills:` und `assistants:` gehen in `packages:` auf; `skill-memo`, `assistent-gaertner`, `assistent-astronom`, `app-taschenrechner` als Pakete (Namen `<art>-<name>`, V0.4, Memo 43); Testpakete `knowledge-orion`, `knowledge-scorpio` | Bibliothek in der Installation, Paket `toolbox` (v0.4.1) |
 | `.aios/registry` statt `.aios/manifest` | Windows, weitere Hosts |
 | Befunde A4, A5, A10, A11, A13–A16 aus v0.3.1 | |
 
@@ -163,23 +163,23 @@ Der Abnahmetest von v0.4 läuft auf dem Arbeitsrechner mit v0.4.0 in einem neuen
 | # | Schritt | erwartet |
 |---|---|---|
 | 1 | v0.4.0 installieren, `§Demo` anlegen und aktivieren | `aios: 0.4.0`, Struktur vollständig |
-| 2 | `aios --hubs`, `aios --library`, `aios --library taschenrechner` | Hub-Liste mit Herkunft; Pakete beider Hubs; Versionen 0.1.0 und 0.1.1 |
-| 3 | im Code-Tab: „Installiere mir den Taschenrechner", Version 0.1.0, Ziel Root-Projekt | `/aios-package` findet das Paket, zeigt den Plan mit `memo` als Abhängigkeit; `@!Package/` mit Marken, `packages:`, `lock.yaml` mit `hub` und `required_by` |
-| 4 | im nächsten Chat `/taschenrechner-gui` bzw. Kachel *Apps* in `/aios-gui`: rechnen, mit *Lernen* eine Kachel belegen, speichern | `@Data/taschenrechner/kacheln.yaml`; die Kachel spielt die Folge ab |
+| 2 | `aios --hubs`, `aios --library`, `aios --library app-taschenrechner` | Hub-Liste mit Herkunft; Pakete beider Hubs; Versionen 0.1.0 und 0.1.1 |
+| 3 | im Code-Tab: „Installiere mir den Taschenrechner", Version 0.1.0, Ziel Root-Projekt | `/aios-package` findet das Paket, zeigt den Plan mit `skill-memo` als Abhängigkeit; `@!Package/` mit Marken, `packages:`, `lock.yaml` mit `hub` und `required_by` |
+| 4 | im nächsten Chat `/taschenrechner-gui` bzw. Kachel *Apps* in `/aios-gui`: rechnen, mit *Lernen* eine Kachel belegen, speichern | `@Data/app-taschenrechner/kacheln.yaml`; die Kachel spielt die Folge ab |
 | 5 | Vault committen, an anderen Ort klonen, `aios --fetch` ohne Argument, dann ohne Netz | gleicher Stand aus `lock.yaml`; ohne Netz aus dem Cache |
-| 6 | `aios --fetch --upgrade taschenrechner`, mitgelieferte Kachel übernehmen | 0.1.0 → 0.1.1 mit Plan; der Skill bietet die Kachel aus `knowledge/@!Kacheln/` an |
-| 7 | `aios --fetch --remove taschenrechner` | Paket und `memo` entfernt, `@Data/` bleibt |
-| 8 | in `S-Sternwarte`: `aios --fetch astronom`, `/aios-assistant Astronom`, dann `aios --fetch knowledge-orion` und `aios --fetch aibex-hub/knowledge-scorpio` | Astronom aus dem Paket; Orion aus der Hub-Liste, Skorpion aus dem genannten Hub ohne Hinweis; `lock.yaml` mit beiden Hubs |
+| 6 | `aios --fetch --upgrade app-taschenrechner`, mitgelieferte Kachel übernehmen | 0.1.0 → 0.1.1 mit Plan; der Skill bietet die Kachel aus `knowledge/@!Kacheln/` an |
+| 7 | `aios --fetch --remove app-taschenrechner` | Paket und `skill-memo` entfernt, `@Data/` bleibt |
+| 8 | in `S-Sternwarte`: `aios --fetch assistent-astronom`, `/aios-assistant Astronom`, dann `aios --fetch knowledge-orion` und `aios --fetch aibex-hub/knowledge-scorpio` | Astronom aus dem Paket; Orion aus der Hub-Liste, Skorpion aus dem genannten Hub ohne Hinweis; `lock.yaml` mit beiden Hubs |
 | 9 | im nächsten Chat: „Daten des Sterns Rigel", „die drei hellsten Orion-Sterne", „der hellste Stern im Skorpion" | Werte aus den Tabellen der Wissenspakete mit Quelle |
 | 10 | Paket mit mehreren Skills: `aios --deploy <paket> --only <skill>`, dann `--all` | nur der gewählte Skill registriert, `/aios-context` nennt die übrigen „fetched, not deployed" |
-| 11 | lokaler `@!Skill/memo` neben dem Paket `memo` | lokaler Skill gilt, `/aios-context` meldet die Verdeckung |
+| 11 | lokaler `@!Skill/memo` neben dem Skill `memo` des Pakets `skill-memo` | lokaler Skill gilt, `/aios-context` meldet die Verdeckung |
 | 12 | gleicher Paketname in beiden Test-Hubs | Abbruch der CLI mit der Liste, Rückfrage im Skill, danach `hub` in `lock.yaml` |
 | 13 | Paket mit Arbeitspferd holen, starten, stoppen, entfernen | jedes Skript nur nach eigener Bestätigung |
 | 14 | Vault mit `aios: 0.3.1`, `skills:` und `assistants:` auf v0.4.0 umstellen | Angebot zum Umschreiben; Blueprints mit Marke ersetzt, lokale bleiben |
-| 15 | `aios --contribute @Data/taschenrechner/kacheln.yaml --to taschenrechner` gegen `aibex-aios/taschenrechner` | Plan, Zweig `contrib/…`, echter Pull Request |
+| 15 | `aios --contribute @Data/app-taschenrechner/kacheln.yaml --to app-taschenrechner` gegen `aibex-aios/app-taschenrechner` | Plan, Zweig `contrib/…`, echter Pull Request |
 | 16 | Workspace: `aios --workspace init` aus einem Test-Wurzelrepo, `update --group`, `freeze`, `status`, `aios --integrity` | Klone verschachtelt mit Ausschluss, `ws/<tag>`, `lock.yaml` mit SHAs, Fremd-Repo geprüft, fehlender Klon gemeldet |
 | 17 | Befunde A4, A11, A13–A16 nachstellen | Bitte um Umbenennen des Chats; `B-Beet` → `GB-Beet`; Umbenennen nur in der Schreibweise; übernommene Dateien committet; keine falsche Warnung; kurze Spalte *Init* |
-| 18 | Probe gegen die echten Hubs (`AIOS_HUBS` leer): `aios --library`, `aios --fetch memo` | Pakete aus `aibex-aios`, Topic bzw. Index |
+| 18 | Probe gegen die echten Hubs (`AIOS_HUBS` leer): `aios --library`, `aios --fetch skill-memo` | Pakete aus `aibex-aios`, Topic bzw. Index |
 
 ## Offen
 

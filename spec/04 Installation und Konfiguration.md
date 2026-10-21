@@ -158,8 +158,8 @@ Lokale Skills werden als Blueprint in `@/@!Skill/<name>/` geschrieben, nicht dir
 ```yaml
 aios: 0.4.0
 packages:
-  memo: "~=6.0"
-  gaertner: "~=0.2.0"
+  skill-memo: "~=6.0"
+  assistent-gaertner: "~=0.2.0"
   knowledge-scorpio: {range: "~=0.1.0", hub: aibex-hub}
 assistant: gaertner
 hosts: [claude-code]

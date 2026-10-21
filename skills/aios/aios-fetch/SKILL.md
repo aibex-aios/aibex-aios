@@ -13,7 +13,7 @@ Ein AIOS-Skill von AIbex AIOS (Spec 06, *Holen*). Aufruf: `/aios-fetch [<hub>/]<
 ## Ablauf
 
 1. **Ziel klären:** Beim Holen eines Pakets ohne `--to` frage, wohin es soll, und schlage das **Root-Projekt** (die Vault-Root) vor; das Projekt der Session ist die zweite Möglichkeit. Beim Abgleich, `--upgrade` und `--remove` gilt ohne `--to` das Projekt der Session.
-2. **Plan:** den Befehl mit `--plan` ausführen, z. B. `aios --fetch taschenrechner --to "<ziel>" --plan`.
+2. **Plan:** den Befehl mit `--plan` ausführen, z. B. `aios --fetch app-taschenrechner --to "<ziel>" --plan`.
 3. **Fehler:** Endet der Befehl mit Exit 3 (`is in several hubs: …`), frage mit dem Auswahlwerkzeug (`AskUserQuestion`), aus welchem Hub das Paket kommen soll, und beginne mit `<hub>/<paket>` bei Schritt 2. Andere Meldungen (`*** aios --fetch: …`, z. B. ein Konflikt der Versionen) dem User nennen und beenden.
 4. **Rückfrage:** Zeige den Plan: je Paket `new`, `upgrade X -> Y`, `missing`, `changed directly, restored`, `remove`, dazu die Änderungen an `packages:` und `lock.yaml`. Weise ausdrücklich darauf hin, wenn eine direkt geänderte Kopie ersetzt wird. Hat der User das Holen schon ausdrücklich bestätigt, ist keine weitere Rückfrage nötig.
 5. **Ausführen:** Nach Ja denselben Befehl mit `--yes` statt `--plan`.

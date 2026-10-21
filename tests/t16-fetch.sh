@@ -25,12 +25,12 @@
 # checks before anything is written
 #===============================================================================
 
-   assert_contains "$(F "$SANDBOX/outside" memo)" "is not in a vault" "outside a vault"
+   assert_contains "$(F "$SANDBOX/outside" skill-memo)" "is not in a vault" "outside a vault"
    assert_contains "$(F "$D" 'Bad Name')" "expected [<hub>/]<package>[<range>]" "invalid package spec"
-   assert_contains "$(F "$D" memo)" "package memo is in several hubs: aibex-aios, aibex-hub" "name in two hubs"
-   assert_exit 3 env PWD="$D" sh -c "cd '$D' && '$SRC/bin/aios' --fetch memo"
+   assert_contains "$(F "$D" skill-memo)" "package skill-memo is in several hubs: aibex-aios, aibex-hub" "name in two hubs"
+   assert_exit 3 env PWD="$D" sh -c "cd '$D' && '$SRC/bin/aios' --fetch skill-memo"
    assert_contains "$(F "$D" gibtsnicht)" "package gibtsnicht not found in the hubs aibex-aios, aibex-hub" "unknown package"
-   assert_contains "$(F "$D" test-konflikt)" "- memo: no version fulfils the ranges" "conflict of versions"
+   assert_contains "$(F "$D" test-konflikt)" "- skill-memo: no version fulfils the ranges" "conflict of versions"
    [ ! -e "$PKG" ] && [ ! -e "$D/.aios/lock.yaml" ] && ok || fail "checks: nothing written"
 
 #===============================================================================
@@ -38,51 +38,51 @@
 #===============================================================================
 
    export AIOS_HUBS="$ONLY_AIOS aibex-hub=file://$SANDBOX/hubs/aibex-hub"
-   OUT="$(F "$D" aibex-aios/taschenrechner --plan)"
-   assert_contains "$OUT" "new        memo 6.1.0 (aibex-aios)" "plan: dependency memo from the hub of the package"
-   assert_contains "$OUT" "new        taschenrechner 0.1.1 (aibex-aios)" "plan: highest version"
-   assert_contains "$OUT" "packages: taschenrechner: {range: \"~=0.1.1\", hub: aibex-aios}" "plan: packages: with default range ~=0.Y.Z and hub"
+   OUT="$(F "$D" aibex-aios/app-taschenrechner --plan)"
+   assert_contains "$OUT" "new        skill-memo 6.1.0 (aibex-aios)" "plan: dependency memo from the hub of the package"
+   assert_contains "$OUT" "new        app-taschenrechner 0.1.1 (aibex-aios)" "plan: highest version"
+   assert_contains "$OUT" "packages: app-taschenrechner: {range: \"~=0.1.1\", hub: aibex-aios}" "plan: packages: with default range ~=0.Y.Z and hub"
    [ ! -e "$PKG" ] && ok || fail "--plan writes nothing"
-   OUT="$(F "$D" aibex-aios/taschenrechner --yes)"
-   assert_contains "$OUT" "open the app taschenrechner with /taschenrechner-gui or the tile Apps of /aios-gui" "hint: surface of the app"
-   assert_eq "$(LOCK "$D")" "memo=6.1.0@aibex-aios taschenrechner=0.1.1@aibex-aios" "lock.yaml: resolved packages with hub"
+   OUT="$(F "$D" aibex-aios/app-taschenrechner --yes)"
+   assert_contains "$OUT" "open the app app-taschenrechner with /taschenrechner-gui or the tile Apps of /aios-gui" "hint: surface of the app"
+   assert_eq "$(LOCK "$D")" "app-taschenrechner=0.1.1@aibex-aios skill-memo=6.1.0@aibex-aios" "lock.yaml: resolved packages with hub"
    assert_contains "$(cat "$D/.aios/lock.yaml")" "required_by:
-    - taschenrechner" "lock.yaml: required_by"
-   assert_eq "$(sed -n 2,3p "$PKG/taschenrechner/.aios-deploy")" $'name: taschenrechner\nversion: 0.1.1' "marker of the package"
-   assert_contains "$(cat "$PKG/taschenrechner/.aios-deploy")" "commit: " "marker: commit"
-   assert_file "$PKG/taschenrechner/knowledge/@!Kacheln/plus-19.yaml"
-   [ ! -e "$PKG/taschenrechner/.git" ] && ok || fail "mirrored without .git"
+    - app-taschenrechner" "lock.yaml: required_by"
+   assert_eq "$(sed -n 2,3p "$PKG/app-taschenrechner/.aios-deploy")" $'name: app-taschenrechner\nversion: 0.1.1' "marker of the package"
+   assert_contains "$(cat "$PKG/app-taschenrechner/.aios-deploy")" "commit: " "marker: commit"
+   assert_file "$PKG/app-taschenrechner/knowledge/@!Kacheln/plus-19.yaml"
+   [ ! -e "$PKG/app-taschenrechner/.git" ] && ok || fail "mirrored without .git"
    assert_contains "$(F "$D")" "match lock.yaml, nothing to do" "reconcile: nothing to do (I8)"
-   assert_contains "$(F "$D" aibex-aios/taschenrechner)" "nothing to do" "fetch again: nothing to do"
+   assert_contains "$(F "$D" aibex-aios/app-taschenrechner)" "nothing to do" "fetch again: nothing to do"
 
 #===============================================================================
 # reconcile: missing and directly changed copies, offline from the cache
 #===============================================================================
 
-   printf 'x\n' >> "$PKG/memo/skills/memo/SKILL.md"; rm -r "$PKG/taschenrechner"
+   printf 'x\n' >> "$PKG/skill-memo/skills/memo/SKILL.md"; rm -r "$PKG/app-taschenrechner"
    OUT="$(F "$D" --plan)"
-   assert_contains "$OUT" "changed directly, restored memo 6.1.0" "reconcile: directly changed copy"
-   assert_contains "$OUT" "missing    taschenrechner 0.1.1" "reconcile: missing copy"
+   assert_contains "$OUT" "changed directly, restored skill-memo 6.1.0" "reconcile: directly changed copy"
+   assert_contains "$OUT" "missing    app-taschenrechner 0.1.1" "reconcile: missing copy"
    AIOS_HUBS="aibex-aios=file:///nicht/da aibex-hub=file:///nicht/da" F "$D" --yes >/dev/null
-   assert_file "$PKG/taschenrechner/manifest.yaml"
-   assert_eq "$(tail -1 "$PKG/memo/skills/memo/SKILL.md")" "Memo-Stil, Attrappe 6.1.0" "offline: restored from the cache"
+   assert_file "$PKG/app-taschenrechner/manifest.yaml"
+   assert_eq "$(tail -1 "$PKG/skill-memo/skills/memo/SKILL.md")" "Memo-Stil, Attrappe 6.1.0" "offline: restored from the cache"
 
 #===============================================================================
 # no silent update, --upgrade, --remove
 #===============================================================================
 
-   F "$D" aibex-aios/taschenrechner'==0.1.0' --yes >/dev/null
-   assert_eq "$(LOCK "$D")" "memo=6.1.0@aibex-aios taschenrechner=0.1.0@aibex-aios" "explicit version"
+   F "$D" aibex-aios/app-taschenrechner'==0.1.0' --yes >/dev/null
+   assert_eq "$(LOCK "$D")" "app-taschenrechner=0.1.0@aibex-aios skill-memo=6.1.0@aibex-aios" "explicit version"
    sed -i.bak 's/"==0.1.0"/"~=0.1.0"/' "$D/.aios/config.yaml"; rm "$D/.aios/config.yaml.bak"
    OUT="$(F "$D" --yes)"
-   assert_eq "$(LOCK "$D")" "memo=6.1.0@aibex-aios taschenrechner=0.1.0@aibex-aios" "range allows 0.1.1, but no silent update"
+   assert_eq "$(LOCK "$D")" "app-taschenrechner=0.1.0@aibex-aios skill-memo=6.1.0@aibex-aios" "range allows 0.1.1, but no silent update"
    OUT="$(F "$D" --upgrade --yes)"
-   assert_eq "$(LOCK "$D")" "memo=6.1.0@aibex-aios taschenrechner=0.1.1@aibex-aios" "--upgrade chooses anew"
-   assert_contains "$(F "$D" --remove memo)" "memo is not in packages:" "--remove: only packages of packages:"
-   mkdir -p "$D/@Data/taschenrechner"; printf 'K1: {}\n' > "$D/@Data/taschenrechner/kacheln.yaml"
-   F "$D" --remove taschenrechner --yes >/dev/null
-   [ ! -e "$PKG/taschenrechner" ] && [ ! -e "$PKG/memo" ] && ok || fail "--remove: package and its dependency removed"
-   assert_file "$D/@Data/taschenrechner/kacheln.yaml"
+   assert_eq "$(LOCK "$D")" "app-taschenrechner=0.1.1@aibex-aios skill-memo=6.1.0@aibex-aios" "--upgrade chooses anew"
+   assert_contains "$(F "$D" --remove skill-memo)" "skill-memo is not in packages:" "--remove: only packages of packages:"
+   mkdir -p "$D/@Data/app-taschenrechner"; printf 'K1: {}\n' > "$D/@Data/app-taschenrechner/kacheln.yaml"
+   F "$D" --remove app-taschenrechner --yes >/dev/null
+   [ ! -e "$PKG/app-taschenrechner" ] && [ ! -e "$PKG/skill-memo" ] && ok || fail "--remove: package and its dependency removed"
+   assert_file "$D/@Data/app-taschenrechner/kacheln.yaml"
    assert_eq "$(cat "$D/.aios/config.yaml")" "aios: 0.4.0" "--remove: entry of packages: removed"
 
 #===============================================================================
@@ -93,8 +93,8 @@
    F "$S" aibex-hub/knowledge-scorpio --yes >/dev/null
    assert_eq "$(LOCK "$S")" "knowledge-scorpio=0.1.0@aibex-hub" "hub outside the hub list, without hint"
    assert_contains "$(cat "$S/.aios/config.yaml")" "knowledge-scorpio: {range: \"~=0.1.0\", hub: aibex-hub}" "packages: binds the hub"
-   F "$S" memo --hub aibex-hub --yes >/dev/null
-   assert_eq "$(LOCK "$S")" "knowledge-scorpio=0.1.0@aibex-hub memo=6.0.0@aibex-hub" "--hub"
+   F "$S" skill-memo --hub aibex-hub --yes >/dev/null
+   assert_eq "$(LOCK "$S")" "knowledge-scorpio=0.1.0@aibex-hub skill-memo=6.0.0@aibex-hub" "--hub"
    OUT="$(F "$S" test-assistent --yes)"
    assert_contains "$OUT" "assign the assistant to a project of the chain with /aios-assistant Testassistent" "assistant: hint (A5)"
    OUT="$(F "$S" test-hook --yes)"

@@ -53,14 +53,14 @@ Nur `manifest.yaml` ist Pflicht. Welche Ordner ein Paket hat, nennt `contents`.
 ### `manifest.yaml`
 
 ```yaml
-name: taschenrechner
+name: app-taschenrechner
 version: 0.1.0
 type: app
 description: Programmierbarer Taschenrechner mit lernenden Kacheln (Demo-App von AIOS)
 requires:
   aios: ">=0.4,<0.5"
 depends:
-  memo: "~=6.0"
+  skill-memo: "~=6.0"
 contents:
   skills: [taschenrechner, taschenrechner-gui]
   knowledge: true
@@ -107,7 +107,7 @@ Fehlende Teile einer Version zählen als `0` (`0.4` = `0.4.0`). Vorabversionen e
 
 **Version des Kernels:** Für `requires.aios` zählt die AIOS-Version **ohne Vorabkennung**: `0.4.0-dev` und `0.4.0-rc1` gelten als `0.4.0` (V0.4, Memo 18, L1). So lassen sich Pakete auch mit Entwicklungsständen und Release-Kandidaten holen.
 
-**Standardbereich:** Wird ein Paket ohne Bereich geholt, gilt ab Version 1.0 `~=X.Y` der höchsten Version (`memo` 6.0.0 → `~=6.0`), darunter `~=0.Y.Z` (`taschenrechner` 0.1.0 → `~=0.1.0`, also `>=0.1.0,<0.2.0`). Vor 1.0 bleibt ein Paket damit in seiner Minor-Version, weil dort jede Minor-Version brechen darf (V0.4, Memo 19, L5).
+**Standardbereich:** Wird ein Paket ohne Bereich geholt, gilt ab Version 1.0 `~=X.Y` der höchsten Version (`memo` 6.0.0 → `~=6.0`), darunter `~=0.Y.Z` (`app-taschenrechner` 0.1.0 → `~=0.1.0`, also `>=0.1.0,<0.2.0`). Vor 1.0 bleibt ein Paket damit in seiner Minor-Version, weil dort jede Minor-Version brechen darf (V0.4, Memo 19, L5).
 
 ## Hubs
 
@@ -165,10 +165,10 @@ Ein Hub darf ein Repo `aios-index` mit einer Datei `index.yaml` haben, muss aber
 ```yaml
 schema: 1
 packages:
-  - name: memo
+  - name: skill-memo
     type: skill
     description: Memo-Stil der AIbex-Workspaces
-  - name: taschenrechner
+  - name: app-taschenrechner
     type: app
     description: Programmierbarer Taschenrechner mit lernenden Kacheln
 ```
@@ -261,9 +261,9 @@ Ein ausgerolltes Element wirkt über die Masterspace-Kette (Spec 02, 03):
 ```yaml
 aios: 0.4.0
 packages:
-  taschenrechner: "~=0.1.0"
+  app-taschenrechner: "~=0.1.0"
   knowledge-scorpio: {range: "~=0.1.0", hub: aibex-hub}
-  toolbox: {range: "~=1.0", only: [memo]}
+  skill-sammlung: {range: "~=1.0", only: [memo]}
 assistant: none
 ```
 
@@ -273,20 +273,20 @@ assistant: none
 # written by AIOS (fetch, workspace), do not edit
 schema: 1
 packages:
-  taschenrechner:
+  app-taschenrechner:
     version: 0.1.0
     hub: aibex-aios
-    repo: https://github.com/aibex-aios/taschenrechner
+    repo: https://github.com/aibex-aios/app-taschenrechner
     tag: v0.1.0
     commit: 3f2a…
     requested: "~=0.1.0"
-  memo:
+  skill-memo:
     version: 6.0.0
     hub: aibex-aios
-    repo: https://github.com/aibex-aios/memo
+    repo: https://github.com/aibex-aios/skill-memo
     tag: v6.0.0
     commit: 9c1d…
-    required_by: [taschenrechner]
+    required_by: [app-taschenrechner]
 workspace:
   AA-AIbex-AIOS: 8f31…
 ```
@@ -346,10 +346,10 @@ projects:
     remote: aibex
     revision: main
     path: AA-AIbex-AIOS
-  - name: taschenrechner
+  - name: app-taschenrechner
     remote: aibex
     revision: v0.1.0
-    path: AT-Taschenrechner/taschenrechner
+    path: AT-Taschenrechner/app-taschenrechner
     groups: [apps]
 ```
 
@@ -387,7 +387,7 @@ Workspace A-AIOS — 2026-10-21
 
 Project          Path                     Branch    Revision   Remote   Changes
 AA-AIbex-AIOS    AA-AIbex-AIOS            main      ok         ok       ok
-taschenrechner   AT-Taschenrechner/…      ws/v0.1.0 ok         —        2 changed
+app-taschenrechner AT-Taschenrechner/…    ws/v0.1.0 ok         —        2 changed
 aibex-aios       AB-Code/aibex-aios       —         missing    —        —
 ```
 
@@ -409,19 +409,19 @@ Der Maintainer prüft und übernimmt den Beitrag in den Inhalt des Pakets, beim 
 
 ## Demo-App Taschenrechner
 
-Paket `taschenrechner` (`type: app`) im Repo `aibex-aios/taschenrechner`, Version `0.1.0`. Es zeigt Holen, Version, Abgleich und Rückfluss (V0.4, Memos 01, 05).
+Paket `app-taschenrechner` (`type: app`) im Repo `aibex-aios/app-taschenrechner`, Version `0.1.0`. Es zeigt Holen, Version, Abgleich und Rückfluss (V0.4, Memos 01, 05).
 
 | Element | Inhalt |
 |---|---|
 | Skill `taschenrechner-gui` | Oberfläche (`gui.yaml`) mit einem HTML-Teil `rechner.html` |
-| Skill `taschenrechner` | speichert, liest und listet Kachel-Funktionen in `@Data/taschenrechner/kacheln.yaml`; bietet mitgelieferte Kacheln an |
+| Skill `taschenrechner` | speichert, liest und listet Kachel-Funktionen in `@Data/app-taschenrechner/kacheln.yaml`; bietet mitgelieferte Kacheln an |
 | `knowledge` | `knowledge/@!Kacheln/<name>.yaml`: mitgelieferte Kacheln, verborgen (Spec 02), also nicht im Kontext |
 | Tasten | `0`–`9`, `+`, `−`, `×`, `÷`, `=`, vier Kacheln `K1`–`K4`, **Lernen** |
 | Lernen | erster Druck startet die Aufnahme der folgenden Tasten, zweiter Druck beendet sie; die nächste gedrückte Kachel übernimmt die Folge |
 | Kachel | spielt ihre Tastenfolge ab, als würde sie getippt |
 | Speichern | Der HTML-Teil kann keine Dateien schreiben. Nach dem Belegen einer Kachel sendet er mit `sendPrompt` eine Nachricht an Claude, die den Skill `taschenrechner` aufruft und die Belegung speichert (Spec 01, I7: Claude zeigt, was gespeichert wird). Beim Öffnen liest der Skill die Datei und übergibt sie dem HTML-Teil |
-| Mitgeliefert | Der Skill `taschenrechner` zeigt die Kacheln aus `knowledge/@!Kacheln/` als „mitgeliefert" und übernimmt eine davon auf Wunsch in `@Data/taschenrechner/kacheln.yaml` (V0.4, Memo 19, L3) |
-| Rückfluss | `aios --contribute @Data/taschenrechner/kacheln.yaml --to taschenrechner` |
+| Mitgeliefert | Der Skill `taschenrechner` zeigt die Kacheln aus `knowledge/@!Kacheln/` als „mitgeliefert" und übernimmt eine davon auf Wunsch in `@Data/app-taschenrechner/kacheln.yaml` (V0.4, Memo 19, L3) |
+| Rückfluss | `aios --contribute @Data/app-taschenrechner/kacheln.yaml --to app-taschenrechner` |
 
 `kacheln.yaml`:
 

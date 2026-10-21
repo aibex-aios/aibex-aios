@@ -1,7 +1,7 @@
 name: knowledge-scorpio
 version: 0.1.0
 type: knowledge
-description: Hellste Sterne des Skorpions (Attrappe des Test-Hubs)
+description: Die 20 hellsten Sterne des Sternbilds Skorpion mit Helligkeit, Radius, Entfernung, Temperatur und Art
 requires:
   aios: ">=0.4,<0.5"
 contents:

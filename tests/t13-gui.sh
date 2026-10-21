@@ -14,8 +14,8 @@
    mk() { mkdir -p "$(dirname "$1")"; printf '%s' "$2" > "$1"; }
    mk "$D/.aios/config.yaml" $'aios: 0.3.0\n'
    mkdir -p "$D/@/@!Assistant" "$G/@/@!Assistant" "$D/Wiese/@"
-   cp -R "$SRC/assistants/demo/gaertner" "$G/@/@!Assistant/gaertner"
-   cp -R "$SRC/assistants/demo/astronom" "$D/@/@!Assistant/astronom"
+   cp -R "$SRC/tests/hub/aibex-aios/assistent-gaertner/0.2.0/assistants/gaertner" "$G/@/@!Assistant/gaertner"
+   cp -R "$SRC/tests/hub/aibex-aios/assistent-astronom/0.2.0/assistants/astronom" "$D/@/@!Assistant/astronom"
    at() { (cd "$1" && shift && "$@" 2>&1); }
    GUI() { local d="$1"; shift; at "$d" "$SRC/bin/aios" --gui "$@"; }
    GG="$G/@/@!Assistant/gaertner/@!Skill/gaertner-gui"
@@ -107,7 +107,7 @@ print('|'.join(gui.check(yaml.safe_load(sys.argv[1]), Path('$GG'))))" "$1"; }
    printf 'title: [kaputt\n' > "$GG/gui.yaml"
    assert_contains "$(GUI "$G")" "*** aios --gui: $GG/gui.yaml" "broken gui.yaml: error"
    assert_exit 1 bash -c "cd '$G' && '$SRC/bin/aios' --gui"
-   cp "$SRC/assistants/demo/gaertner/@!Skill/gaertner-gui/gui.yaml" "$GG/gui.yaml"
+   cp "$SRC/tests/hub/aibex-aios/assistent-gaertner/0.2.0/assistants/gaertner/@!Skill/gaertner-gui/gui.yaml" "$GG/gui.yaml"
    sed -i.bak 's/^skills: .*/skills: [apfel-birnen-algebra]/' "$G/@/@!Assistant/gaertner/ASSISTANT.md"
    assert_contains "$(GUI "$G")" "gui gaertner-gui of the assistant gaertner is not in its skills" "gui must be in skills"
    assert_contains "$(at "$G" "$SRC/bin/aios-context" --assistant gaertner)" "gui gaertner-gui of the assistant gaertner is not in its skills" "aios-context --assistant reports it"

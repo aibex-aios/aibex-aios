@@ -90,36 +90,17 @@ EOF
    I="$P/v0.2.0"
    assert_eq "$(cat "$I/VERSION")" "0.2.0" "VERSION of the tag"
    for F in bin/aios bin/aios-context lib/aios/install.py templates/forwarder templates/gitignore \
-            skills/aios/aios-demo/SKILL.md skills/basic/memo/6.1.0/SKILL.md python/requirements.txt \
-            assistants/demo/gaertner/0.2.0/ASSISTANT.md "assistants/demo/gaertner/0.2.0/@!Skill/apfel-birnen-algebra/SKILL.md" \
-            "assistants/demo/gaertner/0.2.0/@Wissen/@@Sortenkunde/sortenkunde.md" assistants/demo/astronom/0.1.0/ASSISTANT.md; do
+            skills/aios/aios-demo/SKILL.md python/requirements.txt manifest.yaml; do
       assert_file "$I/$F"
    done
+   [ ! -e "$I/skills/basic" ] && [ ! -e "$I/assistants" ] && ok || fail "no library in the installation (v0.4)"
+   assert_eq "$(sed -n 's/^version: //p' "$I/manifest.yaml")" "0.2.0" "manifest.yaml: version of the tag"
    assert_file "$I/doc/spec/04 Installation und Konfiguration.md"
    assert_file "$I/doc/tutorials/01 Erste Schritte mit den Demo-Assistenten.md"
    assert_exec "$I/python/bin/python"
    [ ! -e "$I/tests" ] && [ ! -e "$I/dev" ] && [ ! -e "$I/CLAUDE.md" ] && [ ! -e "$I/.git" ] && ok || fail "only the mapped parts are installed"
    ro "$I" && ro "$I/bin/aios" && ro "$I/lib/aios" && ok || fail "installation is read-only"
    assert_eq "$(cat "$P/installations.yaml")" "v0.2.0: $I" "installations.yaml"
-   assert_eq "$(PYTHONPATH="$SRC/lib" python3 -c '
-import sys, tempfile
-from pathlib import Path
-from aios import install
-from aios.ui import Abort
-def tree(files):
-    d = Path(tempfile.mkdtemp())
-    for f, t in files.items():
-        (d / f).parent.mkdir(parents=True, exist_ok=True); (d / f).write_text(t)
-    return d
-skill = "---\nname: memo\nversion: 6.0.0\n---\n"
-for case, files in [("conflict", {"skills/basic/memo/SKILL.md": skill, "assistants/demo/memo/ASSISTANT.md": "---\nname: memo\nversion: 0.1.0\n---\n"}),
-                    ("noversion", {"assistants/demo/x/ASSISTANT.md": "---\nname: x\n---\n"})]:
-    try:
-        install.assistants_of(tree(files)); print(case, "accepted")
-    except Abort as e:
-        print(case, "refused:", str(e).split(";")[0].split(" in its")[0])
-')" "conflict refused: assistant memo of assistants/demo/ has the name of skills/basic/memo
-noversion refused: assistant demo/x has no version MAJOR.MINOR.PATCH" "library: unique names, assistants need a version"
 
 #===============================================================================
 # --install: user setup
@@ -151,7 +132,7 @@ noversion refused: assistant demo/x has no version MAJOR.MINOR.PATCH" "library: 
    cp "$SET" "$SANDBOX/settings.1"; cp "$HOME/.aios/hooks-backup.json" "$SANDBOX/backup.1"
    OUT="$(cd "$SANDBOX" && echo y | aios --install v0.1.0 2>&1)"; RC=$?
    assert_eq "$RC" "0" "install v0.1.0 via forwarder (clone from ~/.aios/repo)"
-   assert_file "$P/v0.1.0/skills/basic/memo/6.0.0/SKILL.md"
+   assert_eq "$(sed -n 's/^version: //p' "$P/v0.1.0/manifest.yaml")" "0.1.0" "v0.1.0: manifest.yaml with the version of the tag"
    cmp -s "$SET" "$SANDBOX/settings.1" && cmp -s "$HOME/.aios/hooks-backup.json" "$SANDBOX/backup.1" && ok || fail "second install: hooks and backup unchanged"
    assert_eq "$(cd "$SANDBOX" && aios --install v0.1.0 </dev/null 2>&1)" "=> AIbex AIOS v0.1.0: nothing to do" "installed version: nothing to do, no question"
    assert_eq "$(cd "$SANDBOX" && aios --version)" "0.2.0" "forwarder still calls the highest version"

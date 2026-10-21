@@ -13,9 +13,9 @@
    export PATH="$PYDIR:/usr/bin:/bin:/usr/sbin:/sbin"
    HUBS="$("$SRC/tests/hub/build" "$SANDBOX/hubs")"
    assert_eq "$HUBS" "aibex-aios=file://$SANDBOX/hubs/aibex-aios aibex-hub=file://$SANDBOX/hubs/aibex-hub" "build prints AIOS_HUBS"
-   assert_eq "$(git ls-remote --tags "$SANDBOX/hubs/aibex-aios/taschenrechner" | sed 's/.*refs.tags.//' | tr '\n' ' ')" "v0.1.0 v0.1.1 " "one tag per version"
-   assert_eq "$(git -C "$SANDBOX/hubs/aibex-aios/taschenrechner" show v0.1.0:manifest.yaml | sed -n 2p)" "version: 0.1.0" "tag holds its version"
-   assert_eq "$(git -C "$SANDBOX/hubs/aibex-aios/taschenrechner" ls-tree -r --name-only v0.1.0 | grep -c plus-19)" "0" "files of later versions not in earlier tags"
+   assert_eq "$(git ls-remote --tags "$SANDBOX/hubs/aibex-aios/app-taschenrechner" | sed 's/.*refs.tags.//' | tr '\n' ' ')" "v0.1.0 v0.1.1 " "one tag per version"
+   assert_eq "$(git -C "$SANDBOX/hubs/aibex-aios/app-taschenrechner" show v0.1.0:manifest.yaml | sed -n 2p)" "version: 0.1.0" "tag holds its version"
+   assert_eq "$(git -C "$SANDBOX/hubs/aibex-aios/app-taschenrechner" ls-tree -r --name-only v0.1.0 | grep -c plus-19)" "0" "files of later versions not in earlier tags"
    D="$SANDBOX/work/§Demo"
    mk() { mkdir -p "$(dirname "$1")"; printf '%s' "$2" > "$1"; }
    mk "$D/.aios/config.yaml" $'aios: 0.4.0\n'
@@ -79,10 +79,10 @@ aibex-hub           https://github.com/aibex-hub  (home)
 
    export AIOS_HUBS="$HUBS"
    OUT="$(A "$D" --library)"
-   assert_contains "$OUT" "aibex-aios/taschenrechner   app           Programmierbarer Taschenrechner" "library: index of aibex-aios"
+   assert_contains "$(printf '%s\n' "$OUT" | grep app-taschenrechner | tr -s ' ')" "aibex-aios/app-taschenrechner app Programmierbarer Taschenrechner" "library: index of aibex-aios"
    assert_contains "$OUT" "(hub aibex-hub cannot be searched: no aios-index, no topic aios-package; fetch by name)" "library: hub without index"
-   assert_eq "$(A "$D" --library stern | head -1)" "aibex-aios/knowledge-orion  knowledge     Die hellsten Sterne des Orion" "library: search in name and description"
-   assert_eq "$(A "$D" --library memo)" $'aibex-aios/memo  6.0.0 6.1.0\naibex-hub/memo  6.0.0' "library <package>: versions per hub"
+   assert_eq "$(A "$D" --library orion | head -1 | tr -s ' ')" "aibex-aios/knowledge-orion knowledge Die hellsten Sterne des Orion" "library: search in name and description"
+   assert_eq "$(A "$D" --library skill-memo)" $'aibex-aios/skill-memo  6.0.0 6.1.0\naibex-hub/skill-memo  6.0.0' "library <package>: versions per hub"
    assert_contains "$(A "$D" --library gibtsnicht)" "no package matches gibtsnicht" "library: no match"
    assert_dir "$HOME/.aios/hub/aibex-aios/.git"
    mkdir -p "$SANDBOX/bin"; printf '#!/bin/bash\necho "$*" >> "%s/gh.log"\necho '"'"'[{"name":"memo","description":"Memo vom Topic"}]'"'"'\n' "$SANDBOX" > "$SANDBOX/bin/gh"; chmod +x "$SANDBOX/bin/gh"
@@ -104,17 +104,17 @@ def run(req, hubs=('aibex-aios', 'aibex-hub')):
     except (resolver.ResolveError, ui.Abort) as e:
         print(type(e).__name__, e)
 $1"; }
-   assert_eq "$(SRCPY "print(sorted(s.versions('memo', 'aibex-aios')), s.versions('gibtsnicht', 'aibex-aios'))")" "['6.0.0', '6.1.0'] []" "versions from the tags, none for a missing repo"
-   assert_eq "$(SRCPY "m = s.manifest('taschenrechner', 'aibex-aios', '0.1.1'); print(m.name, m.version, m.elements())")" "taschenrechner 0.1.1 ['taschenrechner', 'taschenrechner-gui', 'knowledge']" "manifest from the cache"
-   assert_dir "$HOME/.aios/packages/aibex-aios/taschenrechner/0.1.1/.git"
-   assert_eq "$(SRCPY "print(len(s.commit('taschenrechner', 'aibex-aios', '0.1.1')))")" "40" "commit of the cached version"
-   assert_eq "$(SRCPY "run({'taschenrechner': R()}, hubs=('aibex-aios',))")" "memo=6.1.0@aibex-aios taschenrechner=0.1.1@aibex-aios" "end to end: taschenrechner with memo"
-   assert_contains "$(SRCPY "run({'memo': R()})")" "Ambiguous package memo is in several hubs: aibex-aios, aibex-hub" "end to end: memo in both hubs"
+   assert_eq "$(SRCPY "print(sorted(s.versions('skill-memo', 'aibex-aios')), s.versions('gibtsnicht', 'aibex-aios'))")" "['6.0.0', '6.1.0'] []" "versions from the tags, none for a missing repo"
+   assert_eq "$(SRCPY "m = s.manifest('app-taschenrechner', 'aibex-aios', '0.1.1'); print(m.name, m.version, m.elements())")" "app-taschenrechner 0.1.1 ['taschenrechner', 'taschenrechner-gui', 'knowledge']" "manifest from the cache"
+   assert_dir "$HOME/.aios/packages/aibex-aios/app-taschenrechner/0.1.1/.git"
+   assert_eq "$(SRCPY "print(len(s.commit('app-taschenrechner', 'aibex-aios', '0.1.1')))")" "40" "commit of the cached version"
+   assert_eq "$(SRCPY "run({'app-taschenrechner': R()}, hubs=('aibex-aios',))")" "app-taschenrechner=0.1.1@aibex-aios skill-memo=6.1.0@aibex-aios" "end to end: taschenrechner with memo"
+   assert_contains "$(SRCPY "run({'skill-memo': R()})")" "Ambiguous package skill-memo is in several hubs: aibex-aios, aibex-hub" "end to end: memo in both hubs"
    assert_eq "$(SRCPY "run({'knowledge-scorpio': R(hub='aibex-hub')}, hubs=('aibex-aios',))")" "knowledge-scorpio=0.1.0@aibex-hub" "end to end: hub outside the hub list"
    assert_eq "$(SRCPY "run({'test-befehl': R(repo='$SANDBOX/hubs/aibex-aios/test-befehl')}, hubs=())")" "test-befehl=0.1.0@from:$SANDBOX/hubs/aibex-aios/test-befehl" "end to end: --from a repo"
-   assert_contains "$(SRCPY "run({'test-konflikt': R()}, hubs=('aibex-aios',))")" "- memo: no version fulfils the ranges; >=7 (test-konflikt 1.0.0)" "end to end: conflict"
-   git -C "$SANDBOX/hubs/aibex-aios/memo" tag v9.9.9 v6.0.0
-   assert_contains "$(SRCPY "s.manifest('memo', 'aibex-aios', '9.9.9')")" "tag v9.9.9 has version 6.0.0 in manifest.yaml" "tag and manifest must agree"
+   assert_contains "$(SRCPY "run({'test-konflikt': R()}, hubs=('aibex-aios',))")" "- skill-memo: no version fulfils the ranges; >=7 (test-konflikt 1.0.0)" "end to end: conflict"
+   git -C "$SANDBOX/hubs/aibex-aios/skill-memo" tag v9.9.9 v6.0.0
+   assert_contains "$(SRCPY "s.manifest('skill-memo', 'aibex-aios', '9.9.9')")" "tag v9.9.9 has version 6.0.0 in manifest.yaml" "tag and manifest must agree"
    unset AIOS_HUBS
 
 #===============================================================================

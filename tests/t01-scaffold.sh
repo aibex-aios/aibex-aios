@@ -12,7 +12,7 @@
 # repo layout (spec 04, Repo aibex-aios)
 #===============================================================================
 
-   for D in bin lib/aios skills/aios skills/basic templates python spec dev tests; do
+   for D in bin lib/aios skills/aios templates python spec dev tests; do
       assert_dir "$SRC/$D"
    done
    assert_file "$REPO/CLAUDE.md"
@@ -62,18 +62,10 @@ print(aios.version()); print(p.prefix()); print(p.user_dir()); print(p.claude_di
    assert_exit 1 "$SRC/bin/aios" --deploy memo-6.0.0
 
 #===============================================================================
-# library of the repo: demo assistants gaertner and astronom (spec 03, memo 17 of V0.2)
+# v0.4: no library in the kernel; manifest.yaml of the kernel (spec 04, 06)
 #===============================================================================
 
-   assert_eq "$(PYTHONPATH="$SRC/lib" python3 -c '
-import sys
-from pathlib import Path
-from aios import install
-print(" ".join(f"{g}/{n}=={v}" for g, n, _, v in install.assistants_of(Path(sys.argv[1]))))' "$SRC")" \
-      "demo/astronom==0.1.0 demo/gaertner==0.2.0" "library: demo assistants with versions (Gärtner 0.2.0 with surface)"
-   case "$(grep -rl -e 'P-Projekte' -e 'PC-Custom-AI' -e '§AIbex' "$SRC/assistants")" in
-      "") ok ;; *) fail "demo assistants contain no paths of a particular vault" ;;
-   esac
-   for F in "gaertner/@!Skill/apfel-birnen-algebra" "gaertner/@!Skill/gaertner-gui" "astronom/@!Skill/sonne-mond-zahlen"; do
-      assert_contains "$(sed -n 1,4p "$SRC/assistants/demo/$F/SKILL.md")" "version: 0.1.0" "private skill with version: $F"
-   done
+   [ ! -e "$SRC/skills/basic" ] && [ ! -e "$SRC/assistants" ] && ok || fail "no library (skills/basic, assistants) in the kernel"
+   assert_eq "$(ls "$SRC/skills")" "aios" "only AIOS skills"
+   assert_eq "$(sed -n 's/^version: //p' "$SRC/manifest.yaml")" "$(cat "$SRC/VERSION")" "manifest.yaml: version as VERSION"
+   assert_contains "$(cat "$SRC/manifest.yaml")" "type: kernel" "manifest.yaml: type kernel"
