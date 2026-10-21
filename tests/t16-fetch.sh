@@ -31,7 +31,6 @@
    assert_exit 3 env PWD="$D" sh -c "cd '$D' && '$SRC/bin/aios' --fetch memo"
    assert_contains "$(F "$D" gibtsnicht)" "package gibtsnicht not found in the hubs aibex-aios, aibex-hub" "unknown package"
    assert_contains "$(F "$D" test-konflikt)" "- memo: no version fulfils the ranges" "conflict of versions"
-   assert_contains "$(F "$D" test-worker)" "packages with workers can be fetched from step 6 of v0.4 on" "workers: not yet"
    [ ! -e "$PKG" ] && [ ! -e "$D/.aios/lock.yaml" ] && ok || fail "checks: nothing written"
 
 #===============================================================================

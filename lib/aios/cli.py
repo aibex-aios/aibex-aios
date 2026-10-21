@@ -3,7 +3,7 @@
 import subprocess
 import sys
 
-from . import activate, aiosinit, assign, deploy, fetch, gui, hub, install, integrity, paths, registry, resolver, skills, ui
+from . import activate, aiosinit, assign, deploy, fetch, gui, hub, install, integrity, paths, registry, resolver, skills, ui, worker
 
 USAGE = ("usage: aios --prepare | --install [v<version>] | --versions | --remove-version v<version>"
          " | --uninstall | --activate v<version> [<path>] | --deactivate [<path>] | --config [<path>]"
@@ -14,6 +14,7 @@ USAGE = ("usage: aios --prepare | --install [v<version>] | --versions | --remove
          " | --hubs [add <name> [<url>] | remove <name>] [--vault]"
          " | --fetch [[<hub>/]<package>[<range>] [--hub <hub>] [--from <repo>]] [--to <project>]"
          " | --fetch --upgrade [<package>] | --fetch --remove <package>"
+         " | --worker [<package>/<name> install|remove|start|stop] | --run <command> [args]"
          " | --deploy [<name>==<version>] [--to <project>] [--assistant <name>] [--from <repo>]"
          "  (writing commands: --plan, --yes)")
 
@@ -71,6 +72,10 @@ def main(argv):
             return hub.library(*args)
         if cmd == "--fetch":
             return fetch.command(args)
+        if cmd == "--worker":
+            return worker.command(args)
+        if cmd == "--run":
+            return worker.run_command(args)
         if cmd == "--hubs":
             return hub.command(args)
         if cmd == "--skill" and len(args) == 1:

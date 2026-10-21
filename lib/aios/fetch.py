@@ -155,9 +155,6 @@ def check(picks, source):
         m = p.manifest
         for w in m.warnings:
             warn(w)
-        if m.workers:
-            raise Abort(f"{p.name} {p.version} brings workers ({', '.join(m.workers)}); "
-                        "packages with workers can be fetched from step 6 of v0.4 on")
         if m.contents.get("hooks"):
             warn(f"{p.name} {p.version}: hooks {', '.join(m.contents['hooks'])} have no effect in v0.4, "
                  "the package is fetched without them")
@@ -296,6 +293,8 @@ def hints(project):
             for a in p.manifest.contents.get("assistants") or []:
                 title = frontmatter(d / "assistants" / a / "ASSISTANT.md").get("title", a)
                 out.append(f"   assign the assistant to a project of the chain with /aios-assistant {title}")
+            for w in p.manifest.workers:
+                out.append(f"   the package brings the worker {w}; install it with: aios --worker {p.name}/{w} install")
             if p.manifest.contents.get("gui"):
                 out.append(f"   open the app {p.name} with /{p.manifest.contents['gui']} or the tile Apps of /aios-gui")
         out.append("   new skills are available from the next chat (or after /reload-skills)")
@@ -378,6 +377,12 @@ def remove(name, to=None):
     picks = f.resolve(packages)
     if name in picks:
         raise Abort(f"{name} is still required by " + ", ".join(picks[name].required_by))
+    from . import worker
+    gone = [n for n in (f.lock.get("packages") or {}) if n not in picks]
+    busy = [f"{n}/{w}" for n in gone for w in worker.installed(f.project, n)]
+    if busy:
+        raise Abort("installed workers: " + ", ".join(busy) + "; first: "
+                    + "; ".join(f"aios --worker {b} remove" for b in busy))
     return f.plan(picks, packages, f"=> remove {name} from {f.project}",
                   lambda picks: [f"=> {name} removed; @Data/ stays untouched"])
 

@@ -76,6 +76,7 @@ Kann `/opt/aios` nicht angelegt werden (kein `sudo`), gilt statt `/opt/aios` das
 ├── sessions/<session-id>.yaml      Merker: Assistent der Session (Spec 02)
 ├── packages/<hub>/<name>/<version>/ Cache der geholten Pakete (Spec 06)
 ├── hub/<hub>/                      Klon des Index-Repos eines Hubs, falls vorhanden (Spec 06)
+├── workers.yaml                    Stand der Arbeitspferde auf diesem Rechner (Spec 06)
 └── logs/aios.log
 ~/.claude/
 ├── settings.json                   Hooks
@@ -338,7 +339,7 @@ Die Weiterleiter lesen nur kleine Dateien und greifen nie auf das Netzwerk zu.
 | `aios --workspace init <repo> [<ordner>] \| update \| freeze \| status [<pfad>] [--group <g>]` | Workspace klonen, abgleichen, einfrieren, prüfen (Spec 06) |
 | `aios --contribute <datei>… --to <paket> [--message <text>]` | Rückfluss als Pull Request (Spec 06) |
 | `aios --run <befehl> [argumente]` | ausgerollter Befehl eines Pakets (Spec 06) |
-| `aios --worker <paket>/<name> start\|stop` | Arbeitspferd starten oder stoppen (Spec 06) |
+| `aios --worker [<paket>/<name> install\|remove\|start\|stop] [--to <projekt>]` | Arbeitspferde zeigen, installieren, entfernen, starten, stoppen (Spec 06) |
 | `aios --skill <name> [--session <id>]` | Rumpf eines AIOS-Skills der gültigen Version (für die versionsneutralen Skills); mit `--session` ist `<session-id>` im Rumpf ersetzt |
 | `aios --assistant <name\|none\|inherit> [--to <projekt>] [--session <id>]` | Assistent dem Projekt zuordnen (Spec 03, *Wechsel*) |
 | `aios --gui [--session <id>] [--html]` | Rumpf des Oberflächen-Skills des aktiven Assistenten bzw. mit `--html` das HTML-Fragment (Spec 03, *Oberflächen*); `aios --gui --aios` für die AIOS-Oberfläche, `aios --gui --apps` für die Liste der Oberflächen ausgerollter Apps |

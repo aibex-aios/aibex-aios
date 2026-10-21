@@ -214,7 +214,7 @@ Zyklen in `depends` sind erlaubt, solange die Bereiche erfüllbar sind. Ein Pake
 2. Auflösen (*Resolver*).
 3. Pakete in den Cache holen: `git clone --depth 1 --branch v<version> <repo>` nach `~/.aios/packages/<hub>/<name>/<version>/`, Commit-SHA merken. Ein vorhandener Cache-Eintrag wird wiederverwendet, wenn sein Commit zu `lock.yaml` passt.
 4. Vorschau: je Paket `new`, `upgrade X → Y`, `remove`, `unchanged` mit Hub; Dateien, die sich in `@!Package/<name>/` ändern; direkt geänderte Kopien; Arbeitspferde mit ihren Skripten; Änderungen an `config.yaml` und `lock.yaml`.
-5. Nach Ja: je Paket den Inhalt ohne `.git` nach `<ziel>/@/@!Package/<name>/` spiegeln (nur dieser Ordner), die Marke schreiben, `install` der Arbeitspferde nach eigener Bestätigung ausführen (*Arbeitspferde*), `packages:` und `lock.yaml` schreiben.
+5. Nach Ja: je Paket den Inhalt ohne `.git` nach `<ziel>/@/@!Package/<name>/` spiegeln (nur dieser Ordner), die Marke schreiben, `packages:` und `lock.yaml` schreiben. Skripte der Arbeitspferde führt `aios --fetch` nicht aus; es nennt je Arbeitspferd den Befehl `aios --worker <paket>/<name> install` (*Arbeitspferde*).
 6. Ausrollen: Ein neu geholtes Paket wirkt mit **allen** Elementen, solange `packages:` keine Auswahl `only` nennt (V0.4, Memo 24, H2).
 7. Projekt-Skills im Projekt der Session registrieren (Spec 03).
 
@@ -224,7 +224,7 @@ Zyklen in `depends` sind erlaubt, solange die Bereiche erfüllbar sind. Ein Pake
 
 **Abgleich ohne Argument:** Für jedes Paket aus `lock.yaml` des Ziels prüfen, ob `@!Package/<name>/` mit Version und `digest` übereinstimmt. Fehlende, abweichende und direkt geänderte Kopien werden aus dem Cache bzw. dem Hub neu gespiegelt. Ein Paketordner mit Marke, der in `lock.yaml` nicht mehr steht, wird nach Rückfrage entfernt.
 
-**Entfernen:** `--remove <paket>` entfernt den Eintrag aus `packages:`, löst neu auf, ruft `remove` der Arbeitspferde des Pakets nach Bestätigung auf und entfernt `@!Package/<name>/` sowie Pakete, die nur noch als Abhängigkeit dieses Pakets im Ziel lagen. Projekte darunter sind davon nicht betroffen, weil sie ihre Abhängigkeiten selbst enthalten. Verlangt ein anderes Paket es noch, bricht `--remove` mit dieser Angabe ab.
+**Entfernen:** `--remove <paket>` entfernt den Eintrag aus `packages:`, löst neu auf, bricht ab, solange ein Arbeitspferd des Pakets installiert ist (Hinweis auf `aios --worker <paket>/<name> remove`), und entfernt `@!Package/<name>/` sowie Pakete, die nur noch als Abhängigkeit dieses Pakets im Ziel lagen. Projekte darunter sind davon nicht betroffen, weil sie ihre Abhängigkeiten selbst enthalten. Verlangt ein anderes Paket es noch, bricht `--remove` mit dieser Angabe ab.
 
 ## Ausrollen — `aios --deploy`
 
@@ -310,10 +310,12 @@ workers:
 | Regel | |
 |---|---|
 | Pflicht | `install` und `remove`; `start` und `stop` optional |
-| Ausführung | mit `bash`, Arbeitsverzeichnis `@!Package/<name>/`, Umgebung `AIOS_PACKAGE`, `AIOS_PROJECT`, `AIOS_DATA` (= `<projekt>/@Data/<name>/`) |
-| Bestätigung | jedes Skript nur nach eigener Bestätigung: Plan mit Pfad und Inhalt des Skripts, dann `--yes` (Spec 01, I7) |
-| Aufruf | `install` beim Holen, `remove` beim Entfernen, `start` und `stop` mit `aios --worker <paket>/<name> start\|stop` |
-| Fehler | Exit ≠ 0 bei `install` bricht das Holen dieses Pakets ab; AIOS ruft dann `remove` auf und meldet beides |
+| Aufruf | `aios --worker <paket>/<name> install\|remove\|start\|stop [--to <projekt>]`, für ein Paket in `@!Package/` des Ziels (Projekt der Session oder `--to`); `aios --worker` ohne Argument zeigt die Arbeitspferde des Projekts mit ihrem Stand |
+| Bestätigung | jedes Skript nur nach eigener Bestätigung: Plan mit Pfad und Inhalt des Skripts, dann `--yes` (Spec 01, I7). `aios --fetch` führt keine Skripte aus, auch nicht mit `--yes`; es nennt den Befehl für `install` (V0.4, Memo 41) |
+| Ausführung | mit `bash`, Arbeitsverzeichnis `@!Package/<name>/`, Umgebung `AIOS_PACKAGE` (Ordner des Pakets), `AIOS_PROJECT`, `AIOS_DATA` (= `<projekt>/@Data/<name>/`) |
+| Stand | je Rechner in `~/.aios/workers.yaml` (installiert ja/nein, Version), nicht im Projekt-Repo; `start` und `stop` nur für installierte Arbeitspferde |
+| Entfernen | `aios --fetch --remove` bricht ab, solange ein Arbeitspferd des Pakets installiert ist |
+| Fehler | Exit ≠ 0 bei `install`: AIOS ruft `remove` auf und meldet beides; das Arbeitspferd gilt als nicht installiert |
 
 Arbeitspferde gehören zum Paket, nicht zu einem Element; `only` schaltet sie nicht ab.
 
