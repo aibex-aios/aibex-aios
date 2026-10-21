@@ -123,7 +123,7 @@
    case "$OUT" in *"register the project skills"*) fail "assistant: no registration" ;; *) ok ;; esac
    [ ! -e "$GA" ] && ok || fail "assistant: --plan writes nothing"
    OUT="$(A --deploy gaertner==0.2.0 --to "$D" --yes)"
-   assert_contains "$OUT" "activate it in a chat of the chain with /aios-assistant Gärtner" "assistant: hint"
+   assert_contains "$OUT" "assign it to a project of the chain with /aios-assistant Gärtner" "assistant: hint (A5)"
    for F in ASSISTANT.md "@!Skill/apfel-birnen-algebra/SKILL.md" "@Wissen/@Grundlagen/grundlagen.md" "@Wissen/@@Sortenkunde/sortenkunde.md"; do
       assert_eq "$(cat "$GA/$F")" "$(cat "$SRC/assistants/demo/gaertner/$F")" "assistant: $F"
    done

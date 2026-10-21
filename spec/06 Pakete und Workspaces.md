@@ -143,7 +143,7 @@ Die Hub-Liste ist eine **Suchliste**, keine Sperrliste. Ein voller Paketname dar
 | Angabe | Suche |
 |---|---|
 | `<paket>` | jeder Hub der Hub-Liste der Reihe nach: `git ls-remote --tags <basis>/<paket>` |
-| `<hub>/<paket>` | nur dieser Hub. Steht `<hub>` in der Hub-Liste, gilt dessen Basis-URL, sonst `https://github.com/<hub>` |
+| `<hub>/<paket>` | nur dieser Hub. Steht `<hub>` in der Hub-Liste, gilt dessen Basis-URL, sonst `https://github.com/<hub>` (für Tests umgelenkt mit `AIOS_GITHUB`, Spec 04) |
 | `--from <repo>` | genau dieses Repo (lokaler Pfad oder URL), *Pflegeprojekte* |
 
 Ein Treffer ist ein Repo mit mindestens einem Tag `v<SemVer>`, dessen `manifest.yaml` im gewählten Tag `name: <paket>` trägt. Tags anderer Form werden übergangen.

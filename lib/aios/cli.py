@@ -3,7 +3,7 @@
 import subprocess
 import sys
 
-from . import activate, aiosinit, assign, deploy, gui, hub, install, integrity, paths, registry, skills, ui
+from . import activate, aiosinit, assign, deploy, fetch, gui, hub, install, integrity, paths, registry, resolver, skills, ui
 
 USAGE = ("usage: aios --prepare | --install [v<version>] | --versions | --remove-version v<version>"
          " | --uninstall | --activate v<version> [<path>] | --deactivate [<path>] | --config [<path>]"
@@ -12,6 +12,8 @@ USAGE = ("usage: aios --prepare | --install [v<version>] | --versions | --remove
          " | --gui [--session <id>] [--html] [--aios]"
          " | --skill <name> [--session <id>] | --library [<word>|<package>]"
          " | --hubs [add <name> [<url>] | remove <name>] [--vault]"
+         " | --fetch [[<hub>/]<package>[<range>] [--hub <hub>] [--from <repo>]] [--to <project>]"
+         " | --fetch --upgrade [<package>] | --fetch --remove <package>"
          " | --deploy [<name>==<version>] [--to <project>] [--assistant <name>] [--from <repo>]"
          "  (writing commands: --plan, --yes)")
 
@@ -67,6 +69,8 @@ def main(argv):
             return deploy.command(args)
         if cmd == "--library" and len(args) <= 1:
             return hub.library(*args)
+        if cmd == "--fetch":
+            return fetch.command(args)
         if cmd == "--hubs":
             return hub.command(args)
         if cmd == "--skill" and len(args) == 1:
@@ -91,6 +95,12 @@ def main(argv):
     except aiosinit.NameViolation:
         return 2
     except ui.Cancelled:
+        return 1
+    except resolver.Ambiguous as e:                 # the skill asks which hub (spec 06)
+        print(f"*** aios {cmd}: {e}", file=sys.stderr)
+        return 3
+    except resolver.ResolveError as e:
+        print(f"*** aios {cmd}: {e}", file=sys.stderr)
         return 1
     except ui.Abort as e:
         print(f"*** aios {cmd}: {e}", file=sys.stderr)

@@ -34,7 +34,9 @@ class Hub:
 
 
 def github(name):
-    return GITHUB + name
+    """Base URL of a hub that is not in the hub list: the GitHub owner <name> (spec 06);
+    AIOS_GITHUB redirects it for tests (spec 04)."""
+    return os.environ.get("AIOS_GITHUB", GITHUB).rstrip("/") + "/" + name
 
 
 def entries(raw):

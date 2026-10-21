@@ -305,7 +305,7 @@ def deploy(spec, to=None, assistant=None, source=None):
     say(f"=> {name} {ver} deployed")
     if kind == "assistant":
         title = frontmatter(dst / "ASSISTANT.md").get("title", name)
-        say(f"   activate it in a chat of the chain with /aios-assistant {title}")
+        say(f"   assign it to a project of the chain with /aios-assistant {title}")             # A5
     else:
         say("   the skill is available from the next chat (or after /reload-skills)")
     return 0

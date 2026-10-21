@@ -21,3 +21,6 @@ packages:
   - name: test-befehl
     type: app
     description: Testpaket mit Befehl
+  - name: test-assistent
+    type: assistant
+    description: Testpaket mit einem Assistenten
