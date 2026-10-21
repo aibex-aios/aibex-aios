@@ -56,7 +56,7 @@ Nur `manifest.yaml` ist Pflicht. Welche Ordner ein Paket hat, nennt `contents`.
 name: app-taschenrechner
 version: 0.1.0
 type: app
-description: Programmierbarer Taschenrechner mit lernenden Kacheln (Demo-App von AIOS)
+description: Programmierbarer Taschenrechner mit lernenden Funktionstasten (Demo-App von AIOS)
 requires:
   aios: ">=0.4,<0.5"
 depends:
@@ -170,7 +170,7 @@ packages:
     description: Memo-Stil der AIbex-Workspaces
   - name: app-taschenrechner
     type: app
-    description: Programmierbarer Taschenrechner mit lernenden Kacheln
+    description: Programmierbarer Taschenrechner mit lernenden Funktionstasten
 ```
 
 Der Index dient nur der Suche: `aios --library [<suchwort>]` listet je Hub der Hub-Liste die Pakete aus `index.yaml`; ohne Index bei GitHub-Hubs die Repos mit dem Topic **`aios-package`** (über `gh`). Ein Hub ohne beides lässt sich nicht durchsuchen, nur mit bekanntem Namen holen. `aios --library <paket>` zeigt die Versionen eines Pakets (aus den Tags). Den Index holt AIOS mit `git clone --depth 1` bzw. `git pull` nach `~/.aios/hub/<hub>/`.
@@ -300,7 +300,7 @@ Ein Arbeitspferd ist ein Programm mit Lebenszyklus, das ein Paket mitbringt, z. 
 ```yaml
 workers:
   db:
-    description: SQLite-Datenbank der Kacheln
+    description: SQLite-Datenbank der Funktionstasten
     install: workers/db/install.sh
     remove: workers/db/remove.sh
     start: workers/db/start.sh
@@ -407,28 +407,28 @@ Ein Rückfluss bringt Dateien von der Anwender-Site zurück in ein Paket-Repo se
 2. Plan: Repo, Zweig `contrib/<gh-user>/<datum>-<kurzname>`, Ziel `contrib/<gh-user>/<dateiname>`, Titel des Pull Requests.
 3. Nach Ja: Repo in ein temporäres Verzeichnis klonen (bei fehlenden Schreibrechten einen Fork), Zweig anlegen, Dateien kopieren, committen, pushen und mit `gh pr create` den Pull Request gegen den Standardzweig anlegen. Ausgabe: URL des Pull Requests.
 
-Der Maintainer prüft und übernimmt den Beitrag in den Inhalt des Pakets, beim Taschenrechner nach `knowledge/@!Kacheln/` (unten), und taggt eine neue Version. Mit `aios --fetch --upgrade` kommt er zu anderen Usern (V0.4, Memo 19, L3). Wird ein Beitrag als eigenes Paket veröffentlicht (z. B. `type: knowledge`), ist er ein Paket, aber kein Modul (V0.4, Memo 11).
+Der Maintainer prüft und übernimmt den Beitrag in den Inhalt des Pakets, beim Taschenrechner nach `knowledge/@!Funktionstasten/` (unten), und taggt eine neue Version. Mit `aios --fetch --upgrade` kommt er zu anderen Usern (V0.4, Memo 19, L3). Wird ein Beitrag als eigenes Paket veröffentlicht (z. B. `type: knowledge`), ist er ein Paket, aber kein Modul (V0.4, Memo 11).
 
 **Tests:** `gh` wird nicht umgelenkt. Die Tests legen eine Attrappe für `gh` in den `PATH` des Sandkastens, Zweig und Push gehen in einen Hub unter `file://` (V0.4, Memo 19, L4).
 
 ## Demo-App Taschenrechner
 
-Paket `app-taschenrechner` (`type: app`) im Repo `aibex-aios/app-taschenrechner`, Version `0.3.0` (0.3.1 bringt eine zweite mitgelieferte Kachel, 0.3.2 beschriftet die Taste LEARN). Ein programmierbarer Taschenrechner mit umgekehrter polnischer Notation nach dem Vorbild des HP-15C. Er zeigt Holen, Version, Abgleich und Rückfluss (V0.4, Memos 01, 05, 51).
+Paket `app-taschenrechner` (`type: app`) im Repo `aibex-aios/app-taschenrechner`, Version `0.4.0` (Funktionstasten statt Kacheln, V0.4, Memo 54; ältere Versionen 0.1.x–0.3.x bleiben im Hub). Ein programmierbarer Taschenrechner mit umgekehrter polnischer Notation nach dem Vorbild des HP-15C. Er zeigt Holen, Version, Abgleich und Rückfluss (V0.4, Memos 01, 05, 51).
 
 | Element | Inhalt |
 |---|---|
 | Skill `taschenrechner-gui` | Oberfläche (`gui.yaml`) mit einem HTML-Teil `rechner.html` |
-| Skill `taschenrechner` | speichert, liest und listet Kachel-Funktionen in `@Data/app-taschenrechner/kacheln.yaml`; bietet mitgelieferte Kacheln an |
-| `knowledge` | `knowledge/@!Kacheln/<name>.yaml`: mitgelieferte Kacheln, verborgen (Spec 02), also nicht im Kontext |
-| Tasten | vier Kacheln `A`–`D`; `7 8 9 ÷`, `4 5 6 ×`, `1 2 3 −`, `0 . CHS +`; unten **LEARN** und **ENTER**, je doppelt breit. Kein `=` und kein `C` (V0.4, Memo 51) |
+| Skill `taschenrechner` | speichert, liest und listet Funktionstasten in `@Data/app-taschenrechner/funktionstasten.yaml`; bietet mitgelieferte Funktionstasten an |
+| `knowledge` | `knowledge/@!Funktionstasten/<name>.yaml`: mitgelieferte Funktionstasten, verborgen (Spec 02), also nicht im Kontext |
+| Tasten | vier Funktionstasten `A`–`D`; `7 8 9 ÷`, `4 5 6 ×`, `1 2 3 −`, `0 . CHS +`; unten **LEARN** und **ENTER**, je doppelt breit. Kein `=` und kein `C` (V0.4, Memo 51) |
 | Stack | vier Register X, Y, Z, T mit Stack-Lift wie beim HP-15C: eine neue Zahl schiebt den Stack hoch, ENTER kopiert X nach Y und die nächste Zahl überschreibt X, eine Rechnung verknüpft Y mit X (Ergebnis in X, der Stack rückt nach, T bleibt), CHS wechselt das Vorzeichen. Quadrat: `ENTER ×`. Anzeige: X groß, Y klein darüber |
-| LEARN | erster Druck startet die Aufnahme der folgenden Tasten, zweiter Druck beendet sie; die nächste gedrückte Kachel übernimmt die Folge |
-| Kachel | beendet eine laufende Zahleneingabe und spielt dann ihre Tastenfolge ab, als würde sie getippt (`100` und *plus 19 %* ergibt 119) |
-| Speichern | Der HTML-Teil kann keine Dateien schreiben. Nach dem Belegen einer Kachel sendet er mit `sendPrompt` eine Nachricht an Claude, die den Skill `taschenrechner` aufruft und die Belegung speichert (Spec 01, I7: Claude zeigt, was gespeichert wird). Beim Öffnen setzt `aios --gui --skill taschenrechner-gui --html` die Datei über den Platzhalter `{{aios-data kacheln.yaml}}` in den HTML-Teil ein (Spec 03) |
-| Mitgeliefert | Der Skill `taschenrechner` zeigt die Kacheln aus `knowledge/@!Kacheln/` als „mitgeliefert" und übernimmt eine davon auf Wunsch in `@Data/app-taschenrechner/kacheln.yaml` (V0.4, Memo 19, L3) |
-| Rückfluss | `aios --contribute @Data/app-taschenrechner/kacheln.yaml --to app-taschenrechner` |
+| LEARN | erster Druck startet die Aufnahme der folgenden Tasten, zweiter Druck beendet sie; die nächste gedrückte Funktionstaste übernimmt die Folge |
+| Funktionstaste | beendet eine laufende Zahleneingabe und spielt dann ihre Tastenfolge ab, als würde sie getippt (`100` und *plus 19 %* ergibt 119) |
+| Speichern | Der HTML-Teil kann keine Dateien schreiben. Nach dem Belegen einer Funktionstaste sendet er mit `sendPrompt` eine Nachricht an Claude, die den Skill `taschenrechner` aufruft und die Belegung speichert (Spec 01, I7: Claude zeigt, was gespeichert wird). Beim Öffnen setzt `aios --gui --skill taschenrechner-gui --html` die Datei über den Platzhalter `{{aios-data funktionstasten.yaml}}` in den HTML-Teil ein (Spec 03) |
+| Mitgeliefert | Der Skill `taschenrechner` zeigt die Funktionstasten aus `knowledge/@!Funktionstasten/` als „mitgeliefert" und übernimmt eine davon auf Wunsch in `@Data/app-taschenrechner/funktionstasten.yaml` (V0.4, Memo 19, L3) |
+| Rückfluss | `aios --contribute @Data/app-taschenrechner/funktionstasten.yaml --to app-taschenrechner` |
 
-`kacheln.yaml`:
+`funktionstasten.yaml`:
 
 ```yaml
 A:
