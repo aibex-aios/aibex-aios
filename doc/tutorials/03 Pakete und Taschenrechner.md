@@ -26,7 +26,7 @@ aios --library app-taschenrechner
 ```
 aibex-aios/app-taschenrechner  app           Programmierbarer RPN-Taschenrechner mit lernenden Funktionstasten
 
-aibex-aios/app-taschenrechner  0.3.0 0.3.1 0.3.2 0.4.0 0.4.1
+aibex-aios/app-taschenrechner  0.1.0 0.1.1 0.2.0 0.2.1 0.3.0 0.3.1 0.3.2 0.4.0 0.4.1
 ```
 
 Mit einem Suchwort sucht `aios --library` in Namen und Beschreibungen, mit einem Paketnamen zeigt es dessen Versionen.
