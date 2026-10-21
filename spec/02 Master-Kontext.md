@@ -67,7 +67,7 @@ Vor dem Dialog ruft Claude `aios --init --plan` auf. Meldet der Plan einen Verst
 
 Hat `cwd` ein `@/`, prüft der SessionStart-Hook beim **ersten Start einer Session** (`source` `startup`) die Struktur des Projekts nach Spec 05. Nach Resume, Clear und Compaction prüft er nicht; eine abgelehnte Ergänzung wird in derselben Session also nicht erneut angeboten. Fehlt etwas, gibt der Hook vor dem Master-Kontext `PROJECT-INCOMPLETE` mit der Liste der Lücken aus. Claude bietet vor der ersten inhaltlichen Antwort an, die Lücken mit `aios --init` zu ergänzen (Plan und Rückfrage, Spec 05). Anders als beim nicht initialisierten Projekt arbeitet der Chat auch weiter, wenn der User ablehnt.
 
-Geprüft wird nur die Struktur, keine Inhalte; ob Blueprints zum Manifest fehlen, meldet `/aios-deploy`. Eine Vault-Root ohne `@/` wird nicht geprüft.
+Geprüft wird nur die Struktur, keine Inhalte; ob geholte Pakete zu `lock.yaml` fehlen, meldet `aios --fetch` (Spec 06). Eine Vault-Root ohne `@/` wird nicht geprüft.
 
 ## Klassen
 
@@ -75,7 +75,7 @@ Die Klasse eines Unterverzeichnisses eines Masterspace steht im Namen. Erkannt w
 
 | Präfix | Klasse | Wirkung |
 |---|---|---|
-| `@!` | **Verborgen** | nie Kontext; Blueprints (`@!Skill`, `@!Prompt`, `@!Assistant`) und installierte Pakete (`@!Package`, Ausnahme K6) |
+| `@!` | **Verborgen** | nie Kontext; Blueprints (`@!Skill`, `@!Prompt`, `@!Assistant`) und geholte Pakete (`@!Package`, Ausnahme K6) |
 | `@@` | **Verfügbar** | verfügbares Wissen: gehört **nicht** zum Master-Kontext und wird nur bei Bedarf gelesen; im Master-Kontext steht sein Inhaltsverzeichnis |
 | `@` | **Laden** | bildet den Master-Kontext; wird zu Beginn des Chats vollständig geladen |
 
@@ -94,7 +94,7 @@ Die Detailregeln sind offen (Spec 01, O2). Für v0.4 gilt vorläufig:
 | K3 | Dateien direkt in `@/` gehören zur Klasse *Laden*. |
 | K4 | Berücksichtigt werden nur Dateien mit der Endung `.md`. Andere Dateien (Bilder, PDFs) bleiben liegen und werden nicht geladen. Dateien und Verzeichnisse, deren Name mit `.` beginnt (z. B. `.obsidian/`, `.gitkeep`), werden übergangen. |
 | K5 | Die id des Master-Kontexts wird aus `cwd`, den Pfaden und Inhalten aller geladenen Dateien und den Pfaden des verfügbaren Wissens gebildet, also genau aus dem, was der Master-Kontext enthält (siehe `aios-context --id`). Inhalte des verfügbaren Wissens und verborgene Dateien gehen nicht ein. Genau: die ersten 8 Hex-Zeichen von SHA-256 über `cwd <cwd>⏎`, je geladener Datei `load <pfad>⏎<inhalt>⏎` und je Datei des verfügbaren Wissens `available <pfad>⏎`, in der Reihenfolge des Master-Kontexts. Der Assistent geht nicht ein; er hat eigene Marken. |
-| K6 | Ausnahme zu K2: Der Ordner `@!Package/<paket>/knowledge/` eines installierten Pakets wird eingeteilt, als läge sein Inhalt direkt in `@/` desselben Masterspace (K1–K4 gelten darin). Er folgt in der Reihenfolge auf die übrigen Einträge des Masterspace, Pakete nach Namen sortiert (Spec 06). |
+| K6 | Ausnahme zu K2: Der Ordner `@!Package/<paket>/knowledge/` eines geholten Pakets, dessen Element `knowledge` ausgerollt ist (Spec 06), wird eingeteilt, als läge sein Inhalt direkt in `@/` desselben Masterspace (K1–K4 gelten darin). Er folgt in der Reihenfolge auf die übrigen Einträge des Masterspace, Pakete nach Namen sortiert (Spec 06). |
 
 **Reihenfolge:** Masterspaces von der Vault-Root zum Projekt; innerhalb eines Masterspace je Verzeichnis nach Namen sortiert (Dateien und Verzeichnisse gemeinsam, Zeichencode), rekursiv. `files` zählt die geladenen Dateien.
 
@@ -302,6 +302,10 @@ Hidden                     Blueprints: 2 skills, 1 assistant, 1 prompt
   Skills       memo 6.0.0 (§Demo) — registered
                apfel-birnen-algebra 0.1.0 (assistant gaertner, private)
   Assistants   gaertner 0.2.0 (§Demo)
+Packages                   2 packages (§Demo)
+  taschenrechner 0.1.0 (aibex-aios) — skills taschenrechner, taschenrechner-gui; knowledge
+  memo 6.0.0 (aibex-aios) — skill memo: covered by local blueprint memo (§Demo)
+  toolbox 1.0.0 (aibex-aios) — fetched, not deployed: skill zettel
 ```
 
-Die Zeile *Assistant* zeigt die Zuordnung des Projekts (`<name>`, `none` oder `inherit` mit Herkunft). Weicht der Assistent der Session davon ab (Spec 03, *Wechsel*), nennt der Skill beide. Der Skill ändert nichts außer dem Nachladen. Stimmen Blueprints und registrierte Skills nicht überein, weist er auf `/aios-register` hin.
+Die Zeile *Assistant* zeigt die Zuordnung des Projekts (`<name>`, `none` oder `inherit` mit Herkunft). Weicht der Assistent der Session davon ab (Spec 03, *Wechsel*), nennt der Skill beide. Der Abschnitt *Packages* nennt je Masterspace der Kette die geholten Pakete mit Version, Hub und ausgerollten Elementen, verdeckte Elemente (Spec 06, *Vorrang*) und nicht ausgerollte Elemente (`fetched, not deployed`). Der Skill ändert nichts außer dem Nachladen. Stimmen Blueprints und registrierte Skills nicht überein, weist er auf `/aios-register` hin.

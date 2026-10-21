@@ -19,7 +19,7 @@ related:
 
 # Skills und Assistenten
 
-Diese Spec regelt die Arten von Skills, ihre Versionen, das Registrieren, die Assistenten mit ihrer Zuordnung zum Projekt, die Oberflächen sowie die AIOS-Skills `/aios-register`, `/aios-assistant`, `/aios-gui`, `/aios-memo` und den Alias `/gui`. Der Skill `/aios-context` und die Hooks stehen in Spec 02, `/aios-init`, `/aios-integrity` und `/aios-status` in Spec 05, Dateistrukturen, Formate und das CLI `aios` in Spec 04, Pakete und `/aios-deploy` in Spec 06.
+Diese Spec regelt die Arten von Skills, ihre Versionen, das Registrieren, die Assistenten mit ihrer Zuordnung zum Projekt, die Oberflächen sowie die AIOS-Skills `/aios-package`, `/aios-fetch`, `/aios-deploy`, `/aios-register`, `/aios-assistant`, `/aios-gui`, `/aios-memo` und den Alias `/gui`. Der Skill `/aios-context` und die Hooks stehen in Spec 02, `/aios-init`, `/aios-integrity` und `/aios-status` in Spec 05, Dateistrukturen, Formate und das CLI `aios` in Spec 04, Pakete, Hubs, Holen und Ausrollen in Spec 06.
 
 ## Arten von Skills
 
@@ -32,12 +32,12 @@ Diese Spec regelt die Arten von Skills, ihre Versionen, das Registrieren, die As
 
 Innerhalb der Projekt- und Assistenten-Skills wird unterschieden:
 
-| | installiert | lokal |
+| | aus einem Paket | lokal |
 |---|---|---|
-| Herkunft | aus einem Paket, installiert mit `/aios-deploy` (Spec 06) | im Projekt geschrieben (`@!Skill/`) |
+| Herkunft | aus einem Paket, geholt mit `/aios-fetch` und ausgerollt (Spec 06) | im Projekt geschrieben (`@!Skill/`) |
 | Manifest | das Paket steht in `packages:` bzw. `lock.yaml` | steht in keinem Manifest |
 | Version | Pflicht | Pflicht; ein neuer lokaler Skill beginnt mit `0.1.0` |
-| Änderungen | nur über eine neue Version des Pakets; direkte Änderungen meldet `/aios-deploy` | frei |
+| Änderungen | nur über eine neue Version des Pakets; direkte Änderungen meldet `/aios-fetch` | frei |
 
 **Reservierte Namen:** Namen mit dem Präfix `aios-` sind AIOS-Skills vorbehalten, der Name `gui` dem Alias. Ein Blueprint `@!Skill/aios-…/` oder `@!Skill/gui/` in einer Kette wird nicht registriert; `/aios-context` und `/aios-register` melden ihn. `none` und `inherit` sind als Namen von Assistenten reserviert; ein Assistent mit einem dieser Namen wird nicht aufgelöst und gemeldet.
 
@@ -73,26 +73,38 @@ Ein Blueprint ohne gültige `version` gilt wie ein Blueprint mit falschem `name`
 | **Übertrumpfung** | je Name: der nächstgelegene Eintrag in der Konfigurationskette gewinnt (Spec 04) |
 | **Ort** | Die Pakete eines Projekts liegen in `@/@!Package/` genau dieses Projekts |
 
-## Installieren — `/aios-deploy`
+## Pakete — `/aios-package`, `/aios-fetch`, `/aios-deploy`
 
-Skills und Assistenten kommen als **Pakete** in ein Projekt: `/aios-deploy` (`aios --deploy`) löst die gewünschten Pakete auf, holt sie vom Hub und spiegelt sie nach `@/@!Package/<name>/`. Aufruf, Ablauf, Marke, Abgleich, Entfernen und Vorrang regelt Spec 06. Für diese Spec gilt:
+Skills und Assistenten kommen als **Pakete** in ein Projekt: Ein Paket wird vom Hub **geholt** (`aios --fetch`, nach `@/@!Package/<name>/`), seine Elemente werden **ausgerollt** (`aios --deploy`), und ausgerollte Skills werden **registriert** (`aios --register`). Hubs, Aufruf, Ablauf, Marke, Abgleich, Entfernen, Ausrollen und Vorrang regelt Spec 06. Für diese Spec gilt:
 
-- Ein Skill aus `@!Package/<paket>/skills/<name>/` ist ein Projekt-Skill wie ein Blueprint `@!Skill/<name>/` desselben Masterspace, ein Assistent aus `@!Package/<paket>/assistants/<name>/` ein Assistent wie `@!Assistant/<name>/`.
+- Ein ausgerollter Skill aus `@!Package/<paket>/skills/<name>/` ist ein Projekt-Skill wie ein Blueprint `@!Skill/<name>/` desselben Masterspace, ein ausgerollter Assistent aus `@!Package/<paket>/assistants/<name>/` ein Assistent wie `@!Assistant/<name>/`. Nicht ausgerollte Elemente zählen nicht (Spec 06, H3).
 - Innerhalb eines Masterspace gewinnt der lokale Blueprint vor dem Element aus einem Paket; über Masterspaces hinweg gewinnt der nächstgelegene (Spec 06, *Vorrang*).
 - Lokale Blueprints in `@!Skill/` und `@!Assistant/` schreibt nur der User; AIOS schreibt sie nicht (Spec 01, I2).
 
-**Pakete der Grundausstattung in v0.4** (Hub `aibex-aios`):
+**Skills** (AIOS-Skills des Kernels, damit es kein Henne-Ei-Problem gibt; V0.4, Memos 23, 25):
 
-| Paket | Typ | Version | Inhalt |
+| Skill | Rolle | Auslöser | ruft auf |
 |---|---|---|---|
-| `memo` | `skill` | 6.0.0 | neutrale Fassung des Memo-Stils ohne Bezüge auf einen bestimmten Vault |
-| `gaertner` | `assistant` | 0.2.0 | Titel „Gärtner"; bodenständig, rechnet nur mit Äpfeln und Birnen; private Skills `apfel-birnen-algebra` 0.1.0 und `gaertner-gui` 0.1.0 (Oberfläche mit Apfel-Birnen-Rechner als HTML-Teil); Wissen: Grundlagen (Laden), Sortenkunde und Veredelung (Verfügbar) |
-| `astronom` | `assistant` | 0.1.0 | Titel „Astronom"; poetisch-präzise, rechnet nur mit Sonne und Mond; privater Skill `sonne-mond-zahlen` 0.1.0; keine Oberfläche |
-| `taschenrechner` | `app` | 0.1.0 | Demo-App (Spec 06) |
+| `/aios-package` | **Paketmanager** für Anwender: holen, entfernen, aktualisieren, suchen, zeigen, was geholt ist, Hub-Liste pflegen; bedient sich der beiden Hilfs-Skills | „/aios-package", „installiere …", „hole …", „entferne …", „deinstalliere …", „aktualisiere …", „welche Pakete bzw. Apps gibt es?", „was ist installiert?", „Hub hinzufügen"; englisch *install*, *remove*, *update*, *list packages* | `aios --library`, `aios --hubs`, `/aios-fetch`, `/aios-deploy` |
+| `/aios-fetch` | Hilfs-Skill: ein Paket holen, abgleichen, `--upgrade`, `--remove` | „/aios-fetch", „Paket holen" | `aios --fetch` |
+| `/aios-deploy` | Hilfs-Skill: Elemente eines geholten Pakets ausrollen (`--only`, `--all`) oder zeigen | „/aios-deploy", „ausrollen", „freischalten" | `aios --deploy` |
 
-Die Demo-Assistenten liegen in eigenen Paket-Repos. Ihre Inhalte enthalten keine Pfade oder Bezüge auf einen bestimmten Vault; der Rollentext nennt in einem Satz, dass es sich um einen Demo-Assistenten handelt, dessen Inhalte der Veranschaulichung dienen. Ihre Grenzen sind gewollt: Der Gärtner lehnt Sonne-Mond-Aufgaben freundlich ab, der Astronom Apfel-Birne-Aufgaben. So zeigt das Ergebnis, welcher Assistent und welcher Skill aktiv sind.
+`/aios-package` versteht unscharfe Namen („installiere mir den Rechner"): Es sucht mit `aios --library` in Namen und Beschreibungen der Pakete der Hub-Liste und fragt bei mehreren Treffern nach. Einen vollen Paketnamen `<hub>/<paket>` gibt es unverändert weiter. Meldet `aios --fetch`, dass ein Name in mehreren Hubs liegt, fragt es, welcher gemeint ist. Es fragt nach dem Ziel und schlägt das Root-Projekt vor. Wie jeder schreibende Skill holt es den Plan mit `--plan`, fragt im Chat und ruft erst nach Ja mit `--yes` auf (Spec 01, I7). Nach dem Holen sagt es, dass neue Skills ab dem nächsten Chat verfügbar sind, und nennt bei einer App ihre Oberfläche (*Oberflächen*).
 
-Pakete installiert nur der User; `aios --install` bietet es nicht an.
+**Pakete der Grundausstattung in v0.4:**
+
+| Paket | Hub | Typ | Version | Inhalt |
+|---|---|---|---|---|
+| `memo` | `aibex-aios` | `skill` | 6.0.0 | neutrale Fassung des Memo-Stils ohne Bezüge auf einen bestimmten Vault |
+| `gaertner` | `aibex-aios` | `assistant` | 0.2.0 | Titel „Gärtner"; bodenständig, rechnet nur mit Äpfeln und Birnen; private Skills `apfel-birnen-algebra` 0.1.0 und `gaertner-gui` 0.1.0 (Oberfläche mit Apfel-Birnen-Rechner als HTML-Teil); Wissen: Grundlagen (Laden), Sortenkunde und Veredelung (Verfügbar) |
+| `astronom` | `aibex-aios` | `assistant` | 0.2.0 | Titel „Astronom"; poetisch-präzise, rechnet nur mit Sonne und Mond; privater Skill `sonne-mond-zahlen` 0.1.0; keine Oberfläche. Nennt Sterndaten aus verfügbarem Wissen, ohne zu rechnen (V0.4, Memo 27) |
+| `taschenrechner` | `aibex-aios` | `app` | 0.1.0 | Demo-App (Spec 06) |
+| `knowledge-orion` | `aibex-aios` | `knowledge` | 0.1.0 | die 20 hellsten Sterne des Orion: Name, Helligkeit, Radius, Entfernung, Temperatur, Spektralklasse, Art, als Tabelle in `knowledge/@@Orion/Sterne.md`, mit Quelle |
+| `knowledge-scorpio` | `aibex-hub` | `knowledge` | 0.1.0 | ebenso für das Sternbild Skorpion, `knowledge/@@Skorpion/Sterne.md`; Testpaket für einen zweiten Hub |
+
+Die Demo-Assistenten liegen in eigenen Paket-Repos. Ihre Inhalte enthalten keine Pfade oder Bezüge auf einen bestimmten Vault; der Rollentext nennt in einem Satz, dass es sich um einen Demo-Assistenten handelt, dessen Inhalte der Veranschaulichung dienen. Ihre Grenzen sind gewollt: Der Gärtner lehnt Sonne-Mond-Aufgaben freundlich ab, der Astronom Apfel-Birne-Aufgaben. So zeigt das Ergebnis, welcher Assistent und welcher Skill aktiv sind. Die Wissenspakete hängen nicht vom Astronomen ab und er nicht von ihnen; er findet ihr Wissen über die Kette (Spec 02, K6).
+
+Pakete holt nur der User; `aios --install` bietet es nicht an.
 
 ## Registrieren — `/aios-register`
 
@@ -100,7 +112,7 @@ Registrieren macht die geltenden Projekt-Skills **für Claude Code aufrufbar**.
 
 **Algorithmus** (für das Projekt der Session; registriert wird nur, wenn `cwd` ein initialisiertes Projekt mit `@/` in einem aktivierten Vault ist, sonst nichts):
 
-1. Alle `<D>/@/@!Skill/<name>/` und `<D>/@/@!Package/<paket>/skills/<name>/` der Master-Space-Kette sammeln (private Skills eines Assistenten in `@!Assistant/…/@!Skill/` bzw. `…/assistants/…/@!Skill/` gehören nicht dazu). Bei gleichem Namen gewinnt der nächstgelegene Masterspace, darin der lokale Blueprint vor dem Paket (Spec 06). Übersprungen und gemeldet werden reservierte Namen (`aios-*`, `gui`), ungültige Namen, Ordner ohne `SKILL.md`, Skills, deren `name` nicht dem Verzeichnisnamen entspricht, und Skills ohne gültige `version`.
+1. Alle `<D>/@/@!Skill/<name>/` und die ausgerollten `<D>/@/@!Package/<paket>/skills/<name>/` (Spec 06) der Master-Space-Kette sammeln (private Skills eines Assistenten in `@!Assistant/…/@!Skill/` bzw. `…/assistants/…/@!Skill/` gehören nicht dazu). Bei gleichem Namen gewinnt der nächstgelegene Masterspace, darin der lokale Blueprint vor dem Paket (Spec 06). Übersprungen und gemeldet werden reservierte Namen (`aios-*`, `gui`), ungültige Namen, Ordner ohne `SKILL.md`, Skills, deren `name` nicht dem Verzeichnisnamen entspricht, und Skills ohne gültige `version`.
 2. Mit `<Projekt>/.claude/skills/` und `<Projekt>/.aios/registry` vergleichen.
 3. **neu**: kopieren; **geändert** (anderer Inhalt oder andere Quelle des Blueprints, oder die Kopie in `.claude/skills/` wurde verändert): ersetzen; **weggefallen** (in der Registry, aber nicht mehr in der Kette oder nicht mehr gültig): entfernen. Skills in `.claude/skills/`, die nicht in der Registry stehen, bleiben unberührt und werden gemeldet, wenn ein Blueprint denselben Namen hat.
 4. `.aios/registry` schreiben (Format Spec 04). Eine alte `.aios/manifest` aus v0.3 wird dabei entfernt.
@@ -109,9 +121,9 @@ Registrieren macht die geltenden Projekt-Skills **für Claude Code aufrufbar**.
 |---|---|---|
 | SessionStart-Hook (`aios-context --sync --yes`) | nein | jeder Session-Start in einem aktivierten Vault |
 | `aios --init` | mit dem Plan von `aios --init` | Initialisieren und Ergänzen eines Projekts (Spec 05) |
-| `/aios-register`, `aios --register [<pfad>]`, `aios-context --sync` | ja, mit Vorschau | manueller Anstoß, z. B. nach `/aios-deploy`; der Skill holt mit `--plan` die Vorschau, fragt im Chat und führt nach Ja `--yes` aus |
+| `/aios-register`, `aios --register [<pfad>]`, `aios-context --sync` | ja, mit Vorschau | manueller Anstoß, z. B. nach `/aios-fetch`; der Skill holt mit `--plan` die Vorschau, fragt im Chat und führt nach Ja `--yes` aus |
 
-**Wirksamkeit:** Claude Code übernimmt Skills, die nach dem Start einer Session angelegt werden, nicht zuverlässig in diese Session (V0.1, Memo 16). Die Registrierung beim Session-Start stellt deshalb den Stand für den **nächsten** Chat her. Ändert sie etwas, meldet der Hook `AIOS-SKILLS: <Änderungen> — effective from the next chat` (z. B. `AIOS-SKILLS: new memo; changed shared — effective from the next chat`); übersprungene Blueprints meldet er als `AIOS-WARNING`, z. B. `AIOS-WARNING: skill ohne-version has no version, not registered`. Weil die Kopie im Projekt selbst liegt, ist ein Skill aus einem Masterspace oberhalb auch dann verfügbar, wenn das Projekt ein eigenes Git-Repo ist (V0.1, Memo 27). `/aios-register`, `/aios-deploy` und `/aios-init` sagen nach dem Registrieren: „Der Skill ist ab dem nächsten Chat verfügbar (oder nach `/reload-skills`)." Ob `/reload-skills` das zuverlässig leistet, ist offen (Spec 01, O1).
+**Wirksamkeit:** Claude Code übernimmt Skills, die nach dem Start einer Session angelegt werden, nicht zuverlässig in diese Session (V0.1, Memo 16). Die Registrierung beim Session-Start stellt deshalb den Stand für den **nächsten** Chat her. Ändert sie etwas, meldet der Hook `AIOS-SKILLS: <Änderungen> — effective from the next chat` (z. B. `AIOS-SKILLS: new memo; changed shared — effective from the next chat`); übersprungene Blueprints meldet er als `AIOS-WARNING`, z. B. `AIOS-WARNING: skill ohne-version has no version, not registered`. Weil die Kopie im Projekt selbst liegt, ist ein Skill aus einem Masterspace oberhalb auch dann verfügbar, wenn das Projekt ein eigenes Git-Repo ist (V0.1, Memo 27). `/aios-register`, `/aios-package`, `/aios-fetch`, `/aios-deploy` und `/aios-init` sagen nach dem Registrieren: „Der Skill ist ab dem nächsten Chat verfügbar (oder nach `/reload-skills`)." Ob `/reload-skills` das zuverlässig leistet, ist offen (Spec 01, O1).
 
 ## Assistenten
 
@@ -248,7 +260,7 @@ Der Titel ist der **Titel des Chats**: der Name der Session, der in der Desktop-
 | neuer Chat, auch mit automatisch geladenem Assistenten | der Titel, den die App selbst vergibt; AIOS setzt keinen |
 | Compaction, Resume | unverändert |
 
-Setzen: in der Desktop-App mit dem App-Werkzeug zum Setzen des Session-Titels; in der CLI bittet Claude den User, `/rename <Titel>` einzugeben. AIOS fügt den Assistenten nicht in den Titel ein; welcher Assistent aktiv ist, sagt Claude in seiner Bestätigung.
+Setzen: AIOS setzt den Titel nicht selbst, weil die Session-ID von Claude Code nicht die der Desktop-App ist (V0.3, Memo 59, A4; V0.4, Memo 20). Claude schlägt den Titel vor und bittet den User, den Chat umzubenennen: in der Desktop-App in der Seitenleiste, in der CLI mit `/rename <Titel>`. AIOS fügt den Assistenten nicht in den Titel ein; welcher Assistent aktiv ist, sagt Claude in seiner Bestätigung.
 
 ## Oberflächen — `/aios-gui` und `/gui`
 
@@ -261,7 +273,7 @@ Eine Oberfläche ist eine **Abkürzung zu Prompts und Skills** für Anwender, di
 
 ### Beschreibung einer Oberfläche
 
-Eine Oberfläche ist in erster Linie eine **Beschreibung** (V0.3, Memo 25): eine Datei `gui.yaml` im Ordner des Oberflächen-Skills, daneben optionale HTML-Teile. Der Oberflächen-Skill ist ein gewöhnlicher Skill mit eigenem Namen (z. B. `gaertner-gui`), mit `SKILL.md` und `version`; er kann auch unter seinem Namen aufgerufen werden. Ein Assistent hat **eine** Oberfläche, seine Startseite; weitere Werkzeuge sind Kacheln darauf.
+Eine Oberfläche ist in erster Linie eine **Beschreibung** (V0.3, Memo 25): eine Datei `gui.yaml` im Ordner des Oberflächen-Skills, daneben optionale HTML-Teile. Der Oberflächen-Skill ist ein gewöhnlicher Skill mit eigenem Namen (z. B. `gaertner-gui`), mit `SKILL.md` und `version`; er kann auch unter seinem Namen aufgerufen werden. Ein Assistent hat **eine** Oberfläche, seine Startseite; weitere Werkzeuge sind Kacheln darauf. Eine App hat ebenso eine Oberfläche (`contents.gui`, Spec 06); sie wird über ihren Skill aufgerufen oder über die Kachel *Apps* von `/aios-gui`, nicht über `/gui` (V0.4, Memo 29).
 
 ```yaml
 title: Gärtner
@@ -321,7 +333,9 @@ AIOS-Skill mit der Oberfläche von AIOS selbst. Ihre Beschreibung liegt im AIOS-
 | Projekt initialisieren | `/aios-init` (Dialog *Projekt initialisieren*, Spec 02) |
 | Kontext und Konfiguration | `/aios-context`, danach `aios --config` |
 | Assistent zuordnen | `/aios-assistant` mit Auswahl aus `aios-context --assistants`, `none`, `inherit` |
-| Pakete abgleichen und Skills registrieren | `/aios-deploy` (Abgleich), `/aios-register` |
+| Pakete | `/aios-package` (suchen, holen, zeigen, was geholt ist) |
+| Apps | Oberflächen der ausgerollten Apps der Kette (`contents.gui`, Spec 06); die Kachel sendet einen Prompt, Claude holt die Liste mit `aios --gui --apps` und zeigt sie als Auswahl; eine Auswahl ruft den Oberflächen-Skill der App auf, z. B. `/taschenrechner-gui`; ohne Apps der Hinweis auf `/aios-package` |
+| Pakete abgleichen und Skills registrieren | `/aios-fetch` (Abgleich), `/aios-register` |
 | Integrität prüfen | `/aios-integrity` |
 | Projektstatus | `/aios-status` |
 | Memo schreiben | `/memo` oder `/aios-memo` (Vorrang siehe unten) |

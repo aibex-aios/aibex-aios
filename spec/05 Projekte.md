@@ -32,7 +32,7 @@ Ein Projekt ist ein Ordner mit `@/` (Spec 01). Seine **Struktur** ist vollständ
 
 Jedes Projekt hat damit ein eigenes Repo, auch das Root-Projekt und jedes Unterprojekt eines Projekts mit Repo (Spec 01, Grundregel 9). Ein gemeinsames Repo für mehrere Projekte ist nicht vorgesehen. Ein Ausschluss darüber darf breiter sein als das Projekt, z. B. `/P-Projekte/` für alle Projekte darunter.
 
-Nicht zur Struktur gehören `@Memo/` (legt der Memo-Skill an, Spec 03), `@Data/` (legen Apps an, Spec 06), der Name (Hinweis, siehe *Namensregel*) und der Abgleich der Pakete mit `lock.yaml` (`/aios-deploy`, Spec 06).
+Nicht zur Struktur gehören `@Memo/` (legt der Memo-Skill an, Spec 03), `@Data/` (legen Apps an, Spec 06), der Name (Hinweis, siehe *Namensregel*) und der Abgleich der Pakete mit `lock.yaml` (`aios --fetch`, Spec 06).
 
 ## Namensregel
 
@@ -47,7 +47,7 @@ Projekte tragen einen Namen aus **Prefix** und **Namensteilen**, getrennt durch 
 
 Die Vault-Root ist von der Namensregel ausgenommen. Ob ein Prefix unter Geschwistern eindeutig ist, wird nicht geprüft.
 
-**Vorschlag:** Bei einem Verstoß bildet `aios --init` einen regelkonformen Vorschlag: Leerzeichen und `_` werden zu `-`, jeder Namensteil beginnt groß, und vor den Namen tritt der Prefix des übergeordneten Ordners plus der Anfangsbuchstabe des ersten Teils (z. B. `§Demo/labor neu` → `L-Labor-Neu`). Beginnt der Name schon mit einem Prefix, wird nur dieser korrigiert.
+**Vorschlag:** Bei einem Verstoß bildet `aios --init` einen regelkonformen Vorschlag: Leerzeichen und `_` werden zu `-`, jeder Namensteil beginnt groß, und vor den Namen tritt der Prefix des übergeordneten Ordners plus der Anfangsbuchstabe des ersten Teils (z. B. `§Demo/labor neu` → `L-Labor-Neu`). Beginnt der Name schon mit einem Prefix, also mit einem ersten Namensteil nur aus Großbuchstaben und Ziffern, der mit einem Großbuchstaben beginnt, wird nur dieser ersetzt: durch den Prefix des übergeordneten Ordners plus den ersten Buchstaben des alten Prefix (`G-Garten/B-Beet` → `GB-Beet`, `G-Garten/AT-Test` → `GA-Test`, `§Demo/KI-Tools` → `K-Tools`; V0.4, Memo 19, L6). Ein gültiger Prefix bleibt. Ein Wort in Großbuchstaben wie `KI` geht dabei im Vorschlag verloren; der User kann mit seinem eigenen Namen fortfahren (Wahl (2)).
 
 **Verstoß beim Anlegen:** Entscheidungsdialog mit drei Wahlmöglichkeiten (V0.3, Memo 17): (1) mit dem Vorschlag fortfahren, (2) mit dem Namen des Users fortfahren, (3) abbrechen. **Verstoß bei bestehenden Projekten:** Konsistenzprüfung und `/aios-integrity` nennen ihn nur als Hinweis; das Projekt bleibt vollständig bzw. integer, weil der User mit seinem eigenen Namen fortfahren darf (V0.3, Memo 28).
 
@@ -66,14 +66,14 @@ Macht einen Ordner zum Projekt oder ergänzt ein bestehendes Projekt um die fehl
 
 | # | Schritt | Wirkung |
 |---|---|---|
-| 1 | Ordner | anlegen, falls er fehlt (mit `--name` unter diesem Namen bzw. umbenennen) |
+| 1 | Ordner | anlegen, falls er fehlt (mit `--name` unter diesem Namen bzw. umbenennen). Unterscheidet sich `--name` nur in der Groß- und Kleinschreibung (auf macOS derselbe Ordner, erkannt mit `os.path.samefile`), wird über einen Zwischennamen umbenannt (A13) |
 | 2 | Name | prüfen (*Namensregel*), außer an der Vault-Root. Bei einem Verstoß ohne `--name` oder `--accept-name` nennt der Plan den Verstoß und den Vorschlag, und `--yes` bricht mit Exit 2 ab, ohne zu schreiben |
 | 3 | `@/` | anlegen, mit `.gitkeep` (S1) |
 | 4 | Repo | `git init` mit dem Branch `main`, falls das Projekt kein eigenes Repo hat (S2); fehlende Zeilen der `.gitignore`-Vorlage ergänzen, vorhandene Zeilen bleiben (S3) |
-| 5 | Repo darüber | falls es ein Repo darüber gibt und S4 nicht erfüllt ist: `/<relativer pfad>/` in dessen `.gitignore` eintragen, versionierte Dateien des Projekts mit `git rm -r --cached` aus der Versionierung nehmen (die Dateien bleiben liegen, die alte Historie bleibt dort) und nur diese Änderungen dort committen: „AIOS: <relativer pfad> als eigenes Projekt ausgeschlossen" (V0.3, Memo 23, 24) |
+| 5 | Repo darüber | falls es ein Repo darüber gibt und S4 nicht erfüllt ist: `/<relativer pfad>/` in dessen `.gitignore` eintragen, versionierte Dateien des Projekts mit `git rm -r --cached` aus der Versionierung nehmen (die Dateien bleiben liegen, die alte Historie bleibt dort) und nur diese Änderungen dort committen: „AIOS: <relativer pfad> als eigenes Projekt ausgeschlossen" (V0.3, Memo 23, 24). Die so herausgenommenen Dateien committet Schritt 8 im neuen Repo, damit sie versioniert bleiben (A14) |
 | 6 | Zuordnung | mit `--assistant` den Schlüssel `assistant:` schreiben |
 | 7 | Registrieren | Projekt-Skills registrieren (wie `aios-context --sync --yes`; V0.3, Memo 21) |
-| 8 | Commit | im Projekt nur die Dateien committen, die AIOS angelegt oder geändert hat (`.gitignore`, `@/.gitkeep`, `.aios/config.yaml`): bei einem neuen Repo „AIOS: Projekt initialisiert", sonst „AIOS: Projekt ergänzt". Scheitert ein Commit (z. B. ohne Git-Identität), nur eine Warnung |
+| 8 | Commit | im Projekt nur die Dateien committen, die AIOS angelegt oder geändert hat (`.gitignore`, `@/.gitkeep`, `.aios/config.yaml`), dazu die Dateien, die Schritt 5 aus dem Repo darüber übernommen hat (A14): bei einem neuen Repo „AIOS: Projekt initialisiert", sonst „AIOS: Projekt ergänzt". Ist nach dem Stagen nichts geändert (`git diff --cached --quiet`), entfällt der Commit ohne Meldung (A16). Scheitert ein Commit (z. B. ohne Git-Identität), nur eine Warnung |
 | 9 | Abschluss | Hinweis, dass Master-Kontext und Skills für das Projekt ab dem nächsten Chat vollständig gelten |
 
 `aios --init` legt **kein** `@Memo/` an (V0.3, Memo 18). Fehlt nichts, meldet es „nichts zu tun" ohne Rückfrage (I8). An der Vault-Root ist `aios --init` erlaubt; dort entfallen die Schritte 2 und 5 (V0.3, Memo 23). `--plan` zeigt den Plan und schreibt nichts; mit `--yes` gibt `aios --init` nur eine Ergebniszeile und Fehler aus (Spec 04).
@@ -103,30 +103,32 @@ Prüft auf Anforderung des Users die **Integrität** eines Projekts und aller se
 
 | Prüfung | erfüllt, wenn | Bericht |
 |---|---|---|
-| **Init** | S1–S4 erfüllt | `ok` oder `missing: <Lücken>` |
+| **Init** | S1–S4 erfüllt | `ok` oder kurz `missing: <n> parts`; die Lücken stehen unter *Notes* (A15) |
 | **Commit** | `git status --porcelain` des eigenen Repos ist leer; neue, nicht versionierte Dateien zählen mit | `ok`, `<n> changed, <m> new` oder `—` (kein eigenes Repo) |
 
-**Workspace:** Hat `<pfad>` oder ein Projekt darüber eine `.aios/workspace.yaml` (Spec 06), prüft `aios --integrity` zusätzlich jedes Projekt daraus, das unter `<pfad>` liegt (F2; V0.4, Memo 15). Ein fehlender Klon erscheint als eigene Zeile mit Init `missing: clone (workspace)` und gilt als nicht integer. Ist die Revision im ausgecheckten Zweig nicht enthalten oder zeigt `origin` auf ein anderes Repo als `workspace.yaml`, nennt der Bericht das unter *Notes*.
+**Workspace:** Hat `<pfad>` oder ein Projekt darüber eine `.aios/workspace.yaml` (Spec 06), prüft `aios --integrity` zusätzlich jedes Projekt daraus, das unter `<pfad>` liegt (F2; V0.4, Memo 15). Ein fehlender Klon erscheint als eigene Zeile mit Init `missing: clone` und gilt als nicht integer. Ein Fremd-Repo ohne `@/` (Spec 06) erscheint mit Init `foreign repo`; geprüft werden nur Klon und Commit, nicht S1–S4. Ist die Revision im ausgecheckten Zweig nicht enthalten oder zeigt `origin` auf ein anderes Repo als `workspace.yaml`, nennt der Bericht das unter *Notes*.
 
 Ein Projekt ist **integer**, wenn Init und Commit erfüllt sind. **Hinweise** (`Notes`) ändern daran nichts:
 
 - **Push-Stand:** Hat ein Repo einen Upstream, nennt der Bericht Commits, die noch nicht gepusht sind (voraus), und Commits, die lokal fehlen (hinter). Grundlage ist der lokale Stand ohne `git fetch`, also ohne Netz. Ein Repo ohne Remote ist zulässig.
 - **Namensregel:** ein Verstoß nach *Namensregel*.
 
-Registrierte Skills, installierte Pakete und Blueprints gehören nicht zur Integrität; den Abgleich macht `/aios-deploy` (Spec 06).
+Registrierte Skills, geholte Pakete und Blueprints gehören nicht zur Integrität; den Abgleich macht `aios --fetch` (Spec 06).
 
 **Bericht:**
 
 ```
 Integrity §Demo — 2026-10-03
 
-Project                 Init                                    Commit
-§Demo                   ok                                      ok
-  G-Garten              ok                                      2 changed, 1 new
-    B-Beet              missing: own git repo, exclusion in …   —
-  S-Sternwarte          ok                                      ok
+Project                 Init               Commit
+§Demo                   ok                 ok
+  G-Garten              ok                 2 changed, 1 new
+    B-Beet              missing: 2 parts   —
+  S-Sternwarte          ok                 ok
 
 Notes
+- B-Beet: missing own git repo, exclusion in /…/§Demo/G-Garten
+- B-Beet: name violates the naming rule, proposal GB-Beet
 - §Demo: 3 commits not pushed
 - G-Garten: 1 commit behind origin
 

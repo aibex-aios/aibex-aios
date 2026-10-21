@@ -17,7 +17,7 @@ related:
   - "Memo 21 Repo ohne Vault und Skill-Gruppen (AA-AIbex-AIOS, @Memo/V0.1)"
   - "Memos 15–17 Versionen, Demo-Assistenten (AA-AIbex-AIOS, @Memo/V0.2)"
   - "Memos 03, 06, 11, 15, 23 (AA-AIbex-AIOS, @Memo/V0.3)"
-  - "Memos 08–12 (AA-AIbex-AIOS, @Memo/V0.4)"
+  - "Memos 08–29 (AA-AIbex-AIOS, @Memo/V0.4)"
 ---
 
 # Installation und Konfiguration
@@ -74,8 +74,8 @@ Kann `/opt/aios` nicht angelegt werden (kein `sudo`), gilt statt `/opt/aios` das
 ├── hooks-backup.json               vom Installieren ersetzte Hook-Einträge
 ├── cache/<id>/part-<n>.md          Part-Dateien des Master-Kontexts (Assistenten: cache/a-<name>-<id>/)
 ├── sessions/<session-id>.yaml      Merker: Assistent der Session (Spec 02)
-├── packages/<name>/<version>/      Cache der Pakete vom Hub (Spec 06)
-├── hub/index/                      Klon des Index-Repos (Spec 06)
+├── packages/<hub>/<name>/<version>/ Cache der geholten Pakete (Spec 06)
+├── hub/<hub>/                      Klon des Index-Repos eines Hubs, falls vorhanden (Spec 06)
 └── logs/aios.log
 ~/.claude/
 ├── settings.json                   Hooks
@@ -109,16 +109,16 @@ Kann `/opt/aios` nicht angelegt werden (kein `sudo`), gilt statt `/opt/aios` das
 └── @/                              Root-Masterspace (Klassen, Spec 02)
     ├── @!Skill/<name>/             lokale Blueprints
     ├── @!Assistant/<name>/         lokale Blueprints
-    └── @!Package/<name>/           nach /aios-deploy (Spec 06)
+    └── @!Package/<name>/           nach aios --fetch (Spec 06)
 ```
 
 | Pfad | angelegt von | Git |
 |---|---|---|
-| `.aios/config.yaml` | `aios --activate`, `/aios-deploy`, `aios --assistant` | ja |
-| `.aios/lock.yaml` | `/aios-deploy`, `aios --workspace freeze` | ja |
+| `.aios/config.yaml` | `aios --activate`, `aios --fetch`, `aios --deploy`, `aios --hubs --vault`, `aios --assistant` | ja |
+| `.aios/lock.yaml` | `aios --fetch`, `aios --workspace freeze` | ja |
 | `@/`, `.git/`, `.gitignore` | `aios --activate` bzw. `aios --init`, falls fehlend | ja |
 | `@/@!Skill/<name>/`, `@/@!Assistant/<name>/` | User | ja |
-| `@/@!Package/<name>/` | `/aios-deploy` | ja |
+| `@/@!Package/<name>/` | `aios --fetch` | ja |
 
 ### Projekt
 
@@ -141,9 +141,9 @@ Kann `/opt/aios` nicht angelegt werden (kein `sudo`), gilt statt `/opt/aios` das
 |---|---|---|---|
 | `@/`, `.gitignore`, `.git/` | `aios --init` (Spec 05) | ja | ja |
 | `@Memo/` | `/memo` oder `/aios-memo` beim ersten Memo | ja | ja (Memos werden nie geändert, I1) |
-| `.aios/config.yaml` | `aios --activate <projekt>`, `/aios-deploy --to <projekt>`, `aios --assistant`, `aios --init --assistant` | ja | ja |
+| `.aios/config.yaml` | `aios --activate <projekt>`, `aios --fetch --to <projekt>`, `aios --deploy --to <projekt>`, `aios --assistant`, `aios --init --assistant` | ja | ja |
 | `@Data/<paket>/` | Apps (Spec 06) | ja | ja |
-| `.aios/lock.yaml` | `/aios-deploy`, `aios --workspace freeze` | ja | nein |
+| `.aios/lock.yaml` | `aios --fetch`, `aios --workspace freeze` | ja | nein |
 | `.aios/workspace.yaml` | User | ja | ja |
 | `.aios/registry` | Registrierung (Spec 03) | nie | nein |
 | `.claude/skills/<name>/` | Registrierung | nie | nein |
@@ -158,7 +158,8 @@ Lokale Skills werden als Blueprint in `@/@!Skill/<name>/` geschrieben, nicht dir
 aios: 0.4.0
 packages:
   memo: "~=6.0"
-  gaertner: "~=0.2"
+  gaertner: "~=0.2.0"
+  knowledge-scorpio: {range: "~=0.1.0", hub: aibex-hub}
 assistant: gaertner
 hosts: [claude-code]
 ```
@@ -166,20 +167,20 @@ hosts: [claude-code]
 | Schlüssel | erlaubt in | Wert | Regel |
 |---|---|---|---|
 | `aios` | Vault, Projekt | Version ohne `v` | aktiviert AIOS (Spec 02); muss als einzelne Zeile `aios: <version>` stehen, weil die Weiterleiter sie ohne YAML-Parser lesen |
-| `packages` | Vault, Projekt | Name → Bereich | gewünschte Pakete dieses Projekts, nicht vererbt (Spec 06) |
+| `packages` | Vault, Projekt | Name → Bereich oder `{range, hub, from, only}` | gewünschte Pakete dieses Projekts, nicht vererbt (Spec 06, *Konfiguration und Lock*) |
 | `skills`, `assistants` | Vault, Projekt | Name → exakte Version | aus v0.3; gelten als `packages` mit `==<version>` (Spec 06, *Umstellung von v0.3*) |
 | `assistant` | Vault, Projekt | `<name>`, `none` oder `inherit` | Zuordnung des Assistenten (Spec 03, *Zuordnung*); fehlt der Schlüssel, gilt `inherit` |
 | `hosts` | alle Ebenen | Liste | in v0.4 nur `claude-code` |
-| `hub` | Home | URL | Index-Repo des Hubs, Standard `https://github.com/aibex-aios/aios-index` (Spec 06) |
+| `hubs` | Home, Vault-Root | Liste von Namen bzw. `name: url` | Hub-Liste in Suchreihenfolge; die Vault-Root vor Home, bei gleichem Namen gilt die Vault-Root; ohne Eintrag `[aibex-aios]` (Spec 06, *Hub-Liste*) |
 | `inline_limit` | Home | Zeichenzahl | Grenze für die Inline-Ladung von Master-Kontext und Assistent, Standard 9000 |
 
 `aios` und `assistant` in `~/.aios/config.yaml` sind nicht erlaubt: Die Voreinstellung des Rechners darf keinen Vault aktivieren (Grundregel 6) und keinen Assistenten festlegen (Grundregel 8). Unbekannte Schlüssel, Schlüssel auf einer Ebene, auf der sie nicht erlaubt sind, ein `aios`-Wert, der keine Version ist, und ein `assistant`-Wert, der kein gültiger Name ist, werden mit Warnung ignoriert.
 
-`config.yaml` verwendet eine Untermenge von YAML, die AIOS ohne PyYAML liest: Zeilen `schlüssel: wert` ohne Einrückung, Listen als `[a, b]` oder als eingerückte `- eintrag`, eine eingerückte Ebene `name: wert` (für `packages` sowie `skills` und `assistants` aus v0.3), Kommentare mit `#`, Werte in Anführungszeichen und Blocktexte (`schlüssel: >` bzw. `|` mit eingerückten Zeilen, wie im Frontmatter einer `ASSISTANT.md`). Jeder Schlüssel darf je Datei nur einmal vorkommen. Eine Datei außerhalb dieser Untermenge wird in der Kette mit Warnung übergangen; `aios --activate`, `aios --deactivate` und `aios --assistant` brechen dann ab, ohne sie zu ändern.
+`config.yaml` verwendet eine Untermenge von YAML, die AIOS ohne PyYAML liest: Zeilen `schlüssel: wert` ohne Einrückung, Listen als `[a, b]` oder als eingerückte `- eintrag`, eine eingerückte Ebene `name: wert` (für `packages` sowie `skills` und `assistants` aus v0.3), als Wert auch eine einzeilige Abbildung `{schlüssel: wert, …}` mit Listen `[a, b]` darin (für `packages`), Listen mit gemischten Einträgen `- name` und `- name: wert` (für `hubs`), Kommentare mit `#`, Werte in Anführungszeichen und Blocktexte (`schlüssel: >` bzw. `|` mit eingerückten Zeilen, wie im Frontmatter einer `ASSISTANT.md`). Jeder Schlüssel darf je Datei nur einmal vorkommen. Eine Datei außerhalb dieser Untermenge wird in der Kette mit Warnung übergangen; `aios --activate`, `aios --deactivate` und `aios --assistant` brechen dann ab, ohne sie zu ändern.
 
 ### Konfigurationskette
 
-Gelesen wird von `cwd` aufwärts jede `.aios/config.yaml` bis zur Vault-Root, danach `~/.aios/config.yaml`. **Je Schlüssel gilt der nächstgelegene Eintrag**. Ausnahme `packages`: Es gilt nur im eigenen Projekt und wird nicht vererbt, weil jedes Projekt seine Pakete vollständig selbst enthält (Spec 06); die installierten Pakete wirken trotzdem über die Kette. Beim Schlüssel `assistant` zählt der Wert `inherit` als „kein Eintrag": Die Suche geht weiter nach oben (Spec 03). Außerhalb eines Vaults gilt nur `~/.aios/config.yaml`; liegt `~` in einem Vault, zählt `~/.aios/config.yaml` trotzdem als Ebene *Home*. `aios --config [<pfad>]` zeigt die wirksamen Werte mit ihrer Herkunft.
+Gelesen wird von `cwd` aufwärts jede `.aios/config.yaml` bis zur Vault-Root, danach `~/.aios/config.yaml`. **Je Schlüssel gilt der nächstgelegene Eintrag**. Ausnahmen: `packages` gilt nur im eigenen Projekt und wird nicht vererbt, weil jedes Projekt seine Pakete vollständig selbst enthält (Spec 06); die geholten und ausgerollten Pakete wirken trotzdem über die Kette. `hubs` wird aus Vault-Root und Home zusammengesetzt (Spec 06, *Hub-Liste*). Beim Schlüssel `assistant` zählt der Wert `inherit` als „kein Eintrag": Die Suche geht weiter nach oben (Spec 03). Außerhalb eines Vaults gilt nur `~/.aios/config.yaml`; liegt `~` in einem Vault, zählt `~/.aios/config.yaml` trotzdem als Ebene *Home*. `aios --config [<pfad>]` zeigt die wirksamen Werte mit ihrer Herkunft.
 
 | Rang | Quelle |
 |---|---|
@@ -261,7 +262,7 @@ allowed-tools: Bash(aios --gui *), Bash(aios-context *)
 !`aios --gui --session ${CLAUDE_SESSION_ID}`
 ```
 
-v0.4 liefert die AIOS-Skills `aios-context`, `aios-init`, `aios-register`, `aios-status`, `aios-deploy`, `aios-assistant`, `aios-integrity`, `aios-memo` und `aios-gui` sowie den Alias `gui` (Spec 02, 03, 05).
+v0.4 liefert die AIOS-Skills `aios-context`, `aios-init`, `aios-register`, `aios-status`, `aios-package`, `aios-fetch`, `aios-deploy`, `aios-assistant`, `aios-integrity`, `aios-memo` und `aios-gui` sowie den Alias `gui` (Spec 02, 03, 05).
 
 ### `.gitignore`-Vorlage
 
@@ -282,7 +283,7 @@ Alle festen Orte lassen sich über Umgebungsvariablen umlenken, damit Tests in e
 | `AIOS_CLAUDE_DIR` | `~/.claude` | `$HOME/.claude` |
 | `AIOS_SUDO` | Programm für `sudo` | `sudo` |
 | `AIOS_STUP_URL` | Quelle von stup (auch `file://`) | `https://raw.githubusercontent.com/bluccino/tool-stup/master/bin/stup` |
-| `AIOS_HUB` | Index-Repo des Hubs (auch `file://`), vor dem Schlüssel `hub` | — |
+| `AIOS_HUBS` | Hub-Liste für Tests, ersetzt `hubs` aus Vault-Root und Home: Einträge `name=url` (auch `file://`), durch Leerzeichen getrennt | — |
 | `AIOS_PIP` | Befehl, der `python/requirements.txt` in die venv installiert; gesetzt wird die venv ohne `pip` angelegt | `<venv>/bin/python -m pip install -q -r` |
 
 Tests rufen damit nie das echte `sudo` auf und greifen nie auf das Netzwerk zu.
@@ -327,17 +328,19 @@ Die Weiterleiter lesen nur kleine Dateien und greifen nie auf das Netzwerk zu.
 | `aios --remove-version v<version>` | Installation entfernen |
 | `aios --uninstall` | Benutzereinrichtung entfernen |
 | `aios --register [<pfad>]` | Projekt-Skills registrieren, mit Vorschau (Spec 03) |
-| `aios --deploy <name>[<bereich>] [--to <projekt>]` | Paket installieren (Spec 06) |
-| `aios --deploy [--to <projekt>]` | Projekt mit `lock.yaml` abgleichen (Spec 06) |
-| `aios --deploy --upgrade [<name>] [--to <projekt>]`, `--remove <name>` | Pakete aktualisieren bzw. entfernen (Spec 06) |
-| `aios --library [<name>]` | Index des Hubs, mit `<name>` die Versionen eines Pakets (Spec 06) |
+| `aios --fetch [<hub>/]<paket>[<bereich>] [--hub <hub>] [--from <repo>] [--to <projekt>]` | Paket holen, ausrollen, registrieren (Spec 06) |
+| `aios --fetch [--to <projekt>]` | Projekt mit `lock.yaml` abgleichen (Spec 06) |
+| `aios --fetch --upgrade [<paket>] [--to <projekt>]`, `--remove <paket>` | Pakete aktualisieren bzw. entfernen (Spec 06) |
+| `aios --deploy <paket> --only <element>… \| --all [--to <projekt>]`, `aios --deploy [--to <projekt>]` | Elemente eines geholten Pakets ausrollen bzw. zeigen (Spec 06) |
+| `aios --library [<suchwort> \| <paket>]` | Pakete der Hub-Liste suchen bzw. Versionen eines Pakets (Spec 06) |
+| `aios --hubs [add <name> [<url>] \| remove <name>] [--vault]` | Hub-Liste zeigen bzw. ändern (Spec 06) |
 | `aios --workspace init <repo> [<ordner>] \| update \| freeze \| status [<pfad>] [--group <g>]` | Workspace klonen, abgleichen, einfrieren, prüfen (Spec 06) |
 | `aios --contribute <datei>… --to <paket> [--message <text>]` | Rückfluss als Pull Request (Spec 06) |
-| `aios --run <befehl> [argumente]` | Befehl eines installierten Pakets (Spec 06) |
+| `aios --run <befehl> [argumente]` | ausgerollter Befehl eines Pakets (Spec 06) |
 | `aios --worker <paket>/<name> start\|stop` | Arbeitspferd starten oder stoppen (Spec 06) |
 | `aios --skill <name> [--session <id>]` | Rumpf eines AIOS-Skills der gültigen Version (für die versionsneutralen Skills); mit `--session` ist `<session-id>` im Rumpf ersetzt |
 | `aios --assistant <name\|none\|inherit> [--to <projekt>] [--session <id>]` | Assistent dem Projekt zuordnen (Spec 03, *Wechsel*) |
-| `aios --gui [--session <id>] [--html]` | Rumpf des Oberflächen-Skills des aktiven Assistenten bzw. mit `--html` das HTML-Fragment (Spec 03, *Oberflächen*); `aios --gui --aios` für die AIOS-Oberfläche |
+| `aios --gui [--session <id>] [--html]` | Rumpf des Oberflächen-Skills des aktiven Assistenten bzw. mit `--html` das HTML-Fragment (Spec 03, *Oberflächen*); `aios --gui --aios` für die AIOS-Oberfläche, `aios --gui --apps` für die Liste der Oberflächen ausgerollter Apps |
 | `aios --init [<pfad>] [--assistant <wert>] [--name <name>] [--accept-name]` | Ordner zum Projekt machen oder ein Projekt ergänzen (Spec 05) |
 | `aios --integrity [<pfad>]` | Integrität des Projekts und aller Unterprojekte prüfen, nur lesend (Spec 05) |
 
@@ -363,7 +366,7 @@ Aufgerufen aus einem Klon des Repos `aibex-aios` (`./bin/aios --install …`) od
 3. **Plan zeigen**, einmal fragen; muss `sudo` nach einem Passwort fragen, steht das im Plan.
 4. **Installieren**, falls `v<version>` noch nicht installiert ist: Stand des Tags mit `git archive` nach `/opt/aios/v<version>/` übertragen (Abbildung siehe *Repo*), venv in `python/` anlegen und `pyyaml` installieren, `python -m compileall`, Dateien schreibschützen, Eintrag in `installations.yaml`.
 5. **Benutzer einrichten**, was fehlt: Weiterleiter nach `~/bin` (angelegt von `--prepare`); ein vorhandener Weiterleiter wird nur durch einen neueren ersetzt, der Prototyp (`~/bin/aios` mit `~/etc/aios/`) immer. `~/.aios/config.yaml` mit `hosts: [claude-code]`, Hooks eintragen und `ai-brain`-Hooks sichern, `~/.aios/repo` merken.
-6. **AIOS-Skills** der Gruppe `aios` als Hüllen in `~/.claude/skills/aios-*/` und den Alias in `~/.claude/skills/gui/` schreiben (bei jedem Install). Pakete installiert der User mit `aios --deploy` (Spec 06).
+6. **AIOS-Skills** der Gruppe `aios` als Hüllen in `~/.claude/skills/aios-*/` und den Alias in `~/.claude/skills/gui/` schreiben (bei jedem Install). Pakete holt der User mit `aios --fetch` bzw. `/aios-package` (Spec 06).
 
 Das Übertragen geschieht in ein temporäres Verzeichnis neben dem Ziel, das erst am Ende umbenannt wird; ein Abbruch hinterlässt keine halbe Installation.
 
