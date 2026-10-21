@@ -114,6 +114,8 @@ YAML
    assert_contains "$(echo "$OUT" | grep '^lib-b')" "ws/v1.0" "status: lib-b on ws/v1.0"
    OUT="$(A "$V/ws" --integrity)"
    assert_contains "$(echo "$OUT" | grep 'lib-b')" "foreign repo" "integrity: foreign repo"
+   assert_contains "$OUT" "
+  lib-b " "integrity: one level below the root, sorted as a tree"
    assert_contains "$OUT" "workspace: revision main is not in the checked out branch" "integrity: revision behind"
    rm -rf "$V/ws/docs"
    OUT="$(A "$V/ws" --integrity)"

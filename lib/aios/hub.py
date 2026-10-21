@@ -177,6 +177,9 @@ def index(h):
 def library(arg=None):
     """aios --library [<suchwort> | <paket>]: packages of the hub list, or versions of a package."""
     hubs = hub_list()
+    if arg and "/" in arg:                          # <hub>/<paket>: only this hub, also outside the list
+        name, _, arg = arg.partition("/")
+        hubs = [h for h in hubs if h.name == name] or [Hub(name, github(name), "named")]
     if arg:
         src = GitSource(hubs)
         found = [(h, src.versions(arg, h.name)) for h in hubs]
@@ -297,6 +300,11 @@ def command(args):
         say(f"=> hub {name} is not in the hub list of {file}, nothing to do")
         return 0
     plan = Plan()
+    first = args[0] == "add" and name != DEFAULT and not os.environ.get("AIOS_HUBS", "").strip() \
+        and not config.load(paths.cwd()).hub_entries
+    if first:                                       # the first list keeps the default hub (memo 60, D1)
+        plan.add(f"{file}: hubs: {DEFAULT} {github(DEFAULT)} (the default, kept in the new list)",
+                 lambda: write(file, DEFAULT, github(DEFAULT)))
     if args[0] == "add":
         plan.add(f"{file}: hubs: {name} {url}", lambda: write(file, name, url))
     else:

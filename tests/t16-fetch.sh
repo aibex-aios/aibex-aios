@@ -71,6 +71,7 @@
 # no silent update, --upgrade, --remove
 #===============================================================================
 
+   assert_contains "$(F "$D" aibex-aios/app-taschenrechner'==0.4.0' --plan)" "downgrade 0.4.1 -> 0.4.0 app-taschenrechner" "plan names a downgrade"
    F "$D" aibex-aios/app-taschenrechner'==0.4.0' --yes >/dev/null
    assert_eq "$(LOCK "$D")" "app-taschenrechner=0.4.0@aibex-aios skill-memo=6.1.0@aibex-aios" "explicit version"
    sed -i.bak 's/"==0.4.0"/"~=0.4.0"/' "$D/.aios/config.yaml"; rm "$D/.aios/config.yaml.bak"

@@ -59,7 +59,8 @@ aibex-hub           https://github.com/aibex-hub  (home)
    assert_contains "$OUT" "$HOME/.aios/config.yaml: hubs: aibex-hub https://github.com/aibex-hub" "add: plan names home"
    [ ! -e "$HOME/.aios/config.yaml" ] && ok || fail "--plan writes nothing"
    A "$D" --hubs add aibex-hub --yes >/dev/null
-   assert_eq "$(cat "$HOME/.aios/config.yaml")" $'hubs:\n  - aibex-hub' "add: written to home"
+   assert_contains "$OUT" "hubs: aibex-aios https://github.com/aibex-aios (the default, kept in the new list)" "add: the first list keeps the default"
+   assert_eq "$(cat "$HOME/.aios/config.yaml")" $'hubs:\n  - aibex-aios\n  - aibex-hub' "add: written to home"
    A "$D" --hubs add aibex-aios --yes >/dev/null
    A "$D" --hubs add firma https://git.example.com/aios --vault --yes >/dev/null
    assert_eq "$(cat "$D/.aios/config.yaml")" $'aios: 0.4.0\nhubs:\n  - firma: https://git.example.com/aios' "add --vault: written to the vault root"
@@ -79,10 +80,11 @@ aibex-hub           https://github.com/aibex-hub  (home)
 
    export AIOS_HUBS="$HUBS"
    OUT="$(A "$D" --library)"
-   assert_contains "$(printf '%s\n' "$OUT" | grep app-taschenrechner | tr -s ' ')" "aibex-aios/app-taschenrechner app Programmierbarer Taschenrechner" "library: index of aibex-aios"
+   assert_contains "$(printf '%s\n' "$OUT" | grep app-taschenrechner | tr -s ' ')" "aibex-aios/app-taschenrechner app Programmierbarer RPN-Taschenrechner" "library: index of aibex-aios"
    assert_contains "$OUT" "(hub aibex-hub cannot be searched: no aios-index, no topic aios-package; fetch by name)" "library: hub without index"
    assert_eq "$(A "$D" --library orion | head -1 | tr -s ' ')" "aibex-aios/knowledge-orion knowledge Die hellsten Sterne des Orion" "library: search in name and description"
    assert_eq "$(A "$D" --library skill-memo)" $'aibex-aios/skill-memo  6.0.0 6.1.0\naibex-hub/skill-memo  6.0.0' "library <package>: versions per hub"
+   assert_eq "$(A "$D" --library aibex-hub/skill-memo)" "aibex-hub/skill-memo  6.0.0" "library <hub>/<package>: only this hub"
    assert_contains "$(A "$D" --library gibtsnicht)" "no package matches gibtsnicht" "library: no match"
    assert_dir "$HOME/.aios/hub/aibex-aios/.git"
    mkdir -p "$SANDBOX/bin"; printf '#!/bin/bash\necho "$*" >> "%s/gh.log"\necho '"'"'[{"name":"memo","description":"Memo vom Topic"}]'"'"'\n' "$SANDBOX" > "$SANDBOX/bin/gh"; chmod +x "$SANDBOX/bin/gh"

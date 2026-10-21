@@ -11,7 +11,7 @@ packages:
     description: Demo-Assistent Astronom, rechnet nur mit Sonne und Mond, nennt Sterndaten
   - name: app-taschenrechner
     type: app
-    description: Programmierbarer Taschenrechner mit lernenden Kacheln
+    description: Programmierbarer RPN-Taschenrechner mit lernenden Funktionstasten
   - name: knowledge-orion
     type: knowledge
     description: Die hellsten Sterne des Orion

@@ -9,7 +9,7 @@ USAGE = ("usage: aios --prepare | --install [v<version>] | --versions | --remove
          " | --uninstall | --activate v<version> [<path>] | --deactivate [<path>] | --config [<path>]"
          " | --register [<path>] | --init [<path>] [--assistant <value>] [--name <name>] [--accept-name]"
          " | --integrity [<path>] | --assistant <name|none|inherit> [--to <project>] [--session <id>]"
-         " | --gui [--session <id>] [--html] [--aios]"
+         " | --gui [--session <id>] [--html] [--aios] [--apps] [--skill <surface>]"
          " | --skill <name> [--session <id>] | --library [<word>|<package>]"
          " | --hubs [add <name> [<url>] | remove <name>] [--vault]"
          " | --fetch [[<hub>/]<package>[<range>] [--hub <hub>] [--from <repo>]] [--to <project>]"
@@ -17,7 +17,7 @@ USAGE = ("usage: aios --prepare | --install [v<version>] | --versions | --remove
          " | --worker [<package>/<name> install|remove|start|stop] | --run <command> [args]"
          " | --contribute <file>... --to <package> [--message <text>]"
          " | --workspace init <repo> [<folder>] | update | freeze | status [<path>] [--group <g>]"
-         " | --deploy [<name>==<version>] [--to <project>] [--assistant <name>] [--from <repo>]"
+         " | --deploy <package> --only <element>... | --all [--to <project>] | --deploy [--to <project>]"
          "  (writing commands: --plan, --yes)")
 
 LATER = {}                                          # commands of later steps (memo 18)

@@ -369,7 +369,7 @@ def integrity(start, results):
         d = (root / item.path).resolve() if (root / item.path).exists() else root / item.path
         if start != d and start not in d.parents:
             continue
-        depth = len(d.relative_to(start).parts) if start in d.parents else 0
+        depth = sum(1 for r in results if r.path != d and r.path in d.parents)   # projects above it
         if not d.exists():
             results.append(Result(d, depth, init_note="missing: clone"))
             continue
@@ -387,3 +387,4 @@ def integrity(start, results):
         _, rev, _, _ = state(item, d)
         if rev != "ok":
             r.hints.append(f"workspace: revision {item.revision} is not in the checked out branch")
+    results.sort(key=lambda r: r.path.parts)          # report order of projects(): the tree

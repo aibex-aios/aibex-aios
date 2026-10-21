@@ -78,6 +78,14 @@ def entry_text(entry):
     return "{" + ", ".join(parts) + "}" if len(parts) > 1 or "range" not in entry else f'"{entry["range"]}"'
 
 
+def direction(old, new):
+    """upgrade or downgrade from the version of a marker to the chosen one."""
+    try:
+        return "downgrade" if semver.Version.parse(str(new)) < semver.Version.parse(str(old)) else "upgrade"
+    except semver.VersionError:
+        return "upgrade"
+
+
 def read_lock(project):
     f = lock_file(project)
     if not f.is_file():
@@ -237,7 +245,8 @@ class Fetch:
                 lines.append(f"unchanged  {name} {p.version} ({where})")
                 continue
             why = ("new" if mark is None and was is None else "missing" if mark is None else
-                   f"upgrade {mark.get('version')} -> {p.version}" if mark.get("version") != str(p.version)
+                   f"{direction(mark.get('version'), p.version)} {mark.get('version')} -> {p.version}"
+                   if mark.get("version") != str(p.version)
                    else "changed directly, restored")
             src = self.source.fetch(name, p.hub, str(p.version))
             fields = {"name": name, "version": p.version, "hub": "-" if p.repo else p.hub,

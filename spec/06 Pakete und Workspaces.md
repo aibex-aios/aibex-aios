@@ -136,7 +136,7 @@ hubs:
 
 Die Hub-Liste ist eine **Suchliste**, keine Sperrliste. Ein voller Paketname darf jeden Hub nennen (unten).
 
-**Pflege:** `aios --hubs` zeigt die Liste mit Herkunft (Vault, Home). `aios --hubs add <name> [<url>] [--vault]` und `aios --hubs remove <name> [--vault]` ändern sie in Home bzw. mit `--vault` an der Vault-Root, mit Plan und Bestätigung (Spec 01, I7). `/aios-package` versteht Sätze wie „füge den Hub aibex-hub hinzu" (V0.4, Memo 25).
+**Pflege:** `aios --hubs` zeigt die Liste mit Herkunft (Vault, Home). `aios --hubs add <name> [<url>] [--vault]` und `aios --hubs remove <name> [--vault]` ändern sie in Home bzw. mit `--vault` an der Vault-Root, mit Plan und Bestätigung (Spec 01, I7). Legt `add` die erste Hub-Liste an (es gibt noch keinen Eintrag `hubs:`), übernimmt AIOS den Standard-Hub `aibex-aios` an erster Stelle, damit er weiter gilt (V0.4, Memo 60). `/aios-package` versteht Sätze wie „füge den Hub aibex-hub hinzu" (V0.4, Memo 25).
 
 ### Paket finden
 
@@ -173,7 +173,7 @@ packages:
     description: Programmierbarer Taschenrechner mit lernenden Funktionstasten
 ```
 
-Der Index dient nur der Suche: `aios --library [<suchwort>]` listet je Hub der Hub-Liste die Pakete aus `index.yaml`; ohne Index bei GitHub-Hubs die Repos mit dem Topic **`aios-package`** (über `gh`). Ein Hub ohne beides lässt sich nicht durchsuchen, nur mit bekanntem Namen holen. `aios --library <paket>` zeigt die Versionen eines Pakets (aus den Tags). Den Index holt AIOS mit `git clone --depth 1` bzw. `git pull` nach `~/.aios/hub/<hub>/`.
+Der Index dient nur der Suche: `aios --library [<suchwort>]` listet je Hub der Hub-Liste die Pakete aus `index.yaml`; ohne Index bei GitHub-Hubs die Repos mit dem Topic **`aios-package`** (über `gh`). Ein Hub ohne beides lässt sich nicht durchsuchen, nur mit bekanntem Namen holen. `aios --library <paket>` zeigt die Versionen eines Pakets (aus den Tags), `aios --library <hub>/<paket>` nur die aus diesem Hub, auch außerhalb der Hub-Liste. Den Index holt AIOS mit `git clone --depth 1` bzw. `git pull` nach `~/.aios/hub/<hub>/`.
 
 **Zugriff aufs Netz:** Nur `aios --fetch`, `aios --library`, `aios --workspace` und `aios --contribute` greifen auf das Netz zu, und nur über `git` bzw. `gh` mit den Zugangsdaten des Users. Ohne Netz arbeitet `aios --fetch` ohne Argument mit dem Cache, wenn alle Versionen aus `lock.yaml` dort liegen.
 
