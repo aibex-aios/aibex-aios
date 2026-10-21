@@ -44,16 +44,16 @@
 #===============================================================================
 
    OUT="$(A "$D" --deploy)"
-   assert_contains "$OUT" "app-taschenrechner 0.3.1 (aibex-aios) — all elements deployed" "show: all elements deployed after fetching (H2)"
+   assert_contains "$OUT" "app-taschenrechner 0.3.2 (aibex-aios) — all elements deployed" "show: all elements deployed after fetching (H2)"
    assert_contains "$OUT" "      deployed      knowledge" "show: knowledge as an element"
    assert_contains "$(A "$D" --deploy skill-memo==6.0.0)" "to fetch skill-memo==6.0.0 use: aios --fetch skill-memo==6.0.0" "old form: hint to aios --fetch"
    assert_contains "$(A "$D" --deploy skill-memo --only memo)" "only packages fetched for this project can be deployed in part (H4)" "dependency: always whole"
    assert_contains "$(A "$D" --deploy app-taschenrechner --only gibtsnicht)" "app-taschenrechner has no element gibtsnicht" "unknown element"
    assert_contains "$(A "$D" --deploy app-taschenrechner)" "usage: aios --deploy" "neither --only nor --all"
    OUT="$(A "$D" --deploy app-taschenrechner --only taschenrechner-gui --plan)"
-   assert_contains "$OUT" "packages: app-taschenrechner: {range: \"~=0.3.1\", only: [taschenrechner-gui]}" "plan: only: in packages:"
+   assert_contains "$OUT" "packages: app-taschenrechner: {range: \"~=0.3.2\", only: [taschenrechner-gui]}" "plan: only: in packages:"
    A "$D" --deploy app-taschenrechner --only taschenrechner-gui --yes >/dev/null
-   assert_contains "$(cat "$D/.aios/config.yaml")" "app-taschenrechner: {range: \"~=0.3.1\", only: [taschenrechner-gui]}" "--only written"
+   assert_contains "$(cat "$D/.aios/config.yaml")" "app-taschenrechner: {range: \"~=0.3.2\", only: [taschenrechner-gui]}" "--only written"
    assert_contains "$(A "$D" --deploy)" "      not deployed  skill taschenrechner" "show: not deployed element"
    at "$G" "$SRC/bin/aios-context" --sync --yes >/dev/null
    assert_eq "$(ls "$G/.claude/skills" | tr '\n' ' ')" "memo taschenrechner-gui " "H3: not deployed skill not registered"
@@ -61,7 +61,7 @@
    assert_contains "$(A "$D" --deploy app-taschenrechner --only taschenrechner-gui)" "nothing to do" "--only again: nothing to do (I8)"
    assert_contains "$(A "$D" --fetch)" "nothing to do" "fetch keeps the selection"
    A "$D" --deploy app-taschenrechner --all --yes >/dev/null
-   assert_contains "$(cat "$D/.aios/config.yaml")" 'app-taschenrechner: "~=0.3.1"' "--all: back to the range"
+   assert_contains "$(cat "$D/.aios/config.yaml")" 'app-taschenrechner: "~=0.3.2"' "--all: back to the range"
    A "$D" --deploy test-assistent --only test-assistent --yes >/dev/null
    sed -i.bak 's/knowledge-orion: "~=0.1.0"/knowledge-orion: {range: "~=0.1.0", only: [nichts]}/' "$D/.aios/config.yaml"; rm "$D/.aios/config.yaml.bak"
    OUT="$(at "$G" "$SRC/bin/aios-context" --context)"

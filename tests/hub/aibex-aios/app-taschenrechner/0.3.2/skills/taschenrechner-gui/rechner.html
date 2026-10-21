@@ -1,0 +1,105 @@
+<div class="tr" style="font-family:system-ui,sans-serif;max-width:320px">
+<style>
+.tr .disp{text-align:right;padding:6px 12px;border:1px solid #8886;border-radius:10px;margin-bottom:8px}
+.tr .y{font-size:.95em;opacity:.6;min-height:1.2em}
+.tr .x{font-size:1.8em;min-height:1.3em;overflow:hidden}
+.tr .state{font-size:.85em;opacity:.75;min-height:1.2em;margin-bottom:6px}
+.tr .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.tr button{font:inherit;padding:10px 0;border-radius:8px;border:1px solid #8886;background:transparent;color:inherit;cursor:pointer}
+.tr button:hover{background:#8882}
+.tr button.k{font-size:.85em}
+.tr button.wide{grid-column:span 2}
+.tr button.on{background:#c4302b33;border-color:#c4302b}
+</style>
+<div class="disp"><div class="y" id="tr-y"></div><div class="x" id="tr-x">0</div></div>
+<div class="state" id="tr-state"></div>
+<div class="grid">
+  <button class="k" data-k="A">A</button><button class="k" data-k="B">B</button><button class="k" data-k="C">C</button><button class="k" data-k="D">D</button>
+  <button data-key="7">7</button><button data-key="8">8</button><button data-key="9">9</button><button data-key="÷">÷</button>
+  <button data-key="4">4</button><button data-key="5">5</button><button data-key="6">6</button><button data-key="×">×</button>
+  <button data-key="1">1</button><button data-key="2">2</button><button data-key="3">3</button><button data-key="−">−</button>
+  <button data-key="0">0</button><button data-key=".">.</button><button data-key="CHS">CHS</button><button data-key="+">+</button>
+  <button class="wide" id="tr-learn">LEARN</button><button class="wide" data-key="ENTER">ENTER</button>
+</div>
+<script>
+(function () {
+  // RPN after the HP-15C: stack X, Y, Z, T with stack lift (V0.4, memo 51)
+  var saved = {{aios-data kacheln.yaml}};
+  var tiles = (saved && typeof saved === "object") ? saved : {};
+  var xEl = document.getElementById("tr-x"), yEl = document.getElementById("tr-y");
+  var state = document.getElementById("tr-state"), learnBtn = document.getElementById("tr-learn");
+  var X = 0, Y = 0, Z = 0, T = 0;
+  var entry = null;          // digits typed into X, null when no entry is running
+  var lift = false;          // a new number lifts the stack (false after ENTER and at the start)
+  var learning = false, recorded = null, pending = null;
+  function fmt(v) { return isFinite(v) ? String(Math.round(v * 1e10) / 1e10) : "Fehler"; }
+  function show() {
+    xEl.textContent = entry !== null ? entry : fmt(X);
+    yEl.textContent = "y: " + fmt(Y);
+  }
+  function up() { T = Z; Z = Y; Y = X; }
+  function finish() { if (entry !== null) { X = parseFloat(entry); entry = null; } }
+  function calc(o) {
+    if (o === "+") return Y + X;
+    if (o === "−") return Y - X;
+    if (o === "×") return Y * X;
+    return X === 0 ? NaN : Y / X;
+  }
+  function press(k) {
+    if (/^[0-9]$/.test(k) || k === ".") {
+      if (entry === null) { if (lift) up(); entry = ""; }
+      if (k === "." && entry.indexOf(".") >= 0) return;
+      entry = (entry === "" || entry === "-") && k === "." ? entry + "0." : entry + k;
+      X = parseFloat(entry);
+    } else if (k === "CHS") {
+      if (entry !== null) { entry = entry.charAt(0) === "-" ? entry.slice(1) : "-" + entry; X = parseFloat(entry) || 0; }
+      else { X = -X; }
+    } else if (k === "ENTER") {
+      finish(); up(); lift = false;
+    } else {                                      // + − × ÷: Y op X, the stack drops, T stays
+      finish(); X = calc(k); Y = Z; Z = T; lift = true;
+    }
+  }
+  function key(k) { if (learning) recorded.push(k); press(k); show(); status(); }
+  function status() {
+    var names = Object.keys(tiles).filter(function (t) { return tiles[t] && tiles[t].keys; });
+    if (learning) state.textContent = "Aufnahme: " + recorded.join(" ");
+    else if (pending) state.textContent = "Kachel wählen für: " + pending.join(" ");
+    else state.textContent = names.length ? "Belegt: " + names.map(function (t) { return t + " " + (tiles[t].title || ""); }).join(", ") : "";
+    learnBtn.classList.toggle("on", learning);
+    document.querySelectorAll(".tr button[data-k]").forEach(function (b) {
+      var t = tiles[b.dataset.k];
+      b.title = t && t.keys ? (t.title || "") + ": " + t.keys.join(" ") : "frei";
+    });
+  }
+  document.querySelectorAll(".tr button[data-key]").forEach(function (b) {
+    b.addEventListener("click", function () { key(b.dataset.key); });
+  });
+  learnBtn.addEventListener("click", function () {
+    if (!learning) { learning = true; recorded = []; pending = null; }
+    else { learning = false; pending = recorded.length ? recorded : null; recorded = null; }
+    status();
+  });
+  document.querySelectorAll(".tr button[data-k]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      var name = b.dataset.k;
+      if (pending) {
+        tiles[name] = { title: pending.join(" "), keys: pending };
+        var msg = "Run the skill /taschenrechner. Speichere die Kachel " + name + " mit den Tasten " +
+                  JSON.stringify(pending) + " und dem Titel \"" + pending.join(" ") + "\".";
+        pending = null; status();
+        if (typeof sendPrompt === "function") sendPrompt(msg);
+        return;
+      }
+      var t = tiles[name];
+      if (t && t.keys) {                          // a tile ends the entry first (memo 51, R1)
+        if (entry !== null) { finish(); lift = true; }
+        t.keys.forEach(function (k) { press(k); });
+        show(); status();
+      }
+    });
+  });
+  show(); status();
+})();
+</script>
+</div>
