@@ -32,6 +32,7 @@
   var entry = null;          // digits typed into X, null when no entry is running
   var lift = false;          // a new number lifts the stack (false after ENTER and at the start)
   var learning = false, recorded = null, pending = null;
+  var hint = "";             // after assigning: Claude saves; the sentence for chats without sendPrompt (V0.4, memo 67, B4)
   function fmt(v) { return isFinite(v) ? String(Math.round(v * 1e10) / 1e10) : "Fehler"; }
   function show() {
     xEl.textContent = entry !== null ? entry : fmt(X);
@@ -65,7 +66,7 @@
     var names = Object.keys(tiles).filter(function (t) { return tiles[t] && tiles[t].keys; });
     if (learning) state.textContent = "Aufnahme: " + recorded.join(" ");
     else if (pending) state.textContent = "Funktionstaste wählen für: " + pending.join(" ");
-    else state.textContent = names.length ? "Belegt: " + names.map(function (t) { return t + " " + (tiles[t].title || ""); }).join(", ") : "";
+    else state.textContent = (names.length ? "Belegt: " + names.map(function (t) { return t + " " + (tiles[t].title || ""); }).join(", ") : "") + hint;
     learnBtn.classList.toggle("on", learning);
     document.querySelectorAll(".tr button[data-k]").forEach(function (b) {
       var t = tiles[b.dataset.k];
@@ -76,7 +77,7 @@
     b.addEventListener("click", function () { key(b.dataset.key); });
   });
   learnBtn.addEventListener("click", function () {
-    if (!learning) { learning = true; recorded = []; pending = null; }
+    if (!learning) { learning = true; recorded = []; pending = null; hint = ""; }
     else { learning = false; pending = recorded.length ? recorded : null; recorded = null; }
     status();
   });
@@ -87,6 +88,8 @@
         tiles[name] = { title: pending.join(" "), keys: pending };
         var msg = "Run the skill /taschenrechner. Speichere die Funktionstaste " + name + " mit den Tasten " +
                   JSON.stringify(pending) + " und dem Titel \"" + pending.join(" ") + "\".";
+        hint = ". Gespeichert wird im Chat. Kommt dort keine Nachricht an, schreib: Speichere die Funktionstaste " +
+               name + " mit den Tasten " + pending.join(" ") + " und dem Titel " + pending.join(" ") + ".";
         pending = null; status();
         if (typeof sendPrompt === "function") sendPrompt(msg);
         return;

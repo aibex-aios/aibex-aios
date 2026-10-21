@@ -13,7 +13,7 @@
    export PATH="$PYDIR:/usr/bin:/bin:/usr/sbin:/sbin"
    HUBS="$("$SRC/tests/hub/build" "$SANDBOX/hubs")"
    assert_eq "$HUBS" "aibex-aios=file://$SANDBOX/hubs/aibex-aios aibex-hub=file://$SANDBOX/hubs/aibex-hub" "build prints AIOS_HUBS"
-   assert_eq "$(git ls-remote --tags "$SANDBOX/hubs/aibex-aios/app-taschenrechner" | sed 's/.*refs.tags.//' | tr '\n' ' ')" "v0.3.0 v0.3.1 v0.3.2 v0.4.0 v0.4.1 v0.4.2 " "one tag per version"
+   assert_eq "$(git ls-remote --tags "$SANDBOX/hubs/aibex-aios/app-taschenrechner" | sed 's/.*refs.tags.//' | tr '\n' ' ')" "v0.3.0 v0.3.1 v0.3.2 v0.4.0 v0.4.1 v0.4.2 v0.4.3 " "one tag per version"
    assert_eq "$(git -C "$SANDBOX/hubs/aibex-aios/app-taschenrechner" show v0.4.0:manifest.yaml | sed -n 2p)" "version: 0.4.0" "tag holds its version"
    assert_eq "$(git -C "$SANDBOX/hubs/aibex-aios/app-taschenrechner" ls-tree -r --name-only v0.4.0 | grep -c doppelt)" "0" "files of later versions not in earlier tags"
    D="$SANDBOX/work/§Demo"
@@ -107,10 +107,10 @@ def run(req, hubs=('aibex-aios', 'aibex-hub')):
         print(type(e).__name__, e)
 $1"; }
    assert_eq "$(SRCPY "print(sorted(s.versions('skill-memo', 'aibex-aios')), s.versions('gibtsnicht', 'aibex-aios'))")" "['6.0.0', '6.1.0'] []" "versions from the tags, none for a missing repo"
-   assert_eq "$(SRCPY "m = s.manifest('app-taschenrechner', 'aibex-aios', '0.4.2'); print(m.name, m.version, m.elements())")" "app-taschenrechner 0.4.2 ['taschenrechner', 'taschenrechner-gui', 'knowledge']" "manifest from the cache"
-   assert_dir "$HOME/.aios/packages/aibex-aios/app-taschenrechner/0.4.2/.git"
-   assert_eq "$(SRCPY "print(len(s.commit('app-taschenrechner', 'aibex-aios', '0.4.2')))")" "40" "commit of the cached version"
-   assert_eq "$(SRCPY "run({'app-taschenrechner': R()}, hubs=('aibex-aios',))")" "app-taschenrechner=0.4.2@aibex-aios skill-memo=6.1.0@aibex-aios" "end to end: taschenrechner with memo"
+   assert_eq "$(SRCPY "m = s.manifest('app-taschenrechner', 'aibex-aios', '0.4.3'); print(m.name, m.version, m.elements())")" "app-taschenrechner 0.4.3 ['taschenrechner', 'taschenrechner-gui', 'knowledge']" "manifest from the cache"
+   assert_dir "$HOME/.aios/packages/aibex-aios/app-taschenrechner/0.4.3/.git"
+   assert_eq "$(SRCPY "print(len(s.commit('app-taschenrechner', 'aibex-aios', '0.4.3')))")" "40" "commit of the cached version"
+   assert_eq "$(SRCPY "run({'app-taschenrechner': R()}, hubs=('aibex-aios',))")" "app-taschenrechner=0.4.3@aibex-aios skill-memo=6.1.0@aibex-aios" "end to end: taschenrechner with memo"
    assert_contains "$(SRCPY "run({'skill-memo': R()})")" "Ambiguous package skill-memo is in several hubs: aibex-aios, aibex-hub" "end to end: memo in both hubs"
    assert_eq "$(SRCPY "run({'knowledge-scorpio': R(hub='aibex-hub')}, hubs=('aibex-aios',))")" "knowledge-scorpio=0.1.0@aibex-hub" "end to end: hub outside the hub list"
    assert_eq "$(SRCPY "run({'test-befehl': R(repo='$SANDBOX/hubs/aibex-aios/test-befehl')}, hubs=())")" "test-befehl=0.1.0@from:$SANDBOX/hubs/aibex-aios/test-befehl" "end to end: --from a repo"

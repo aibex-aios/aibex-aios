@@ -28,4 +28,13 @@ Ein AIOS-Skill von AIbex AIOS (Spec 03, *Pakete*; Spec 06). Er versteht Wünsche
 2. Sonst `aios --library <name>` ausführen. Nennt die Ausgabe Versionen (`<hub>/<name>  0.1.0 …`), ist das Paket gefunden; stehen dort mehrere Hubs, frage, welcher gemeint ist.
 3. Sonst ist der Name unscharf („der Rechner", *calculator*): `aios --library <suchwort>` mit einem passenden Wort ausführen. Ein Treffer: nimm ihn und nenne ihn. Mehrere Treffer: frage mit dem Auswahlwerkzeug (`AskUserQuestion`). Kein Treffer: sag das und zeige `aios --library`.
 
-Danach weiter wie im Skill `/aios-fetch` (Ziel klären, Plan, Rückfrage, `--yes`, Abschluss). Pakete holt nur der User; schlage das Holen nicht von dir aus vor.
+**Version:** Einen Versionswunsch hängst du als Bereich an den Namen, ohne Leerzeichen und nie mit `@` (V0.4, Memo 67, B3):
+
+| Wunsch | Bereich |
+|---|---|
+| „Version 0.4.0" | `app-taschenrechner==0.4.0` |
+| „mindestens 0.4" | `app-taschenrechner>=0.4` |
+| „irgendeine 0.4.x" | `app-taschenrechner~=0.4.0` |
+| „nicht 0.4.1" | `app-taschenrechner!=0.4.1` |
+
+Danach weiter wie im Skill `/aios-fetch` (Ziel klären, Plan, Rückfrage, `--yes`, Abschluss). Den Plan zeigst du immer und fragst; der Wunsch „installiere …" ist keine Bestätigung. Pakete holt nur der User; schlage das Holen nicht von dir aus vor.

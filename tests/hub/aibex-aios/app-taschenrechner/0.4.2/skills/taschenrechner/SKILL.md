@@ -1,6 +1,6 @@
 ---
 name: taschenrechner
-version: 0.4.0
+version: 0.4.2
 description: >
   Funktionstasten des programmierbaren Taschenrechners von AIbex AIOS speichern, anzeigen und
   übernehmen: Belegungen aus der Oberfläche in @Data/app-taschenrechner/funktionstasten.yaml
@@ -33,7 +33,7 @@ A:
 
 ## Funktionstaste speichern
 
-Kommt aus der Oberfläche „Speichere die Funktionstaste <A–D> mit den Tasten [...] und dem Titel ...":
+Kommt aus der Oberfläche „Speichere die Funktionstaste <A–D> mit den Tasten [...] und dem Titel ..." oder tippt der User den Satz aus der Statuszeile ab, wenn die Nachricht der Oberfläche nicht ankommt; dann stehen die Tasten durch Leerzeichen getrennt da (`ENTER ×`, auch `x` oder `*` für `×`, `-` für `−`, `/` für `÷`):
 1. Zeige, was gespeichert wird: Funktionstaste, Titel, Tasten, Datei. Frage, ob der Titel so bleiben soll, und biete einen sprechenden Titel an (z. B. „Quadrat" für `ENTER ×`).
 2. Nach Ja lies die Datei (falls vorhanden), setze oder ersetze den Eintrag der Funktionstaste und schreibe die Datei. Andere Funktionstasten bleiben.
 3. Sag, dass die Belegung beim nächsten Öffnen von `/taschenrechner-gui` geladen wird.

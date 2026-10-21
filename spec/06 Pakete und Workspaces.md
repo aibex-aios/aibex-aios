@@ -419,7 +419,7 @@ Der Maintainer prüft und übernimmt den Beitrag in den Inhalt des Pakets, beim 
 
 ## Demo-App Taschenrechner
 
-Paket `app-taschenrechner` (`type: app`) im Repo `aibex-aios/app-taschenrechner`, Version `0.4.1` (Funktionstasten statt Kacheln, V0.4, Memo 54; README mit *LEARN* in 0.4.1, Memo 61; ältere Versionen 0.1.x–0.3.x bleiben im Hub). Ein programmierbarer Taschenrechner mit umgekehrter polnischer Notation nach dem Vorbild des HP-15C. Er zeigt Holen, Version, Abgleich und Rückfluss (V0.4, Memos 01, 05, 51).
+Paket `app-taschenrechner` (`type: app`) im Repo `aibex-aios/app-taschenrechner`, Version `0.4.2` (Funktionstasten statt Kacheln, V0.4, Memo 54; README mit *LEARN* in 0.4.1, Memo 61; Hinweis zum Speichern im Chat in 0.4.2, Memo 67; ältere Versionen 0.1.x–0.3.x bleiben im Hub). Ein programmierbarer Taschenrechner mit umgekehrter polnischer Notation nach dem Vorbild des HP-15C. Er zeigt Holen, Version, Abgleich und Rückfluss (V0.4, Memos 01, 05, 51).
 
 | Element | Inhalt |
 |---|---|

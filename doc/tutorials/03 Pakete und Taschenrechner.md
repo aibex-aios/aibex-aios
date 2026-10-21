@@ -26,7 +26,7 @@ aios --library app-taschenrechner
 ```
 aibex-aios/app-taschenrechner  app           Programmierbarer RPN-Taschenrechner mit lernenden Funktionstasten
 
-aibex-aios/app-taschenrechner  0.1.0 0.1.1 0.2.0 0.2.1 0.3.0 0.3.1 0.3.2 0.4.0 0.4.1
+aibex-aios/app-taschenrechner  0.1.0 0.1.1 0.2.0 0.2.1 0.3.0 0.3.1 0.3.2 0.4.0 0.4.1 0.4.2
 ```
 
 Mit einem Suchwort sucht `aios --library` in Namen und Beschreibungen, mit einem Paketnamen zeigt es dessen Versionen.
@@ -43,9 +43,9 @@ aios --fetch app-taschenrechner --plan
 ```
 => fetch app-taschenrechner into ~/tmp/§Demo
    plan:
-      new        app-taschenrechner 0.4.1 (aibex-aios) -> ~/tmp/§Demo/@/@!Package/app-taschenrechner
+      new        app-taschenrechner 0.4.2 (aibex-aios) -> ~/tmp/§Demo/@/@!Package/app-taschenrechner
       new        skill-memo 6.0.0 (aibex-aios) -> ~/tmp/§Demo/@/@!Package/skill-memo
-      ~/tmp/§Demo/.aios/config.yaml: packages: app-taschenrechner: "~=0.4.1"
+      ~/tmp/§Demo/.aios/config.yaml: packages: app-taschenrechner: "~=0.4.2"
       ~/tmp/§Demo/.aios/lock.yaml: 2 packages
       register the project skills of ~/tmp/§Demo
    (plan only, nothing written)
@@ -55,7 +55,7 @@ Der Taschenrechner hängt von `skill-memo` ab; AIOS holt die Abhängigkeit mit. 
 
 ```
    registered in ~/tmp/§Demo: new taschenrechner, taschenrechner-gui, memo
-=> packages of ~/tmp/§Demo: app-taschenrechner 0.4.1, skill-memo 6.0.0
+=> packages of ~/tmp/§Demo: app-taschenrechner 0.4.2, skill-memo 6.0.0
    open the app app-taschenrechner with /taschenrechner-gui or the tile Apps of /aios-gui
    new skills are available from the next chat (or after /reload-skills)
 ```
@@ -65,7 +65,7 @@ Der Taschenrechner hängt von `skill-memo` ab; AIOS holt die Abhängigkeit mit. 
 ```yaml
 aios: 0.4.0
 packages:
-  app-taschenrechner: "~=0.4.1"
+  app-taschenrechner: "~=0.4.2"
 ```
 
 In `.aios/lock.yaml` steht, was AIOS daraus aufgelöst hat:
@@ -75,18 +75,18 @@ In `.aios/lock.yaml` steht, was AIOS daraus aufgelöst hat:
 schema: 1
 packages:
   app-taschenrechner:
-    version: 0.4.1
+    version: 0.4.2
     hub: aibex-aios
     repo: https://github.com/aibex-aios/app-taschenrechner
-    tag: v0.4.1
-    commit: 1597ce2f3411de00cfc963eb603ad6896fc3e162
-    requested: ~=0.4.1
+    tag: v0.4.2
+    commit: 72d6d7ef7d4d745b5e62c5d86b3e9013b3043b92
+    requested: ~=0.4.2
   skill-memo:
     version: 6.0.0
     hub: aibex-aios
     repo: https://github.com/aibex-aios/skill-memo
     tag: v6.0.0
-    commit: ff684801fd8b24e0f73beed955553e3517c219c5
+    commit: 8efa670fbe28b578a25505be8dbda9051d063d80
     required_by:
     - app-taschenrechner
 ```
@@ -115,7 +115,7 @@ Die oberste Reihe hat die Funktionstasten **A** bis **D**. So legst du das Quadr
 2. `ENTER` `×` drücken, die Anzeige zeigt „Aufnahme: ENTER ×".
 3. **LEARN** noch einmal drücken, dann **A**.
 
-Claude fragt nach einem Titel und speichert die Funktionstaste mit dem Skill `taschenrechner` in `@Data/app-taschenrechner/funktionstasten.yaml`:
+Die Statuszeile zeigt „Belegt: A ENTER ×" und den Hinweis, dass im Chat gespeichert wird. Die Oberfläche schickt dafür eine Nachricht an Claude; steht sie nur im Eingabefeld, drück Enter. In manchen Chats kommt sie gar nicht an, dann tipp den Satz aus der Statuszeile ab. Claude fragt nach einem Titel und speichert die Funktionstaste mit dem Skill `taschenrechner` in `@Data/app-taschenrechner/funktionstasten.yaml`:
 
 ```yaml
 A:
@@ -133,7 +133,7 @@ aios --gui --apps
 
 ```
 Apps (open with the skill of the surface):
-- /taschenrechner-gui — app-taschenrechner 0.4.1: Programmierbarer RPN-Taschenrechner nach dem Vorbild des HP-15C mit lernenden Funktionstasten (Demo-App von AIbex AIOS)
+- /taschenrechner-gui — app-taschenrechner 0.4.2: Programmierbarer RPN-Taschenrechner nach dem Vorbild des HP-15C mit lernenden Funktionstasten (Demo-App von AIbex AIOS)
 ```
 
 ## 4. Wissen aus zwei Hubs
@@ -173,14 +173,14 @@ aios --fetch aibex-hub/knowledge-scorpio
 ```
 
 ```
-=> packages of ~/tmp/§Demo: app-taschenrechner 0.4.1, knowledge-orion 0.1.0, knowledge-scorpio 0.1.0, skill-memo 6.0.0
+=> packages of ~/tmp/§Demo: app-taschenrechner 0.4.2, knowledge-orion 0.1.0, knowledge-scorpio 0.1.0, skill-memo 6.0.0
 ```
 
 Ein voller Name bindet das Paket an seinen Hub; `config.yaml` merkt sich das:
 
 ```yaml
 packages:
-  app-taschenrechner: "~=0.4.1"
+  app-taschenrechner: "~=0.4.2"
   knowledge-orion: "~=0.1.0"
   knowledge-scorpio: {range: "~=0.1.0", hub: aibex-hub}
 ```
@@ -201,7 +201,7 @@ aios --fetch app-taschenrechner==0.3.2 --plan
    unchanged  knowledge-scorpio 0.1.0 (aibex-hub)
    unchanged  skill-memo 6.0.0 (aibex-aios)
    plan:
-      downgrade 0.4.1 -> 0.3.2 app-taschenrechner 0.3.2 (aibex-aios) -> ~/tmp/§Demo/@/@!Package/app-taschenrechner
+      downgrade 0.4.2 -> 0.3.2 app-taschenrechner 0.3.2 (aibex-aios) -> ~/tmp/§Demo/@/@!Package/app-taschenrechner
       ~/tmp/§Demo/.aios/config.yaml: packages: app-taschenrechner: "==0.3.2"
       ~/tmp/§Demo/.aios/lock.yaml: 4 packages
       register the project skills of ~/tmp/§Demo
@@ -218,7 +218,7 @@ aios --deploy
 
 ```
 => packages of ~/tmp/§Demo
-   app-taschenrechner 0.4.1 (aibex-aios) — all elements deployed
+   app-taschenrechner 0.4.2 (aibex-aios) — all elements deployed
       deployed      skill taschenrechner
       deployed      skill taschenrechner-gui
       deployed      knowledge

@@ -1,0 +1,15 @@
+title: Taschenrechner
+intro: Rechnen in umgekehrter polnischer Notation (ENTER wie beim HP-15C), mit LEARN eine Tastenfolge auf eine Funktionstaste legen.
+tiles:
+  - title: Rechner
+    text: Stack X, Y, Z, T; ENTER, CHS und die Funktionstasten A bis D
+    html: rechner.html
+    icon: calculator
+  - title: Funktionstasten anzeigen
+    text: Meine Funktionstasten und die mitgelieferten
+    prompt: "Run the skill /taschenrechner. Zeige meine Funktionstasten und die mitgelieferten."
+    icon: list
+  - title: Funktionstaste zurückspielen
+    text: Meine Funktionstasten als Beitrag an den Hub senden
+    prompt: "Run the skill /taschenrechner. Ich möchte meine Funktionstasten mit aios --contribute an das Paket zurückspielen."
+    icon: upload
