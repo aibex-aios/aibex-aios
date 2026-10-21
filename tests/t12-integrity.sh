@@ -47,9 +47,11 @@
    assert_eq "$(printf '%s\n' "$OUT" | grep -c '^    GB-Beet ')" "1" "GB-Beet indented twice (subproject of a subproject)"
    assert_eq "$(printf '%s\n' "$OUT" | grep -c '^  N-Frei ')" "1" "project in a container: indented once, container not listed"
    case "$OUT" in *Notizen*|*X-Hidden*|*Y-Memo*|*Z-Mod*) fail "containers, hidden, @ and node_modules not listed" ;; *) ok ;; esac
-   assert_contains "$(printf '%s\n' "$OUT" | grep GB-Beet)" "missing: own git repo" "GB-Beet: missing repo"
+   assert_contains "$(printf '%s\n' "$OUT" | grep '^ *GB-Beet')" "missing: " "GB-Beet: short init column (A15)"
+   assert_contains "$OUT" "- GB-Beet: missing own git repo" "GB-Beet: missing repo under Notes (A15)"
    assert_contains "$(printf '%s\n' "$OUT" | grep GB-Beet)" "—" "GB-Beet: no own repo, commit —"
-   assert_contains "$(printf '%s\n' "$OUT" | grep S-Sternwarte)" "missing: .gitignore lines: .DS_Store, .claude/skills/, .aios/manifest" "S-Sternwarte: gitignore lines"
+   assert_contains "$(printf '%s\n' "$OUT" | grep '^ *S-Sternwarte')" "missing: 1 part" "S-Sternwarte: one missing part (A15)"
+   assert_contains "$OUT" "- S-Sternwarte: missing .gitignore lines: .DS_Store, .claude/skills/, .aios/manifest" "S-Sternwarte: gitignore lines under Notes"
    assert_contains "$(printf '%s\n' "$OUT" | grep S-Sternwarte)" "2 changed, 2 new" "changed and new separately (deleted .gitignore counts as changed, new files one by one)"
    assert_eq "$(printf '%s\n' "$OUT" | grep '^  G-Garten ' | tr -s ' ')" " G-Garten ok ok" "G-Garten integer"
    assert_contains "$OUT" "Result: 4 of 6 projects integer" "result line"

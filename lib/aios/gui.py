@@ -95,7 +95,9 @@ def instruction(d, call):
              "Show this surface now, without further explanation:", "",
              f"- **Desktop app with HTML surfaces** (a tool that shows HTML directly in the chat, e.g. "
              f"`show_widget`): run `{call} --html` and show its output unchanged with this tool. "
-             f"Never publish the surface as an artifact, file or web page and do not ask for it.",
+             f"Never publish the surface as an artifact, file or web page and do not ask for it. "
+             f"If the user then names a tile in the chat (in some chats the tiles do not react), "
+             f"offer the same tiles as the menu below (V0.3, A10).",
              "- **Otherwise (CLI, headless, no such tool):** a menu with the question tool (`AskUserQuestion`), "
              "question = title, at most 4 entries per level, with more tiles a last entry \"More …\" leading to the "
              "next level. Tiles with an HTML part are missing in the menu; mention them as a hint (\"desktop app only\"). "
@@ -120,7 +122,8 @@ def fragment(d, folder):
            ".aios-gui .tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}"
            ".aios-gui button.tile{text-align:left;padding:12px;border-radius:10px;border:1px solid #8884;"
            "background:transparent;color:inherit;cursor:pointer}.aios-gui button.tile:hover{background:#8882}"
-           ".aios-gui .tile b{display:block;margin-bottom:4px}.aios-gui .part{margin-top:16px}</style>",
+           ".aios-gui .tile b{display:block;margin-bottom:4px}.aios-gui .part{margin-top:16px}"
+           ".aios-gui .hint{font-size:12px;opacity:.7}</style>",
            f"<h2>{e(d['title'])}</h2>"]
     if d.get("intro"):
         out.append(f"<p>{e(d['intro'])}</p>")
@@ -137,6 +140,8 @@ def fragment(d, folder):
             target = f' data-prompt="{e(value)}"'
         out.append(f'<button type="button" class="tile"{icon}{target}><b>{e(t["title"])}</b>{text}</button>')
     out.append("</div>")
+    out.append('<p class="hint">If a tile only fills the input field, press Enter. '
+               'If nothing happens, name the tile in the chat.</p>')       # A10
     scripts = []
     for i, (t, name) in enumerate(parts, 1):
         out.append(f'<section class="part" id="aios-part-{i}"><h3>{e(t["title"])}</h3>')

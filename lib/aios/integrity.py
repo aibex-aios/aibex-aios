@@ -39,7 +39,10 @@ class Result:
         return self.init_ok and self.commit_ok
 
     def init_text(self):
-        return "ok" if self.init_ok else "missing: " + ", ".join(g.text for g in self.gaps)
+        """Short, so that the table does not wrap in the chat; the gaps are listed under Notes (A15)."""
+        if self.init_ok:
+            return "ok"
+        return f"missing: {len(self.gaps)} part" + ("" if len(self.gaps) == 1 else "s")
 
     def commit_text(self):
         if not self.repo:
@@ -102,6 +105,8 @@ def push_hints(p):
 
 def check(p, depth):
     r = Result(p, depth, gaps=project.check(p), repo=project.own_repo(p))
+    if r.gaps:
+        r.hints.append("missing " + ", ".join(g.text for g in r.gaps))
     if r.repo:
         r.changed, r.new = commit_state(p)
         r.hints += push_hints(p)

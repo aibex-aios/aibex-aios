@@ -57,7 +57,7 @@ p = project.parent_repo('$D/S-Sternwarte'); print(p.rel, p.ignored, p.tracked)")
 # name rule and proposal
 #===============================================================================
 
-   mkdir -p "$D/G-Garten/GB-Beet" "$D/G-Garten/G1-Eins" "$D/G-Garten/G12-Zwoelf" "$D/G-Garten/GBX-Zu-Lang" \
+   mkdir -p "$D/G-Garten/GB-Beet" "$D/G-Garten/G1-Eins" "$D/G-Garten/G12-Zwoelf" "$D/G-Garten/GBX-Zu-Lang" "$D/G-Garten/B-Beet" "$D/G-Garten/AT-Test" \
             "$D/labor neu" "$D/garten-zwei" "$D/KI-Tools" "$D/AA-Doppel" "$D/X-V0.3-2026" "$D/X-klein" \
             "$D/P-Projekte/PB-Blogs/PB1-Die-KI-Kann-Viel/PB1A-Teil" "$D/P-Projekte/PB-Blogs/pb2-die-ki" \
             "$D/Notizen/irgendwas" "$D/Notizen/Q-Frei" "$D/Notizen/Q-frei"
@@ -73,7 +73,10 @@ p = project.parent_repo('$D/S-Sternwarte'); print(p.rel, p.ignored, p.tracked)")
    assert_contains "$(NAME "$D/G-Garten/GBX-Zu-Lang")" "does not fit the parent prefix G" "message names the parent prefix"
    assert_eq "$(NAME "$D/labor neu" | cut -d'|' -f1-2)" "bad|L-Labor-Neu" "proposal: whitespace, capitals, prefix"
    assert_eq "$(NAME "$D/garten-zwei" | cut -d'|' -f1-2)" "bad|G-Garten-Zwei" "proposal: initial letter"
-   assert_eq "$(NAME "$D/KI-Tools" | cut -d'|' -f1-2)" "bad|K-KI-Tools" "two-letter prefix under the root: kept as a part"
+   assert_eq "$(NAME "$D/KI-Tools" | cut -d'|' -f1-2)" "bad|K-Tools" "two-letter prefix under the root: replaced (L6)"
+   assert_eq "$(NAME "$D/G-Garten/B-Beet" | cut -d'|' -f1-2)" "bad|GB-Beet" "prefix replaced by parent prefix plus its first letter (A11)"
+   assert_eq "$(NAME "$D/G-Garten/AT-Test" | cut -d'|' -f1-2)" "bad|GA-Test" "first letter of the old prefix (L6)"
+   assert_eq "$(NAME "$D/AA-Doppel" | cut -d'|' -f1-2)" "bad|A-Doppel" "prefix too long under the root (L6)"
    assert_contains "$(NAME "$D/AA-Doppel")" "must be one capital letter directly under the vault root" "root level message"
    assert_eq "$(NAME "$D/X-klein" | cut -d'|' -f1-2)" "bad|X-Klein" "valid prefix kept, part capitalized"
    assert_contains "$(NAME "$D/X-klein")" "the part 'klein' does not start with a capital letter or a digit" "lowercase part reported"

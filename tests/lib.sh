@@ -38,4 +38,5 @@
    assert_exec()   { [ -x "$1" ] && ok || fail "not executable: $1"; }
    assert_eq()     { [ "$1" == "$2" ] && ok || fail "$3: expected [$2], got [$1]"; }
    assert_contains() { case "$1" in *"$2"*) ok ;; *) fail "$3: [$2] not in output" ;; esac; }
+   assert_not_contains() { case "$1" in *"$2"*) fail "$3: [$2] in output" ;; *) ok ;; esac; }
    assert_exit()   { "${@:2}" >/dev/null 2>&1; local rc=$?; [ "$rc" == "$1" ] && ok || fail "exit $rc (expected $1): ${*:2}"; }

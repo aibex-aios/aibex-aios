@@ -208,6 +208,16 @@ for n in ('aios-assistant', 'aios-context', 'aios-init'):
    assert_file "$D/G-Garten/B-Beet/@/beet.md"
    assert_eq "$(git -C "$D" status --porcelain -- G-Garten .gitignore)" "" "repo above: exclusion committed, subproject not shown"
    assert_eq "$(git -C "$D/G-Garten/B-Beet" log --format=%s)" "AIOS: Projekt initialisiert" "own repo of the subproject"
+   assert_eq "$(git -C "$D/G-Garten/B-Beet" ls-files @/beet.md)" "@/beet.md" "files taken over from the repo above are committed (A14)"
+   assert_eq "$(git -C "$D/G-Garten/B-Beet" status --porcelain)" "" "subproject: nothing left uncommitted (A14)"
+   rm "$D/G-Garten/B-Beet/.gitignore"
+   OUT="$("$SRC/bin/aios" --init "$D/G-Garten/B-Beet" --accept-name --yes 2>&1)"
+   assert_not_contains "$OUT" "commit failed" "restored .gitignore with the same content: no false warning (A16)"
+   assert_eq "$(git -C "$D/G-Garten/B-Beet" log --format=%s | wc -l | tr -d ' ')" "1" "restored .gitignore: no new commit (A16)"
+   mkdir -p "$D/F-Fall"
+   "$SRC/bin/aios" --init "$D/F-Fall" --name F-FALL --yes >/dev/null 2>&1
+   assert_eq "$(ls "$D" | grep -x 'F-F[Aa][Ll][Ll]')" "F-FALL" "rename only in the case of the name (A13)"
+   assert_dir "$D/F-FALL/@"
    mkdir -p "$D/H-Hof"; printf 'x\n' > "$D/notiz.txt"; git -C "$D" add notiz.txt
    "$SRC/bin/aios" --init "$D/H-Hof" --yes >"$SANDBOX/hof.out" 2>&1
    assert_contains "$(cat "$SANDBOX/hof.out")" "has staged changes; commit the exclusion there by hand" "staged changes above: no commit there"

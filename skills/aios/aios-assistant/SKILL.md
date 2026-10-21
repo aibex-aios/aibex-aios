@@ -26,7 +26,7 @@ Ein AIOS-Skill von AIbex AIOS (Spec 03, *Wechsel*). Jeder Aufruf ist eine **Zuor
    - `class="skill"` sind deine Skills. Wende sie an, als wären sie aufgerufen, ohne das Skill-Werkzeug.
 
    Ist er `none`: Lege die bisherige Rolle ab und antworte wieder als gewöhnliches Claude Code.
-5. **Titel:** Nur wenn `<Titel>` im Argument steht, setze ihn als Titel des Chats (Desktop-App: Werkzeug zum Setzen des Session-Titels; CLI: bitte den User um `/rename <Titel>`). Ohne Titel bleibt er unverändert.
+5. **Titel:** Nur wenn `<Titel>` im Argument steht, setze ihn nicht selbst, sondern bitte den User, den Chat so umzubenennen: „Bitte benenne den Chat in *<Titel>* um (Desktop-App: in der Seitenleiste; CLI: `/rename <Titel>`).“ AIOS kennt die Session der App nicht (A4). Ohne Titel bleibt er unverändert.
 6. **Bestätigen:** kurz „<title> aktiv" bzw. „kein Assistent". Steht in `model:` ein Modell (z. B. `claude: sonnet`), nenne es als Hinweis: „Empfohlenes Modell: sonnet (Modellwahl der App bzw. `/model`)". Danach in der Rolle weiter; stand nach dem Namen schon eine Aufgabe oder Frage, beantworte sie jetzt in der Rolle.
 
 Neue Chats im Projekt laden den Assistenten automatisch; Compaction und Resume behalten ihn (Merker der Session). Andere laufende Chats behalten den Assistenten, mit dem sie begonnen haben.

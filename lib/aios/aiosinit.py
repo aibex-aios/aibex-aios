@@ -38,6 +38,7 @@ class Steps:
     def __init__(self, p, plan, root=False):
         self.p, self.plan, self.root = p, plan, root
         self.written = []                           # files to commit in the project
+        self.taken = []                             # files taken over from the repo above (A14)
         self.new_repo = False
         self.changes = False
 
@@ -83,7 +84,9 @@ class Steps:
         if not pr.ignored:
             what.append(f"/{pr.rel}/ in {pr.root / '.gitignore'}")
         if pr.tracked:
-            what.append(f"git rm -r --cached {pr.rel} ({len(pr.tracked)} files, they stay on disk)")
+            what.append(f"git rm -r --cached {pr.rel} ({len(pr.tracked)} files, they stay on disk "
+                        f"and are committed in the project)")
+            self.taken = [f[len(pr.rel) + 1:] for f in pr.tracked if f.startswith(pr.rel + "/")]
         message = f"AIOS: {pr.rel} als eigenes Projekt ausgeschlossen"
 
         def exclude():
@@ -99,6 +102,8 @@ class Steps:
                 warn(f"the repo {pr.root} has staged changes; commit the exclusion there by hand")
                 return
             git(pr.root, "add", "--", ".gitignore")
+            if git(pr.root, "diff", "--cached", "--quiet").returncode == 0:
+                return                                      # nothing changed there (A16)
             r = git(pr.root, "commit", "-q", "-m", message)
             if r.returncode:
                 warn(f"commit in {pr.root} failed ({r.stderr.strip() or r.stdout.strip()}); commit by hand")
@@ -135,15 +140,31 @@ class Steps:
 
     def commit(self, extra=()):
         def run():
-            files = sorted(set(self.written) | set(extra))
+            files = sorted(set(self.written) | set(self.taken) | set(extra))
             files = [f for f in files if (self.p / f).exists()]
+            if files:                                       # ignored files cannot be added
+                ignored = set(git(self.p, "check-ignore", "--", *files).stdout.splitlines())
+                files = [f for f in files if f not in ignored]
             if not files:
                 return
             git(self.p, "add", "--", *files)
+            if git(self.p, "diff", "--cached", "--quiet", "--", *files).returncode == 0:
+                return                                      # rewritten with the same content (A16)
             r = git(self.p, "commit", "-q", "-m", NEW if self.new_repo else COMPLETED, "--", *files)
             if r.returncode:
                 warn(f"commit failed ({r.stderr.strip() or r.stdout.strip()}); commit by hand")
-        self.plan.add(f"commit \"{NEW if self.new_repo else COMPLETED}\" with the files AIOS wrote", run)
+        self.plan.add(f"commit \"{NEW if self.new_repo else COMPLETED}\" with the files AIOS wrote"
+                      + (" and the files taken over from the repo above" if self.taken else ""), run)
+
+
+def move(src, dst):
+    """Rename src to dst, via an intermediate name if only the case differs (macOS, A13)."""
+    if dst.exists() and os.path.samefile(src, dst):
+        tmp = src.parent / (src.name + ".aios-rename")
+        src.rename(tmp)
+        tmp.rename(dst)
+    else:
+        src.rename(dst)
 
 
 def run(plan, title, done):
@@ -168,7 +189,7 @@ def init(path=None, assistant=None, name=None, accept_name=False):
         p = p.parent / name
     if p.exists() and not p.is_dir():
         raise Abort(f"{p} is not a directory")
-    if rename and p.exists():
+    if rename and p.exists() and not os.path.samefile(rename[0], p):
         raise Abort(f"{p} exists already")
     cfg = config.load(existing(rename[0] if rename else p))
     if cfg.vault is None:
@@ -189,7 +210,7 @@ def init(path=None, assistant=None, name=None, accept_name=False):
                 plan.add(f"name {n.name}: {problem}")
             plan.add(f"proposal: {n.proposal} (--name {n.proposal}; keep the name with --accept-name)")
     if rename:
-        plan.add(f"rename {rename[0]} -> {rename[1].name}", lambda: rename[0].rename(rename[1]))
+        plan.add(f"rename {rename[0]} -> {rename[1].name}", lambda: move(*rename))
     elif not p.exists():
         plan.add(f"create the folder {p}", lambda: p.mkdir(parents=True))
 

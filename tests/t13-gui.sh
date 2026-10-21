@@ -137,3 +137,12 @@ plan = ui.Plan(); install.plan_alias(plan); plan.run(); print(len(plan.steps))" 
    PYTHONPATH="$SRC/lib" python3 -c "from aios import install, ui; ui.MODE = 'yes'; install.uninstall()" >/dev/null 2>&1
    [ ! -e "$AIOS_CLAUDE_DIR/skills/gui" ] && ok || fail "uninstall: alias removed"
    [ ! -e "$HOME/.aios/sessions" ] && ok || fail "uninstall: markers of the sessions removed"
+
+#===============================================================================
+# v0.4 step 1: A10 - hint under the HTML surface, menu as fallback
+#===============================================================================
+
+   OUT="$(GUI "$SANDBOX" --aios --html)"
+   assert_contains "$OUT" "If a tile only fills the input field, press Enter." "html: hint under the tiles (A10)"
+   OUT="$(GUI "$SANDBOX" --aios)"
+   assert_contains "$OUT" "offer the same tiles as the menu below" "instruction: menu as fallback (A10)"
