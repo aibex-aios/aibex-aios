@@ -1,0 +1,58 @@
+#!/bin/bash
+# build: Test-Hubs aus den Vorlagen tests/hub/<hub>/<paket>/<version>/ bauen (Spec 06, V0.4 Memo 35)
+
+   if [ "$*" == "-?" ] || [ "$*" == "--help" ]; then
+      echo '   usage: tests/hub/build <ziel>     # Test-Hubs unter <ziel> bauen, AIOS_HUBS ausgeben'
+      echo '          tests/hub/build --version  # print version'
+      echo '   see also: tests/run, aios --library, aios --hubs'
+      exit 1
+   fi
+
+#===============================================================================
+# print version: build --version
+#===============================================================================
+
+   if [ "$*" == "--version" ]; then
+      echo "0.1.0"; exit 0
+   fi
+
+#===============================================================================
+# build <ziel>  # je Paket ein Repo mit einem Commit und Tag v<version> je Version
+#===============================================================================
+
+   if [ "$1" != "" ] && [ "$2" == "" ]; then
+      SRC="$(cd "$(dirname "$0")" && pwd)"
+      mkdir -p "$1" || exit 1
+      ZIEL="$(cd "$1" && pwd)"
+      G() { git -c user.name=aios-test -c user.email=test@aios -c init.defaultBranch=main "$@"; }
+      HUBS=""
+      for H in "$SRC"/*/; do
+         H="$(basename "$H")"
+         rm -rf "$ZIEL/$H"; mkdir -p "$ZIEL/$H" || exit 1
+         for P in "$SRC/$H"/*/; do
+            P="$(basename "$P")"
+            R="$ZIEL/$H/$P"
+            G init -q "$R" || exit 1
+            if [ "$P" == "aios-index" ]; then
+               cp -R "$SRC/$H/$P/." "$R/" || exit 1
+               G -C "$R" add -A && G -C "$R" commit -q -m "index" || exit 1
+               continue
+            fi
+            for V in $(ls "$SRC/$H/$P" | sort -t. -k1,1n -k2,2n -k3,3n); do
+               find "$R" -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
+               cp -R "$SRC/$H/$P/$V/." "$R/" || exit 1
+               G -C "$R" add -A && G -C "$R" commit -q -m "$P $V" && G -C "$R" tag "v$V" || exit 1
+            done
+         done
+         HUBS="$HUBS${HUBS:+ }$H=file://$ZIEL/$H"
+      done
+      echo "$HUBS"
+      exit 0
+   fi
+
+#===============================================================================
+# cannot deal with anything else ...
+#===============================================================================
+
+   "$0" -?
+   exit 1

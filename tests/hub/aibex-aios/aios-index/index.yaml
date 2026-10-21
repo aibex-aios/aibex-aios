@@ -1,0 +1,23 @@
+schema: 1
+packages:
+  - name: memo
+    type: skill
+    description: Memo-Stil (Attrappe)
+  - name: taschenrechner
+    type: app
+    description: Programmierbarer Taschenrechner mit lernenden Kacheln
+  - name: knowledge-orion
+    type: knowledge
+    description: Die hellsten Sterne des Orion
+  - name: test-konflikt
+    type: skill
+    description: Testpaket mit unerfüllbarer Abhängigkeit
+  - name: test-worker
+    type: app
+    description: Testpaket mit Arbeitspferd
+  - name: test-hook
+    type: skill
+    description: Testpaket mit Hook
+  - name: test-befehl
+    type: app
+    description: Testpaket mit Befehl

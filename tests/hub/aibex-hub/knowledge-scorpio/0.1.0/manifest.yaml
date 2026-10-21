@@ -1,0 +1,9 @@
+name: knowledge-scorpio
+version: 0.1.0
+type: knowledge
+description: Hellste Sterne des Skorpions (Attrappe des Test-Hubs)
+requires:
+  aios: ">=0.4,<0.5"
+contents:
+  knowledge: true
+license: CC-BY-4.0

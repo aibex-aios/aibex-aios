@@ -22,9 +22,6 @@
 # --library and checks before anything is written
 #===============================================================================
 
-   assert_eq "$("$SRC/bin/aios" --library)" "memo                     skill      6.0.0
-astronom                 assistant  0.1.0
-gaertner                 assistant  0.2.0" "--library: skills and assistants of the clone"
    assert_contains "$(A --deploy memo-6.0.0)" "expected <name>==<version>" "bad spec"
    assert_contains "$(A --deploy aios-init==0.1.0)" "is an AIOS skill" "AIOS skill"
    assert_contains "$(A --deploy nix==1.0.0)" "has no bundled skill nix" "unknown skill"

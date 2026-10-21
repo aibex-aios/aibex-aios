@@ -1,8 +1,9 @@
 """Configuration chain .aios/config.yaml (spec 04, Formate and Konfigurationskette).
 
 config.yaml uses a small subset of YAML, read without PyYAML:
-top-level `key: value`, `key: [a, b]`, one nested level (`skills:` with `name: version`,
-or `- item` lists), comments and quotes. The forwarders read `aios:` the same way.
+top-level `key: value`, `key: [a, b]`, one nested level (`packages:` with `name: range` or
+`name: {range: …, hub: …, only: [a, b]}`, or `- item` lists, also `- name: url` as in
+`hubs:`), comments and quotes. The forwarders read `aios:` the same way.
 """
 
 from __future__ import annotations
@@ -22,6 +23,8 @@ LEVELS = {                                          # key -> levels where it is 
     "assistants": ("vault", "project"),
     "assistant": ("vault", "project"),             # assignment of the assistant (spec 03)
     "hosts": ("vault", "project", "home"),
+    "packages": ("vault", "project"),              # wanted packages, not inherited (spec 06)
+    "hubs": ("vault", "home"),                     # hub list (spec 06, Hub-Liste)
     "inline_limit": ("home",),
 }
 INLINE_LIMIT = 9000
@@ -57,11 +60,41 @@ def scalar(text):
     return text
 
 
+def split_top(text):
+    """Split at commas outside quotes and brackets."""
+    parts, depth, quote, cur = [], 0, None, ""
+    for c in text:
+        if quote:
+            quote = None if c == quote else quote
+        elif c in "\"'":
+            quote = c
+        elif c in "[{":
+            depth += 1
+        elif c in "]}":
+            depth -= 1
+        elif c == "," and depth == 0:
+            parts.append(cur)
+            cur = ""
+            continue
+        cur += c
+    if cur.strip():
+        parts.append(cur)
+    return parts
+
+
 def value(text):
     text = text.strip()
     if text.startswith("[") and text.endswith("]"):
         inner = text[1:-1].strip()
-        return [scalar(x) for x in inner.split(",")] if inner else []
+        return [scalar(x) for x in split_top(inner)] if inner else []
+    if text.startswith("{") and text.endswith("}"):      # one-line mapping (spec 04, packages:)
+        out = {}
+        for item in split_top(text[1:-1]):
+            k, sep, v = item.partition(":")
+            if not sep or not k.strip():
+                raise ConfigError(f"expected 'key: value' in {text}")
+            out[scalar(k)] = value(v)
+        return out
     return scalar(text)
 
 
@@ -106,7 +139,11 @@ def parse(text, name="config.yaml"):
                 result[current] = []
             if not isinstance(result[current], list):
                 raise ConfigError(f"{name}:{no}: list item inside a mapping")
-            result[current].append(scalar(item[1:]))
+            m = SUBKEY.match(item[1:].strip())
+            if m and m.group(2):                    # - name: url (hubs:)
+                result[current].append({m.group(1): scalar(m.group(2))})
+            else:
+                result[current].append(scalar(item[1:]))
             continue
         m = SUBKEY.match(item)
         if not m or not m.group(2):
@@ -115,7 +152,10 @@ def parse(text, name="config.yaml"):
             result[current] = {}
         if not isinstance(result[current], dict):
             raise ConfigError(f"{name}:{no}: mapping entry inside a list")
-        result[current][m.group(1)] = scalar(m.group(2))
+        try:
+            result[current][m.group(1)] = value(m.group(2))
+        except ConfigError as e:
+            raise ConfigError(f"{name}:{no}: {e}")
     if block is not None:
         result[current] = (" " if result[current] == ">" else "\n").join(x for x in block if x)
     return result
@@ -166,6 +206,8 @@ class Config:
         self.assistant_source = {}
         self.files = []                             # chain files, nearest first
         self.warnings = []
+        self.packages = {}                          # config.yaml -> packages: of that file
+        self.hub_entries = []                       # (config.yaml, level, hubs:) vault first
 
     @property
     def aios(self):
@@ -193,6 +235,18 @@ class Config:
                 continue
             if level not in LEVELS[key]:
                 self.warnings.append(f"{file}: {key} is not allowed here, ignored")
+                continue
+            if key == "packages":
+                if not isinstance(val, dict):
+                    self.warnings.append(f"{file}: packages must map names to ranges, ignored")
+                else:
+                    self.packages[file] = val
+                continue
+            if key == "hubs":
+                if not isinstance(val, (list, dict)):
+                    self.warnings.append(f"{file}: hubs must be a list of hubs, ignored")
+                else:
+                    self.hub_entries.append((file, level, val))
                 continue
             if key in ("skills", "assistants"):
                 if not isinstance(val, dict):

@@ -1,0 +1,10 @@
+name: test-konflikt
+version: 1.0.0
+type: skill
+description: Testpaket, verlangt memo >=7
+requires:
+  aios: ">=0.4,<0.5"
+depends:
+  memo: ">=7"
+contents:
+  skills: [konflikt]

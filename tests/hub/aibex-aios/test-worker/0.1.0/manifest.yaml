@@ -1,0 +1,15 @@
+name: test-worker
+version: 0.1.0
+type: app
+description: Testpaket mit Arbeitspferd
+requires:
+  aios: ">=0.4,<0.5"
+contents:
+  skills: [worker-info]
+workers:
+  db:
+    description: Testdatenbank
+    install: workers/db/install.sh
+    remove: workers/db/remove.sh
+    start: workers/db/start.sh
+    stop: workers/db/stop.sh

@@ -1,0 +1,13 @@
+name: taschenrechner
+version: 0.1.1
+type: app
+description: Programmierbarer Taschenrechner (Attrappe des Test-Hubs)
+requires:
+  aios: ">=0.4,<0.5"
+depends:
+  memo: "~=6.0"
+contents:
+  skills: [taschenrechner, taschenrechner-gui]
+  knowledge: true
+  gui: taschenrechner-gui
+license: MIT

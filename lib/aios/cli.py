@@ -3,14 +3,15 @@
 import subprocess
 import sys
 
-from . import activate, aiosinit, assign, deploy, gui, install, integrity, paths, registry, skills, ui
+from . import activate, aiosinit, assign, deploy, gui, hub, install, integrity, paths, registry, skills, ui
 
 USAGE = ("usage: aios --prepare | --install [v<version>] | --versions | --remove-version v<version>"
          " | --uninstall | --activate v<version> [<path>] | --deactivate [<path>] | --config [<path>]"
          " | --register [<path>] | --init [<path>] [--assistant <value>] [--name <name>] [--accept-name]"
          " | --integrity [<path>] | --assistant <name|none|inherit> [--to <project>] [--session <id>]"
          " | --gui [--session <id>] [--html] [--aios]"
-         " | --skill <name> [--session <id>] | --library"
+         " | --skill <name> [--session <id>] | --library [<word>|<package>]"
+         " | --hubs [add <name> [<url>] | remove <name>] [--vault]"
          " | --deploy [<name>==<version>] [--to <project>] [--assistant <name>] [--from <repo>]"
          "  (writing commands: --plan, --yes)")
 
@@ -64,8 +65,10 @@ def main(argv):
             return activate.show(*args)
         if cmd == "--deploy":
             return deploy.command(args)
-        if cmd == "--library" and not args:
-            return deploy.show_library()
+        if cmd == "--library" and len(args) <= 1:
+            return hub.library(*args)
+        if cmd == "--hubs":
+            return hub.command(args)
         if cmd == "--skill" and len(args) == 1:
             return skills.body(args[0])
         if cmd == "--skill" and len(args) == 3 and args[1] == "--session":

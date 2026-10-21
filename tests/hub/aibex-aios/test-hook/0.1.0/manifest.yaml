@@ -1,0 +1,9 @@
+name: test-hook
+version: 0.1.0
+type: skill
+description: Testpaket mit Hook
+requires:
+  aios: ">=0.4,<0.5"
+contents:
+  skills: [hook-info]
+  hooks: [session-start]
