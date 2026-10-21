@@ -303,7 +303,7 @@ tiles:
 | `tiles[].html` | eines von drei | Dateiname eines HTML-Teils im Ordner des Oberflächen-Skills; läuft in der Oberfläche ohne Claude, z. B. ein Rechner |
 | `tiles[].icon` | nein | ein neutrales Wort für ein Symbol, z. B. `calculator`, `book`, `gear` |
 
-`gui.yaml` wird mit PyYAML gelesen (nicht mit der Untermenge von Spec 04). Ein HTML-Teil ist ein Fragment ohne `<html>`, `<head>` und `<body>`, mit eingebettetem CSS und JavaScript und ohne Zugriff auf das Netz außer auf die vom Host erlaubten Quellen. Er darf die Hilfsfunktion `sendPrompt(text)` des Hosts verwenden.
+`gui.yaml` wird mit PyYAML gelesen (nicht mit der Untermenge von Spec 04). Ein HTML-Teil einer App darf Platzhalter `{{aios-data <datei>}}` enthalten; `aios --gui` setzt dafür den Inhalt von `@Data/<paket>/<datei>` des Projekts der Session als JSON ein (`null`, wenn die Datei fehlt), damit die Oberfläche gespeicherte Daten der App zeigt (V0.4, Memo 49). Ein HTML-Teil ist ein Fragment ohne `<html>`, `<head>` und `<body>`, mit eingebettetem CSS und JavaScript und ohne Zugriff auf das Netz außer auf die vom Host erlaubten Quellen. Er darf die Hilfsfunktion `sendPrompt(text)` des Hosts verwenden.
 
 ### Darstellung
 
@@ -323,6 +323,10 @@ Die Oberfläche erscheint, wenn `/aios-gui` oder `/gui` aufgerufen wird; sie ist
 3. Ist kein Assistent aktiv oder nennt er kein `gui:`: „The assistant <title> has no surface." bzw. „No assistant active.", jeweils mit „AIOS surface: `/aios-gui`".
 
 Weil der Rumpf beim Aufruf aufgelöst wird, zeigt `/gui` nach einem Wechsel des Assistenten sofort die neue Oberfläche, ohne neue Registrierung.
+
+### Oberfläche einer App
+
+Die Oberfläche einer App ist der Skill, den `contents.gui` ihres Pakets nennt (Spec 06). Er ruft `aios --gui --skill <oberfläche> [--html]` auf: Überschrift und Anweisung *Show the surface* bzw. das Fragment mit den Platzhaltern der App. `aios --gui --apps` listet die Oberflächen der ausgerollten Apps der Kette, für die Kachel *Apps* von `/aios-gui`.
 
 ### `/aios-gui`
 

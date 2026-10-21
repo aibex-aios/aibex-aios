@@ -78,10 +78,10 @@ print(len(re.findall("<script", inner)), len(re.findall("<script", t)))')" "0 2"
 
    OUT="$(GUI "$G" --aios)"
    assert_contains "$OUT" "# AIbex AIOS" "--aios: title"
-   for T in "Projekt initialisieren" "Kontext und Konfiguration" "Assistent zuordnen" "Pakete" "Pakete abgleichen und Skills registrieren" "Integrität prüfen" "Projektstatus" "Memo schreiben"; do
+   for T in "Projekt initialisieren" "Kontext und Konfiguration" "Assistent zuordnen" "Pakete" "Apps" "Pakete abgleichen und Skills registrieren" "Integrität prüfen" "Projektstatus" "Memo schreiben"; do
       assert_contains "$OUT" "- $T — " "--aios: tile $T"
    done
-   assert_eq "$(printf '%s\n' "$OUT" | grep -c '^- .*(sends: ')" "8" "--aios: 8 tiles"
+   assert_eq "$(printf '%s\n' "$OUT" | grep -c '^- .*(sends: ')" "9" "--aios: 9 tiles"
    assert_contains "$OUT" "(sends: Run the skill /aios-init.)" "--aios: /aios-init"
    assert_contains "$OUT" "(sends: Run the skill /aios-integrity.)" "--aios: /aios-integrity"
    assert_contains "$OUT" "\`aios --gui --aios --html\`" "--aios: instruction for HTML"
@@ -146,3 +146,20 @@ plan = ui.Plan(); install.plan_alias(plan); plan.run(); print(len(plan.steps))" 
    assert_contains "$OUT" "If a tile only fills the input field, press Enter." "html: hint under the tiles (A10)"
    OUT="$(GUI "$SANDBOX" --aios)"
    assert_contains "$OUT" "offer the same tiles as the menu below" "instruction: menu as fallback (A10)"
+
+#===============================================================================
+# v0.4 step 9: surface of an app, placeholders with the data of the app, --apps
+#===============================================================================
+
+   "$SRC/tests/hub/build" "$SANDBOX/hubs" >/dev/null
+   export AIOS_HUBS="aibex-aios=file://$SANDBOX/hubs/aibex-aios"
+   W="$SANDBOX/work/§Apps"; mkdir -p "$W/@" "$W/.aios"; printf 'aios: 0.4.0\n' > "$W/.aios/config.yaml"
+   assert_contains "$(at "$W" "$SRC/bin/aios" --gui --apps)" "No apps in this project." "--apps: none yet"
+   at "$W" "$SRC/bin/aios" --fetch app-taschenrechner --yes >/dev/null
+   assert_contains "$(at "$W" "$SRC/bin/aios" --gui --apps)" "- /taschenrechner-gui — app-taschenrechner 0.1.1" "--apps: the app with its surface"
+   assert_contains "$(at "$W" "$SRC/bin/aios" --gui --skill taschenrechner-gui)" "run \`aios --gui --skill taschenrechner-gui --html\`" "--skill: instruction"
+   assert_contains "$(at "$W" "$SRC/bin/aios" --gui --skill taschenrechner-gui --html)" "var saved = null;" "placeholder without data: null"
+   mkdir -p "$W/@Data/app-taschenrechner"; printf 'K1:\n  title: Quadrat\n  keys: ["×", "="]\n' > "$W/@Data/app-taschenrechner/kacheln.yaml"
+   assert_contains "$(at "$W" "$SRC/bin/aios" --gui --skill taschenrechner-gui --html)" 'var saved = {"K1": {"title": "Quadrat", "keys": ["×", "="]}};' "placeholder: kacheln.yaml as JSON"
+   assert_contains "$(at "$W" "$SRC/bin/aios" --gui --skill gibtsnicht)" "no deployed app with the surface gibtsnicht" "--skill: unknown surface"
+   unset AIOS_HUBS

@@ -17,6 +17,10 @@ tiles:
     text: Pakete und Apps suchen, holen, zeigen, was geholt ist
     skill: aios-package
     icon: box
+  - title: Apps
+    text: Oberflächen der Apps dieses Projekts öffnen
+    prompt: "Führe `aios --gui --apps` aus, zeige die Apps mit dem Auswahlwerkzeug und rufe nach der Wahl den Skill ihrer Oberfläche auf."
+    icon: grid
   - title: Pakete abgleichen und Skills registrieren
     text: Pakete mit lock.yaml abgleichen, Skills registrieren
     prompt: "Gleiche mit /aios-fetch die Pakete dieses Projekts mit lock.yaml ab und registriere danach die Skills mit /aios-register."

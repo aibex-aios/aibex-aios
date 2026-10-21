@@ -1,0 +1,106 @@
+<div class="tr" style="font-family:system-ui,sans-serif;max-width:320px">
+<style>
+.tr .disp{font-size:1.8em;text-align:right;padding:8px 12px;border:1px solid #8886;border-radius:10px;margin-bottom:8px;min-height:1.4em;overflow:hidden}
+.tr .state{font-size:.85em;opacity:.75;min-height:1.2em;margin-bottom:6px}
+.tr .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.tr button{font:inherit;padding:10px 0;border-radius:8px;border:1px solid #8886;background:transparent;color:inherit;cursor:pointer}
+.tr button:hover{background:#8882}
+.tr button.k{font-size:.85em}
+.tr button.on{background:#c4302b33;border-color:#c4302b}
+</style>
+<div class="disp" id="tr-disp">0</div>
+<div class="state" id="tr-state"></div>
+<div class="grid">
+  <button class="k" data-k="K1">K1</button><button class="k" data-k="K2">K2</button><button class="k" data-k="K3">K3</button><button class="k" data-k="K4">K4</button>
+  <button data-key="7">7</button><button data-key="8">8</button><button data-key="9">9</button><button data-key="÷">÷</button>
+  <button data-key="4">4</button><button data-key="5">5</button><button data-key="6">6</button><button data-key="×">×</button>
+  <button data-key="1">1</button><button data-key="2">2</button><button data-key="3">3</button><button data-key="−">−</button>
+  <button data-key="0">0</button><button data-key=".">.</button><button data-key="=">=</button><button data-key="+">+</button>
+  <button data-key="C">C</button><button id="tr-learn" style="grid-column:span 3">Lernen</button>
+</div>
+<script>
+(function () {
+  var saved = {{aios-data kacheln.yaml}};
+  var tiles = (saved && typeof saved === "object") ? saved : {};
+  var disp = document.getElementById("tr-disp"), state = document.getElementById("tr-state");
+  var learnBtn = document.getElementById("tr-learn");
+  var cur = "", acc = null, op = null, last = null, fresh = true;
+  var learning = false, recorded = null, pending = null;
+  function num(s) { return parseFloat(s); }
+  function show(v) { disp.textContent = (typeof v === "number") ? (isFinite(v) ? String(Math.round(v * 1e10) / 1e10) : "Fehler") : v; }
+  function calc(a, o, b) {
+    if (o === "+") return a + b;
+    if (o === "−") return a - b;
+    if (o === "×") return a * b;
+    if (o === "÷") return b === 0 ? NaN : a / b;
+    return b;
+  }
+  function value() { return cur !== "" ? num(cur) : (acc !== null ? acc : 0); }
+  function press(k) {
+    if (/^[0-9]$/.test(k) || k === ".") {
+      if (fresh) { cur = ""; fresh = false; }
+      if (k === "." && cur.indexOf(".") >= 0) return;
+      cur = (cur === "" && k === ".") ? "0." : cur + k;
+      show(cur);
+    } else if (k === "C") {
+      cur = ""; acc = null; op = null; last = null; fresh = true; show("0");
+    } else if (k === "=") {
+      if (op !== null) {
+        var b = cur !== "" ? num(cur) : acc;      // "× =" uses the current number (square)
+        acc = calc(acc, op, b); last = [op, b]; op = null;
+      } else if (last) {
+        acc = calc(value(), last[0], last[1]);
+      } else {
+        acc = value();
+      }
+      cur = ""; fresh = true; show(acc);
+    } else {                                      // + − × ÷
+      if (op !== null && cur !== "") { acc = calc(acc, op, num(cur)); }
+      else if (cur !== "") { acc = num(cur); }
+      else if (acc === null) { acc = 0; }
+      op = k; cur = ""; fresh = false; show(acc);
+    }
+  }
+  function key(k) {
+    if (learning) recorded.push(k);
+    press(k);
+    status();
+  }
+  function status() {
+    var names = Object.keys(tiles).filter(function (t) { return tiles[t] && tiles[t].keys; });
+    if (learning) state.textContent = "Aufnahme: " + recorded.join(" ");
+    else if (pending) state.textContent = "Kachel wählen für: " + pending.join(" ");
+    else state.textContent = names.length ? "Belegt: " + names.map(function (t) { return t + " " + (tiles[t].title || ""); }).join(", ") : "";
+    learnBtn.classList.toggle("on", learning);
+    document.querySelectorAll(".tr button[data-k]").forEach(function (b) {
+      var t = tiles[b.dataset.k];
+      b.title = t && t.keys ? (t.title || "") + ": " + t.keys.join(" ") : "frei";
+    });
+  }
+  document.querySelectorAll(".tr button[data-key]").forEach(function (b) {
+    b.addEventListener("click", function () { key(b.dataset.key); });
+  });
+  learnBtn.addEventListener("click", function () {
+    if (!learning) { learning = true; recorded = []; pending = null; }
+    else { learning = false; pending = recorded.length ? recorded : null; recorded = null; }
+    status();
+  });
+  document.querySelectorAll(".tr button[data-k]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      var name = b.dataset.k;
+      if (pending) {
+        tiles[name] = { title: pending.join(" "), keys: pending };
+        var msg = "Run the skill /taschenrechner. Speichere die Kachel " + name + " mit den Tasten " +
+                  JSON.stringify(pending) + " und dem Titel \"" + pending.join(" ") + "\".";
+        pending = null; status();
+        if (typeof sendPrompt === "function") sendPrompt(msg);
+        return;
+      }
+      var t = tiles[name];
+      if (t && t.keys) { t.keys.forEach(function (k) { press(k); }); status(); }
+    });
+  });
+  status();
+})();
+</script>
+</div>

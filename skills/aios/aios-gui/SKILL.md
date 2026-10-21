@@ -1,6 +1,6 @@
 ---
 name: aios-gui
-description: Zeigt die Oberfläche von AIbex AIOS mit den Aufgaben von AIOS (Projekt initialisieren, Kontext und Konfiguration, Assistent zuordnen, Skills ausrollen und registrieren, Integrität, Projektstatus, Memo). Verwenden bei "/aios-gui", "AIOS-Oberfläche", "AIOS-Menü".
+description: Zeigt die Oberfläche von AIbex AIOS mit den Aufgaben von AIOS (Projekt initialisieren, Kontext und Konfiguration, Assistent zuordnen, Pakete, Apps, Pakete abgleichen und Skills registrieren, Integrität, Projektstatus, Memo). Verwenden bei "/aios-gui", "AIOS-Oberfläche", "AIOS-Menü".
 allowed-tools: Bash(aios --gui *)
 ---
 

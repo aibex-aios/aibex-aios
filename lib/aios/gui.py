@@ -1,5 +1,5 @@
-"""aios --gui [--session <id>] [--html] [--aios]: surfaces of assistants and of AIOS
-(spec 03, Oberflächen). Read only.
+"""aios --gui [--session <id>] [--html] [--aios | --skill <name> | --apps]: surfaces of assistants,
+of apps and of AIOS (spec 03, Oberflächen). Read only.
 
 A surface is a description gui.yaml in the folder of a surface skill (read with PyYAML),
 with optional HTML parts next to it. Without --html the body of the surface skill is printed,
@@ -12,7 +12,9 @@ import html
 import re
 from pathlib import Path
 
-from . import assistant, context, paths, session, skills
+import json
+
+from . import assistant, context, elements, paths, session, skills
 from .ui import Abort
 
 KEYS = {"title", "intro", "tiles"}
@@ -21,6 +23,7 @@ ACTIONS = ("prompt", "skill", "html")
 MAX_TILES = 12
 AIOS_GUI = Path(__file__).resolve().parents[2] / "skills" / "aios" / "aios-gui"
 HINT = "AIOS surface: `/aios-gui`"
+DATA = re.compile(r"\{\{aios-data ([A-Za-z0-9._-]+)\}\}")
 
 
 # ---------------------------------------------------------------------------
@@ -114,7 +117,21 @@ def instruction(d, call):
     return "\n".join(lines) + "\n"
 
 
-def fragment(d, folder):
+def data_json(data_dir, name):
+    """Content of @Data/<paket>/<name> as JSON for a placeholder {{aios-data <name>}} of an
+    HTML part (V0.4, memo 49); null if the file is missing or not readable."""
+    f = (data_dir / name) if data_dir else None
+    if f is None or not f.is_file():
+        return "null"
+    try:
+        import yaml
+        value = yaml.safe_load(f.read_text(encoding="utf-8"))
+    except Exception:
+        return "null"
+    return json.dumps(value, ensure_ascii=False).replace("</", "<\\/")
+
+
+def fragment(d, folder, data_dir=None):
     """HTML fragment: heading, intro, tiles as buttons (sendPrompt), HTML parts embedded."""
     e = html.escape
     out = ['<div class="aios-gui">',
@@ -145,7 +162,8 @@ def fragment(d, folder):
     scripts = []
     for i, (t, name) in enumerate(parts, 1):
         out.append(f'<section class="part" id="aios-part-{i}"><h3>{e(t["title"])}</h3>')
-        body = SCRIPT_TAG.sub(lambda m: scripts.append(m.group(0)) or "", (folder / name).read_text(encoding="utf-8"))
+        part = DATA.sub(lambda m: data_json(data_dir, m.group(1)), (folder / name).read_text(encoding="utf-8"))
+        body = SCRIPT_TAG.sub(lambda m: scripts.append(m.group(0)) or "", part)
         out.append(body.rstrip("\n"))
         out.append("</section>")
     out.append("</div>")
@@ -182,20 +200,81 @@ def session_assistant(ctx, session_id):
     return ctx.cfg.assignment[0]
 
 
+def apps(ctx):
+    """(package, surface skill, description) of the deployed apps of the chain, nearest first."""
+    from . import package
+    out, seen = [], set()
+    for ms in reversed(ctx.masterspaces):
+        for p in elements.packages(ms):
+            if p.name in seen:
+                continue
+            try:
+                m = package.load(p.dir)
+            except package.ManifestError:
+                continue
+            gui = m.contents.get("gui")
+            if gui and p.deployed(gui) and (p.dir / "skills" / gui / "gui.yaml").is_file():
+                seen.add(p.name)
+                out.append((p, gui, m.description))
+    return out
+
+
+def show_apps():
+    """aios --gui --apps: the surfaces of the deployed apps (tile Apps of /aios-gui)."""
+    ctx = context.Context(paths.cwd())
+    found = apps(ctx) if ctx.mode == "aios" else []
+    if not found:
+        print("No apps in this project. Fetch one with /aios-package, e.g. app-taschenrechner.")
+        return 0
+    print("Apps (open with the skill of the surface):")
+    for p, gui, text in found:
+        print(f"- /{gui} — {p.name} {p.version}: {text}")
+    return 0
+
+
+def show_app(name, html=False):
+    """aios --gui --skill <name>: the surface of an app; placeholders get the data of the app
+    from @Data/<paket>/ of the project of the session (spec 06, Daten von Apps)."""
+    ctx = context.Context(paths.cwd())
+    if ctx.mode != "aios":
+        raise Abort(f"{paths.cwd()} is not in an activated vault")
+    for p, gui, _ in apps(ctx):
+        if gui == name:
+            folder = p.dir / "skills" / gui
+            d = read(folder)
+            data_dir = ctx.project / "@Data" / p.name
+            if html:
+                print(fragment(d, folder, data_dir), end="")
+            else:
+                print(f"# {d['title']}\n" + instruction(d, f"aios --gui --skill {name}"), end="")
+            return 0
+    raise Abort(f"no deployed app with the surface {name} in the chain (aios --gui --apps)")
+
+
 def command(args):
     opts = {"html": False, "aios": False, "session": None}
-    i = 0
+    skill, list_apps, i = None, False, 0
     while i < len(args):
         a = args[i]
-        if a == "--session" and i + 1 < len(args):
-            opts["session"] = args[i + 1]
+        if a in ("--session", "--skill") and i + 1 < len(args):
+            if a == "--skill":
+                skill = args[i + 1]
+            else:
+                opts["session"] = args[i + 1]
             i += 2
             continue
         if a in ("--html", "--aios"):
             opts[a[2:]] = True
+        elif a == "--apps":
+            list_apps = True
         else:
-            raise Abort("usage: aios --gui [--session <id>] [--html] | aios --gui --aios [--html]")
+            raise Abort("usage: aios --gui [--session <id>] [--html] | aios --gui --aios [--html]"
+                        " | aios --gui --skill <name> [--html] | aios --gui --apps")
         i += 1
+    if list_apps:
+        return show_apps()
+    if skill:
+        return show_app(skill, opts["html"])
     return show(**opts)
 
 

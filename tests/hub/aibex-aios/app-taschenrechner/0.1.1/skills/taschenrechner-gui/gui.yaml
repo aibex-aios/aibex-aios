@@ -1,0 +1,15 @@
+title: Taschenrechner
+intro: Rechnen, mit Lernen eine Tastenfolge aufnehmen und auf eine Kachel legen.
+tiles:
+  - title: Rechner
+    text: Ziffern, Grundrechenarten und die Kacheln K1 bis K4
+    html: rechner.html
+    icon: calculator
+  - title: Kacheln anzeigen
+    text: Meine Kacheln und die mitgelieferten
+    prompt: "Run the skill /taschenrechner. Zeige meine Kacheln und die mitgelieferten."
+    icon: list
+  - title: Kachel zurückspielen
+    text: Meine Kacheln als Beitrag an den Hub senden
+    prompt: "Run the skill /taschenrechner. Ich möchte meine Kacheln mit aios --contribute an das Paket zurückspielen."
+    icon: upload

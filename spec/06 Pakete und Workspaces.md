@@ -420,10 +420,10 @@ Paket `app-taschenrechner` (`type: app`) im Repo `aibex-aios/app-taschenrechner`
 | Skill `taschenrechner-gui` | Oberfläche (`gui.yaml`) mit einem HTML-Teil `rechner.html` |
 | Skill `taschenrechner` | speichert, liest und listet Kachel-Funktionen in `@Data/app-taschenrechner/kacheln.yaml`; bietet mitgelieferte Kacheln an |
 | `knowledge` | `knowledge/@!Kacheln/<name>.yaml`: mitgelieferte Kacheln, verborgen (Spec 02), also nicht im Kontext |
-| Tasten | `0`–`9`, `+`, `−`, `×`, `÷`, `=`, vier Kacheln `K1`–`K4`, **Lernen** |
+| Tasten | `0`–`9`, `.`, `+`, `−`, `×`, `÷`, `=`, `C`, vier Kacheln `K1`–`K4`, **Lernen**; `× =` rechnet mit der aktuellen Zahl (Quadrat), ein zweites `=` wiederholt die letzte Rechnung (V0.4, Memo 49) |
 | Lernen | erster Druck startet die Aufnahme der folgenden Tasten, zweiter Druck beendet sie; die nächste gedrückte Kachel übernimmt die Folge |
 | Kachel | spielt ihre Tastenfolge ab, als würde sie getippt |
-| Speichern | Der HTML-Teil kann keine Dateien schreiben. Nach dem Belegen einer Kachel sendet er mit `sendPrompt` eine Nachricht an Claude, die den Skill `taschenrechner` aufruft und die Belegung speichert (Spec 01, I7: Claude zeigt, was gespeichert wird). Beim Öffnen liest der Skill die Datei und übergibt sie dem HTML-Teil |
+| Speichern | Der HTML-Teil kann keine Dateien schreiben. Nach dem Belegen einer Kachel sendet er mit `sendPrompt` eine Nachricht an Claude, die den Skill `taschenrechner` aufruft und die Belegung speichert (Spec 01, I7: Claude zeigt, was gespeichert wird). Beim Öffnen setzt `aios --gui --skill taschenrechner-gui --html` die Datei über den Platzhalter `{{aios-data kacheln.yaml}}` in den HTML-Teil ein (Spec 03) |
 | Mitgeliefert | Der Skill `taschenrechner` zeigt die Kacheln aus `knowledge/@!Kacheln/` als „mitgeliefert" und übernimmt eine davon auf Wunsch in `@Data/app-taschenrechner/kacheln.yaml` (V0.4, Memo 19, L3) |
 | Rückfluss | `aios --contribute @Data/app-taschenrechner/kacheln.yaml --to app-taschenrechner` |
 
