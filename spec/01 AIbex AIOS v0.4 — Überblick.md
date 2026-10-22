@@ -129,7 +129,7 @@ v0.4 baut auf v0.3 auf und macht AIOS **modular** (Spec 06): Pakete und Module m
 | Arbeitspferde mit Skripten, nur nach Bestätigung | deklarative Paketmanager (pip, brew) im Manifest |
 | Workspaces: `.aios/workspace.yaml`, `aios --workspace init`, `update`, `freeze`, `status`, Gruppen | `import` von Manifesten (nur im Format), `diff`, `forall`, Blobs |
 | Rückfluss `aios --contribute` als Pull Request | Workflows (v0.6), `@Chat/` (v0.5) |
-| `@Data/` für Daten von Apps, Demo-App Taschenrechner, Kachel *Apps* in `/aios-gui` | `camp` statt `stup`, Antwort-Prefix der Demo-Assistenten, `memo` mit Unterordnern |
+| `@Data/` für Daten von Apps, Demo-App Taschenrechner, Kachel *Apps* in `/aios-gui`; Antwort-Prefix der Demo-Assistenten (💫 Astronom, 👩‍🌾 Gärtner, ab 0.2.1, V0.4, Memo 70) | `camp` statt `stup`, `memo` mit Unterordnern |
 | `skills:` und `assistants:` gehen in `packages:` auf; `skill-memo`, `assistent-gaertner`, `assistent-astronom`, `app-taschenrechner` als Pakete (Namen `<art>-<name>`, V0.4, Memo 43); Testpakete `knowledge-orion`, `knowledge-scorpio` | Bibliothek in der Installation, Paket `toolbox` (v0.4.1) |
 | `.aios/registry` statt `.aios/manifest` | Windows, weitere Hosts |
 | Befunde A4, A5, A10, A11, A13–A16 aus v0.3.1 | |

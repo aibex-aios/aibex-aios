@@ -120,8 +120,8 @@ in itself. The packages of the hub `aibex-aios`:
 | Package | Type | Content |
 |---|---|---|
 | `app-taschenrechner` | app | programmable RPN calculator like the HP-15C, function keys A–D with *LEARN* (`/taschenrechner-gui`) |
-| `assistent-gaertner` | assistant | Gärtner, calculates only with apples and pears; surface with an apple-pear calculator |
-| `assistent-astronom` | assistant | Astronom, calculates only with sun and moon, knows star data |
+| `assistent-gaertner` | assistant | Gärtner, calculates only with apples and pears, starts every answer with 👩‍🌾; surface with an apple-pear calculator |
+| `assistent-astronom` | assistant | Astronom, calculates only with sun and moon, starts every answer with 💫, looks up star data |
 | `knowledge-orion` | knowledge | the brightest stars of Orion (SIMBAD, Wikipedia) |
 | `skill-memo` | skill | memo style for projects in AIOS vaults |
 

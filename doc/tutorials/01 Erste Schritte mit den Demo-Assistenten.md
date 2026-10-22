@@ -76,8 +76,8 @@ aios --fetch assistent-gaertner --to ~/tmp/§Demo --plan
 ```
 => fetch assistent-gaertner into ~/tmp/§Demo
    plan:
-      new        assistent-gaertner 0.2.0 (aibex-aios) -> ~/tmp/§Demo/@/@!Package/assistent-gaertner
-      ~/tmp/§Demo/.aios/config.yaml: packages: assistent-gaertner: "~=0.2.0"
+      new        assistent-gaertner 0.2.1 (aibex-aios) -> ~/tmp/§Demo/@/@!Package/assistent-gaertner
+      ~/tmp/§Demo/.aios/config.yaml: packages: assistent-gaertner: "~=0.2.1"
       ~/tmp/§Demo/.aios/lock.yaml: 1 packages
       register the project skills of ~/tmp/§Demo
    (plan only, nothing written)
@@ -86,7 +86,7 @@ aios --fetch assistent-gaertner --to ~/tmp/§Demo --plan
 Ohne `--plan` fragt `aios` einmal nach und meldet dann:
 
 ```
-=> packages of ~/tmp/§Demo: assistent-gaertner 0.2.0
+=> packages of ~/tmp/§Demo: assistent-gaertner 0.2.1
    assign the assistant to a project of the chain with /aios-assistant Gärtner
    new skills are available from the next chat (or after /reload-skills)
 ```
@@ -96,10 +96,10 @@ Danach liegt das Paket in `§Demo/@/@!Package/assistent-gaertner/`, und `§Demo/
 ```yaml
 aios: 0.4.0
 packages:
-  assistent-gaertner: "~=0.2.0"
+  assistent-gaertner: "~=0.2.1"
 ```
 
-`~=0.2.0` heißt: 0.2.0 oder eine neuere 0.2.x. Welche Version und welcher Commit genau geholt wurden, steht in `.aios/lock.yaml`; `aios --fetch` ohne Argument stellt diesen Stand wieder her, auch auf einem anderen Rechner.
+`~=0.2.1` heißt: 0.2.1 oder eine neuere 0.2.x. Welche Version und welcher Commit genau geholt wurden, steht in `.aios/lock.yaml`; `aios --fetch` ohne Argument stellt diesen Stand wieder her, auch auf einem anderen Rechner.
 
 Schau dir den Ordner `assistants/gaertner/` im Paket an: `ASSISTANT.md` mit Rollentext und Grenzen, die privaten Skills `@!Skill/apfel-birnen-algebra/` und `@!Skill/gaertner-gui/` (seine Oberfläche), das Wissen `@Wissen/` mit den Grundlagen (geladen) sowie Sortenkunde und Veredelung (verfügbar). Die Datei `.aios-deploy` merkt sich Version und Prüfsumme; änderst du das Paket direkt, meldet `aios --fetch` das beim nächsten Abgleich.
 
@@ -113,7 +113,7 @@ In einem Chat in `G-Garten`:
 /aios-assistant Gärtner: Erste Schritte
 ```
 
-Der Skill zeigt den Plan `project G-Garten: no assistant → Gärtner` und fragt einmal nach. Nach deinem Ja steht in `G-Garten/.aios/config.yaml` die Zeile `assistant: gaertner`, der Gärtner meldet sich („Gärtner aktiv"), und der Chat bekommt den Titel „Erste Schritte". Probiere:
+Der Skill zeigt den Plan `project G-Garten: no assistant → Gärtner` und fragt einmal nach. Nach deinem Ja steht in `G-Garten/.aios/config.yaml` die Zeile `assistant: gaertner`, der Gärtner meldet sich („👩‍🌾 Gärtner aktiv"; jede seiner Antworten beginnt mit 👩‍🌾, die des Astronomen mit 💫), und bittet dich, den Chat in „Erste Schritte" umzubenennen (den Titel setzt nur die App). Probiere:
 
 | Frage | Was du sehen solltest |
 |---|---|

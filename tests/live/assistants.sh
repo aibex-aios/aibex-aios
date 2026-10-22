@@ -31,8 +31,8 @@
       mkdir -p "$SB/bin" "$SB/home" "$V/.aios" "$V/@/@Rule" "$G/@/@!Assistant" "$V/@/@!Assistant"
       printf 'aios: 0.4.0\n' > "$V/.aios/config.yaml"
       printf '# Stil\nAntworte auf Deutsch.\n' > "$V/@/@Rule/stil.md"
-      cp -R "$LIB/assistent-gaertner/0.2.0/assistants/gaertner" "$O"   # demo assistants (packages, spec 03)
-      cp -R "$LIB/assistent-astronom/0.2.0/assistants/astronom" "$A"
+      cp -R "$LIB/assistent-gaertner/0.2.1/assistants/gaertner" "$O"   # demo assistants (packages, spec 03)
+      cp -R "$LIB/assistent-astronom/0.2.1/assistants/astronom" "$A"
       SORTE="Sternreinette $RANDOM"
       printf '\n## Sandkasten\n\n| Sorte | Genussreife |\n|---|---|\n| %s | nur am 29. Februar eines Schaltjahres |\n' "$SORTE" >> "$O/@Wissen/@@Sortenkunde/sortenkunde.md"
       printf '# Garten\n' > "$G/@/garten.md"

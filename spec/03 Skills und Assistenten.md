@@ -96,9 +96,9 @@ Skills und Assistenten kommen als **Pakete** in ein Projekt: Ein Paket wird vom 
 | Paket | Hub | Typ | Version | Inhalt |
 |---|---|---|---|---|
 | `skill-memo` | `aibex-aios` | `skill` | 6.0.0 | Skill `memo`: neutrale Fassung des Memo-Stils ohne Bezüge auf einen bestimmten Vault |
-| `assistent-gaertner` | `aibex-aios` | `assistant` | 0.2.0 | Assistent `gaertner`, Titel „Gärtner"; bodenständig, rechnet nur mit Äpfeln und Birnen; private Skills `apfel-birnen-algebra` 0.1.0 und `gaertner-gui` 0.1.0 (Oberfläche mit Apfel-Birnen-Rechner als HTML-Teil); Wissen: Grundlagen (Laden), Sortenkunde und Veredelung (Verfügbar) |
-| `assistent-astronom` | `aibex-aios` | `assistant` | 0.2.0 | Assistent `astronom`, Titel „Astronom"; poetisch-präzise, rechnet nur mit Sonne und Mond; privater Skill `sonne-mond-zahlen` 0.1.0; keine Oberfläche. Nennt Sterndaten aus verfügbarem Wissen, ohne zu rechnen (V0.4, Memo 27) |
-| `app-taschenrechner` | `aibex-aios` | `app` | 0.4.0 | RPN-Taschenrechner nach dem HP-15C mit Funktionstasten A–D; Skills `taschenrechner` und `taschenrechner-gui` (Spec 06) |
+| `assistent-gaertner` | `aibex-aios` | `assistant` | 0.2.1 | Assistent `gaertner`, Titel „Gärtner"; bodenständig, jede Antwort beginnt mit „👩‍🌾 " (V0.4, Memo 70), rechnet nur mit Äpfeln und Birnen; private Skills `apfel-birnen-algebra` 0.1.0 und `gaertner-gui` 0.1.0 (Oberfläche mit Apfel-Birnen-Rechner als HTML-Teil); Wissen: Grundlagen (Laden), Sortenkunde und Veredelung (Verfügbar) |
+| `assistent-astronom` | `aibex-aios` | `assistant` | 0.2.1 | Assistent `astronom`, Titel „Astronom"; poetisch-präzise, jede Antwort beginnt mit „💫 " (V0.4, Memo 70), rechnet nur mit Sonne und Mond; privater Skill `sonne-mond-zahlen` 0.1.0; keine Oberfläche. Nennt Sterndaten aus verfügbarem Wissen, ohne zu rechnen (V0.4, Memo 27) |
+| `app-taschenrechner` | `aibex-aios` | `app` | 0.4.2 | RPN-Taschenrechner nach dem HP-15C mit Funktionstasten A–D; Skills `taschenrechner` und `taschenrechner-gui` (Spec 06) |
 | `knowledge-orion` | `aibex-aios` | `knowledge` | 0.1.0 | die 20 hellsten Sterne des Orion: Name, Helligkeit, Radius, Entfernung, Temperatur, Spektralklasse, Art, als Tabelle in `knowledge/@@Orion/Sterne.md`, mit Quelle |
 | `knowledge-scorpio` | `aibex-hub` | `knowledge` | 0.1.0 | ebenso für das Sternbild Skorpion, `knowledge/@@Skorpion/Sterne.md`; Testpaket für einen zweiten Hub |
 
