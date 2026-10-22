@@ -17,12 +17,16 @@
    mkdir -p "$AIOS_PREFIX/v0.4.0"; echo "v0.4.0: $AIOS_PREFIX/v0.4.0" >> "$AIOS_PREFIX/installations.yaml"
    V="$SANDBOX/work/§Alt"; G="$V/G-Garten"
    mk() { mkdir -p "$(dirname "$1")"; printf '%s' "$2" > "$1"; }
-   mark() { mk "$1/.aios-deploy" $'# written by aios --deploy, do not edit\nname: x\nversion: 0\nsource: "library"\ndigest: sha256:x\n'; }
+   mark() {                                       # marker with the digest of the content (unchanged blueprint)
+      local D; D="$(PYTHONPATH="$SRC/lib" python3 -c 'import sys; from pathlib import Path; from aios import deploy; print(deploy.digest_of(Path(sys.argv[1])))' "$1")"
+      mk "$1/.aios-deploy" "# written by aios --deploy, do not edit"$'\n'"name: x"$'\n'"version: 0"$'\n'"source: \"library\""$'\n'"digest: $D"$'\n'
+   }
    mk "$V/.aios/config.yaml" $'aios: 0.3.1\nskills:\n  memo: 6.0.0\n  gaertner/memo: 6.0.0\nassistants:\n  gaertner: 0.2.0\n  astronom: 0.1.0\n  gibtsnicht: 1.0.0\nassistant: gaertner\n'
    mk "$V/@/@!Skill/memo/SKILL.md" $'---\nname: memo\nversion: 6.0.0\ndescription: alt\n---\n'; mark "$V/@/@!Skill/memo"
    mk "$V/@/@!Skill/lokal/SKILL.md" $'---\nname: lokal\nversion: 0.1.0\ndescription: lokal\n---\n'
    mk "$V/@/@!Assistant/gaertner/ASSISTANT.md" $'---\nname: gaertner\nversion: 0.2.0\n---\n'; mark "$V/@/@!Assistant/gaertner"
    mk "$V/@/@!Assistant/astronom/ASSISTANT.md" $'---\nname: astronom\nversion: 0.1.0\n---\n'; mark "$V/@/@!Assistant/astronom"
+   printf '\n## Eigener Abschnitt\n' >> "$V/@/@!Assistant/astronom/ASSISTANT.md"   # changed directly after deploying (B6)
    mk "$G/.aios/config.yaml" $'skills:\n  memo: 6.0.0\n'; mkdir -p "$G/@"
    at() { (cd "$1" && shift && "$@" 2>&1); }
    A() { local d="$1"; shift; at "$d" "$SRC/bin/aios" "$@"; }
@@ -46,6 +50,8 @@
    assert_contains "$OUT" "$V: assistants: gaertner -> packages: assistent-gaertner: \"~=0.2.0\"" "plan: assistant gaertner"
    assert_contains "$OUT" "$V: note: assistent-astronom: 0.1.0 is not in the hub aibex-aios, takes 0.2.1" "plan: missing version, highest taken"
    assert_contains "$OUT" "$V: remove the deployed blueprint $V/@/@!Skill/memo (replaced by the package)" "plan: blueprint with marker removed"
+   assert_contains "$OUT" "$V/@/@!Assistant/astronom changed directly, stays as local blueprint (covers the package)" "plan: changed blueprint stays (B6)"
+   assert_not_contains "$OUT" "remove the deployed blueprint $V/@/@!Assistant/astronom" "plan: changed blueprint not removed (B6)"
    assert_contains "$OUT" "$G: skills: memo -> packages: skill-memo: \"~=6.0\"" "plan: project below"
    assert_contains "$OUT" "gaertner/memo (a skill inside an assistant) has no package, passed over" "assistant skill: warning"
    assert_contains "$OUT" "assistants: gibtsnicht 1.0.0: package assistent-gibtsnicht not found" "unknown package: reported, entry stays"
@@ -66,7 +72,10 @@ packages:
   skill-memo: "~=6.0"
   assistent-gaertner: "~=0.2.0"
   assistent-astronom: "~=0.2.1"' "config: packages:, unknown entries stay"
-   [ ! -e "$V/@/@!Skill/memo" ] && [ ! -e "$V/@/@!Assistant/gaertner" ] && [ ! -e "$V/@/@!Assistant/astronom" ] && ok || fail "blueprints with marker removed"
+   [ ! -e "$V/@/@!Skill/memo" ] && [ ! -e "$V/@/@!Assistant/gaertner" ] && ok || fail "unchanged blueprints with marker removed"
+   assert_contains "$(cat "$V/@/@!Assistant/astronom/ASSISTANT.md")" "## Eigener Abschnitt" "changed blueprint stays with its content (B6)"
+   [ ! -e "$V/@/@!Assistant/astronom/.aios-deploy" ] && ok || fail "changed blueprint: marker removed, now local"
+   assert_contains "$(at "$V" "$SRC/bin/aios-context" --list)" "covered by local blueprint" "local astronom covers the package"
    assert_file "$V/@/@!Skill/lokal/SKILL.md"
    assert_eq "$(ls "$V/@/@!Package" | tr '\n' ' ')" "assistent-astronom assistent-gaertner skill-memo " "packages fetched into the vault root"
    assert_file "$V/.aios/lock.yaml"

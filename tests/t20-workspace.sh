@@ -117,6 +117,8 @@ YAML
    assert_contains "$OUT" "
   lib-b " "integrity: one level below the root, sorted as a tree"
    assert_contains "$OUT" "workspace: revision main is not in the checked out branch" "integrity: revision behind"
+   OUT="$(A "$V" --integrity)"                     # from the vault root: the workspace below (B7)
+   assert_contains "$(echo "$OUT" | grep 'lib-b')" "foreign repo" "integrity at the vault root: projects of the workspace below"
    rm -rf "$V/ws/docs"
    OUT="$(A "$V/ws" --integrity)"
    assert_contains "$(echo "$OUT" | grep 'docs')" "missing: clone" "integrity: missing clone"

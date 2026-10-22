@@ -106,7 +106,7 @@ Prüft auf Anforderung des Users die **Integrität** eines Projekts und aller se
 | **Init** | S1–S4 erfüllt | `ok` oder kurz `missing: <n> parts`; die Lücken stehen unter *Notes* (A15) |
 | **Commit** | `git status --porcelain` des eigenen Repos ist leer; neue, nicht versionierte Dateien zählen mit | `ok`, `<n> changed, <m> new` oder `—` (kein eigenes Repo) |
 
-**Workspace:** Hat `<pfad>` oder ein Projekt darüber eine `.aios/workspace.yaml` (Spec 06), prüft `aios --integrity` zusätzlich jedes Projekt daraus, das unter `<pfad>` liegt (F2; V0.4, Memo 15). Ein fehlender Klon erscheint als eigene Zeile mit Init `missing: clone` und gilt als nicht integer. Ein Fremd-Repo ohne `@/` (Spec 06) erscheint mit Init `foreign repo`; geprüft werden nur Klon und Commit, nicht S1–S4. Ist die Revision im ausgecheckten Zweig nicht enthalten oder zeigt `origin` auf ein anderes Repo als `workspace.yaml`, nennt der Bericht das unter *Notes*.
+**Workspace:** Hat `<pfad>`, ein Projekt darüber oder ein geprüftes Projekt darunter eine `.aios/workspace.yaml` (Spec 06), prüft `aios --integrity` zusätzlich jedes Projekt daraus, das unter `<pfad>` liegt (F2; V0.4, Memos 15, 73). Ein fehlender Klon erscheint als eigene Zeile mit Init `missing: clone` und gilt als nicht integer. Ein Fremd-Repo ohne `@/` (Spec 06) erscheint mit Init `foreign repo`; geprüft werden nur Klon und Commit, nicht S1–S4. Ist die Revision im ausgecheckten Zweig nicht enthalten oder zeigt `origin` auf ein anderes Repo als `workspace.yaml`, nennt der Bericht das unter *Notes*.
 
 Ein Projekt ist **integer**, wenn Init und Commit erfüllt sind. **Hinweise** (`Notes`) ändern daran nichts:
 

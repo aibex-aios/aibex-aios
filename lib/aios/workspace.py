@@ -354,11 +354,16 @@ def command(args):
 # ---------------------------------------------------------------------------
 
 def integrity(start, results):
-    """Rows and notes for the projects of a workspace at or above start that lie below start."""
+    """Rows and notes for the projects of the workspaces at or above start and of the workspaces
+    below it (each checked project with .aios/workspace.yaml, memo 73, B7) that lie below start."""
+    roots = [find_root(start)] + [r.path for r in results if (r.path / FILE).is_file()]
+    for root in dict.fromkeys(r for r in roots if r is not None):
+        integrity_of(root, start, results)
+    results.sort(key=lambda r: r.path.parts)          # report order of projects(): the tree
+
+
+def integrity_of(root, start, results):
     from .integrity import Result
-    root = find_root(start)
-    if root is None:
-        return
     try:
         items = load(root)
     except Abort as e:
@@ -387,4 +392,3 @@ def integrity(start, results):
         _, rev, _, _ = state(item, d)
         if rev != "ok":
             r.hints.append(f"workspace: revision {item.revision} is not in the checked out branch")
-    results.sort(key=lambda r: r.path.parts)          # report order of projects(): the tree

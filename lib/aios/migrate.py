@@ -51,6 +51,11 @@ def legacy(project):
     return out
 
 
+def changed(d):
+    """True if the content of a deployed blueprint no longer matches the digest of its marker."""
+    return (deploy.read_marker(d) or {}).get("digest") != deploy.digest_of(d)
+
+
 def blueprint(project, section, name):
     """The deployed blueprint of v0.3 (with marker) of an entry, or None."""
     d = project / "@" / ("@!Skill" if section == "skills" else "@!Assistant") / name
@@ -62,7 +67,7 @@ class Change:
 
     def __init__(self, project, source, hubs, kernel):
         self.project = project
-        self.packages, self.remove, self.notes, self.skipped = {}, [], [], []
+        self.packages, self.remove, self.keep, self.notes, self.skipped = {}, [], [], [], []
         r = resolver.Resolver(source, hubs, kernel)
         for section, name, ver in entries(project):
             pkg = PREFIX[section] + name
@@ -78,8 +83,8 @@ class Change:
                 self.notes.append(f"{pkg}: {ver} is not in the hub {key}, takes {new}")
             self.packages[pkg] = (section, name, str(semver.default_range(new)))
             d = blueprint(project, section, name)
-            if d:
-                self.remove.append(d)
+            if d:                                   # a changed blueprint stays as a local one (P4, memo 73, B6)
+                (self.keep if changed(d) else self.remove).append(d)
 
     def __bool__(self):
         return bool(self.packages)
@@ -87,6 +92,8 @@ class Change:
     def lines(self):
         out = [f"{self.project}: {s}: {n} -> packages: {p}: \"{rng}\"" for p, (s, n, rng) in self.packages.items()]
         out += [f"{self.project}: remove the deployed blueprint {d} (replaced by the package)" for d in self.remove]
+        out += [f"{self.project}: {d} changed directly, stays as local blueprint (covers the package)"
+                for d in self.keep]
         out += [f"{self.project}: note: {n}" for n in self.notes]
         return out
 
@@ -98,6 +105,9 @@ class Change:
         for d in self.remove:
             make_writable(d)
             shutil.rmtree(d)
+        for d in self.keep:
+            make_writable(d)
+            (d / deploy.MARKER).unlink()
         from . import fetch
         mode, ui.MODE = ui.MODE, "yes"              # confirmed with the plan of the activation
         try:
