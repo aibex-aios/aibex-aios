@@ -1,28 +1,32 @@
 ---
 title: "Pakete und Workspaces"
-date: 2026-10-21
+date: 2026-10-25
 author: iHux
-status: Spec
-tags: [spec, aios, v0.4, pakete, workspaces]
+status: Entwurf
+tags: [spec, aios, v0.5, pakete, workspaces]
 number: 06
 related:
-  - "Spec 01 AIbex AIOS v0.4 — Überblick"
+  - "Spec 01 AIbex AIOS v0.5 — Überblick"
   - "Spec 02 Master-Kontext"
   - "Spec 03 Skills und Assistenten"
   - "Spec 04 Installation und Konfiguration"
   - "Spec 05 Projekte"
+  - "Spec 07 Arbeitspferde"
   - "Memos 01–29 (AA-AIbex-AIOS, @Memo/V0.4)"
+  - "Memos 05, 07, 08, 11–37 (AA-AIbex-AIOS, @Memo/V0.5)"
 ---
 
 # Pakete und Workspaces
 
-Diese Spec regelt Pakete und Module: das Paket-Manifest `manifest.yaml`, Versionen und Bereiche, Hubs und die Hub-Liste, den Resolver, das Holen eines Pakets mit `aios --fetch`, das Ausrollen seiner Elemente mit `aios --deploy`, den aufgelösten Stand in `.aios/lock.yaml`, Arbeitspferde, Workspaces mit `.aios/workspace.yaml` und `aios --workspace`, den Rückfluss mit `aios --contribute`, die Daten von Apps in `@Data/` und die Demo-App Taschenrechner. Die Begriffe stehen in Spec 01, die Auflösung entlang der Kette in Spec 02 und 03, die Skills `/aios-package`, `/aios-fetch` und `/aios-deploy` in Spec 03, Dateistrukturen und CLI in Spec 04, Struktur und Integrität von Projekten in Spec 05. Die Gegenüberstellung mit Zephyr steht in V0.4, Memo 14.
+Diese Spec regelt Pakete und Module: das Paket-Manifest `manifest.yaml`, Versionen und Bereiche, Hubs und die Hub-Liste, den Resolver, das Holen eines Pakets mit `aios --fetch`, das Ausrollen seiner Elemente mit `aios --deploy`, den aufgelösten Stand in `.aios/lock.yaml`, Distributionen, Workspaces mit `.aios/workspace.yaml` und `aios --workspace`, den Rückfluss mit `aios --contribute`, die Daten der Pakete in `@Data/` und die Demo-App Taschenrechner. Arbeitspferde (`type: worker`) stehen in Spec 07. Die Begriffe stehen in Spec 01, die Auflösung entlang der Kette in Spec 02 und 03, die Skills `/aios-package`, `/aios-fetch` und `/aios-deploy` in Spec 03, Dateistrukturen und CLI in Spec 04, Struktur und Integrität von Projekten in Spec 05. Die Gegenüberstellung mit Zephyr steht in V0.4, Memo 14.
 
 ## Pakete
 
-Ein **Paket** ist eine versionierte Einheit aus einem oder mehreren Elementen, die eine Datei `manifest.yaml` beschreibt. **Elemente** sind die Teile, die in einem Projekt wirken: Skills, Assistenten, Wissen und Befehle. Ein **Modul** ist ein Paket, nach dessen Holen AIOS etwas Neues kann. Eine **App** ist ein Modul, das der Anwender direkt benutzt. Eine **Distribution** ist ein Paket, das nur andere Pakete mit Versionen auflistet (V0.4, Memos 04, 07).
+Ein **Paket** ist eine versionierte Einheit aus einem oder mehreren Elementen, die eine Datei `manifest.yaml` beschreibt. **Elemente** sind die Teile, die in einem Projekt wirken: Skills, Assistenten, Wissen und Befehle. Ein **Modul** ist ein Paket, nach dessen Holen AIOS etwas Neues kann. Eine **App** ist ein Modul, das der Anwender direkt benutzt. Eine **Distribution** ist ein Paket, das optional einen Kernel und andere Pakete in exakten Versionen zusammenstellt (*Distributionen*; V0.4, Memos 04, 07; V0.5, Memos 25–27). Ein **Arbeitspferd** ist ein Paket vom Typ `worker` (Spec 07).
 
 Jedes Paket liegt in einem eigenen Git-Repo in einem Hub. Eine Version ist ein Tag `v<version>` in diesem Repo, und `version` in `manifest.yaml` des getaggten Stands muss übereinstimmen. Der Kernel von AIOS ist ebenfalls ein Paket (`type: kernel`, Name `aios`, Repo `aibex-aios/aibex-aios`), wird aber mit `aios --install` installiert, nicht geholt (Spec 04).
+
+**Paketnamen:** `<typ>-<name>`, die Art gleich dem Typ: `app-`, `assistant-`, `skill-`, `knowledge-`, `tutorial-`, `distribution-`, `worker-`; der Kernel heißt `aios` (V0.5, Memos 05, 15). AIOS wertet nur `type` aus; das Schema ist eine Konvention, die die Pakete von AIbex einhalten.
 
 Für Pakete gelten drei Verben (V0.4, Memos 23, 24):
 
@@ -32,7 +36,7 @@ Für Pakete gelten drei Verben (V0.4, Memos 23, 24):
 | **ausrollen** (deploy) | Element | festlegen, welche Elemente eines geholten Pakets im Projekt wirken; ohne Kopie | `aios --deploy` |
 | **registrieren** (register) | Skill | ausgerollte Skills dem Host bekannt machen (Spec 03) | `aios --register` |
 
-*Installieren* ist dem Kernel vorbehalten. Für Pakete ist es nur ein Wort der Anwender, das `/aios-package` versteht.
+**Installieren** heißt, etwas auf den Rechner zu bringen: den Kernel und Arbeitspferde (je Version, nebeneinander) und Distributionen (Kernel, Arbeitspferde und, in einen Vault, ihre Pakete; Spec 04, 07). Für andere Pakete ist es nur ein Wort der Anwender, das `/aios-package` versteht.
 
 ### Aufbau eines Paket-Repos
 
@@ -43,7 +47,7 @@ Für Pakete gelten drei Verben (V0.4, Memos 23, 24):
 ├── assistants/<name>/ASSISTANT.md  Assistenten (Aufbau Spec 03)
 ├── knowledge/                      Wissen, mit Klassen wie ein Masterspace (Spec 02)
 ├── commands/<name>                 Befehle (ausführbar)
-├── workers/<name>/                 Skripte der Arbeitspferde
+├── worker/                         Datei mit Hashes bzw. Skripte eines Arbeitspferds (nur type: worker, Spec 07)
 ├── contrib/<user>/…                Rückflüsse (aios --contribute)
 └── README.md                       optional
 ```
@@ -58,7 +62,7 @@ version: 0.1.0
 type: app
 description: Programmierbarer Taschenrechner mit lernenden Funktionstasten (Demo-App von AIOS)
 requires:
-  aios: ">=0.4,<0.5"
+  aios: ">=0.4,<0.6"
 depends:
   skill-memo: "~=6.0"
 contents:
@@ -72,22 +76,23 @@ license: MIT
 |---|---|---|
 | `name` | ja | Kleinbuchstaben, Ziffern, Bindestriche, höchstens 64 Zeichen; gleich dem Namen des Repos in seinem Hub; nicht `aios` (Kernel), `aios-…`, `gui`, `none`, `inherit` |
 | `version` | ja | SemVer `MAJOR.MINOR.PATCH`, optional mit Vorabkennung (`0.4.0-rc1`) |
-| `type` | ja | `kernel`, `app`, `assistant`, `skill`, `knowledge`, `tutorial`, `distribution`; unbekannte Werte werden mit Warnung als `knowledge` behandelt |
+| `type` | ja | `kernel`, `app`, `assistant`, `skill`, `knowledge`, `tutorial`, `distribution`, `worker`; unbekannte Werte werden mit Warnung als `knowledge` behandelt |
 | `description` | ja | ein Satz |
 | `requires` | ja | `aios: "<bereich>"`, Bereich der AIOS-Version, in der das Paket läuft |
 | `depends` | nein | Name → Bereich anderer Pakete; `aios` ist hier nicht erlaubt, dafür gibt es `requires` |
 | `contents` | nein | `skills`, `assistants`, `commands`, `hooks` (Listen von Namen), `knowledge` (`true`), `gui` (Name eines Skills aus `skills`) |
-| `workers` | nein | Arbeitspferde, siehe *Arbeitspferde* |
+| `worker` | bei `type: worker` | Art, Programme, Prüfung und Bauanleitung des Arbeitspferds (Spec 07); bei anderen Typen nicht erlaubt |
+| `kernel` | nein | nur bei `type: distribution`: `"==<version>"` des Kernels (*Distributionen*) |
 | `license` | nein | SPDX-Kennung oder Freitext |
 | `userdata` | nein | beliebige Daten; AIOS wertet sie nicht aus |
 
-`manifest.yaml` wird mit PyYAML gelesen. Ein Paket ist ein **Modul**, wenn `type` `kernel`, `app`, `assistant` oder `skill` ist oder `contents` mindestens einen Skill, Assistenten, Befehl oder Hook nennt. Pakete vom Typ `knowledge`, `tutorial` und `distribution` ohne solche Inhalte sind keine Module (V0.4, Memo 04).
+`manifest.yaml` wird mit PyYAML gelesen. Ein Paket ist ein **Modul**, wenn `type` `kernel`, `app`, `assistant`, `skill` oder `worker` ist oder `contents` mindestens einen Skill, Assistenten, Befehl oder Hook nennt. Pakete vom Typ `knowledge`, `tutorial` und `distribution` ohne solche Inhalte sind keine Module (V0.4, Memo 04). Ein `worker` ist ein Modul ohne Elemente: Ausrollen, `only` und Registrieren wirken nicht (V0.5, Memo 30).
 
 **Elemente** eines Pakets und ihre Namen beim Ausrollen: jeder Skill und jeder Assistent unter seinem Namen, jeder Befehl unter seinem Namen und das Wissen als `knowledge`. Die Namen sind innerhalb eines Pakets eindeutig.
 
-**Prüfung beim Holen:** Jeder in `contents` genannte Name muss als Ordner bzw. Datei vorhanden sein, jeder Skill braucht eine gültige `version` (Spec 03), `gui` muss in `skills` stehen, Elementnamen dürfen sich nicht wiederholen. Ein Paket, das die Prüfung nicht besteht, wird nicht geholt.
+**Prüfung beim Holen:** Jeder in `contents` genannte Name muss als Ordner bzw. Datei vorhanden sein, jeder Skill braucht eine gültige `version` (Spec 03), `gui` muss in `skills` stehen, Elementnamen dürfen sich nicht wiederholen. Bei `type: worker` gelten die Regeln von Spec 07 (`kind`, `programs`, Datei mit Hashes bzw. Skripte), bei `type: distribution` exakte Versionen (`==`) in `kernel` und `depends`. Ein Paket mit dem Feld `workers:` aus v0.4 wird abgelehnt, mit Hinweis auf `type: worker` (V0.5, Memo 30, L9). Ein Paket, das die Prüfung nicht besteht, wird nicht geholt.
 
-**Hooks** (`contents.hooks`) sind im Format vorgesehen, in v0.4 aber ohne Wirkung: `aios --fetch` meldet sie und holt das Paket ohne sie.
+**Hooks** (`contents.hooks`) sind im Format vorgesehen, in v0.5 aber ohne Wirkung: `aios --fetch` meldet sie und holt das Paket ohne sie.
 
 ## Versionen und Bereiche
 
@@ -113,7 +118,7 @@ Fehlende Teile einer Version zählen als `0` (`0.4` = `0.4.0`). Vorabversionen e
 
 Ein **Hub** ist ein Ort mit Paket-Repos: ein Name und eine Basis-URL. Ein Paket `<paket>` liegt dort als Repo `<basis>/<paket>`. Bei GitHub ist der Name des Hubs gleich dem **Owner** (Organisation oder User), die Basis-URL ist `https://github.com/<name>`. Der **volle Paketname** ist `<hub>/<paket>`, z. B. `aibex-aios/knowledge-orion` (V0.4, Memos 21, 22).
 
-Der Standard-Hub ist `aibex-aios` (`https://github.com/aibex-aios`). Für die Tests von v0.4 gibt es einen zweiten Hub `aibex-hub` (V0.4, Memos 27, 28).
+Der Standard-Hub ist `aibex-aios` (`https://github.com/aibex-aios`). Für Tests gibt es einen zweiten Hub `aibex-hub` (V0.4, Memos 27, 28).
 
 ### Hub-Liste
 
@@ -175,7 +180,7 @@ packages:
 
 Der Index dient nur der Suche: `aios --library [<suchwort>]` listet je Hub der Hub-Liste die Pakete aus `index.yaml`; ohne Index bei GitHub-Hubs die Repos mit dem Topic **`aios-package`** (über `gh`). Ein Hub ohne beides lässt sich nicht durchsuchen, nur mit bekanntem Namen holen. `aios --library <paket>` zeigt die Versionen eines Pakets (aus den Tags), `aios --library <hub>/<paket>` nur die aus diesem Hub, auch außerhalb der Hub-Liste. Den Index holt AIOS mit `git clone --depth 1` bzw. `git pull` nach `~/.aios/hub/<hub>/`.
 
-**Zugriff aufs Netz:** Nur `aios --fetch`, `aios --library`, `aios --workspace` und `aios --contribute` greifen auf das Netz zu, und nur über `git` bzw. `gh` mit den Zugangsdaten des Users. Ohne Netz arbeitet `aios --fetch` ohne Argument mit dem Cache, wenn alle Versionen aus `lock.yaml` dort liegen.
+**Zugriff aufs Netz:** Nur `aios --fetch`, `aios --install`, `aios --library`, `aios --workspace` und `aios --contribute` greifen auf das Netz zu, und nur über `git` bzw. `gh` mit den Zugangsdaten des Users sowie über `pip` beim setup eines Arbeitspferds (Spec 07). Ohne Netz arbeitet `aios --fetch` ohne Argument mit dem Cache, wenn alle Versionen aus `lock.yaml` dort liegen.
 
 ## Resolver
 
@@ -195,7 +200,7 @@ Zyklen in `depends` sind erlaubt, solange die Bereiche erfüllbar sind. Ein Pake
 
 | CLI | Wirkung |
 |---|---|
-| `aios --fetch <paket>[<bereich>] [--hub <hub>] [--to <projekt>]` | Paket in `packages:` aufnehmen bzw. dort ändern, auflösen, holen, ausrollen, registrieren |
+| `aios --fetch <paket>[<bereich>] [--hub <hub>] [--to <projekt>]` | Paket in `packages:` aufnehmen bzw. dort ändern, auflösen, holen, Arbeitspferde einrichten, ausrollen, registrieren (**Paket laden**) |
 | `aios --fetch <hub>/<paket>[<bereich>] [--to <projekt>]` | ebenso, aus genau diesem Hub |
 | `aios --fetch <paket>[<bereich>] --from <repo> [--to <projekt>]` | ebenso, aus einem Git-Repo außerhalb der Hubs (Pflegeprojekt) |
 | `aios --fetch [--to <projekt>]` | Projekt mit `lock.yaml` abgleichen (z. B. nach `git pull`, auf einem anderen Rechner) |
@@ -213,18 +218,22 @@ Zyklen in `depends` sind erlaubt, solange die Bereiche erfüllbar sind. Ein Pake
 1. `packages:` in `<ziel>/.aios/config.yaml` mit dem neuen Eintrag lesen. `packages:` der Projekte darüber wird nicht berücksichtigt.
 2. Auflösen (*Resolver*).
 3. Pakete in den Cache holen: `git clone --depth 1 --branch v<version> <repo>` nach `~/.aios/packages/<hub>/<name>/<version>/`, Commit-SHA merken. Ein vorhandener Cache-Eintrag wird wiederverwendet, wenn sein Commit zu `lock.yaml` passt.
-4. Vorschau: je Paket `new`, `upgrade X → Y`, `remove`, `unchanged` mit Hub; Dateien, die sich in `@!Package/<name>/` ändern; direkt geänderte Kopien; Arbeitspferde mit ihren Skripten; Änderungen an `config.yaml` und `lock.yaml`.
-5. Nach Ja: je Paket den Inhalt ohne `.git` nach `<ziel>/@/@!Package/<name>/` spiegeln (nur dieser Ordner), die Marke schreiben, `packages:` und `lock.yaml` schreiben. Skripte der Arbeitspferde führt `aios --fetch` nicht aus; es nennt je Arbeitspferd den Befehl `aios --worker <paket>/<name> install` (*Arbeitspferde*).
-6. Ausrollen: Ein neu geholtes Paket wirkt mit **allen** Elementen, solange `packages:` keine Auswahl `only` nennt (V0.4, Memo 24, H2).
-7. Projekt-Skills im Projekt der Session registrieren (Spec 03).
+4. Vorschau: je Paket `new`, `upgrade X → Y`, `remove`, `unchanged` mit Hub; Dateien, die sich in `@!Package/<name>/` ändern; direkt geänderte Kopien; je Arbeitspferd, das auf dem Rechner fehlt, das setup mit seinem Inhalt (Spec 07, *Abläufe*); Versionen von Arbeitspferden, die entfernt werden; Änderungen an `config.yaml` und `lock.yaml`.
+5. Nach Ja: Sicherung anlegen (unten); je Paket den Inhalt ohne `.git` nach `<ziel>/@/@!Package/<name>/` spiegeln (nur dieser Ordner), die Marke schreiben, `packages:` und `lock.yaml` schreiben.
+6. Arbeitspferde einrichten (setup, Spec 07), Abhängigkeiten zuerst; nicht mehr genutzte Versionen entfernen.
+7. Ausrollen: Ein neu geholtes Paket wirkt mit **allen** Elementen, solange `packages:` keine Auswahl `only` nennt (V0.4, Memo 24, H2).
+8. Projekt-Skills im Projekt der Session registrieren (Spec 03), **erst nach erfolgreichem setup** (V0.5, Memo 17).
+9. Sicherung löschen.
+
+**Alles oder nichts** (Spec 01, I11): Scheitert ein Schritt ab 5, stellt AIOS die Dateien aus der Sicherung wieder her und meldet den Schritt; der Vault steht wie vor dem Plan, registriert wird nichts. Die **Sicherung** liegt während des Plans unter `<ziel>/.aios/backup/` und enthält genau, was der Plan ändert: `.aios/config.yaml`, `.aios/lock.yaml`, die betroffenen Ordner in `@/@!Package/` und die Registrierung (`.claude/skills/`, `.aios/registry`) des Projekts der Session. Bleibt sie nach einem Abbruch liegen (z. B. Absturz), meldet `aios --fetch` sie und bietet die Wiederherstellung an (V0.5, Memos 28, 29). Das Repo des Projekts muss dafür nicht sauber sein.
 
 **Jedes Projekt ist in sich vollständig** (V0.4, Memo 17): Abhängigkeiten werden immer in dasselbe Ziel geholt wie das Paket, das sie verlangt, auch wenn ein Projekt darüber dasselbe Paket schon hat. `lock.yaml` eines Projekts beschreibt damit alles, was es braucht, und Änderungen an Paketen darüber können es nicht brechen. Liegt dasselbe Paket in der Kette mehrfach, gilt das nächstgelegene (*Vorrang*).
 
 **Marke `.aios-deploy`** (F3): `@!Package/<name>/.aios-deploy` mit `name`, `version`, `hub`, `repo`, `commit` und `digest` (Verfahren wie Spec 04, *`.aios/registry`*, über alle Dateien des Pakets ohne die Marke). Weicht der Inhalt vom `digest` ab, meldet `aios --fetch` die Kopie als „direkt geändert" und ersetzt sie nach Rückfrage.
 
-**Abgleich ohne Argument:** Für jedes Paket aus `lock.yaml` des Ziels prüfen, ob `@!Package/<name>/` mit Version und `digest` übereinstimmt. Fehlende, abweichende und direkt geänderte Kopien werden aus dem Cache bzw. dem Hub neu gespiegelt. Ein Paketordner mit Marke, der in `lock.yaml` nicht mehr steht, wird nach Rückfrage entfernt.
+**Abgleich ohne Argument:** Für jedes Paket aus `lock.yaml` des Ziels prüfen, ob `@!Package/<name>/` mit Version und `digest` übereinstimmt. Fehlende, abweichende und direkt geänderte Kopien werden aus dem Cache bzw. dem Hub neu gespiegelt. Arbeitspferde aus `lock.yaml`, deren Version auf dem Rechner fehlt (z. B. auf einem zweiten Rechner), werden im selben Plan eingerichtet (V0.5, Memo 29). Ein Paketordner mit Marke, der in `lock.yaml` nicht mehr steht, wird nach Rückfrage entfernt.
 
-**Entfernen:** `--remove <paket>` entfernt den Eintrag aus `packages:`, löst neu auf, bricht ab, solange ein Arbeitspferd des Pakets installiert ist (Hinweis auf `aios --worker <paket>/<name> remove`), und entfernt `@!Package/<name>/` sowie Pakete, die nur noch als Abhängigkeit dieses Pakets im Ziel lagen. Projekte darunter sind davon nicht betroffen, weil sie ihre Abhängigkeiten selbst enthalten. Verlangt ein anderes Paket es noch, bricht `--remove` mit dieser Angabe ab.
+**Entfernen:** `--remove <paket>` entfernt den Eintrag aus `packages:`, löst neu auf und entfernt `@!Package/<name>/` sowie Pakete, die nur noch als Abhängigkeit dieses Pakets im Ziel lagen. Projekte darunter sind davon nicht betroffen, weil sie ihre Abhängigkeiten selbst enthalten. Verlangt ein anderes Paket es noch, bricht `--remove` mit dieser Angabe ab. Für ein Arbeitspferd wird das Projekt aus `workers.yaml` entfernt; eine Version, die kein Projekt mehr nutzt, wird im selben Plan entfernt (Spec 07).
 
 ## Ausrollen — `aios --deploy`
 
@@ -254,12 +263,43 @@ Ein ausgerolltes Element wirkt über die Masterspace-Kette (Spec 02, 03):
 
 **Vorrang** (V0.4, Memo 12): Zuerst gilt der nächstgelegene Masterspace (Spec 01, Grundregel 3). Innerhalb eines Masterspace gewinnt ein lokaler Blueprint in `@!Skill/` bzw. `@!Assistant/` vor einem Element gleichen Namens aus `@!Package/`. `/aios-context` meldet jede solche Verdeckung. Zwei Pakete mit Elementen gleichen Namens im selben Masterspace sind ein Fehler, den `aios --fetch` vor dem Schreiben meldet.
 
+## Distributionen
+
+Eine Distribution stellt eine geprüfte Zusammenstellung zusammen: optional einen Kernel und Pakete in exakten Versionen (V0.5, Memos 25–27, 34).
+
+```yaml
+name: distribution-rothirsch
+version: 1.0.0
+type: distribution
+description: Rothirsch — AIOS mit Video-Analyse und der Assistentin Anja
+kernel: "==0.5.0"
+depends:
+  skill-video-analyse: "==0.2.0"
+  assistant-anja: "==0.2.0"
+```
+
+| Regel | |
+|---|---|
+| Versionen | `kernel` und alle Einträge in `depends` mit `==`; neue Stände sind eine neue Version der Distribution, deren Version unabhängig von der des Kernels ist |
+| Kernel | `kernel:` ist optional; ohne `kernel:` ist die Distribution eine reine Sammlung von Paketen, und `requires.aios` aller Pakete muss zum gebundenen Kernel passen |
+| Abhängigkeiten | Abhängigkeiten der Pakete (z. B. `worker-yt-dlp` der Video-Analyse) stehen nicht in `depends`; der Resolver holt sie |
+| Installieren | `aios --install distribution-<name> [<vault>] [--from <repo>]` (Spec 04): erst der Rechner (Kernel, Arbeitspferde), dann der Vault (binden, holen, registrieren); ein Plan, ein Ja. Scheitert der Rechnerteil, bleibt der Vault unberührt; schon Installiertes bleibt liegen. Scheitert der Vaultteil, gilt die Sicherung (*Holen*) |
+| im Vault | die Distribution steht in `packages:` der Vault-Root (`distribution-rothirsch: "==1.0.0"`), ihre Pakete in `lock.yaml` mit `required_by: [distribution-rothirsch]` |
+| eine je Vault | höchstens eine Distribution mit `kernel:` je Vault; eine zweite ist ein Konflikt im Plan; Distributionen ohne `kernel:` dürfen daneben stehen |
+| anderer Kernel | ist der Vault an einen anderen Kernel gebunden, zeigt der Plan die Umstellung (`aios: 0.4.0 → 0.5.0`) samt der Umstellung des Vaults (*Umstellung*) und führt sie im selben Plan aus |
+| Aktualisieren | `aios --install distribution-<name>` erneut, ohne Version die höchste; der Plan zeigt `upgrade 1.0.0 → 1.1.0` mit Kernel, Arbeitspferden und Paketen |
+| Entfernen | `aios --fetch --remove distribution-<name>` nach den allgemeinen Regeln (*Holen*); die Bindung an den Kernel bleibt |
+| Übersteuern | nur mit `only` (*Ausrollen*); eine andere Version eines Pakets der Distribution, z. B. durch einen eigenen Eintrag in `packages:`, ist ein Konflikt im Plan |
+| `--from` | nimmt die Distribution aus dem Arbeitsbaum eines lokalen Repos (wie `aios --fetch --from`); ihre Pakete kommen weiter aus den Hubs |
+
+Zusammengestellt werden Distributionen mit dem AIOS-Skill `/aios-distribution` (Spec 03).
+
 ## Konfiguration und Lock
 
 `<ziel>/.aios/config.yaml` nennt unter `packages:` die gewünschten Pakete (Spec 04). Ein Eintrag ist ein Bereich oder eine Abbildung mit `range` und optional `hub`, `from` und `only`:
 
 ```yaml
-aios: 0.4.0
+aios: 0.5.0
 packages:
   app-taschenrechner: "~=0.1.0"
   knowledge-scorpio: {range: "~=0.1.0", hub: aibex-hub}
@@ -291,45 +331,34 @@ workspace:
   AA-AIbex-AIOS: 8f31…
 ```
 
-`requested` steht bei Paketen aus `packages:`, `required_by` bei Abhängigkeiten, `from` statt `hub` bei Paketen aus einem Pflegeprojekt. `workspace` hält den eingefrorenen Stand eines Workspace (unten). `lock.yaml` wird mit PyYAML gelesen.
+`requested` steht bei Paketen aus `packages:`, `required_by` bei Abhängigkeiten, `from` statt `hub` bei Paketen aus einem Pflegeprojekt. `workspace` hält den eingefrorenen Stand eines Workspace (unten). AIOS schreibt `lock.yaml` in der festen Untermenge von YAML aus Spec 04, damit die Weiterleiter der Arbeitspferde es ohne PyYAML lesen können (Spec 07); AIOS selbst liest es mit PyYAML.
 
 ## Arbeitspferde
 
-Ein Arbeitspferd ist ein Programm mit Lebenszyklus, das ein Paket mitbringt, z. B. eine SQL-Datenbank (V0.4, Memo 09).
+Arbeitspferde sind Pakete vom Typ `worker` und stehen in Spec 07. Das Feld `workers:` aus v0.4 gibt es nicht mehr (*Umstellung von v0.4*).
 
-```yaml
-workers:
-  db:
-    description: SQLite-Datenbank der Funktionstasten
-    install: workers/db/install.sh
-    remove: workers/db/remove.sh
-    start: workers/db/start.sh
-    stop: workers/db/stop.sh
-```
+## Umstellung von v0.4
 
-| Regel | |
+`aios --activate v0.5.<n> <pfad>` stellt `<pfad>` und alle Projekte darunter im selben Plan wie die Aktivierung um (V0.5, Memos 30, 35):
+
+| Bestand | Umstellung |
 |---|---|
-| Pflicht | `install` und `remove`; `start` und `stop` optional |
-| Aufruf | `aios --worker <paket>/<name> install\|remove\|start\|stop [--to <projekt>]`, für ein Paket in `@!Package/` des Ziels (Projekt der Session oder `--to`); `aios --worker` ohne Argument zeigt die Arbeitspferde des Projekts mit ihrem Stand |
-| Bestätigung | jedes Skript nur nach eigener Bestätigung: Plan mit Pfad und Inhalt des Skripts, dann `--yes` (Spec 01, I7). `aios --fetch` führt keine Skripte aus, auch nicht mit `--yes`; es nennt den Befehl für `install` (V0.4, Memo 41) |
-| Ausführung | mit `bash`, Arbeitsverzeichnis `@!Package/<name>/`, Umgebung `AIOS_PACKAGE` (Ordner des Pakets), `AIOS_PROJECT`, `AIOS_DATA` (= `<projekt>/@Data/<name>/`) |
-| Stand | je Rechner in `~/.aios/workers.yaml` (installiert ja/nein, Version), nicht im Projekt-Repo; `start` und `stop` nur für installierte Arbeitspferde |
-| Entfernen | `aios --fetch --remove` bricht ab, solange ein Arbeitspferd des Pakets installiert ist |
-| Fehler | Exit ≠ 0 bei `install`: AIOS ruft `remove` auf und meldet beides; das Arbeitspferd gilt als nicht installiert |
-
-Arbeitspferde gehören zum Paket, nicht zu einem Element; `only` schaltet sie nicht ab.
+| `assistent-gaertner`, `assistent-astronom` in `packages:` | umbenannt nach `assistant-gaertner` bzw. `assistant-astronom`; der Plan nennt jede Umbenennung; die Liste der Umbenennungen steht im Kernel |
+| Pakete mit `workers:` | werden von v0.5 abgelehnt (*Prüfung beim Holen*); im Bestand gibt es nur das Testpaket `test-worker` |
+| `~/.aios/workers.yaml` aus v0.4 | bleibt für Vaults auf v0.4 unberührt; v0.5 liest sie nicht |
+| Pakete mit `requires.aios: ">=0.4,<0.5"` | lassen sich unter v0.5 nicht holen; der Plan nennt sie mit der höchsten Version, die zu v0.5 passt, oder als Konflikt |
 
 ## Umstellung von v0.3
 
-`skills:` und `assistants:` aus v0.3 gehen in `packages:` auf (V0.4, Memos 09, 47). Die Namen werden nach der Art abgebildet: `skills: <name>` ist das Paket `skill-<name>`, `assistants: <name>` das Paket `assistent-<name>` (`memo` → `skill-memo`, `gaertner` → `assistent-gaertner`). Einträge der Form `<assistant>/<skill>` haben kein Paket und werden mit Warnung übergangen.
+`skills:` und `assistants:` aus v0.3 gehen in `packages:` auf (V0.4, Memos 09, 47). Die Namen werden nach der Art abgebildet: `skills: <name>` ist das Paket `skill-<name>`, `assistants: <name>` das Paket `assistant-<name>` (`memo` → `skill-memo`, `gaertner` → `assistant-gaertner`; in v0.4 hieß die Art `assistent-`, V0.5, Memo 05). Einträge der Form `<assistant>/<skill>` haben kein Paket und werden mit Warnung übergangen.
 
-**Lesen:** Bis zur Umstellung liest v0.4 beide Schlüssel als gewünschte Pakete mit dem Standardbereich der alten Version (`memo: 6.0.0` gilt als `skill-memo: "~=6.0"`). Ein Eintrag ohne Paket in der Hub-Liste wird mit Warnung übergangen. Geschrieben wird dabei nichts.
+**Lesen:** Bis zur Umstellung liest AIOS beide Schlüssel als gewünschte Pakete mit dem Standardbereich der alten Version (`memo: 6.0.0` gilt als `skill-memo: "~=6.0"`). Ein Eintrag ohne Paket in der Hub-Liste wird mit Warnung übergangen. Geschrieben wird dabei nichts.
 
-**Umstellung:** `aios --activate v0.4.<n> <pfad>` bietet sie für `<pfad>` und alle Projekte darunter an, im selben Plan wie die Aktivierung und mit derselben Bestätigung. Je Eintrag gilt: Gibt es die alte Version im Hub, wird der Standardbereich dieser Version eingetragen; sonst die höchste Version, und der Plan nennt den Wechsel (z. B. `astronom` 0.1.0 → `assistent-astronom` 0.2.0). Die Umstellung schreibt die Einträge nach `packages:`, entfernt sie aus `skills:` bzw. `assistants:`, entfernt die Blueprints mit Marke aus `@!Skill/` und `@!Assistant/` und holt die Pakete (wie `aios --fetch`). Lokale Blueprints ohne Marke und Einträge ohne Paket bleiben. Ein Blueprint mit Marke, dessen Inhalt nicht mehr zu ihrem `digest` passt (direkt geändert), bleibt ebenfalls: AIOS entfernt nur die Marke, er gilt damit als lokaler Blueprint und verdeckt das Paket (S6); der Plan nennt ihn mit „changed directly, stays as local blueprint" (V0.4, Memo 73, B6). Weil die `.gitignore`-Vorlage jetzt `.aios/registry` statt `.aios/manifest` enthält (Spec 04), melden Konsistenzprüfung und `/aios-integrity` in Projekten aus v0.3 die fehlende Zeile; `aios --init` ergänzt sie.
+**Umstellung:** `aios --activate v0.4.<n> <pfad>` bzw. `v0.5.<n>` bietet sie für `<pfad>` und alle Projekte darunter an, im selben Plan wie die Aktivierung und mit derselben Bestätigung. Je Eintrag gilt: Gibt es die alte Version im Hub, wird der Standardbereich dieser Version eingetragen; sonst die höchste Version, und der Plan nennt den Wechsel (z. B. `astronom` 0.1.0 → `assistant-astronom` 0.2.0). Die Umstellung schreibt die Einträge nach `packages:`, entfernt sie aus `skills:` bzw. `assistants:`, entfernt die Blueprints mit Marke aus `@!Skill/` und `@!Assistant/` und holt die Pakete (wie `aios --fetch`). Lokale Blueprints ohne Marke und Einträge ohne Paket bleiben. Ein Blueprint mit Marke, dessen Inhalt nicht mehr zu ihrem `digest` passt (direkt geändert), bleibt ebenfalls: AIOS entfernt nur die Marke, er gilt damit als lokaler Blueprint und verdeckt das Paket (S6); der Plan nennt ihn mit „changed directly, stays as local blueprint" (V0.4, Memo 73, B6). Weil die `.gitignore`-Vorlage jetzt `.aios/registry` statt `.aios/manifest` enthält (Spec 04), melden Konsistenzprüfung und `/aios-integrity` in Projekten aus v0.3 die fehlende Zeile; `aios --init` ergänzt sie.
 
-## Daten von Apps — `@Data/`
+## Daten der Pakete — `@Data/`
 
-Daten, die eine App im Projekt erzeugt, liegen in `<projekt>/@Data/<paket>/` (F6). `@Data/` ist ein Schlüsselordner wie `@Memo/`: Er gehört nicht zum Masterspace, wird nicht in den Kontext geladen und ist versioniert. Die App legt `@Data/<paket>/` selbst an, wenn sie zum ersten Mal schreibt (V0.4, Memo 18, Q3). `aios --fetch --remove` lässt `@Data/` unberührt.
+Daten, die ein Paket im Projekt erzeugt, liegen in `<projekt>/@Data/<paket>/` (F6). Das gilt für jedes Paket, dessen Elemente schreiben: Apps, Assistenten und andere (V0.5, Memo 07); ein Assistent schreibt nach `@Data/assistant-<name>/`. Die Daten eines Arbeitspferds liegen unter `@Data/` des Pakets, das sie erzeugt, nicht unter `@Data/worker-<name>/` (Spec 07, K7). `@Data/` ist ein Schlüsselordner wie `@Memo/`: Er gehört nicht zum Masterspace, wird nicht in den Kontext geladen und ist versioniert. Das Paket legt `@Data/<paket>/` selbst an, wenn sie zum ersten Mal schreibt (V0.4, Memo 18, Q3). `aios --fetch --remove` lässt `@Data/` unberührt.
 
 ## Workspaces
 
@@ -365,7 +394,7 @@ projects:
 | `projects[].revision` | ja | Zweig, Tag oder Commit-SHA |
 | `projects[].path` | ja | relativ zum Wurzelprojekt, darunter, ohne `..` |
 | `projects[].groups` | nein | Liste von Gruppennamen |
-| `projects[].import` | nein | im Format vorgesehen, in v0.4 ohne Wirkung; `aios --workspace` meldet ihn und übergeht ihn |
+| `projects[].import` | nein | im Format vorgesehen, in v0.5 ohne Wirkung; `aios --workspace` meldet ihn und übergeht ihn |
 
 Die Datei wird mit PyYAML gelesen und vom User gepflegt.
 
@@ -452,13 +481,14 @@ Zusätzlich zu Spec 01 (I1–I9):
 | # | Regel |
 |---|---|
 | P1 | AIOS schreibt in `@!Package/` nur mit `aios --fetch` und nur ganze Paketordner mit Marke. |
-| P2 | `lock.yaml` schreiben nur `aios --fetch` und `aios --workspace freeze`. |
-| P3 | Skripte eines Pakets (Arbeitspferde, Befehle) laufen nie ohne Bestätigung, außer `aios --run` mit einem Befehl, den der User selbst aufruft. |
+| P2 | `lock.yaml` schreiben nur `aios --fetch`, `aios --install` (Distribution), `aios --activate` (Umstellung) und `aios --workspace freeze`. |
+| P3 | Skripte und Installationen eines Pakets (setup und remove von Arbeitspferden, Befehle) laufen nie ohne Bestätigung, außer `aios --run` mit einem Befehl, den der User selbst aufruft; der Plan zeigt bei `kind: python` die Pakete, bei Skripten den Inhalt (Spec 07). |
 | P4 | `aios --workspace` verschiebt keinen Zweig außer per fast-forward und verwirft nie Änderungen. |
 | P5 | `aios --contribute` schreibt nur in einen neuen Zweig; es pusht nie auf den Standardzweig. |
-| P6 | `@Data/` wird von keinem Befehl außer der App selbst geändert; `--remove` lässt ihn stehen. |
+| P6 | `@Data/<paket>/` wird von keinem Befehl außer dem Paket selbst geändert; `--remove` lässt ihn stehen. |
 | P7 | `aios --deploy` kopiert nichts; es ändert nur `only` in `packages:`. |
+| P8 | Ein Plan mit „alles oder nichts" legt vor dem ersten Schreiben eine Sicherung unter `.aios/backup/` an und löscht sie erst nach Erfolg (Spec 01, I11). |
 
 ## Entschiedene Festlegungen
 
-Die beim Schreiben getroffenen Festlegungen sind entschieden: S1–S9 in V0.4, Memo 17 (S9 als „jedes Projekt ist in sich vollständig"), L1–L6 und Q1–Q7 in den Memos 18–20, Hubs und Hub-Liste in den Memos 21, 22, 25 und 26, holen und ausrollen mit H1–H5 in den Memos 23–26, die Wissenspakete in Memo 27.
+Die beim Schreiben getroffenen Festlegungen sind entschieden: S1–S9 in V0.4, Memo 17 (S9 als „jedes Projekt ist in sich vollständig"), L1–L6 und Q1–Q7 in den Memos 18–20, Hubs und Hub-Liste in den Memos 21, 22, 25 und 26, holen und ausrollen mit H1–H5 in den Memos 23–26, die Wissenspakete in Memo 27. Für v0.5: Arbeitspferde und Paket laden in V0.5, Memos 15–22 und 28–33, Distributionen in den Memos 25–28 und 34, Paketnamen und Umstellung in den Memos 05, 30 und 35, `@Data/` in Memo 07, Skizze in Memo 37.
