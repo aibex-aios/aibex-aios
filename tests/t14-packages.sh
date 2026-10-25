@@ -96,7 +96,65 @@ except package.ManifestError as e:
    assert_contains "$(MF 'depends: {aios: ">=0.4"}' '{}')" "depends must not name aios" "no depends on the kernel"
    assert_contains "$(MF 'contents: {skills: [a], gui: b}' '{}')" "contents.gui b is not in contents.skills" "gui must be a skill"
    assert_contains "$(MF 'contents: {skills: [a], commands: [a]}' '{}')" "element names are not unique: a" "unique element names"
-   assert_contains "$(MF 'workers: {db: {install: i.sh}}' '{}')" "worker db needs install and remove" "worker scripts"
+   assert_contains "$(MF 'workers: {db: {install: i.sh}}' '{}')" "workers: is gone since AIOS 0.5" "workers: of v0.4 rejected (L9)"
+
+#===============================================================================
+# v0.5 step 2: type worker (spec 07), type distribution with kernel: (spec 06)
+#===============================================================================
+
+   W="'type': 'worker', 'worker': {'kind': 'python', 'requirements': 'worker/requirements.lock', 'programs': ['yt-dlp'], 'check': 'yt-dlp --version'}"
+   WM() { PY "m = package.parse({'name': 'worker-x', 'version': '0.1.0', 'description': 'x', 'requires': {'aios': '*'}, $W})
+$1"; }
+   assert_eq "$(MF '' "{$W}")" "ok True []" "worker: a module"
+   assert_eq "$(WM "print(m.elements(), m.worker['programs'])")" "[] ['yt-dlp']" "worker: no elements, programs"
+   assert_contains "$(MF '' "{'type': 'worker'}")" "type worker needs worker:" "worker: needs worker:"
+   X1="{'type': 'worker', 'worker': {'kind': 'binary', 'programs': ['x']}}"; assert_contains "$(MF '' "$X1")" "worker.kind must be python or script" "worker: kind"
+   X2="{'type': 'worker', 'worker': {'kind': 'python', 'requirements': 'r'}}"; assert_contains "$(MF '' "$X2")" "worker.programs names no program" "worker: programs"
+   X3="{'type': 'worker', 'worker': {'kind': 'python', 'programs': ['x']}}"; assert_contains "$(MF '' "$X3")" "needs requirements:" "worker python: requirements"
+   X4="{'type': 'worker', 'worker': {'kind': 'script', 'programs': ['x'], 'setup': 's.sh'}}"; assert_contains "$(MF '' "$X4")" "needs remove:" "worker script: setup and remove"
+   assert_contains "$(MF 'contents: {skills: [a]}' "{$W}")" "a worker has no elements" "worker: no contents"
+   assert_contains "$(MF '' "{'worker': {'kind': 'python'}}")" "worker: is only allowed for type: worker" "worker: only with type worker"
+   D="'type': 'distribution', 'kernel': '==0.5.0', 'depends': {'skill-a': '==0.2.0'}"
+   assert_eq "$(MF '' "{$D}")" "ok False []" "distribution with kernel: and exact versions"
+   X5="{'type': 'distribution', 'depends': {'skill-a': '~=0.2.0'}}"; assert_contains "$(MF '' "$X5")" "a distribution names exact versions" "distribution: exact depends"
+   X6="{'type': 'distribution', 'kernel': '>=0.5'}"; assert_contains "$(MF '' "$X6")" "kernel: '>=0.5' is not ==X.Y.Z" "distribution: exact kernel"
+   assert_contains "$(MF '' "{'kernel': '==0.5.0'}")" "kernel: is only allowed for type: distribution" "kernel: only for distributions"
+
+   H64="$(printf 'a%.0s' $(seq 64))"
+   mkdir -p "$SANDBOX/wk/worker"
+   printf '# hashes\nyt-dlp==2026.10.21 \\\n    --hash=sha256:%s\ncertifi==2026.10.23 --hash=sha256:%s\n' "$H64" "$H64" > "$SANDBOX/wk/req-ok"
+   assert_eq "$(PY "print(package.requirements_problems(open('$SANDBOX/wk/req-ok').read()))")" "[]" "requirements: entries with hashes, continuation, comment"
+   printf 'yt-dlp>=1\nidna==3.1\n' > "$SANDBOX/wk/req-bad"
+   assert_eq "$(PY "print(package.requirements_problems(open('$SANDBOX/wk/req-bad').read()))")" "['yt-dlp>=1: not <package>==<version>', 'idna==3.1: needs --hash=sha256:<hash> and nothing else']" "requirements: without == or hash rejected (F14)"
+   printf 'x==1.0\n' > "$SANDBOX/wk/worker/requirements.lock"
+   assert_eq "$(WM "print(package.check_tree('$SANDBOX/wk', m))")" "['worker: worker/requirements.lock: x==1.0: needs --hash=sha256:<hash> and nothing else']" "check_tree: hash file checked when fetching"
+
+#===============================================================================
+# v0.5 step 2: lock.yaml in the subset of spec 04, readable without a YAML parser (S3)
+#===============================================================================
+
+   L="$(PYTHONPATH="$SRC/lib" python3 -c "
+from aios import yamlsub
+print(yamlsub.dump({'schema': 1, 'packages': {'worker-yt-dlp': {'version': '0.1.0', 'hub': 'aibex-aios',
+  'repo': 'https://github.com/aibex-aios/worker-yt-dlp', 'tag': 'v0.1.0', 'commit': '1234567',
+  'requested': '~=0.1.0', 'required_by': ['skill-a', 'skill-b']}},
+  'workspace': {'AA': 'abc123'}}, 'written by AIOS (fetch, workspace), do not edit'), end='')")"
+   assert_eq "$L" '# written by AIOS (fetch, workspace), do not edit
+schema: 1
+packages:
+  worker-yt-dlp:
+    version: 0.1.0
+    hub: aibex-aios
+    repo: "https://github.com/aibex-aios/worker-yt-dlp"
+    tag: v0.1.0
+    commit: "1234567"
+    requested: "~=0.1.0"
+    required_by: [skill-a, skill-b]
+workspace:
+  AA: abc123' "lock.yaml: fixed subset (two spaces, flat lists, quotes where needed)"
+   assert_eq "$(python3 -c "import yaml,sys; p=yaml.safe_load(sys.argv[1])['packages']['worker-yt-dlp']; print(p['commit'], p['version'], p['required_by'])" "$L")" "1234567 0.1.0 ['skill-a', 'skill-b']" "lock.yaml: valid YAML with the same values"
+   bash_version() { awk -v p="  $2:" '$0=="packages:"{s=1;next} /^[^ ]/{s=0} s&&$0==p{f=1;next} f&&/^    version:/{print $2;exit} f&&/^  [^ ]/{exit}' <<< "$1"; }
+   assert_eq "$(bash_version "$L" worker-yt-dlp)" "0.1.0" "lock.yaml: version readable without PyYAML"
    assert_eq "$(PY "print(package.load('$SRC', kernel=True).type)")" "kernel" "manifest.yaml of the kernel"
 
 #===============================================================================

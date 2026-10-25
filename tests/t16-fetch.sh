@@ -46,8 +46,7 @@
    OUT="$(F "$D" aibex-aios/app-taschenrechner --yes)"
    assert_contains "$OUT" "open the app app-taschenrechner with /taschenrechner-gui or the tile Apps of /aios-gui" "hint: surface of the app"
    assert_eq "$(LOCK "$D")" "app-taschenrechner=0.4.3@aibex-aios skill-memo=6.1.0@aibex-aios" "lock.yaml: resolved packages with hub"
-   assert_contains "$(cat "$D/.aios/lock.yaml")" "required_by:
-    - app-taschenrechner" "lock.yaml: required_by"
+   assert_contains "$(cat "$D/.aios/lock.yaml")" "    required_by: [app-taschenrechner]" "lock.yaml: required_by, one line (S3)"
    assert_eq "$(sed -n 2,3p "$PKG/app-taschenrechner/.aios-deploy")" $'name: app-taschenrechner\nversion: 0.4.3' "marker of the package"
    assert_contains "$(cat "$PKG/app-taschenrechner/.aios-deploy")" "commit: " "marker: commit"
    assert_file "$PKG/app-taschenrechner/knowledge/@!Funktionstasten/plus-19.yaml"

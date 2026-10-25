@@ -30,7 +30,7 @@
       echo '          aios --fetch [--upgrade [<package>] | --remove <package>] # sync with lock.yaml'
       echo '          aios --deploy <package> --only <element>... | --all # select the elements'
       echo '          aios --deploy [--to <project>]      # show the deployed elements'
-      echo '          aios --worker [<package>/<name> install|remove|start|stop] # workers'
+      echo '          aios --worker                       # workhorses (rebuilt in step 6, spec 07)'
       echo '          aios --run <command> [args]         # deployed command of a package'
       echo '          aios --contribute <file>... --to <package> [--message <text>] # pull request'
       echo '          aios --workspace init <repo> [<folder>] | update | freeze | status'

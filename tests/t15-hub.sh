@@ -127,6 +127,12 @@ $1"; }
 import pathlib
 from aios import package
 for d in sorted(pathlib.Path('$SRC/tests/hub').glob('*/*/*/manifest.yaml')):
+    if d.parent.parent.name == 'test-worker':           # workers: of v0.4 is rejected since v0.5
+        try:
+            package.load(d.parent); print(d.parent, 'not rejected')
+        except package.ManifestError as e:
+            'workers: is gone' in str(e) or print(d.parent, e)
+        continue
     m = package.load(d.parent)
     problems = package.check_tree(d.parent, m)
     if problems or m.name != d.parent.parent.name or str(m.version) != d.parent.name:

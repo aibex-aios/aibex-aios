@@ -16,7 +16,7 @@ from . import config, deploy, hub, integrity, resolver, semver, ui
 from .install import make_writable
 from .ui import Abort, say, warn
 
-PREFIX = {"skills": "skill-", "assistants": "assistent-"}
+PREFIX = {"skills": "skill-", "assistants": "assistant-"}  # assistent- up to v0.4 (V0.5, memo 05)
 
 
 def entries(project):

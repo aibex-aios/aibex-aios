@@ -14,7 +14,7 @@ USAGE = ("usage: aios --prepare | --install [v<version>] | --versions | --remove
          " | --hubs [add <name> [<url>] | remove <name>] [--vault]"
          " | --fetch [[<hub>/]<package>[<range>] [--hub <hub>] [--from <repo>]] [--to <project>]"
          " | --fetch --upgrade [<package>] | --fetch --remove <package>"
-         " | --worker [<package>/<name> install|remove|start|stop] | --run <command> [args]"
+         " | --worker (step 6) | --run <command> [args]"
          " | --contribute <file>... --to <package> [--message <text>]"
          " | --workspace init <repo> [<folder>] | update | freeze | status [<path>] [--group <g>]"
          " | --deploy <package> --only <element>... | --all [--to <project>] | --deploy [--to <project>]"

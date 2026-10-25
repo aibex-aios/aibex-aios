@@ -15,11 +15,14 @@ from . import semver
 from .install import frontmatter
 
 NAME = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}$")
-TYPES = ("kernel", "app", "assistant", "skill", "knowledge", "tutorial", "distribution")
-MODULE_TYPES = ("kernel", "app", "assistant", "skill")
+TYPES = ("kernel", "app", "assistant", "skill", "knowledge", "tutorial", "distribution", "worker")
+MODULE_TYPES = ("kernel", "app", "assistant", "skill", "worker")
 RESERVED = ("aios", "gui", "none", "inherit")      # besides the prefix aios-
 CONTENT_LISTS = ("skills", "assistants", "commands", "hooks")
-WORKER_SCRIPTS = ("install", "remove", "start", "stop")
+WORKER_KINDS = ("python", "script")                 # spec 07; binary comes later
+PROGRAM = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._+-]{0,63}$")
+REQUIREMENT = re.compile(r"^([A-Za-z0-9][A-Za-z0-9._-]*)==([^\s;]+)$")
+HASH = re.compile(r"^--hash=sha256:[0-9a-f]{64}$")
 
 
 class ManifestError(Exception):
@@ -35,7 +38,8 @@ class Manifest:
     requires: semver.Range
     depends: dict = field(default_factory=dict)     # name -> Range
     contents: dict = field(default_factory=dict)
-    workers: dict = field(default_factory=dict)
+    worker: dict = field(default_factory=dict)      # type: worker (spec 07)
+    kernel: object = None                           # type: distribution, exact Range or None
     license: str = ""
     userdata: object = None
     warnings: list = field(default_factory=list)
@@ -48,7 +52,8 @@ class Manifest:
 
     def elements(self):
         """Names of the elements that can be deployed: skills, assistants and commands by
-        their names, the knowledge as 'knowledge' (spec 06, N2). Hooks have no effect in v0.4."""
+        their names, the knowledge as 'knowledge' (spec 06, N2). Hooks have no effect in v0.5;
+        a worker has no elements (spec 06, L8)."""
         names = []
         for kind in ("skills", "assistants", "commands"):
             names += list(self.contents.get(kind) or [])
@@ -76,6 +81,64 @@ def as_list(value, where):
     raise ManifestError(f"{where}: expected a list of names")
 
 
+def exact(text):
+    """True if a range names exactly one version (==X.Y.Z), as a distribution needs (spec 06)."""
+    return bool(re.match(r"^==\s*\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$", str(text).strip()))
+
+
+def parse_worker(spec, where):
+    """worker: of a package of type worker (spec 07): kind, programs, check, requirements or
+    setup and remove."""
+    if not isinstance(spec, dict):
+        raise ManifestError(f"{where}: type worker needs worker: with kind and programs (spec 07)")
+    kind = spec.get("kind")
+    if kind not in WORKER_KINDS:
+        raise ManifestError(f"{where}: worker.kind must be {' or '.join(WORKER_KINDS)}, not {kind!r}")
+    programs = as_list(spec.get("programs"), f"{where}: worker.programs")
+    if not programs:
+        raise ManifestError(f"{where}: worker.programs names no program")
+    bad = [x for x in programs if not PROGRAM.match(x)]
+    if bad:
+        raise ManifestError(f"{where}: worker.programs: not a program name: {', '.join(bad)}")
+    if spec.get("check") is not None and not isinstance(spec.get("check"), str):
+        raise ManifestError(f"{where}: worker.check must be a command line")
+    need = ("requirements",) if kind == "python" else ("setup", "remove")
+    for key in need:
+        if not isinstance(spec.get(key), str) or not spec[key]:
+            raise ManifestError(f"{where}: worker of kind {kind} needs {key}: <file in the package>")
+    return dict(spec, programs=programs)
+
+
+def requirements_problems(text):
+    """Problems of a requirements file with hashes (spec 07, kind python; V0.5, memo 22, F14):
+    every entry <name>==<version> with at least one --hash=sha256:<hex>; comments and line
+    continuations with \\ are allowed."""
+    logical, cur = [], ""
+    for line in text.splitlines():
+        line = line.split(" #")[0].strip() if not line.lstrip().startswith("#") else ""
+        if line.endswith("\\"):
+            cur += line[:-1] + " "
+            continue
+        cur += line
+        if cur.strip():
+            logical.append(cur.strip())
+        cur = ""
+    if cur.strip():
+        logical.append(cur.strip())
+    problems = []
+    for entry in logical:
+        parts = entry.split()
+        if not REQUIREMENT.match(parts[0]):
+            problems.append(f"{parts[0]}: not <package>==<version>")
+            continue
+        hashes = [x for x in parts[1:] if x.startswith("--hash")]
+        if not hashes or any(not HASH.match(x) for x in hashes) or len(hashes) != len(parts) - 1:
+            problems.append(f"{parts[0]}: needs --hash=sha256:<hash> and nothing else")
+    if not logical:
+        problems.append("no requirements")
+    return problems
+
+
 def parse(data, where="manifest.yaml", kernel=False):
     """Manifest from the parsed YAML data; kernel=True allows the name aios (spec 06, Q1)."""
     if not isinstance(data, dict):
@@ -98,6 +161,9 @@ def parse(data, where="manifest.yaml", kernel=False):
     if kind not in TYPES:
         warnings.append(f"{where}: unknown type {kind!r}, treated as knowledge")
         kind = "knowledge"
+    if "workers" in data:
+        raise ManifestError(f"{where}: workers: is gone since AIOS 0.5; a workhorse is a package "
+                            "of type: worker (spec 07)")
     requires = data["requires"]
     if not isinstance(requires, dict) or "aios" not in requires:
         raise ManifestError(f"{where}: requires needs aios: \"<range>\"")
@@ -111,6 +177,15 @@ def parse(data, where="manifest.yaml", kernel=False):
             if problem:
                 raise ManifestError(f"{where}: depends: {problem}")
             depends[dep] = semver.Range.parse(rng)
+            if kind == "distribution" and not exact(rng):
+                raise ManifestError(f"{where}: a distribution names exact versions: {dep}: {rng!r} is not ==X.Y.Z")
+        kernel_range = None
+        if data.get("kernel") is not None:
+            if kind != "distribution":
+                raise ManifestError(f"{where}: kernel: is only allowed for type: distribution")
+            if not exact(data["kernel"]):
+                raise ManifestError(f"{where}: kernel: {data['kernel']!r} is not ==X.Y.Z")
+            kernel_range = semver.Range.parse(data["kernel"])
     except semver.VersionError as e:
         raise ManifestError(f"{where}: {e}")
     contents = dict(data.get("contents") or {})
@@ -125,12 +200,15 @@ def parse(data, where="manifest.yaml", kernel=False):
         raise ManifestError(f"{where}: element names are not unique: {', '.join(dup)}")
     if "knowledge" in names:
         raise ManifestError(f"{where}: knowledge is reserved as the name of the knowledge element")
-    workers = data.get("workers") or {}
-    for w, spec in workers.items():
-        if not isinstance(spec, dict) or not spec.get("install") or not spec.get("remove"):
-            raise ManifestError(f"{where}: worker {w} needs install and remove")
-    return Manifest(name, version, kind, str(data["description"]), req, depends, contents, workers,
-                    str(data.get("license") or ""), data.get("userdata"), warnings)
+    worker = {}
+    if kind == "worker":
+        worker = parse_worker(data.get("worker"), where)
+        if names or contents.get("knowledge") or contents.get("gui") or contents["hooks"]:
+            raise ManifestError(f"{where}: a worker has no elements (contents), spec 06")
+    elif "worker" in data:
+        raise ManifestError(f"{where}: worker: is only allowed for type: worker")
+    return Manifest(name, version, kind, str(data["description"]), req, depends, contents, worker,
+                    kernel_range, str(data.get("license") or ""), data.get("userdata"), warnings)
 
 
 def load(folder, kernel=False):
@@ -167,8 +245,13 @@ def check_tree(folder, m):
             problems.append(f"command {name}: commands/{name} is missing")
     if m.contents.get("knowledge") and not (folder / "knowledge").is_dir():
         problems.append("knowledge: the folder knowledge/ is missing")
-    for w, spec in m.workers.items():
-        for script in WORKER_SCRIPTS:
-            if spec.get(script) and not (folder / spec[script]).is_file():
-                problems.append(f"worker {w}: {spec[script]} is missing")
+    if m.type == "worker":
+        files = ["requirements"] if m.worker["kind"] == "python" else ["setup", "remove"]
+        for key in files:
+            f = folder / m.worker[key]
+            if not f.is_file():
+                problems.append(f"worker: {m.worker[key]} is missing")
+            elif key == "requirements":
+                problems += [f"worker: {m.worker[key]}: {x}"
+                             for x in requirements_problems(f.read_text(encoding="utf-8"))]
     return problems

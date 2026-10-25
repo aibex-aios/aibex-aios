@@ -1,0 +1,19 @@
+title: Gärtner
+intro: Was möchtest du heute im Garten wissen?
+tiles:
+  - title: Apfel-Birnen-Rechner
+    text: Rechnet mit Äpfeln und Birnen, ohne Claude
+    html: rechner.html
+    icon: calculator
+  - title: Aufgabe rechnen
+    text: Eine Apfel-Birnen-Aufgabe mit Rechenweg
+    skill: apfel-birnen-algebra
+    icon: calculator
+  - title: Sorte bestimmen
+    text: Beschreibe den Apfel, ich bestimme die Sorte
+    prompt: "Hilf mir, eine Apfelsorte zu bestimmen. Frag mich nach den Merkmalen."
+    icon: leaf
+  - title: Sortenkunde
+    text: Welche Sorten gibt es, wann sind sie reif?
+    prompt: "Erzähl mir aus deiner Sortenkunde: Welche Apfel- und Birnensorten kennst du, und wann sind sie genussreif?"
+    icon: book

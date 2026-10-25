@@ -109,11 +109,11 @@ def locked(lock):
 
 
 def write_lock(project, lock):
-    import yaml
+    """lock.yaml in the subset of spec 04, readable by the forwarders without PyYAML (S3)."""
+    from . import yamlsub
     f = lock_file(project)
     f.parent.mkdir(parents=True, exist_ok=True)
-    body = yaml.safe_dump(lock, sort_keys=False, allow_unicode=True, default_flow_style=False)
-    f.write_text(LOCK_HEAD + body, encoding="utf-8")
+    f.write_text(yamlsub.dump(lock, LOCK_HEAD.lstrip("# ").rstrip("\n")), encoding="utf-8")
 
 
 # ---------------------------------------------------------------------------
@@ -312,8 +312,6 @@ def hints(project):
             for a in p.manifest.contents.get("assistants") or []:
                 title = frontmatter(d / "assistants" / a / "ASSISTANT.md").get("title", a)
                 out.append(f"   assign the assistant to a project of the chain with /aios-assistant {title}")
-            for w in p.manifest.workers:
-                out.append(f"   the package brings the worker {w}; install it with: aios --worker {p.name}/{w} install")
             if p.manifest.contents.get("gui"):
                 out.append(f"   open the app {p.name} with /{p.manifest.contents['gui']} or the tile Apps of /aios-gui")
         out.append("   new skills are available from the next chat (or after /reload-skills)")
@@ -396,12 +394,6 @@ def remove(name, to=None):
     picks = f.resolve(packages)
     if name in picks:
         raise Abort(f"{name} is still required by " + ", ".join(picks[name].required_by))
-    from . import worker
-    gone = [n for n in (f.lock.get("packages") or {}) if n not in picks]
-    busy = [f"{n}/{w}" for n in gone for w in worker.installed(f.project, n)]
-    if busy:
-        raise Abort("installed workers: " + ", ".join(busy) + "; first: "
-                    + "; ".join(f"aios --worker {b} remove" for b in busy))
     return f.plan(picks, packages, f"=> remove {name} from {f.project}",
                   lambda picks: [f"=> {name} removed; @Data/ stays untouched"])
 

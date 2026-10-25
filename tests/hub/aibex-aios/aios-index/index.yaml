@@ -9,6 +9,12 @@ packages:
   - name: assistent-astronom
     type: assistant
     description: Demo-Assistent Astronom, rechnet nur mit Sonne und Mond, nennt Sterndaten
+  - name: assistant-gaertner
+    type: assistant
+    description: Demo-Assistent Gärtner, rechnet nur mit Äpfeln und Birnen
+  - name: assistant-astronom
+    type: assistant
+    description: Demo-Assistent Astronom, rechnet nur mit Sonne und Mond, nennt Sterndaten
   - name: app-taschenrechner
     type: app
     description: Programmierbarer RPN-Taschenrechner mit lernenden Funktionstasten
