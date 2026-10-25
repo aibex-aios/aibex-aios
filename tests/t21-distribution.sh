@@ -59,6 +59,7 @@
    assert_contains "$C" "aios: 0.5.0" "vault root bound to the kernel"
    assert_contains "$C" 'distribution-demo: "==1.0.0"' "packages: the distribution with its exact version"
    assert_contains "$(cat "$V/.aios/lock.yaml")" "required_by: [distribution-demo]" "lock.yaml: package required by the distribution"
+   assert_file "$V/.claude/skills/nutzer/SKILL.md"                  # vault root of the session, bound in the same plan
    assert_eq "$(cd "$V" && "$HOME/.aios/bin/aios-test-tool")" "aios-test-tool 1.1.0" "workhorse of the distribution runs in the vault"
    assert_contains "$(I "$V" 'distribution-demo==1.0.0' --yes)" "match lock.yaml, nothing to do" "install again: nothing to do"
 

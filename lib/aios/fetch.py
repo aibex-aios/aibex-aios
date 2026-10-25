@@ -303,7 +303,7 @@ class Fetch:
             for line in lines:
                 say(f"   {line}")
             return 0
-        deploy.register_session(plan)
+        deploy.register_session(plan, later=bool(first) and Path(paths.cwd()).resolve() == self.project.resolve())
         self.worker_users(plan, picks)
         session = Path(paths.cwd())
         bk = backup.Backup(self.project)
