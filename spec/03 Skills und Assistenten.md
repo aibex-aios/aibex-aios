@@ -135,7 +135,7 @@ AIOS-Skill zum Zusammenstellen einer Distribution (Spec 06, *Distributionen*; V0
 | 2 | Ausgangsprojekt wählen (Standard: Projekt der Session) | Pakete mit Versionen aus `lock.yaml`, Kernel aus `aios:` |
 | 3 | ergänzen oder streichen (Auswahl aus `aios --library`) | Zusammenstellung; Abhängigkeiten erscheinen nicht in `depends` |
 | 4 | prüfen mit dem Resolver | alle Pakete auflösbar, exakte Versionen, `kernel:` passt zu `requires.aios`, keine Konflikte |
-| 5 | Plan zeigen, fragen, Repo anlegen | lokales Repo `distribution-<name>/` mit `manifest.yaml`, `README.md` und Lizenz, Ort nach den Vorgaben des Users, sonst `@Package/`; lokaler Commit, kein Tag |
+| 5 | Plan zeigen, fragen, Repo anlegen | lokales Repo `distribution-<name>/` mit `manifest.yaml`, `README.md` und Lizenz, Ort nach den Vorgaben des Users, sonst `@Package/`; lokaler Commit und lokaler Tag `v<version>`, nicht gepusht (V0.5, Memo 56); geprüft wird vorher ein Entwurf im Scratchpad mit `aios --install … --from <entwurf> --plan` in einem leeren Probe-Vault |
 | 6 | Probe vorschlagen | `aios --install distribution-<name> --from <repo> <leerer Vault>`; den leeren Vault legt der Skill auf Wunsch in einem Test- oder Scratchpad-Ordner an, nie im Vault des Users |
 | 7 | melden | Ort, Inhalt, nächster Schritt: lokal taggen, veröffentlichen |
 

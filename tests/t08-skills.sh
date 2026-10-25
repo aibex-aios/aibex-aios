@@ -42,12 +42,20 @@ import sys; t=open(sys.argv[1],encoding='utf-8').read(); e=t.find('\n---',3); pr
    case "$(at "$D" aios --skill aios-init)" in *"name: aios-init"*|*"allowed-tools"*) fail "--skill: no frontmatter" ;; *) ok ;; esac
    case "$(at "$D" aios --skill aios-init)" in *"Nur in Version 0.2.0"*) fail "--skill in §Demo: version 0.1.0" ;; *) ok ;; esac
    assert_contains "$(at "$D/Garten" aios --skill aios-init)" "Nur in Version 0.2.0" "--skill in Garten: version 0.2.0"
-   for S in aios-context aios-init aios-register aios-status aios-deploy aios-assistant aios-integrity aios-memo aios-gui aios-fetch aios-package; do
+   for S in aios-context aios-init aios-register aios-status aios-deploy aios-assistant aios-integrity aios-memo aios-gui aios-fetch aios-package aios-distribution; do
       assert_contains "$(at "$D" aios --skill "$S")" "Ein AIOS-Skill von AIbex AIOS" "--skill $S"
    done
    assert_exit 1 "$SRC/bin/aios" --skill aios-nope
    assert_exit 1 "$SRC/bin/aios" --skill aios-agent
-   assert_eq "$(ls "$SRC/skills/aios" | tr '\n' ' ')" "aios-assistant aios-context aios-deploy aios-fetch aios-gui aios-init aios-integrity aios-memo aios-package aios-register aios-status " "AIOS skills of v0.4 (aios-fetch, aios-package)"
+   assert_eq "$(ls "$SRC/skills/aios" | tr '\n' ' ')" "aios-assistant aios-context aios-deploy aios-distribution aios-fetch aios-gui aios-init aios-integrity aios-memo aios-package aios-register aios-status " "AIOS skills of v0.5 (with aios-distribution)"
+   FM() { sed -n '/^allowed-tools:/p' "$SRC/skills/aios/$1/SKILL.md"; }
+   assert_eq "$(FM aios-distribution)" "allowed-tools: Bash(aios --library *), Bash(aios --install * --plan), Bash(aios --context *), Bash(git -C *), Bash(mkdir -p *), Write" "aios-distribution: allowed-tools (N16)"
+   assert_contains "$(FM aios-package)" "Bash(aios --install distribution-*)" "aios-package: may install distributions"
+   B="$(at "$D" aios --skill aios-distribution)"
+   assert_contains "$B" 'aios --install distribution-<name> "<scratchpad>/§Probe-<name>" --from "<entwurf>" --plan' "aios-distribution: check with the resolver"
+   assert_contains "$B" "tag v<version>\` (lokal, nicht gepusht)" "aios-distribution: local tag"
+   assert_contains "$(at "$D" aios --skill aios-package)" "## Distribution installieren" "aios-package: recognizes distributions"
+   assert_not_contains "$(at "$D" aios --skill aios-fetch)" "<paket>/<name> install" "aios-fetch: no workers of v0.4 any more"
 
 #===============================================================================
 # wrapper: name, description and allowed-tools from the version, body from aios --skill

@@ -426,7 +426,7 @@ Eine bereits installierte Version wird nicht erneut installiert (I5, I8).
 
 Erkennt AIOS am Argument ein Paket `distribution-<name>` statt einer Version, installiert es eine Distribution (Spec 06, *Distributionen*; V0.5, Memos 26, 27):
 
-1. Distribution aus der Hub-Liste bzw. mit `--from <repo>` aus dem Arbeitsbaum lesen, auflösen (Kernel aus `kernel:`, Pakete mit Abhängigkeiten).
+1. Distribution aus der Hub-Liste bzw. mit `--from <repo>` aus einem lokalen Repo (getaggte Version) lesen, auflösen (Kernel aus `kernel:`, Pakete mit Abhängigkeiten).
 2. Ziel: `<vault>` oder der Vault von `cwd`.
 3. Ein Plan mit zwei Teilen: **Rechner** (Kernel installieren, falls fehlend, wie `aios --install v<version>`; Arbeitspferde einrichten, Spec 07) und **Vault** (an den Kernel binden, mit Umstellung, falls nötig; Pakete holen, `packages:` und `lock.yaml` der Vault-Root schreiben; registrieren). Ein Ja.
 4. Zuerst der Rechnerteil; scheitert er, bleibt der Vault unberührt. Dann der Vaultteil mit Sicherung (Spec 06, *Holen*).

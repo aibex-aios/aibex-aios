@@ -292,7 +292,7 @@ depends:
 | Aktualisieren | `aios --install distribution-<name>` erneut, ohne Version die höchste; der Plan zeigt `upgrade 1.0.0 → 1.1.0` mit Kernel, Arbeitspferden und Paketen |
 | Entfernen | `aios --fetch --remove distribution-<name>` nach den allgemeinen Regeln (*Holen*); die Bindung an den Kernel bleibt |
 | Übersteuern | nur mit `only` (*Ausrollen*); eine andere Version eines Pakets der Distribution, z. B. durch einen eigenen Eintrag in `packages:`, ist ein Konflikt im Plan |
-| `--from` | nimmt die Distribution aus dem Arbeitsbaum eines lokalen Repos (wie `aios --fetch --from`); ihre Pakete kommen weiter aus den Hubs |
+| `--from` | nimmt die Distribution aus einem lokalen Repo, eine getaggte Version wie `aios --fetch --from` (auch ein lokaler, nicht gepushter Tag; V0.5, Memo 56); ihre Pakete kommen weiter aus den Hubs |
 
 Zusammengestellt werden Distributionen mit dem AIOS-Skill `/aios-distribution` (Spec 03).
 
