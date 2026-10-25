@@ -282,7 +282,16 @@ def mandatory_message(ctx, size, limit):
 def check_message(ctx, sid=None):
     msg = context_check_message(ctx)
     a = session_assistant(ctx, sid)
-    return msg + ("\n" + assistant_check_message(ctx, *a) if a else "")
+    return msg + ("\n" + assistant_check_message(ctx, *a) if a else "") + workers_message(ctx)
+
+
+def workers_message(ctx):
+    """AIOS-WORKERS: workhorses of lock.yaml in the chain missing on the machine (spec 07)."""
+    from . import worker
+    gone = worker.missing([ms.parent for ms in ctx.masterspaces])
+    if not gone:
+        return ""
+    return "\nAIOS-WORKERS: missing " + ", ".join(f"{p} {v}" for p, v in gone) + " — run aios --fetch"
 
 
 def context_check_message(ctx):

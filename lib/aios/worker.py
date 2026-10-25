@@ -256,6 +256,114 @@ def put_forwarder(prog):
 
 
 # ---------------------------------------------------------------------------
+# loading a package: the part of the workhorses in the plan of aios --fetch (spec 07, Abläufe)
+# ---------------------------------------------------------------------------
+
+def subset_entries(f, section):
+    """{name: {key: value}} of the two-level mappings below section: of a file in the subset of
+    spec 04, read line by line without PyYAML (the hook AIOS-WORKERS runs without it, like the
+    forwarders)."""
+    out, name, inside = {}, None, False
+    try:
+        text = Path(f).read_text(encoding="utf-8")
+    except OSError:
+        return out
+    for line in text.splitlines():
+        if not line.strip() or line.lstrip().startswith("#"):
+            continue
+        if not line.startswith(" "):
+            inside, name = line.rstrip() == f"{section}:", None
+        elif inside and line.startswith("  ") and not line.startswith("   "):
+            name = line.strip().rstrip(":").strip('"')
+            out[name] = {}
+        elif inside and name and line.startswith("    ") and not line.startswith("     "):
+            key, _, val = line.strip().partition(":")
+            out[name][key.strip('"')] = val.strip().strip('"')
+    return out
+
+
+def locked_workers(project):
+    """{package: version} of the worker packages (worker-<name>) in lock.yaml of project."""
+    entries = subset_entries(Path(project) / ".aios" / "lock.yaml", "packages")
+    return {n: e["version"] for n, e in entries.items() if n.startswith("worker-") and e.get("version")}
+
+
+def users(pkg, version, data, but=None):
+    """Projects of workers.yaml whose lock.yaml still names pkg version, without but (Fragepaket
+    zu Schritt 7: workers.yaml, checked against lock.yaml; orphaned entries do not count)."""
+    e = (data["workers"].get(pkg) or {}).get(str(version)) or {}
+    return [p for p in e.get("projects") or []
+            if p != str(but) and locked_workers(p).get(pkg) == str(version)]
+
+
+def order(picks):
+    """Worker picks with the workhorses they depend on first (spec 07, setup)."""
+    out, seen = [], set()
+
+    def visit(name):
+        if name in seen or name not in picks:
+            return
+        seen.add(name)
+        for d in picks[name].manifest.depends:
+            visit(d)
+        out.append(name)
+    for name in sorted(picks):
+        visit(name)
+    return out
+
+
+def conflicts(project, picks, programs_of):
+    """Two different packages with the same program in the chain of project (F9): the lock.yaml
+    from the parent of project up to the vault root and the picks of the plan."""
+    from . import config
+    owner = {}
+    for name in sorted(picks):
+        for prog in programs_of(name):
+            owner.setdefault(prog, set()).add(name)
+    data = read_state()
+    for d in config.chain_dirs(project)[1:]:
+        for pkg, ver in locked_workers(d).items():
+            e = (data["workers"].get(pkg) or {}).get(ver)
+            progs = e.get("programs") if e else None
+            if progs is None:
+                try:
+                    progs = package.load(Path(d) / "@" / "@!Package" / pkg).worker["programs"]
+                except (package.ManifestError, OSError, TypeError, KeyError):
+                    progs = []
+            for prog in progs:
+                owner.setdefault(prog, set()).add(pkg)
+    return {prog: sorted(pkgs) for prog, pkgs in owner.items() if len(pkgs) > 1}
+
+
+def note_projects(project, now, before):
+    """workers.yaml: project uses the versions in now and no longer those of before."""
+    data = read_state()
+    for pkg, ver in before.items():
+        if now.get(pkg) != ver:
+            e = (data["workers"].get(pkg) or {}).get(ver)
+            if e:
+                e["projects"] = [p for p in e.get("projects") or [] if p != str(project)]
+    for pkg, ver in now.items():
+        e = (data["workers"].get(pkg) or {}).get(ver)
+        if e is not None:
+            e["projects"] = sorted(set(e.get("projects") or []) | {str(project)})
+    write_state(data)
+
+
+def missing(dirs):
+    """(package, version) locked in the lock.yaml of dirs but not on the machine: the folder and
+    the entry in workers.yaml must both exist (AIOS-WORKERS, spec 02; without PyYAML)."""
+    known = subset_entries(state_file(), "workers")
+    out = []
+    for d in dirs:
+        for pkg, ver in sorted(locked_workers(d).items()):
+            ok = ver in known.get(pkg, {}) and install_dir(pkg, ver).is_dir()
+            if not ok and (pkg, ver) not in out:
+                out.append((pkg, ver))
+    return out
+
+
+# ---------------------------------------------------------------------------
 # aios --worker
 # ---------------------------------------------------------------------------
 

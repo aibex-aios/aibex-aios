@@ -42,3 +42,9 @@ packages:
   - name: worker-test-script
     type: worker
     description: Testpaket Arbeitspferd mit kind script
+  - name: worker-test-anders
+    type: worker
+    description: Testpaket Arbeitspferd mit demselben Programm wie worker-test
+  - name: skill-test-nutzer
+    type: skill
+    description: Testpaket Skill, der das Arbeitspferd worker-test nutzt

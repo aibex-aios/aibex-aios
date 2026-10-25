@@ -14,7 +14,7 @@ import shutil
 import tempfile
 from pathlib import Path
 
-from . import backup, config, deploy, hub, package, paths, resolver, semver, ui
+from . import backup, config, deploy, hub, package, paths, resolver, semver, ui, worker
 from .deploy import MARKER, digest_of, read_marker
 from .install import frontmatter, make_writable
 from .ui import Abort, Plan, say, warn
@@ -256,6 +256,7 @@ class Fetch:
             plan.add(f"{why:<10} {name} {p.version} ({where}) -> {dst}",
                      lambda src=src, dst=dst, fields=fields: mirror(src, dst, fields))
             moved.append(dst)
+        installs = self.workers(plan, picks)
         base = package_dir(self.project, "")
         for d in sorted(base.iterdir()) if base.is_dir() else []:
             if d.name not in picks and (d / MARKER).is_file():
@@ -296,10 +297,12 @@ class Fetch:
                 say(f"   {line}")
             return 0
         deploy.register_session(plan)
+        self.worker_users(plan, picks)
         session = Path(paths.cwd())
         bk = backup.Backup(self.project)
         copied = [config_file(self.project), lock_file(self.project),
-                  session / ".aios" / "registry", session / ".claude" / "skills"]
+                  session / ".aios" / "registry", session / ".claude" / "skills",
+                  worker.state_file(), *installs]
         plan.steps.insert(0, (f"back up what the plan changes -> {backup.folder(self.project)}",
                               lambda: bk.start(copied, moved)))
         plan.add("remove the backup", bk.finish)
@@ -320,6 +323,62 @@ class Fetch:
         for line in done(picks):
             say(line)
         return 0
+
+
+    def workers(self, plan, picks):
+        """setup of every workhorse of the picks whose version is missing on the machine, the
+        workhorses they depend on first; conflicts of programs in the chain abort (spec 07, F9).
+        Returns the paths a restore removes again (installations, new forwarders)."""
+        ws = {n: p for n, p in picks.items() if p.manifest.type == "worker"}
+        clash = worker.conflicts(self.project, ws, lambda n: ws[n].manifest.worker["programs"])
+        if clash:
+            raise Abort("; ".join(f"the packages {' and '.join(pkgs)} both bring the program {prog} "
+                                  f"in the chain of {self.project}" for prog, pkgs in sorted(clash.items()))
+                        + "; nothing is fetched")
+        out = []
+        for name in worker.order(ws):
+            p = ws[name]
+            if worker.installed(name, p.version):
+                continue
+            src = self.source.fetch(name, p.hub, str(p.version))
+            dst = package_dir(self.project, name)
+            target = worker.install_dir(name, p.version)
+            plan.add(f"setup      {name} {p.version} -> {target}"
+                     + "".join(f"\n             {x}" for x in worker.plan_lines(src, p.manifest)),
+                     lambda dst=dst, m=p.manifest: worker.setup(dst, m, self.project))
+            out += [target, target.with_name(target.name + ".new")]
+            out += [worker.bin_dir() / prog for prog in p.manifest.worker["programs"]
+                    if not (worker.bin_dir() / prog).exists()]
+        return out
+
+    def worker_users(self, plan, picks):
+        """workers.yaml: the project uses the locked versions; a version no project uses any more
+        is removed in the same plan (spec 07, A3)."""
+        now = {n: str(p.version) for n, p in picks.items() if p.manifest.type == "worker"}
+        before = worker.locked_workers(self.project)
+        data = worker.read_state()
+        noted = all(str(self.project) in ((data["workers"].get(n) or {}).get(v) or {}).get("projects", [])
+                    for n, v in now.items())
+        if now == before and noted:
+            return
+        plan.add(f"{worker.state_file()}: {self.project} uses "
+                 + (", ".join(f"{n} {v}" for n, v in sorted(now.items())) or "no workhorse"),
+                 lambda: worker.note_projects(self.project, now, before))
+        old = self.lock.get("packages") or {}
+        for name, ver in sorted(before.items()):
+            if now.get(name) == ver or not worker.installed(name, ver):
+                continue
+            if worker.users(name, ver, data, but=self.project):
+                continue
+            e = old.get(name) or {}
+            key = resolver.FROM + e["from"] if e.get("from") else e.get("hub")
+            d = self.source.folder(name, key, ver) if key else None
+            try:
+                m = package.load(d) if d and (d / "manifest.yaml").is_file() else None
+            except package.ManifestError:
+                m = None
+            plan.add(f"remove     {name} {ver} -> {worker.install_dir(name, ver)} (no project uses it)",
+                     lambda n=name, v=ver, d=d, m=m: worker.remove(n, v, d, m))
 
 
 def hints(project):
