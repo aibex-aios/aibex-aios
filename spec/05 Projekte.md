@@ -1,18 +1,19 @@
 ---
 title: "Projekte"
-date: 2026-10-21
+date: 2026-10-25
 author: iHux
-status: Spec
-tags: [spec, aios, v0.4, projekte]
+status: Entwurf
+tags: [spec, aios, v0.5, projekte]
 number: 05
 related:
-  - "Spec 01 AIbex AIOS v0.4 — Überblick"
+  - "Spec 01 AIbex AIOS v0.5 — Überblick"
   - "Spec 02 Master-Kontext"
   - "Spec 03 Skills und Assistenten"
   - "Spec 04 Installation und Konfiguration"
   - "Spec 06 Pakete und Workspaces"
   - "Memo 06 Projekt, Root-Projekt und Projektstatus (AA-AIbex-AIOS, @Memo/V0.1)"
   - "Memos 08, 14–18, 21–24, 27, 28 (AA-AIbex-AIOS, @Memo/V0.3)"
+  - "Memos 10, 24, 35 (AA-AIbex-AIOS, @Memo/V0.5)"
 ---
 
 # Projekte
@@ -72,7 +73,7 @@ Macht einen Ordner zum Projekt oder ergänzt ein bestehendes Projekt um die fehl
 | 4 | Repo | `git init` mit dem Branch `main`, falls das Projekt kein eigenes Repo hat (S2); fehlende Zeilen der `.gitignore`-Vorlage ergänzen, vorhandene Zeilen bleiben (S3) |
 | 5 | Repo darüber | falls es ein Repo darüber gibt und S4 nicht erfüllt ist: `/<relativer pfad>/` in dessen `.gitignore` eintragen, versionierte Dateien des Projekts mit `git rm -r --cached` aus der Versionierung nehmen (die Dateien bleiben liegen, die alte Historie bleibt dort) und nur diese Änderungen dort committen: „AIOS: <relativer pfad> als eigenes Projekt ausgeschlossen" (V0.3, Memo 23, 24). Die so herausgenommenen Dateien committet Schritt 8 im neuen Repo, damit sie versioniert bleiben (A14) |
 | 6 | Zuordnung | mit `--assistant` den Schlüssel `assistant:` schreiben |
-| 7 | Registrieren | Projekt-Skills registrieren (wie `aios-context --sync --yes`; V0.3, Memo 21) |
+| 7 | Registrieren | Projekt-Skills registrieren (wie `aios --context --sync --yes`; V0.3, Memo 21) |
 | 8 | Commit | im Projekt nur die Dateien committen, die AIOS angelegt oder geändert hat (`.gitignore`, `@/.gitkeep`, `.aios/config.yaml`), dazu die Dateien, die Schritt 5 aus dem Repo darüber übernommen hat (A14): bei einem neuen Repo „AIOS: Projekt initialisiert", sonst „AIOS: Projekt ergänzt". Ist nach dem Stagen nichts geändert (`git diff --cached --quiet`), entfällt der Commit ohne Meldung (A16). Scheitert ein Commit (z. B. ohne Git-Identität), nur eine Warnung |
 | 9 | Abschluss | Hinweis, dass Master-Kontext und Skills für das Projekt ab dem nächsten Chat vollständig gelten |
 
@@ -112,6 +113,7 @@ Ein Projekt ist **integer**, wenn Init und Commit erfüllt sind. **Hinweise** (`
 
 - **Push-Stand:** Hat ein Repo einen Upstream, nennt der Bericht Commits, die noch nicht gepusht sind (voraus), und Commits, die lokal fehlen (hinter). Grundlage ist der lokale Stand ohne `git fetch`, also ohne Netz. Ein Repo ohne Remote ist zulässig.
 - **Namensregel:** ein Verstoß nach *Namensregel*.
+- **Kopien in `.agents/`:** Liegen in `<Projekt>/.agents/skills/<name>/` Kopien mit Marke `.aios-deploy`, deren Version nicht dem registrierten oder geholten Stand entspricht oder deren Skill es in der Kette nicht mehr gibt, nennt der Bericht sie als veraltet. AIOS ändert und entfernt sie nicht (V0.5, Memos 10, 24, Option C).
 
 Registrierte Skills, geholte Pakete und Blueprints gehören nicht zur Integrität; den Abgleich macht `aios --fetch` (Spec 06).
 
