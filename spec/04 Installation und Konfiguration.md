@@ -1,16 +1,17 @@
 ---
 title: "Installation und Konfiguration"
-date: 2026-10-21
+date: 2026-10-25
 author: iHux
-status: Spec
-tags: [spec, aios, v0.4, installation, konfiguration]
+status: Entwurf
+tags: [spec, aios, v0.5, installation, konfiguration]
 number: 04
 related:
-  - "Spec 01 AIbex AIOS v0.4 — Überblick"
+  - "Spec 01 AIbex AIOS v0.5 — Überblick"
   - "Spec 02 Master-Kontext"
   - "Spec 03 Skills und Assistenten"
   - "Spec 05 Projekte"
   - "Spec 06 Pakete und Workspaces"
+  - "Spec 07 Arbeitspferde"
   - "Memo 04 Der Vault §AIOS, Repo und Installation (AA-AIbex-AIOS, @Memo/V0.1)"
   - "Memo 09 Parallele Versionen und Aktivierung je Projekt (AA-AIbex-AIOS, @Memo/V0.1)"
   - "Memo 10 Das Verzeichnis .aios — global, Vault und Projekt (AA-AIbex-AIOS, @Memo/V0.1)"
@@ -18,11 +19,12 @@ related:
   - "Memos 15–17 Versionen, Demo-Assistenten (AA-AIbex-AIOS, @Memo/V0.2)"
   - "Memos 03, 06, 11, 15, 23 (AA-AIbex-AIOS, @Memo/V0.3)"
   - "Memos 08–29 (AA-AIbex-AIOS, @Memo/V0.4)"
+  - "Memos 03, 04, 20, 26–35 (AA-AIbex-AIOS, @Memo/V0.5)"
 ---
 
 # Installation und Konfiguration
 
-Diese Spec regelt, welche Dateien AIOS v0.4 wo anlegt, ihre Formate, die Konfiguration mit Übertrumpfung, die Weiterleiter und das CLI `aios`. Plattformen: macOS und Linux.
+Diese Spec regelt, welche Dateien AIOS v0.5 wo anlegt, ihre Formate, die Konfiguration mit Übertrumpfung, die Weiterleiter und das CLI `aios`. Plattformen: macOS und Linux.
 
 ## Dateistrukturen
 
@@ -31,13 +33,14 @@ Diese Spec regelt, welche Dateien AIOS v0.4 wo anlegt, ihre Formate, die Konfigu
 ```
 /opt/aios/
 ├── installations.yaml
-├── shared/                         in v0.4 leer
-└── v0.4.0/                         unveränderlich
+├── workers.yaml                    Verzeichnis der Arbeitspferde (Spec 07)
+├── workers/<paket>/v<version>/     Installationen der Arbeitspferde, unveränderlich (Spec 07)
+├── shared/                         in v0.5 leer
+└── v0.5.0/                         unveränderlich
     ├── VERSION
     ├── bin/
-    │   ├── aios
-    │   └── aios-context
-    ├── lib/aios/                   Python-Paket: Logik von aios und aios-context
+    │   └── aios
+    ├── lib/aios/                   Python-Paket: Logik von aios
     ├── manifest.yaml               Paket-Manifest des Kernels (type: kernel, Spec 06)
     ├── skills/
     │   └── aios/aios-<name>/SKILL.md   AIOS-Skills (vollständig; aios-gui mit gui.yaml)
@@ -54,18 +57,19 @@ Künftig kommt `doc/wiki/` hinzu.
 
 | Pfad | angelegt von | Inhalt | änderbar |
 |---|---|---|---|
-| `/opt/aios/` | `aios --prepare` | gehört dem Benutzer (v0.4: ein Benutzer) | — |
+| `/opt/aios/` | `aios --prepare` | gehört dem Benutzer (v0.5: ein Benutzer) | — |
 | `/opt/aios/installations.yaml` | `aios --install`, `--remove-version` | Verzeichnis der Installationen | nur durch AIOS |
 | `/opt/aios/v<version>/` | `aios --install` | vollständige Installation, danach schreibgeschützt | nie (I5) |
+| `/opt/aios/workers/<paket>/v<version>/` | setup eines Arbeitspferds (`aios --fetch`, `aios --install`) | Installation einer Version eines Arbeitspferds, danach schreibgeschützt | nie (Spec 07, A2) |
+| `/opt/aios/workers.yaml` | setup und remove | Verzeichnis der Arbeitspferde | nur durch AIOS |
 
-Kann `/opt/aios` nicht angelegt werden (kein `sudo`), gilt statt `/opt/aios` das Verzeichnis `~/.aios/versions/` mit demselben Aufbau.
+Kann `/opt/aios` nicht angelegt werden (kein `sudo`), gilt statt `/opt/aios` das Verzeichnis `~/.aios/versions/` mit demselben Aufbau, für Arbeitspferde `~/.aios/workers/` und `~/.aios/workers.yaml`.
 
 ### Benutzer — `~`
 
 ```
 ~/bin/
-├── aios                            Weiterleiter
-└── aios-context                    Weiterleiter
+└── aios                            Weiterleiter
 ~/.aios/
 ├── config.yaml                     Voreinstellungen
 ├── installations.yaml              eigene Einträge (z. B. Entwicklungsstand, Ersatzort)
@@ -76,7 +80,8 @@ Kann `/opt/aios` nicht angelegt werden (kein `sudo`), gilt statt `/opt/aios` das
 ├── sessions/<session-id>.yaml      Merker: Assistent der Session (Spec 02)
 ├── packages/<hub>/<name>/<version>/ Cache der geholten Pakete (Spec 06)
 ├── hub/<hub>/                      Klon des Index-Repos eines Hubs, falls vorhanden (Spec 06)
-├── workers.yaml                    Stand der Arbeitspferde auf diesem Rechner (Spec 06)
+├── bin/<programm>                  Weiterleiter der Arbeitspferde (Spec 07)
+├── workers/, workers.yaml          Ersatzort der Arbeitspferde ohne sudo (Spec 07)
 └── logs/aios.log
 ~/.claude/
 ├── settings.json                   Hooks
@@ -87,7 +92,8 @@ Kann `/opt/aios` nicht angelegt werden (kein `sudo`), gilt statt `/opt/aios` das
 
 | Pfad | angelegt von | entfernt von |
 |---|---|---|
-| `~/bin/aios`, `~/bin/aios-context` | erstes `aios --install` | `aios --uninstall` |
+| `~/bin/aios` | erstes `aios --install` | `aios --uninstall` |
+| `~/.aios/bin/<programm>` | erstes setup eines Arbeitspferds mit diesem Programm | remove der letzten Version (Spec 07) |
 | `~/.aios/config.yaml` | erstes `aios --install` (nur wenn fehlend) | nie |
 | `~/.aios/installations.yaml`, `logs/`, `cache/`, `packages/`, `hub/` | bei Bedarf | `cache/`: Einträge älter als 7 Tage bei jedem `--load` |
 | `~/.aios/sessions/` | SessionStart-Hook, `aios --assistant` | Merker mit `used` älter als 30 Tage beim Session-Start (`startup`); ganz bei `aios --uninstall` |
@@ -116,7 +122,7 @@ Kann `/opt/aios` nicht angelegt werden (kein `sudo`), gilt statt `/opt/aios` das
 | Pfad | angelegt von | Git |
 |---|---|---|
 | `.aios/config.yaml` | `aios --activate`, `aios --fetch`, `aios --deploy`, `aios --hubs --vault`, `aios --assistant` | ja |
-| `.aios/lock.yaml` | `aios --fetch`, `aios --workspace freeze` | ja |
+| `.aios/lock.yaml` | `aios --fetch`, `aios --install` (Distribution), `aios --activate` (Umstellung), `aios --workspace freeze` | ja |
 | `@/`, `.git/`, `.gitignore` | `aios --activate` bzw. `aios --init`, falls fehlend | ja |
 | `@/@!Skill/<name>/`, `@/@!Assistant/<name>/` | User | ja |
 | `@/@!Package/<name>/` | `aios --fetch` | ja |
@@ -129,11 +135,12 @@ Kann `/opt/aios` nicht angelegt werden (kein `sudo`), gilt statt `/opt/aios` das
 ├── .gitignore
 ├── @/
 ├── @Memo/                          vom Memo-Skill beim ersten Memo angelegt
-├── @Data/<paket>/                  Daten von Apps (Spec 06)
+├── @Data/<paket>/                  Daten der Pakete (Spec 06)
 ├── .aios/
 │   ├── config.yaml                 optional
 │   ├── lock.yaml                   optional (Spec 06)
 │   ├── workspace.yaml              nur im Wurzelprojekt eines Workspace (Spec 06)
+│   ├── backup/                     Sicherung während eines Plans (Spec 06)
 │   └── registry                    Build-Output
 └── .claude/skills/<name>/          Build-Output
 ```
@@ -143,8 +150,9 @@ Kann `/opt/aios` nicht angelegt werden (kein `sudo`), gilt statt `/opt/aios` das
 | `@/`, `.gitignore`, `.git/` | `aios --init` (Spec 05) | ja | ja |
 | `@Memo/` | `/memo` oder `/aios-memo` beim ersten Memo | ja | ja (Memos werden nie geändert, I1) |
 | `.aios/config.yaml` | `aios --activate <projekt>`, `aios --fetch --to <projekt>`, `aios --deploy --to <projekt>`, `aios --assistant`, `aios --init --assistant` | ja | ja |
-| `@Data/<paket>/` | Apps (Spec 06) | ja | ja |
-| `.aios/lock.yaml` | `aios --fetch`, `aios --workspace freeze` | ja | nein |
+| `@Data/<paket>/` | das Paket (Spec 06) | ja | ja |
+| `.aios/lock.yaml` | `aios --fetch`, `aios --install`, `aios --activate`, `aios --workspace freeze` | ja | nein |
+| `.aios/backup/` | Plan mit „alles oder nichts" (Spec 06) | nie | nein |
 | `.aios/workspace.yaml` | User | ja | ja |
 | `.aios/registry` | Registrierung (Spec 03) | nie | nein |
 | `.claude/skills/<name>/` | Registrierung | nie | nein |
@@ -156,10 +164,10 @@ Lokale Skills werden als Blueprint in `@/@!Skill/<name>/` geschrieben, nicht dir
 ### `.aios/config.yaml`
 
 ```yaml
-aios: 0.4.0
+aios: 0.5.0
 packages:
   skill-memo: "~=6.0"
-  assistent-gaertner: "~=0.2.0"
+  assistant-gaertner: "~=0.2.0"
   knowledge-scorpio: {range: "~=0.1.0", hub: aibex-hub}
 assistant: gaertner
 hosts: [claude-code]
@@ -171,7 +179,7 @@ hosts: [claude-code]
 | `packages` | Vault, Projekt | Name → Bereich oder `{range, hub, from, only}` | gewünschte Pakete dieses Projekts, nicht vererbt (Spec 06, *Konfiguration und Lock*) |
 | `skills`, `assistants` | Vault, Projekt | Name → exakte Version | aus v0.3; gelten als `packages` mit `==<version>` (Spec 06, *Umstellung von v0.3*) |
 | `assistant` | Vault, Projekt | `<name>`, `none` oder `inherit` | Zuordnung des Assistenten (Spec 03, *Zuordnung*); fehlt der Schlüssel, gilt `inherit` |
-| `hosts` | alle Ebenen | Liste | in v0.4 nur `claude-code` |
+| `hosts` | alle Ebenen | Liste | in v0.5 nur `claude-code` |
 | `hubs` | Home, Vault-Root | Liste von Namen bzw. `name: url` | Hub-Liste in Suchreihenfolge; die Vault-Root vor Home, bei gleichem Namen gilt die Vault-Root; ohne Eintrag `[aibex-aios]` (Spec 06, *Hub-Liste*) |
 | `inline_limit` | Home | Zeichenzahl | Grenze für die Inline-Ladung von Master-Kontext und Assistent, Standard 9000 |
 
@@ -194,10 +202,35 @@ Gelesen wird von `cwd` aufwärts jede `.aios/config.yaml` bis zur Vault-Root, da
 ### `installations.yaml`
 
 ```yaml
-v0.4.0: /opt/aios/v0.4.0
+v0.5.0: /opt/aios/v0.5.0
 ```
 
 Eine Zeile je Version, `v<version>: <pfad>`. `~/.aios/installations.yaml` hat dasselbe Format; bei gleichem Namen gewinnt der Eintrag des Benutzers.
+
+### `lock.yaml` und `workers.yaml`
+
+Beide schreibt nur AIOS, in einer festen Untermenge von YAML, die ein Bash-Skript ohne YAML-Parser lesen kann (V0.5, Memo 37, K-a): Einrückung immer zwei Leerzeichen je Ebene, ein Schlüssel je Zeile, Werte ohne Anführungszeichen außer bei Bereichen (`"~=0.1.0"`), Listen nur einzeilig `[a, b]`, keine Blocktexte, eine Kopfzeile `# written by AIOS (…), do not edit`. Das Format von `lock.yaml` steht in Spec 06 (*Konfiguration und Lock*).
+
+```yaml
+# written by AIOS (worker setup), do not edit
+schema: 1
+programs:
+  yt-dlp: [worker-yt-dlp]
+  deno: [worker-deno]
+workers:
+  worker-yt-dlp:
+    0.1.0:
+      kind: python
+      check: ok
+      projects: ["/Users/hux/vault/§Wald", "/Users/hux/vault/§Wald/P-Probe-Alt"]
+  worker-deno:
+    0.1.0:
+      kind: python
+      check: ok
+      projects: ["/Users/hux/vault/§Wald"]
+```
+
+`programs` nennt je Programm die Pakete, die es bereitstellen (gelesen vom Weiterleiter, Spec 07). Unter `workers` steht je Paket und Version die Art, das letzte Ergebnis von `check` (`ok` oder `failed`) und die nutzenden Projekte. Der Ort einer Version ergibt sich aus dem Ort der Datei (`<workers.yaml>/../workers/<paket>/v<version>/`). Pfade mit Leerzeichen oder Sonderzeichen stehen in Anführungszeichen.
 
 ### `.aios/registry`
 
@@ -222,20 +255,20 @@ assistant: gaertner
 used: 2026-10-03T14:05:00
 ```
 
-`assistant` ist ein Name oder `none`, nie `inherit`. Geschrieben vom SessionStart-Hook und von `aios --assistant --session` (Spec 02, 03), gelesen vom Hook, von `aios-context --assignment --session` und `aios --gui --session`. Format: die Untermenge von `config.yaml`.
+`assistant` ist ein Name oder `none`, nie `inherit`. Geschrieben vom SessionStart-Hook und von `aios --assistant --session` (Spec 02, 03), gelesen vom Hook, von `aios --context --assignment --session` und `aios --gui --session`. Format: die Untermenge von `config.yaml`.
 
 ### Hooks in `~/.claude/settings.json`
 
 ```json
 {
   "hooks": {
-    "SessionStart":     [ { "hooks": [ { "type": "command", "command": "aios-context --session" } ] } ],
-    "UserPromptSubmit": [ { "hooks": [ { "type": "command", "command": "aios-context --advise" } ] } ]
+    "SessionStart":     [ { "hooks": [ { "type": "command", "command": "aios --context --session" } ] } ],
+    "UserPromptSubmit": [ { "hooks": [ { "type": "command", "command": "aios --context --advise" } ] } ]
   }
 }
 ```
 
-Zusammengeführt mit dem `json`-Modul von Python; andere Schlüssel und fremde Hooks bleiben erhalten, auch fremde Hooks in derselben Gruppe. Die Hooks `ai-brain --session` bzw. `ai-brain --advise` werden entfernt und in `~/.aios/hooks-backup.json` gesichert, im selben Aufbau wie `settings.json` (`{"hooks": {…}}`). Ist `settings.json` kein gültiges JSON, bricht `aios` ab, bevor etwas geschrieben wird.
+Zusammengeführt mit dem `json`-Modul von Python; andere Schlüssel und fremde Hooks bleiben erhalten, auch fremde Hooks in derselben Gruppe. Die Hooks `ai-brain --session` bzw. `ai-brain --advise` werden entfernt und in `~/.aios/hooks-backup.json` gesichert, im selben Aufbau wie `settings.json` (`{"hooks": {…}}`). Ist `settings.json` kein gültiges JSON, bricht `aios` ab, bevor etwas geschrieben wird. Hooks `aios-context --session` bzw. `--advise` aus v0.3 und v0.4 ersetzt `aios --install` durch die neuen Aufrufe (V0.5, Memo 04).
 
 ### Versionsneutrale AIOS-Skills und Alias
 
@@ -257,21 +290,25 @@ Der Alias `/gui` hat dieselbe Form mit festem Text:
 ---
 name: gui
 description: "Zeigt die Oberfläche des aktiven Assistenten (AIbex AIOS). Auslöser: /gui, „Oberfläche", „Menü"."
-allowed-tools: Bash(aios --gui *), Bash(aios-context *)
+allowed-tools: Bash(aios --gui *), Bash(aios --context *)
 ---
 
 !`aios --gui --session ${CLAUDE_SESSION_ID}`
 ```
 
-v0.4 liefert die AIOS-Skills `aios-context`, `aios-init`, `aios-register`, `aios-status`, `aios-package`, `aios-fetch`, `aios-deploy`, `aios-assistant`, `aios-integrity`, `aios-memo` und `aios-gui` sowie den Alias `gui` (Spec 02, 03, 05).
+v0.5 liefert die AIOS-Skills `aios-context`, `aios-init`, `aios-register`, `aios-status`, `aios-package`, `aios-fetch`, `aios-deploy`, `aios-distribution`, `aios-assistant`, `aios-integrity`, `aios-memo` und `aios-gui` sowie den Alias `gui` (Spec 02, 03, 05). Lesende Skills dürfen `Bash(aios --context *)`, nicht `Bash(aios *)` (V0.5, Memo 03).
 
 ### `.gitignore`-Vorlage
 
 ```gitignore
 .DS_Store
 .claude/skills/
+.agents/
 .aios/registry
+.aios/backup/
 ```
+
+`.agents/` enthält Kopien von Skills für andere Agenten (V0.5, Memo 10), `.aios/backup/` die Sicherung während eines Plans (Spec 06).
 
 ## Umlenkung für Tests
 
@@ -287,22 +324,25 @@ Alle festen Orte lassen sich über Umgebungsvariablen umlenken, damit Tests in e
 | `AIOS_HUBS` | Hub-Liste für Tests, ersetzt `hubs` aus Vault-Root und Home: Einträge `name=url` (auch `file://`), durch Leerzeichen getrennt | — |
 | `AIOS_GITHUB` | Basis-URL für Hubs außerhalb der Hub-Liste (statt `https://github.com/`), für Tests auch `file://` | `https://github.com/` |
 | `AIOS_PIP` | Befehl, der `python/requirements.txt` in die venv installiert; gesetzt wird die venv ohne `pip` angelegt | `<venv>/bin/python -m pip install -q -r` |
+| `AIOS_PIP_FIND_LINKS` | Ordner mit Wheels für das setup von Arbeitspferden: `pip` läuft dann mit `--no-index --find-links <ordner>`, nie ohne `--no-index` (Spec 07) | — |
 
 Tests rufen damit nie das echte `sudo` auf und greifen nie auf das Netzwerk zu.
 
-Weiterleiter, `aios` und `aios-context` verwenden ausschließlich diese Variablen, nie fest verdrahtete Pfade.
+Weiterleiter und `aios` verwenden ausschließlich diese Variablen, nie fest verdrahtete Pfade.
 
 ## Weiterleiter
 
-`~/bin/aios` und `~/bin/aios-context` enthalten keine Logik außer der Wahl der Version. Beide sind Kopien desselben Skripts `templates/forwarder`, das `aios --install` unter beiden Namen nach `~/bin` legt; das Werkzeug ergibt sich aus dem Namen, unter dem es aufgerufen wird.
+`~/bin/aios` enthält keine Logik außer der Wahl der Version; `aios --install` legt es aus `templates/forwarder` an. Den Weiterleiter `~/bin/aios-context` gibt es ab v0.5 nicht mehr; `aios --install` entfernt ihn (V0.5, Memo 04). Die Weiterleiter der Arbeitspferde unter `~/.aios/bin/` regelt Spec 07.
 
-1. Ist `AIOS_HOME` gesetzt: `$AIOS_HOME/bin/<tool>` aufrufen.
+1. Ist `AIOS_HOME` gesetzt: `$AIOS_HOME/bin/aios` aufrufen.
 2. `aios --activate v<version> …`: Ist diese Version installiert, wird sie aufgerufen, unabhängig davon, an welche Version `cwd` gebunden ist; so aktiviert immer die genannte Version (V0.3, Memo 54, A1). Ist sie nicht installiert, gilt die übliche Wahl, und die gewählte Version meldet die fehlende Installation.
 3. Sonst vom physischen `cwd` (`pwd -P`) aufwärts bis zur Vault-Root die erste Zeile `aios: <version>` in einer `.aios/config.yaml` suchen. Außerhalb eines Vaults wird nicht gesucht, und `~/.aios/config.yaml` zählt nie, auch wenn `~` in einem Vault liegt.
-4. Gefunden: `v<version>` in `~/.aios/installations.yaml`, danach in `/opt/aios/installations.yaml` nachschlagen und `<pfad>/bin/<tool>` mit allen Argumenten aufrufen. Nicht installiert: Fehler mit Hinweis auf `aios --install v<version>`.
+4. Gefunden: `v<version>` in `~/.aios/installations.yaml`, danach in `/opt/aios/installations.yaml` nachschlagen und `<pfad>/bin/aios` mit allen Argumenten aufrufen. Nicht installiert: Fehler mit Hinweis auf `aios --install v<version>`.
 5. Nicht gefunden:
-   - `aios`: die höchste installierte Version aufrufen.
-   - `aios-context`: **Legacy-Modus**, d. h. `ai-brain` mit denselben Argumenten aufrufen, falls vorhanden (`--session`, `--advise`, `--load`, `--context`); sonst nichts ausgeben. Ausnahme `--id`: Ausgabe von `ai-brain --id` mit angehängtem `mode=legacy`, außerhalb eines Vaults `mode=none` (Spec 02).
+   - `aios --context …`: **Legacy-Modus**, d. h. `ai-brain` mit den Argumenten nach `--context` aufrufen, falls vorhanden (`--session`, `--advise`, `--load`, `--context`); sonst nichts ausgeben. Ausnahme `--id`: Ausgabe von `ai-brain --id` mit angehängtem `mode=legacy`, außerhalb eines Vaults `mode=none` (Spec 02). Nur die Gruppe `--context` fällt auf `ai-brain` zurück (V0.5, Memo 03).
+   - jeder andere Aufruf: die höchste installierte Version aufrufen.
+
+Ist `cwd` an eine Version unter 0.5 gebunden, übersetzt der Weiterleiter `aios --context` nicht; solche Vaults werden vor der Installation von v0.5 aktiviert (V0.5, Memo 04).
 
 „Höchste Version" gilt nach Semver: `0.10.0` liegt über `0.3.0`, eine Vorabversion wie `0.3.0-dev` unter `0.3.0`. In `installations.yaml` darf ein Pfad in Anführungszeichen stehen und mit `~/` beginnen.
 
@@ -310,7 +350,7 @@ Alle Argumente werden unverändert durchgereicht, auch `-?`, `--help` und `--ver
 
 | Option | Wirkung |
 |---|---|
-| `---which` | gewählte Installation und Grund, z. B. `tool=aios-context kind=aios target=/opt/aios/v0.3.0/bin/aios-context why=aios: 0.3.0 in /…/§Demo/.aios/config.yaml` |
+| `---which` | gewählte Installation und Grund, z. B. `tool=aios kind=aios target=/opt/aios/v0.5.0/bin/aios why=aios: 0.5.0 in /…/§Demo/.aios/config.yaml` |
 | `---version` | Version des Weiterleiters |
 | `---help` | Hilfe |
 
@@ -321,8 +361,10 @@ Die Weiterleiter lesen nur kleine Dateien und greifen nie auf das Netzwerk zu.
 | Befehl | Wirkung |
 |---|---|
 | `aios -?`, `--help`, `--version` | Hilfe bzw. Version des laufenden Programms |
-| `aios --prepare` | Rechner vorbereiten |
+| `aios --prepare [--dev]` | Rechner vorbereiten; `--dev` mit Entwicklerausstattung |
 | `aios --install [v<version>]` | Version installieren (schließt `--prepare` ein) |
+| `aios --install distribution-<name>[<bereich>] [<vault>] [--from <repo>]` | Distribution installieren bzw. aktualisieren: Kernel, Arbeitspferde, Pakete im Vault (Spec 06, *Distributionen*) |
+| `aios --context [--list \| --id \| --load <pfad> \| --assistant <name> \| --assistants \| --assignment \| --session \| --advise]` | Master-Kontext und Assistenten lesen, für Hooks und lesende Skills (Spec 02) |
 | `aios --activate v<version> [<pfad>]` | Vault oder Projekt an eine Version binden |
 | `aios --deactivate [<pfad>]` | Bindung lösen |
 | `aios --config [<pfad>]` | wirksame Konfiguration mit der Herkunft je Schlüssel, nur lesend |
@@ -330,7 +372,7 @@ Die Weiterleiter lesen nur kleine Dateien und greifen nie auf das Netzwerk zu.
 | `aios --remove-version v<version>` | Installation entfernen |
 | `aios --uninstall` | Benutzereinrichtung entfernen |
 | `aios --register [<pfad>]` | Projekt-Skills registrieren, mit Vorschau (Spec 03) |
-| `aios --fetch [<hub>/]<paket>[<bereich>] [--hub <hub>] [--from <repo>] [--to <projekt>]` | Paket holen, ausrollen, registrieren (Spec 06) |
+| `aios --fetch [<hub>/]<paket>[<bereich>] [--hub <hub>] [--from <repo>] [--to <projekt>]` | Paket laden: holen, Arbeitspferde einrichten, ausrollen, registrieren (Spec 06, 07) |
 | `aios --fetch [--to <projekt>]` | Projekt mit `lock.yaml` abgleichen (Spec 06) |
 | `aios --fetch --upgrade [<paket>] [--to <projekt>]`, `--remove <paket>` | Pakete aktualisieren bzw. entfernen (Spec 06) |
 | `aios --deploy <paket> --only <element>… \| --all [--to <projekt>]`, `aios --deploy [--to <projekt>]` | Elemente eines geholten Pakets ausrollen bzw. zeigen (Spec 06) |
@@ -339,14 +381,14 @@ Die Weiterleiter lesen nur kleine Dateien und greifen nie auf das Netzwerk zu.
 | `aios --workspace init <repo> [<ordner>] \| update \| freeze \| status [<pfad>] [--group <g>]` | Workspace klonen, abgleichen, einfrieren, prüfen (Spec 06) |
 | `aios --contribute <datei>… --to <paket> [--message <text>]` | Rückfluss als Pull Request (Spec 06) |
 | `aios --run <befehl> [argumente]` | ausgerollter Befehl eines Pakets (Spec 06) |
-| `aios --worker [<paket>/<name> install\|remove\|start\|stop] [--to <projekt>]` | Arbeitspferde zeigen, installieren, entfernen, starten, stoppen (Spec 06) |
+| `aios --worker [<paket> setup] [--to <projekt>]` | Arbeitspferde zeigen bzw. reparieren (Spec 07) |
 | `aios --skill <name> [--session <id>]` | Rumpf eines AIOS-Skills der gültigen Version (für die versionsneutralen Skills); mit `--session` ist `<session-id>` im Rumpf ersetzt |
 | `aios --assistant <name\|none\|inherit> [--to <projekt>] [--session <id>]` | Assistent dem Projekt zuordnen (Spec 03, *Wechsel*) |
 | `aios --gui [--session <id>] [--html]` | Rumpf des Oberflächen-Skills des aktiven Assistenten bzw. mit `--html` das HTML-Fragment (Spec 03, *Oberflächen*); `aios --gui --aios` für die AIOS-Oberfläche, `aios --gui --apps` für die Liste der Oberflächen ausgerollter Apps, `aios --gui --skill <oberfläche> [--html]` für die Oberfläche einer App |
 | `aios --init [<pfad>] [--assistant <wert>] [--name <name>] [--accept-name]` | Ordner zum Projekt machen oder ein Projekt ergänzen (Spec 05) |
 | `aios --integrity [<pfad>]` | Integrität des Projekts und aller Unterprojekte prüfen, nur lesend (Spec 05) |
 
-Alle schreibenden Befehle zeigen zuerst einen Plan und fragen `[Y/n]` (I7). Für Skills, die im Bash-Werkzeug keine Rückfrage beantworten können, gibt es zwei Schalter: `--plan` zeigt nur den Plan und schreibt nichts (Exit 0), `--yes` überspringt die Frage. Ein Skill zeigt den Plan, fragt im Chat und ruft erst nach Ja mit `--yes` auf; ohne Eingabe auf stdin wird nie geschrieben. Mit `--yes` gibt ein Befehl nur noch das Ergebnis in wenigen Zeilen und Fehler aus. **Sprache:** Alle Ausgaben von `aios` und `aios-context` auf stdout und stderr sind englisch, auch Berichte und Aufstellungen; deutsch bleiben nur die Commit-Nachrichten, die AIOS schreibt, sowie die Rümpfe der AIOS-Skills (V0.3, Memo 53, 54). Claude spricht mit dem User in dessen Sprache. `bin/aios` und die Weiterleiter sind Bash-Skripte nach der Bash-Konvention (Help-, Version- und Dispatch-Blöcke, Fallback); die Logik hinter `aios` und `aios-context` läuft in Python im venv der Installation (`python/`). `--prepare`, `--install`, `--versions`, `--remove-version` und `--uninstall` verwenden nur die Standardbibliothek, weil sie aus einem Klon mit dem `python3` des Systems laufen, bevor eine venv existiert. Voraussetzungen sind `python3` ab 3.9 und `git`.
+Alle schreibenden Befehle zeigen zuerst einen Plan und fragen `[Y/n]` (I7). Für Skills, die im Bash-Werkzeug keine Rückfrage beantworten können, gibt es zwei Schalter: `--plan` zeigt nur den Plan und schreibt nichts (Exit 0), `--yes` überspringt die Frage. Ein Skill zeigt den Plan, fragt im Chat und ruft erst nach Ja mit `--yes` auf; ohne Eingabe auf stdin wird nie geschrieben. Mit `--yes` gibt ein Befehl nur noch das Ergebnis in wenigen Zeilen und Fehler aus. **Sprache:** Alle Ausgaben von `aios` auf stdout und stderr sind englisch, auch Berichte und Aufstellungen; deutsch bleiben nur die Commit-Nachrichten, die AIOS schreibt, sowie die Rümpfe der AIOS-Skills (V0.3, Memo 53, 54). Claude spricht mit dem User in dessen Sprache. `bin/aios` und die Weiterleiter sind Bash-Skripte nach der Bash-Konvention (Help-, Version- und Dispatch-Blöcke, Fallback); die Logik hinter `aios` läuft in Python im venv der Installation (`python/`). `--prepare`, `--install`, `--versions`, `--remove-version` und `--uninstall` verwenden nur die Standardbibliothek, weil sie aus einem Klon mit dem `python3` des Systems laufen, bevor eine venv existiert. Voraussetzungen sind die Grundausstattung aus `aios --prepare`.
 
 ### `aios --prepare`
 
@@ -356,8 +398,10 @@ Alle schreibenden Befehle zeigen zuerst einen Plan und fragen `[Y/n]` (I7). Für
 | `~/bin`, `~/etc`, `~/tmp`, `~/git` | anlegen |
 | stup vorhanden und aktuell | installieren nach `~/bin/stup` bzw. aktualisieren (von `bluccino/tool-stup`, Vergleich mit `stup --version`); ist die Quelle nicht erreichbar, nur eine Warnung, sofern stup vorhanden ist |
 | `~/bin/profile.sh` | mit `stup --profile` anlegen, nur wenn sie fehlt; nie überschreiben |
+| **Grundausstattung:** `python3` ≥ 3.9 mit den Modulen `venv` und `pip`, `git` | Meldung mit dem Weg dazu (z. B. Paketverwaltung des Systems); AIOS installiert nichts davon ohne Rückfrage. Ohne Grundausstattung gibt es kein setup von Arbeitspferden; Pakete ohne Arbeitspferde lassen sich weiter holen (V0.5, Memo 31) |
+| **Entwicklerausstattung** (nur `--dev`): zusätzlich `gh` | Meldung mit dem Weg dazu; gebraucht für Veröffentlichen und `aios --contribute` |
 
-Ist alles vorhanden: „Rechner vorbereitet", keine Rückfrage.
+Ist alles vorhanden: „Rechner vorbereitet", keine Rückfrage. `deno` ist keine Voraussetzung, sondern das Arbeitspferd `worker-deno` (Spec 07).
 
 ### `aios --install [v<version>]`
 
@@ -369,10 +413,22 @@ Aufgerufen aus einem Klon des Repos `aibex-aios` (`./bin/aios --install …`) od
 4. **Installieren**, falls `v<version>` noch nicht installiert ist: Stand des Tags mit `git archive` nach `/opt/aios/v<version>/` übertragen (Abbildung siehe *Repo*), venv in `python/` anlegen und `pyyaml` installieren, `python -m compileall`, Dateien schreibschützen, Eintrag in `installations.yaml`.
 5. **Benutzer einrichten**, was fehlt: Weiterleiter nach `~/bin` (angelegt von `--prepare`); ein vorhandener Weiterleiter wird nur durch einen neueren ersetzt, der Prototyp (`~/bin/aios` mit `~/etc/aios/`) immer. `~/.aios/config.yaml` mit `hosts: [claude-code]`, Hooks eintragen und `ai-brain`-Hooks sichern, `~/.aios/repo` merken.
 6. **AIOS-Skills** der Gruppe `aios` als Hüllen in `~/.claude/skills/aios-*/` und den Alias in `~/.claude/skills/gui/` schreiben (bei jedem Install). Pakete holt der User mit `aios --fetch` bzw. `/aios-package` (Spec 06).
+7. **Umstieg auf v0.5** (beim ersten Install von v0.5): Hooks auf `aios --context --session` bzw. `--advise` umschreiben, `~/bin/aios-context` entfernen, die `allowed-tools` der Hüllen auf `Bash(aios --context *)` umstellen. Der Plan nennt jeden bekannten Vault, der an eine Version unter 0.5 gebunden ist, mit dem Befehl `aios --activate v0.5.<n> <vault>` (V0.5, Memo 04); bekannt sind die Vaults aus den Merkern der Sessions (`cwd`) und aus `~/.aios/repo`.
 
 Das Übertragen geschieht in ein temporäres Verzeichnis neben dem Ziel, das erst am Ende umbenannt wird; ein Abbruch hinterlässt keine halbe Installation.
 
 Eine bereits installierte Version wird nicht erneut installiert (I5, I8).
+
+### `aios --install distribution-<name>`
+
+Erkennt AIOS am Argument ein Paket `distribution-<name>` statt einer Version, installiert es eine Distribution (Spec 06, *Distributionen*; V0.5, Memos 26, 27):
+
+1. Distribution aus der Hub-Liste bzw. mit `--from <repo>` aus dem Arbeitsbaum lesen, auflösen (Kernel aus `kernel:`, Pakete mit Abhängigkeiten).
+2. Ziel: `<vault>` oder der Vault von `cwd`.
+3. Ein Plan mit zwei Teilen: **Rechner** (Kernel installieren, falls fehlend, wie `aios --install v<version>`; Arbeitspferde einrichten, Spec 07) und **Vault** (an den Kernel binden, mit Umstellung, falls nötig; Pakete holen, `packages:` und `lock.yaml` der Vault-Root schreiben; registrieren). Ein Ja.
+4. Zuerst der Rechnerteil; scheitert er, bleibt der Vault unberührt. Dann der Vaultteil mit Sicherung (Spec 06, *Holen*).
+
+Ist die Distribution schon installiert, aktualisiert derselbe Befehl auf die höchste Version im Bereich.
 
 ### `aios --activate v<version> [<pfad>]`
 
@@ -384,6 +440,7 @@ Eine bereits installierte Version wird nicht erneut installiert (I5, I8).
 | Projekt | ist der Pfad kein Projekt (kein `@/`) und keine Vault-Root: Abbruch mit Hinweis auf `/aios-init` |
 | Wirkung | `aios: <version>` in `<pfad>/.aios/config.yaml` schreiben bzw. ersetzen; an der Vault-Root ist `.aios/config.yaml` Teil des ersten Commits, sonst committet `aios --activate` nicht |
 | Version | mit oder ohne `v` angegeben, geschrieben ohne `v`; steht dieselbe Version schon in der Datei und fehlt nichts von der Struktur: „nichts zu tun", keine Rückfrage |
+| Umstellung | von v0.3 bzw. v0.4 im selben Plan (Spec 06, *Umstellung von v0.3*, *Umstellung von v0.4*) |
 | Hinweis | Master-Kontext und Registrierung gelten ab dem nächsten Chat |
 
 ### `aios --deactivate [<pfad>]`
@@ -405,8 +462,8 @@ aibex-aios/                          GitHub aibex-aios/aibex-aios, Tags v<versio
 ├── README.md
 ├── CLAUDE.md                        Regeln für die Arbeit am Repo
 ├── manifest.yaml                    Paket-Manifest des Kernels (type: kernel, Spec 06)
-├── VERSION                          Entwicklungsstand, z. B. 0.4.0-dev
-├── bin/                             aios (Einstieg: ./bin/aios --install), aios-context
+├── VERSION                          Entwicklungsstand, z. B. 0.5.0-dev
+├── bin/                             aios (Einstieg: ./bin/aios --install)
 ├── lib/aios/                        Python-Paket
 ├── skills/aios/<name>/SKILL.md      AIOS-Skills (aios-gui mit gui.yaml)
 ├── templates/                       forwarder (Weiterleiter), gitignore (Vorlage für aios --init)
@@ -422,7 +479,7 @@ aibex-aios/                          GitHub aibex-aios/aibex-aios, Tags v<versio
 
 Das Repo enthält keinen Vault. Vaults legt der User an und bindet sie mit `aios --activate` an eine Version; die Tests legen ihre Vaults im Sandkasten an.
 
-**Skills:** Das Repo enthält nur noch die AIOS-Skills (`skills/aios/`). `aios --install` schreibt sie als versionsneutrale AIOS-Skills nach `~/.claude/skills/` (Spec 03). Der Rumpf von `skills/aios/aios-memo/` ist der Rumpf von `memo` in der Version 6.0.0 und wird nicht angeglichen (Spec 03). Die bisherige Bibliothek (`skills/basic/`, `assistants/demo/`) ist in eigene Paket-Repos übergegangen (`aibex-aios/memo`, `aibex-aios/gaertner`, `aibex-aios/astronom`, Spec 06); ihre Historie bleibt im Repo `aibex-aios` bis zum Tag `v0.3.1`.
+**Skills:** Das Repo enthält nur noch die AIOS-Skills (`skills/aios/`). `aios --install` schreibt sie als versionsneutrale AIOS-Skills nach `~/.claude/skills/` (Spec 03). Der Rumpf von `skills/aios/aios-memo/` ist der Rumpf von `memo` in der Version 6.0.0 und wird nicht angeglichen (Spec 03). Die bisherige Bibliothek (`skills/basic/`, `assistants/demo/`) ist in eigene Paket-Repos übergegangen (`aibex-aios/skill-memo`, `aibex-aios/assistant-gaertner`, `aibex-aios/assistant-astronom`, Spec 06); ihre Historie bleibt im Repo `aibex-aios` bis zum Tag `v0.3.1`.
 
 | Repo | Installation |
 |---|---|
@@ -435,7 +492,7 @@ Das Repo enthält keinen Vault. Vaults legt der User an und bindet sie mit `aios
 
 Ein Release (Tag `v<version>`) ist nur vollständig, wenn `spec/` den Soll-Stand dieser Version beschreibt und `version` in `manifest.yaml` dem Tag entspricht.
 
-Ein Entwicklungsstand wird ohne Installation genutzt, indem `~/.aios/installations.yaml` auf die Wurzel des Klons zeigt (z. B. `v0.4.0-dev: ~/git/AIbex/aibex-aios`) oder `AIOS_HOME` auf diesen Ort gesetzt wird. Die Weiterleiter finden dort wie in einer Installation `bin/aios` und `bin/aios-context`.
+Ein Entwicklungsstand wird ohne Installation genutzt, indem `~/.aios/installations.yaml` auf die Wurzel des Klons zeigt (z. B. `v0.5.0-dev: ~/git/AIbex/aibex-aios`) oder `AIOS_HOME` auf diesen Ort gesetzt wird. Der Weiterleiter findet dort wie in einer Installation `bin/aios`.
 
 ## Legacy und Umstieg
 
@@ -444,7 +501,8 @@ Ein Entwicklungsstand wird ohne Installation genutzt, indem `~/.aios/installatio
 | Vault ohne `aios:` in der Kette | Legacy-Modus über `ai-brain` (Spec 02) |
 | Vault mit `aios: 0.2.0` | läuft mit v0.2 weiter; Umstellung mit `aios --activate v0.3.0 <vault>`, danach ergänzt die Aktivierung die Struktur des Root-Projekts und die Konsistenzprüfung meldet Lücken in den Projekten (Spec 05) |
 | Umstieg eines Vaults (z. B. `§AIbex`) | `@Skill` nach `@!Skill` verschieben und jedem Skill ein `version:` geben (ohne Version wird er nicht registriert); weitere `@`-Ordner prüfen, ob sie *Laden* bleiben sollen; `aios --activate v<version> <vault>`; Projekte ohne eigenes Repo mit `aios --init` ergänzen (Spec 05). Versionen und Tags der Pflegeprojekte sind Teil dieses Umstiegs, nicht von AIOS |
-| Vault mit `aios: 0.3.<n>` | läuft mit v0.3 weiter; Umstellung mit `aios --activate v0.4.<n> <vault>`, die Aktivierung bietet die Umstellung von `skills:` und `assistants:` auf `packages:` an (Spec 06, *Umstellung von v0.3*); `.aios/manifest` wird beim nächsten Registrieren durch `.aios/registry` ersetzt |
+| Vault mit `aios: 0.3.<n>` | läuft mit v0.3 weiter, solange `aios-context` installiert ist; Umstellung mit `aios --activate v0.5.<n> <vault>` (bzw. `v0.4.<n>`), die Aktivierung bietet die Umstellung von `skills:` und `assistants:` auf `packages:` an (Spec 06, *Umstellung von v0.3*); `.aios/manifest` wird beim nächsten Registrieren durch `.aios/registry` ersetzt |
+| Vault mit `aios: 0.4.<n>` | läuft mit v0.4 weiter, solange `aios-context` installiert ist; nach der Installation von v0.5 gibt es kein `aios-context` mehr, deshalb Umstellung mit `aios --activate v0.5.<n> <vault>` (Spec 06, *Umstellung von v0.4*) |
 | Rückkehr | `aios --deactivate <vault>`; vollständig mit `aios --uninstall` |
 
 Ein Rechner mit dem Prototyp von `aios` (Kopie nach `~/bin`, Konfiguration in `~/etc/aios/`) wird beim ersten `aios --install` umgestellt: Der Weiterleiter ersetzt `~/bin/aios`, `~/etc/aios/` wird entfernt.
