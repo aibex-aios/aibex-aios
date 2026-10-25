@@ -1,0 +1,38 @@
+<div class="abr" style="font-family:system-ui,sans-serif;display:flex;flex-direction:column;gap:10px;max-width:420px">
+<style>
+.abr select,.abr button{font:inherit;padding:6px 10px;border-radius:8px;border:1px solid #8886;background:transparent;color:inherit}
+.abr button{cursor:pointer}.abr button:hover{background:#8882}
+.abr .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.abr output{font-size:1.4em;font-weight:600}
+</style>
+<div class="row">
+  <label>x <select id="abr-x"><option>Apfel</option><option>Birne</option></select></label>
+  <label>y <select id="abr-y"><option>Apfel</option><option>Birne</option></select></label>
+</div>
+<div class="row">
+  <button data-op="and">x * y</button>
+  <button data-op="or">x + y</button>
+  <button data-op="notx">¬x</button>
+  <button data-op="noty">¬y</button>
+</div>
+<div class="row">Ergebnis: <output id="abr-out">—</output></div>
+<div class="row" style="opacity:.7;font-size:.9em">Apfel entspricht falsch, Birne wahr; * ist UND, + ist ODER, ¬ ist NICHT.</div>
+<script>
+(function () {
+  var B = function (v) { return v === "Birne"; };
+  var F = function (b) { return b ? "Birne" : "Apfel"; };
+  var ops = {
+    and: function (x, y) { return F(B(x) && B(y)); },
+    or: function (x, y) { return F(B(x) || B(y)); },
+    notx: function (x) { return F(!B(x)); },
+    noty: function (x, y) { return F(!B(y)); }
+  };
+  document.querySelectorAll(".abr button[data-op]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      var x = document.getElementById("abr-x").value, y = document.getElementById("abr-y").value;
+      document.getElementById("abr-out").textContent = ops[b.dataset.op](x, y);
+    });
+  });
+})();
+</script>
+</div>

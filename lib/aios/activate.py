@@ -34,8 +34,10 @@ def plan_activation(tag, p, plan, installed=True):
     if installed and (tag not in known or not known[tag][0].is_dir()):
         raise Abort(f"AIOS {tag} is not installed; run: aios --install {tag}")
     later = Plan()
-    changes = migrate.plan(p, later, m.group(1)) \
-        if semver.Version.parse(m.group(1)).release() >= semver.Version(0, 4) else []   # from v0.3
+    target = semver.Version.parse(m.group(1)).release()
+    changes = migrate.plan(p, later, m.group(1)) if target >= semver.Version(0, 4) else []   # from v0.3
+    if target >= semver.Version(0, 5):              # from v0.4 (spec 06, Umstellung von v0.4)
+        changes += migrate.plan04(p, later, m.group(1))
     steps = None
     if p == root:                                   # the vault root becomes the root project (spec 04)
         steps = aiosinit.Steps(p, plan, root=True)

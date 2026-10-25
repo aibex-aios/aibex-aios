@@ -83,7 +83,7 @@ aibex-hub           https://github.com/aibex-hub  (home)
    assert_contains "$(printf '%s\n' "$OUT" | grep app-taschenrechner | tr -s ' ')" "aibex-aios/app-taschenrechner app Programmierbarer RPN-Taschenrechner" "library: index of aibex-aios"
    assert_contains "$OUT" "(hub aibex-hub cannot be searched: no aios-index, no topic aios-package; fetch by name)" "library: hub without index"
    assert_eq "$(A "$D" --library orion | head -1 | tr -s ' ')" "aibex-aios/knowledge-orion knowledge Die hellsten Sterne des Orion" "library: search in name and description"
-   assert_eq "$(A "$D" --library skill-memo)" $'aibex-aios/skill-memo  6.0.0 6.1.0\naibex-hub/skill-memo  6.0.0' "library <package>: versions per hub"
+   assert_eq "$(A "$D" --library skill-memo)" $'aibex-aios/skill-memo  6.0.0 6.0.1 6.1.0\naibex-hub/skill-memo  6.0.0' "library <package>: versions per hub"
    assert_eq "$(A "$D" --library aibex-hub/skill-memo)" "aibex-hub/skill-memo  6.0.0" "library <hub>/<package>: only this hub"
    assert_contains "$(A "$D" --library gibtsnicht)" "no package matches gibtsnicht" "library: no match"
    assert_dir "$HOME/.aios/hub/aibex-aios/.git"
@@ -106,7 +106,7 @@ def run(req, hubs=('aibex-aios', 'aibex-hub')):
     except (resolver.ResolveError, ui.Abort) as e:
         print(type(e).__name__, e)
 $1"; }
-   assert_eq "$(SRCPY "print(sorted(s.versions('skill-memo', 'aibex-aios')), s.versions('gibtsnicht', 'aibex-aios'))")" "['6.0.0', '6.1.0'] []" "versions from the tags, none for a missing repo"
+   assert_eq "$(SRCPY "print(sorted(s.versions('skill-memo', 'aibex-aios')), s.versions('gibtsnicht', 'aibex-aios'))")" "['6.0.0', '6.0.1', '6.1.0'] []" "versions from the tags, none for a missing repo"
    assert_eq "$(SRCPY "m = s.manifest('app-taschenrechner', 'aibex-aios', '0.4.3'); print(m.name, m.version, m.elements())")" "app-taschenrechner 0.4.3 ['taschenrechner', 'taschenrechner-gui', 'knowledge']" "manifest from the cache"
    assert_dir "$HOME/.aios/packages/aibex-aios/app-taschenrechner/0.4.3/.git"
    assert_eq "$(SRCPY "print(len(s.commit('app-taschenrechner', 'aibex-aios', '0.4.3')))")" "40" "commit of the cached version"

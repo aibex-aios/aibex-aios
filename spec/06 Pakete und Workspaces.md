@@ -345,10 +345,10 @@ Arbeitspferde sind Pakete vom Typ `worker` und stehen in Spec 07. Das Feld `work
 
 | Bestand | Umstellung |
 |---|---|
-| `assistent-gaertner`, `assistent-astronom` in `packages:` | umbenannt nach `assistant-gaertner` bzw. `assistant-astronom`; der Plan nennt jede Umbenennung; die Liste der Umbenennungen steht im Kernel |
+| `assistent-gaertner`, `assistent-astronom` in `packages:` | umbenannt nach `assistant-gaertner` bzw. `assistant-astronom`, mit dem Standardbereich der höchsten zu v0.5 passenden Version; der Plan nennt jede Umbenennung; die Liste der Umbenennungen steht im Kernel. `@Data/assistent-<name>/` wird mit umbenannt; gibt es das Ziel schon, ist das ein Konflikt (V0.5, Memo 57) |
 | Pakete mit `workers:` | werden von v0.5 abgelehnt (*Prüfung beim Holen*); im Bestand gibt es nur das Testpaket `test-worker` |
 | `~/.aios/workers.yaml` aus v0.4 | bleibt für Vaults auf v0.4 unberührt; v0.5 liest sie nicht |
-| Pakete mit `requires.aios: ">=0.4,<0.5"` | lassen sich unter v0.5 nicht holen; der Plan nennt sie mit der höchsten Version, die zu v0.5 passt, oder als Konflikt |
+| Pakete mit `requires.aios: ">=0.4,<0.5"` | lassen sich unter v0.5 nicht holen; der Plan setzt in `packages:` den Standardbereich der höchsten Version, die zu v0.5 passt, nennt den Wechsel (`skill-memo 6.0.0 -> skill-memo 6.0.1 (requires.aios)`) und holt sie im selben Plan. Gibt es keine solche Version, bricht die Aktivierung ab, bevor etwas geschieht, und nennt jedes Paket mit dem Hinweis auf `aios --fetch --remove` (V0.5, Memo 57) |
 
 ## Umstellung von v0.3
 
