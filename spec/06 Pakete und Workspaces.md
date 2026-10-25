@@ -2,7 +2,7 @@
 title: "Pakete und Workspaces"
 date: 2026-10-25
 author: iHux
-status: Entwurf
+status: Spec
 tags: [spec, aios, v0.5, pakete, workspaces]
 number: 06
 related:
