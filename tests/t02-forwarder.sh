@@ -35,7 +35,7 @@
 # forwarder: own options, arguments passed unchanged
 #===============================================================================
 
-   assert_eq "$(aios ---version)" "0.2.0" "---version"
+   assert_eq "$(aios ---version)" "0.3.0" "---version"
    assert_exit 1 aios ---help
    assert_contains "$(aios ---help)" "aios ---which" "---help names the tool"
 
@@ -133,6 +133,21 @@
    assert_eq "$(run "$V/Sterne" aios --activate v9.9.9 /x)" "sys-0.1.0 aios --activate v9.9.9 /x" "--activate of a version not installed: cwd decides (it reports the missing version)"
    assert_eq "$(run "$V/Sterne" aios --context --activate v0.2.0)" "sys-0.1.0 aios --context --activate v0.2.0" "only aios --activate, not aios --context --activate"
    rm -rf "$V/Sterne/.aios"
+
+#===============================================================================
+# aios --install distribution-*: the highest installed version, at least 0.5 (V0.5, step 9)
+#===============================================================================
+
+   mkdir -p "$V/Sterne/.aios"; printf 'aios: 0.1.0\n' > "$V/Sterne/.aios/config.yaml"
+   OUT="$(run "$V/Sterne" aios --install distribution-demo)"; RC=$?
+   assert_eq "$RC" "1" "distribution below 0.5: exit 1"
+   assert_contains "$OUT" "distributions need AIOS 0.5 or later, highest installed v0.2.0" "distribution below 0.5: message"
+   fake_install "$AIOS_PREFIX/v0.5.0" "sys-0.5.0"
+   printf 'v0.5.0: %s\n' "$AIOS_PREFIX/v0.5.0" >> "$AIOS_PREFIX/installations.yaml"
+   assert_eq "$(run "$V/Sterne" aios --install distribution-demo "$V")" "sys-0.5.0 aios --install distribution-demo $V" "distribution: highest version, not that of cwd"
+   assert_eq "$(run "$V/Sterne" aios --install aibex-aios/distribution-demo==1.0.0)" "sys-0.5.0 aios --install aibex-aios/distribution-demo==1.0.0" "distribution with hub and version"
+   assert_eq "$(run "$V/Sterne" aios --install v0.2.0)" "sys-0.1.0 aios --install v0.2.0" "--install of a version: cwd decides as before"
+   rm -rf "$V/Sterne/.aios" "$AIOS_PREFIX/v0.5.0"
 
    rm -f "$HOME/.aios/installations.yaml" "$AIOS_PREFIX/installations.yaml"
    assert_exit 1 aios --z

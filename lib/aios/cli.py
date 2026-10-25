@@ -5,7 +5,7 @@ import sys
 
 from . import activate, aiosinit, assign, contribute, deploy, fetch, gui, hub, install, integrity, paths, registry, resolver, skills, ui, worker, workspace
 
-USAGE = ("usage: aios --prepare [--dev] | --install [v<version>] | --versions | --remove-version v<version>"
+USAGE = ("usage: aios --prepare [--dev] | --install [v<version>] | --install distribution-<name> [<vault>] | --versions | --remove-version v<version>"
          " | --uninstall | --activate v<version> [<path>] | --deactivate [<path>] | --config [<path>]"
          " | --register [<path>] | --init [<path>] [--assistant <value>] [--name <name>] [--accept-name]"
          " | --integrity [<path>] | --assistant <name|none|inherit> [--to <project>] [--session <id>]"
@@ -14,7 +14,7 @@ USAGE = ("usage: aios --prepare [--dev] | --install [v<version>] | --versions | 
          " | --hubs [add <name> [<url>] | remove <name>] [--vault]"
          " | --fetch [[<hub>/]<package>[<range>] [--hub <hub>] [--from <repo>]] [--to <project>]"
          " | --fetch --upgrade [<package>] | --fetch --remove <package>"
-         " | --worker (step 6) | --run <command> [args]"
+         " | --worker [<package> setup] [--to <project>] | --run <command> [args]"
          " | --contribute <file>... --to <package> [--message <text>]"
          " | --workspace init <repo> [<folder>] | update | freeze | status [<path>] [--group <g>]"
          " | --deploy <package> --only <element>... | --all [--to <project>] | --deploy [--to <project>]"
@@ -54,6 +54,10 @@ def main(argv):
     try:
         if cmd == "--prepare" and args in ([], ["--dev"]):
             return install.prepare(dev=args == ["--dev"])
+        if cmd == "--install" and args and not args[0].startswith("-"):
+            from . import distribution
+            if distribution.is_spec(args[0]):
+                return distribution.command(args)
         if cmd == "--install" and len(args) <= 1:
             return install.install(args[0] if args else None)
         if cmd == "--versions" and not args:

@@ -1,0 +1,9 @@
+name: distribution-zwei
+version: 1.0.0
+type: distribution
+description: "Zweite Testdistribution mit Kernel (Konflikt)"
+requires:
+  aios: ">=0.5,<0.6"
+kernel: "==0.5.0"
+depends:
+  test-befehl: "==0.1.0"

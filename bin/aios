@@ -4,6 +4,7 @@
    if [ "$*" == "-?" ] || [ "$*" == "--help" ]; then
       echo '   usage: aios --prepare [--dev]              # prepare the machine (/opt/aios, ~/bin, stup, kit)'
       echo '          aios --install [v<version>]         # install a version (includes --prepare)'
+      echo '          aios --install distribution-<name> [<vault>] [--from <repo>]  # kernel, workhorses, packages'
       echo '          aios --versions                     # installed versions and their locations'
       echo '          aios --remove-version v<version>    # remove an installed version'
       echo '          aios --uninstall                    # remove forwarders, AIOS skills and hooks'

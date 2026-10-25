@@ -180,8 +180,9 @@ def check(picks, source):
 # ---------------------------------------------------------------------------
 
 class Fetch:
-    def __init__(self, to=None):
-        self.project = deploy.target_project(to)
+    def __init__(self, to=None, project=None):
+        """project: the vault root of a distribution, which may not be bound yet (aios --install)."""
+        self.project = Path(project) if project else deploy.target_project(to)
         self.cfg = config.load(self.project)
         self.hubs = hub.hub_list(self.cfg)
         self.source = hub.GitSource(self.hubs)
@@ -228,10 +229,14 @@ class Fetch:
         needed = {d for p in picks.values() for d in p.manifest.depends} | set(packages)
         return picks if needed == set(picks) else None
 
-    def plan(self, picks, packages, title, done):
-        """Show the plan for the new state and execute it after one confirmation."""
+    def plan(self, picks, packages, title, done, machine=None, first=None):
+        """Show the plan for the new state and execute it after one confirmation. machine: steps
+        that run before the backup (aios --install distribution-*: kernel; the setups of the
+        workhorses then go there too); first: steps after the backup, before fetching (binding)."""
         check(picks, self.source)
         plan = Plan()
+        if first:
+            plan.steps += first
         moved = []                                  # package folders the plan replaces or removes
         old = self.lock.get("packages") or {}
         lines = []
@@ -256,7 +261,7 @@ class Fetch:
             plan.add(f"{why:<10} {name} {p.version} ({where}) -> {dst}",
                      lambda src=src, dst=dst, fields=fields: mirror(src, dst, fields))
             moved.append(dst)
-        installs = self.workers(plan, picks)
+        installs = self.workers(plan if machine is None else machine, picks, machine is not None)
         base = package_dir(self.project, "")
         for d in sorted(base.iterdir()) if base.is_dir() else []:
             if d.name not in picks and (d / MARKER).is_file():
@@ -291,7 +296,9 @@ class Fetch:
         if lock != self.lock:
             plan.add(f"{lock_file(self.project)}: {len(picks)} packages",
                      lambda: write_lock(self.project, lock))
-        if not plan:
+        if machine is not None and not any(a for _, a in machine.steps):
+            machine = None                          # kernel and workhorses are on the machine
+        if not plan and not machine:
             say(f"=> the packages of {self.project} match lock.yaml, nothing to do")
             for line in lines:
                 say(f"   {line}")
@@ -306,6 +313,9 @@ class Fetch:
         plan.steps.insert(0, (f"back up what the plan changes -> {backup.folder(self.project)}",
                               lambda: bk.start(copied, moved)))
         plan.add("remove the backup", bk.finish)
+        if machine:
+            plan.steps[0:0] = ([("machine part: kernel and workhorses", None)] + machine.steps
+                               + [(f"vault part: {self.project}", None)])
         if ui.MODE != "yes":
             say(title)
             for line in lines:
@@ -316,6 +326,9 @@ class Fetch:
             raise
         except BaseException as e:                  # noqa: BLE001 - all or nothing (spec 01, I11)
             if not bk.started:
+                if machine and not isinstance(e, (ui.Cancelled, Abort)):
+                    raise Abort(f"the machine part failed ({type(e).__name__}: {e}); the vault is "
+                                f"unchanged, what is installed stays")
                 raise
             backup.restore(self.project)
             raise Abort(f"the plan failed ({type(e).__name__}: {e}); "
@@ -325,7 +338,7 @@ class Fetch:
         return 0
 
 
-    def workers(self, plan, picks):
+    def workers(self, plan, picks, from_cache=False):
         """setup of every workhorse of the picks whose version is missing on the machine, the
         workhorses they depend on first; conflicts of programs in the chain abort (spec 07, F9).
         Returns the paths a restore removes again (installations, new forwarders)."""
@@ -345,7 +358,9 @@ class Fetch:
             target = worker.install_dir(name, p.version)
             plan.add(f"setup      {name} {p.version} -> {target}"
                      + "".join(f"\n             {x}" for x in worker.plan_lines(src, p.manifest)),
-                     lambda dst=dst, m=p.manifest: worker.setup(dst, m, self.project))
+                     lambda d=src if from_cache else dst, m=p.manifest: worker.setup(d, m, self.project))
+            if from_cache:                          # machine part: what is installed stays (spec 06)
+                continue
             out += [target, target.with_name(target.name + ".new")]
             out += [worker.bin_dir() / prog for prog in p.manifest.worker["programs"]
                     if not (worker.bin_dir() / prog).exists()]

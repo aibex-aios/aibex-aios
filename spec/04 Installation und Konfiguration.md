@@ -338,9 +338,10 @@ Weiterleiter und `aios` verwenden ausschließlich diese Variablen, nie fest verd
 
 1. Ist `AIOS_HOME` gesetzt: `$AIOS_HOME/bin/aios` aufrufen.
 2. `aios --activate v<version> …`: Ist diese Version installiert, wird sie aufgerufen, unabhängig davon, an welche Version `cwd` gebunden ist; so aktiviert immer die genannte Version (V0.3, Memo 54, A1). Ist sie nicht installiert, gilt die übliche Wahl, und die gewählte Version meldet die fehlende Installation.
-3. Sonst vom physischen `cwd` (`pwd -P`) aufwärts bis zur Vault-Root die erste Zeile `aios: <version>` in einer `.aios/config.yaml` suchen. Außerhalb eines Vaults wird nicht gesucht, und `~/.aios/config.yaml` zählt nie, auch wenn `~` in einem Vault liegt.
-4. Gefunden: `v<version>` in `~/.aios/installations.yaml`, danach in `/opt/aios/installations.yaml` nachschlagen und `<pfad>/bin/aios` mit allen Argumenten aufrufen. Nicht installiert: Fehler mit Hinweis auf `aios --install v<version>`.
-5. Nicht gefunden:
+3. `aios --install distribution-…` (auch mit Hub-Präfix): die höchste installierte Version, unabhängig von `cwd`; ist sie älter als 0.5, Fehler mit Hinweis auf `aios --install v0.5.<n>` (Weiterleiter 0.3.0; V0.5, Memo 55).
+4. Sonst vom physischen `cwd` (`pwd -P`) aufwärts bis zur Vault-Root die erste Zeile `aios: <version>` in einer `.aios/config.yaml` suchen. Außerhalb eines Vaults wird nicht gesucht, und `~/.aios/config.yaml` zählt nie, auch wenn `~` in einem Vault liegt.
+5. Gefunden: `v<version>` in `~/.aios/installations.yaml`, danach in `/opt/aios/installations.yaml` nachschlagen und `<pfad>/bin/aios` mit allen Argumenten aufrufen. Nicht installiert: Fehler mit Hinweis auf `aios --install v<version>`.
+6. Nicht gefunden:
    - `aios --context …`: **Legacy-Modus**, d. h. `ai-brain` mit den Argumenten nach `--context` aufrufen, falls vorhanden (`--session`, `--advise`, `--load`, `--context`); sonst nichts ausgeben. Ausnahme `--id`: Ausgabe von `ai-brain --id` mit angehängtem `mode=legacy`, außerhalb eines Vaults `mode=none` (Spec 02). Nur die Gruppe `--context` fällt auf `ai-brain` zurück (V0.5, Memo 03).
    - jeder andere Aufruf: die höchste installierte Version aufrufen.
 

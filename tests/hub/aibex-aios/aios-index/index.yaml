@@ -48,3 +48,15 @@ packages:
   - name: skill-test-nutzer
     type: skill
     description: Testpaket Skill, der das Arbeitspferd worker-test nutzt
+  - name: distribution-demo
+    type: distribution
+    description: Testdistribution mit Kernel
+  - name: distribution-zwei
+    type: distribution
+    description: Zweite Testdistribution mit Kernel
+  - name: distribution-sammlung
+    type: distribution
+    description: Testdistribution ohne Kernel
+  - name: distribution-kaputt
+    type: distribution
+    description: Testdistribution mit einem Kernel ohne Tag

@@ -23,19 +23,17 @@ def effective(p):
     return f"{p} runs in legacy mode (ai-brain)"
 
 
-def activate(version, path=None):
-    tag = install.normalize(version)
+def plan_activation(tag, p, plan, installed=True):
+    """Add binding p to tag (with the changeover from v0.3) to plan; False if nothing to do.
+    installed=False: the version is installed by an earlier step of the same plan (Distribution)."""
     m = config.VERSION.match(tag)
-    if not m:
-        raise Abort(f"{version} is not a version (v<MAJOR.MINOR.PATCH>)")
-    p = target(path)
     root = config.vault_root(p)
     if root is None:
         raise Abort(f"{p} is not in a vault (no directory named §… above it)")
     known = install.installations()
-    if tag not in known or not known[tag][0].is_dir():
+    if installed and (tag not in known or not known[tag][0].is_dir()):
         raise Abort(f"AIOS {tag} is not installed; run: aios --install {tag}")
-    plan, later = Plan(), Plan()
+    later = Plan()
     changes = migrate.plan(p, later, m.group(1)) \
         if semver.Version.parse(m.group(1)).release() >= semver.Version(0, 4) else []   # from v0.3
     steps = None
@@ -54,8 +52,7 @@ def activate(version, path=None):
         if config.VERSION.match(str(data.get("aios") or "")) and \
                 config.VERSION.match(str(data["aios"])).group(1) == m.group(1):
             if not (steps and steps.changes) and not changes:
-                say(f"=> {effective(p)}, nothing to do")
-                return 0
+                return False
             what = None
         else:
             what = f"aios: {m.group(1)} in {file}" + (f" (was {data['aios']})" if data.get("aios") else "")
@@ -66,6 +63,18 @@ def activate(version, path=None):
     if steps and steps.changes:
         steps.commit(extra=[".aios/config.yaml"])
     plan.steps += later.steps                       # changeover from v0.3 after the activation (spec 06)
+    return True
+
+
+def activate(version, path=None):
+    tag = install.normalize(version)
+    if not config.VERSION.match(tag):
+        raise Abort(f"{version} is not a version (v<MAJOR.MINOR.PATCH>)")
+    p = target(path)
+    plan = Plan()
+    if not plan_activation(tag, p, plan):
+        say(f"=> {effective(p)}, nothing to do")
+        return 0
     say(f"=> activate AIOS {tag} for {p}")
     if not confirm(plan, "activate?", "activation cancelled"):
         return 1

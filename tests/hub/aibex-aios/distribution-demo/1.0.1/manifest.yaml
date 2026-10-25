@@ -1,0 +1,10 @@
+name: distribution-demo
+version: 1.0.1
+type: distribution
+description: "Testdistribution mit Kernel und einem Skill, der ein Arbeitspferd nutzt"
+requires:
+  aios: ">=0.5,<0.6"
+kernel: "==0.5.0"
+depends:
+  skill-test-nutzer: "==0.1.0"
+  test-befehl: "==0.1.0"
