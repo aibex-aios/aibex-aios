@@ -58,7 +58,12 @@
       export HOME="$SB/home" AIOS_PREFIX="$SB/opt" AIOS_CLAUDE_DIR="$SB/home/.claude"
       export AIOS_SUDO="$SB/fake/no-sudo" AIOS_PIP=true AIOS_STUP_URL="file://$SB/stup/stup"
       export AIOS_HUBS="aibex-local=file://$H"
-      export PATH="$HOME/bin:$PATH"
+      PYDIR=""                                      # never the real ~/bin in PATH: aios --install would
+      for P in $(type -ap python3) /opt/homebrew/bin/python3 /usr/local/bin/python3 /usr/bin/python3; do
+         [ -x "$P" ] && "$P" -c "import yaml, venv, ensurepip" 2>/dev/null && { PYDIR="$(dirname "$P")"; break; }
+      done                                          # update the user's stup there (V0.5, memo 61)
+      [ -n "$PYDIR" ] || { echo "*** needs a python3 with PyYAML, venv and ensurepip" >&2; exit 1; }
+      export PATH="$HOME/bin:$PYDIR:/usr/bin:/bin:/usr/sbin:/sbin"
       V="$SB/§Probe-Rothirsch"; mkdir -p "$V"
       I() { (cd "$V" && "$S/bin/aios" --install "$@" 2>&1); }
       WK="$AIOS_PREFIX/workers"; BIN="$HOME/.aios/bin"

@@ -5,7 +5,7 @@
       echo '   usage: tests/live/assistants.sh [<model>]   # headless sessions A1-A6, default model haiku'
       echo '          tests/live/assistants.sh --version   # print version'
       echo '   not part of tests/run: needs a logged-in claude CLI and uses tokens;'
-      echo '   copies the demo assistants of the test hub (tests/hub/aibex-aios/assistent-*) into a sandbox'
+      echo '   copies the demo assistants of the test hub (tests/hub/aibex-aios/assistant-*) into a sandbox'
       echo '   see also: tests/live/skills.sh, aios --context --assistant'
       exit 1
    fi
@@ -29,10 +29,10 @@
       T="${TMPDIR:-/tmp}"; SB="$(cd "$(mktemp -d "${T%/}/aios-live.XXXXXX")" && pwd -P)" || exit 1
       V="$SB/§Live"; G="$V/Garten"; O="$G/@/@!Assistant/gaertner"; A="$V/@/@!Assistant/astronom"
       mkdir -p "$SB/bin" "$SB/home" "$V/.aios" "$V/@/@Rule" "$G/@/@!Assistant" "$V/@/@!Assistant"
-      printf 'aios: 0.4.0\n' > "$V/.aios/config.yaml"
+      printf 'aios: 0.5.0\n' > "$V/.aios/config.yaml"
       printf '# Stil\nAntworte auf Deutsch.\n' > "$V/@/@Rule/stil.md"
-      cp -R "$LIB/assistent-gaertner/0.2.1/assistants/gaertner" "$O"   # demo assistants (packages, spec 03)
-      cp -R "$LIB/assistent-astronom/0.2.1/assistants/astronom" "$A"
+      cp -R "$LIB/assistant-gaertner/0.3.0/assistants/gaertner" "$O"   # demo assistants (packages, spec 03)
+      cp -R "$LIB/assistant-astronom/0.3.0/assistants/astronom" "$A"
       SORTE="Sternreinette $RANDOM"
       printf '\n## Sandkasten\n\n| Sorte | Genussreife |\n|---|---|\n| %s | nur am 29. Februar eines Schaltjahres |\n' "$SORTE" >> "$O/@Wissen/@@Sortenkunde/sortenkunde.md"
       printf '# Garten\n' > "$G/@/garten.md"
@@ -50,7 +50,7 @@ d = Path(sys.argv[2]) / ".claude/skills/aios-assistant"; d.mkdir(parents=True)
 (d / "SKILL.md").write_text(install.wrapper("aios-assistant", m["description"], m.get("allowed-tools", ""), session=True))
 g = Path(sys.argv[2]) / ".claude/skills/gui"; g.mkdir(parents=True)
 (g / "SKILL.md").write_text(install.ALIAS)' "$REPO" "$G"
-      HOOKS="{\"hooks\":{\"SessionStart\":[{\"hooks\":[{\"type\":\"command\",\"command\":\"$SB/bin/aios-context --session\"}]}],\"UserPromptSubmit\":[{\"hooks\":[{\"type\":\"command\",\"command\":\"$SB/bin/aios-context --advise\"}]}]}}"
+      HOOKS="{\"hooks\":{\"SessionStart\":[{\"hooks\":[{\"type\":\"command\",\"command\":\"$SB/bin/aios --context --session\"}]}],\"UserPromptSubmit\":[{\"hooks\":[{\"type\":\"command\",\"command\":\"$SB/bin/aios --context --advise\"}]}]}}"
       TOOLS=("Skill" "Read" "Bash(aios --skill *)" "Bash(aios --assistant *)" "Bash(aios --gui *)" "Bash(aios --context *)")
       ask() {                                       # ask <prompt> [<claude options>]: new chat with the AIOS hooks
          local P="$1"; shift

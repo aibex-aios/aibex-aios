@@ -14,7 +14,7 @@
 #===============================================================================
 
    if [ "$*" == "--version" ]; then
-      echo "0.4.0"; exit 0
+      echo "0.5.0"; exit 0
    fi
 
 #===============================================================================
@@ -27,7 +27,7 @@
       T="${TMPDIR:-/tmp}"; SB="$(cd "$(mktemp -d "${T%/}/aios-live.XXXXXX")" && pwd -P)" || exit 1
       V="$SB/§Live"; G="$V/Garten"
       mkdir -p "$SB/home/.aios" "$SB/bin" "$V/.aios" "$V/@/@Rule" "$G/@" "$G/@Memo" "$G/GN-Neu"
-      printf 'aios: 0.4.0\n' > "$V/.aios/config.yaml"
+      printf 'aios: 0.5.0\n' > "$V/.aios/config.yaml"
       printf '# Stil\nSchreib kurz.\n' > "$V/@/@Rule/stil.md"
       printf '# Garten\nIm Garten wachsen Äpfel.\n' > "$G/@/garten.md"
       printf '# 01 Beete planen\n\n**Datum:** 2026-09-01\n**Status:** Entscheidung\n\n## Entscheidung\nDrei Beete.\n\n## Offen\n- Bewässerung der Beete klären\n' > "$G/@Memo/01 Beete planen.md"
@@ -70,7 +70,7 @@ for f in sorted((repo / "skills" / "aios").glob("*/SKILL.md")):
       }
       echo "=> live skill test with model $MODEL in $SB"
 
-      ID="$(cd "$G" && "$SB/bin/aios-context" --id | sed 's/^id=\([^ ]*\).*/\1/')"
+      ID="$(cd "$G" && "$SB/bin/aios" --context --id | sed 's/^id=\([^ ]*\).*/\1/')"
       A="$(ask "$G" "/aios-context")"
       check "S1 /aios-context: loaded and listed" "$A" "$ID" "Garten"
 

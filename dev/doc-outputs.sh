@@ -55,7 +55,12 @@
       export AIOS_GITHUB="file://$SB/hubs"                # the hubs are the GitHub organizations
       printf 'v0.5.0: %s\n' "$S" > "$HOME/.aios/installations.yaml"
       printf '#!/bin/bash\nexec "%s/bin/aios" "$@"\n' "$S" > "$HOME/bin/aios"; chmod +x "$HOME/bin/aios"
-      export PATH="$HOME/bin:$PATH"
+      PYDIR=""                                      # never the real ~/bin in PATH: aios --install would
+      for P in $(type -ap python3) /opt/homebrew/bin/python3 /usr/local/bin/python3 /usr/bin/python3; do
+         [ -x "$P" ] && "$P" -c "import yaml, venv, ensurepip" 2>/dev/null && { PYDIR="$(dirname "$P")"; break; }
+      done                                          # update the user's stup there (V0.5, memo 61)
+      [ -n "$PYDIR" ] || { echo "*** needs a python3 with PyYAML, venv and ensurepip" >&2; exit 1; }
+      export PATH="$HOME/bin:$PYDIR:/usr/bin:/bin:/usr/sbin:/sbin"
       mkdir -p "$AIOS_PREFIX"
 
       show() {                                      # show <label> <dir> <command...>
