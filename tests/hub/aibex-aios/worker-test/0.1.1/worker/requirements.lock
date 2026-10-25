@@ -1,0 +1,3 @@
+# placeholder, tests/hub/build writes the real hash
+aios-test-tool==1.1.0 \
+    --hash=sha256:0000000000000000000000000000000000000000000000000000000000000000

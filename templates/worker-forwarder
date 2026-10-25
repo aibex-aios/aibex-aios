@@ -1,0 +1,85 @@
+#!/bin/bash
+# worker-forwarder: ~/.aios/bin/<program>, call the version of a workhorse that lock.yaml names (spec 07)
+
+   PROG="$(basename "$0")"
+
+   if [ "$*" == "---help" ]; then
+      echo "   usage: $PROG <args>      # call $PROG of the workhorse version locked for cwd"
+      echo "          $PROG ---which    # show the chosen installation and why"
+      echo "          $PROG ---version  # print version of this forwarder"
+      echo '   order: packages of the program from workers.yaml, nearest .aios/lock.yaml from cwd'
+      echo '          upwards that names one of them, its version, <workers>/<package>/v<version>/bin'
+      echo '   see also: aios --worker, aios --fetch'
+      exit 1
+   fi
+
+#===============================================================================
+# print version: <program> ---version
+#===============================================================================
+
+   if [ "$*" == "---version" ]; then
+      echo "0.1.0"; exit 0
+   fi
+
+#===============================================================================
+# helpers: workers.yaml and lock.yaml in the subset of spec 04, read without a YAML parser
+#===============================================================================
+
+   PREFIX="${AIOS_PREFIX:-/opt/aios}"
+   ROOT="$PREFIX"; [ -f "$PREFIX/workers.yaml" ] || ROOT="$HOME/.aios"
+   STATE="$ROOT/workers.yaml"
+
+   packages_of() {                                  # packages that bring the program $1
+      [ -f "$STATE" ] || return 0
+      awk -v p="  $1:" '$0=="programs:"{s=1;next} /^[^ ]/{s=0} s&&index($0,p)==1{sub(/^[^[]*\[/,"");sub(/\].*$/,"");gsub(/[ "]/,"");print}' "$STATE" | tr ',' '\n'
+   }
+
+   locked() {                                       # version of package $2 in lock.yaml $1
+      awk -v p="  $2:" '$0=="packages:"{s=1;next} /^[^ ]/{s=0} s&&$0==p{f=1;next} f&&/^    version:/{v=$2;gsub(/"/,"",v);print v;exit} f&&/^  [^ ]/{exit}' "$1"
+   }
+
+   choose() {                                       # set PKG, VER, TARGET, WHY
+      local D PKGS P V
+      PKG=""; VER=""; TARGET=""; WHY=""
+      PKGS="$(packages_of "$PROG")"
+      D="$(pwd -P)"
+      while :; do
+         if [ -f "$D/.aios/lock.yaml" ]; then
+            for P in $PKGS; do
+               V="$(locked "$D/.aios/lock.yaml" "$P")"
+               if [ -n "$V" ]; then
+                  PKG="$P"; VER="$V"; TARGET="$ROOT/workers/$P/v$V/bin/$PROG"
+                  WHY="$P $V in $D/.aios/lock.yaml"; return 0
+               fi
+            done
+         fi
+         [ "$D" == "/" ] && break
+         D="$(dirname "$D")"
+      done
+      WHY="no project of the chain from $(pwd -P) has ${PKGS:-a package with $PROG} in lock.yaml"
+      return 1
+   }
+
+#===============================================================================
+# show choice: <program> ---which
+#===============================================================================
+
+   if [ "$*" == "---which" ]; then
+      choose
+      echo "program=$PROG package=${PKG:--} version=${VER:--} target=${TARGET:--} why=$WHY"
+      exit 0
+   fi
+
+#===============================================================================
+# forward: <program> <args>  (never runs a setup, spec 01, I10)
+#===============================================================================
+
+   if ! choose; then
+      echo "*** $PROG: $WHY" >&2
+      exit 127
+   fi
+   if [ ! -x "$TARGET" ]; then
+      echo "*** $PROG: $PKG $VER is not fully loaded; aios --fetch" >&2
+      exit 127
+   fi
+   PATH="$HOME/.aios/bin:$PATH" exec "$TARGET" "$@"

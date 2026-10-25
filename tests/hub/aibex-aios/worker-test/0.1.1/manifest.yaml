@@ -1,0 +1,11 @@
+name: worker-test
+version: 0.1.1
+type: worker
+description: Testpaket Arbeitspferd mit kind python (Test-Wheel aios-test-tool 1.1.0)
+requires:
+  aios: ">=0.5,<0.6"
+worker:
+  kind: python
+  requirements: worker/requirements.lock
+  programs: [aios-test-tool]
+  check: aios-test-tool --check

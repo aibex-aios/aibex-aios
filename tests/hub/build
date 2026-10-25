@@ -2,7 +2,7 @@
 # build: Test-Hubs aus den Vorlagen tests/hub/<hub>/<paket>/<version>/ bauen (Spec 06, V0.4 Memo 35)
 
    if [ "$*" == "-?" ] || [ "$*" == "--help" ]; then
-      echo '   usage: tests/hub/build <ziel>     # Test-Hubs unter <ziel> bauen, AIOS_HUBS ausgeben'
+      echo '   usage: tests/hub/build <ziel>     # Test-Hubs unter <ziel> bauen, AIOS_HUBS ausgeben; Wheels in <ziel>/wheels'
       echo '          tests/hub/build --version  # print version'
       echo '   see also: tests/run, aios --library, aios --hubs'
       exit 1
@@ -41,6 +41,10 @@
             for V in $(ls "$SRC/$H/$P" | sort -t. -k1,1n -k2,2n -k3,3n); do
                find "$R" -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
                cp -R "$SRC/$H/$P/$V/." "$R/" || exit 1
+               if [ "$P" == "worker-test" ]; then          # test wheel and its hash (spec 07, Tests)
+                  W="$(sed -n 's/^aios-test-tool==\([^ ]*\).*/\1/p' "$R/worker/requirements.lock")"
+                  python3 "$SRC/wheel.py" "$ZIEL/wheels" "$W" "$R/worker/requirements.lock" || exit 1
+               fi
                G -C "$R" add -A && G -C "$R" commit -q -m "$P $V" && G -C "$R" tag "v$V" || exit 1
             done
          done

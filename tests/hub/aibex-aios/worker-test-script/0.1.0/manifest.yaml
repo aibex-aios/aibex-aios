@@ -1,0 +1,12 @@
+name: worker-test-script
+version: 0.1.0
+type: worker
+description: Testpaket Arbeitspferd mit kind script
+requires:
+  aios: ">=0.5,<0.6"
+worker:
+  kind: script
+  setup: worker/setup.sh
+  remove: worker/remove.sh
+  programs: [aios-test-script]
+  check: aios-test-script

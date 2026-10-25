@@ -36,3 +36,9 @@ packages:
   - name: test-assistent
     type: assistant
     description: Testpaket mit einem Assistenten
+  - name: worker-test
+    type: worker
+    description: Testpaket Arbeitspferd mit kind python
+  - name: worker-test-script
+    type: worker
+    description: Testpaket Arbeitspferd mit kind script
