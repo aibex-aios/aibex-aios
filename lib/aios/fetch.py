@@ -14,7 +14,7 @@ import shutil
 import tempfile
 from pathlib import Path
 
-from . import config, deploy, hub, package, paths, resolver, semver, ui
+from . import backup, config, deploy, hub, package, paths, resolver, semver, ui
 from .deploy import MARKER, digest_of, read_marker
 from .install import frontmatter, make_writable
 from .ui import Abort, Plan, say, warn
@@ -164,7 +164,7 @@ def check(picks, source):
         for w in m.warnings:
             warn(w)
         if m.contents.get("hooks"):
-            warn(f"{p.name} {p.version}: hooks {', '.join(m.contents['hooks'])} have no effect in v0.4, "
+            warn(f"{p.name} {p.version}: hooks {', '.join(m.contents['hooks'])} have no effect in v0.5, "
                  "the package is fetched without them")
         problems = package.check_tree(source.fetch(p.name, p.hub, str(p.version)), m)
         if problems:
@@ -232,6 +232,7 @@ class Fetch:
         """Show the plan for the new state and execute it after one confirmation."""
         check(picks, self.source)
         plan = Plan()
+        moved = []                                  # package folders the plan replaces or removes
         old = self.lock.get("packages") or {}
         lines = []
         for name, p in picks.items():
@@ -254,10 +255,12 @@ class Fetch:
                       "commit": self.source.commit(name, p.hub, str(p.version))}
             plan.add(f"{why:<10} {name} {p.version} ({where}) -> {dst}",
                      lambda src=src, dst=dst, fields=fields: mirror(src, dst, fields))
+            moved.append(dst)
         base = package_dir(self.project, "")
         for d in sorted(base.iterdir()) if base.is_dir() else []:
             if d.name not in picks and (d / MARKER).is_file():
-                plan.add(f"remove     {d.name} -> {d}", lambda d=d: (make_writable(d), shutil.rmtree(d)))
+                plan.add(f"remove     {d.name} -> {d}", lambda d=d: d.exists() and (make_writable(d), shutil.rmtree(d)))
+                moved.append(d)
         if packages != self.packages:
             file = config_file(self.project)
             for name in sorted(set(self.packages) - set(packages)):
@@ -293,11 +296,27 @@ class Fetch:
                 say(f"   {line}")
             return 0
         deploy.register_session(plan)
+        session = Path(paths.cwd())
+        bk = backup.Backup(self.project)
+        copied = [config_file(self.project), lock_file(self.project),
+                  session / ".aios" / "registry", session / ".claude" / "skills"]
+        plan.steps.insert(0, (f"back up what the plan changes -> {backup.folder(self.project)}",
+                              lambda: bk.start(copied, moved)))
+        plan.add("remove the backup", bk.finish)
         if ui.MODE != "yes":
             say(title)
             for line in lines:
                 say(f"   {line}")
-        ui.confirm(plan, "go on?", "cancelled")
+        try:
+            ui.confirm(plan, "go on?", "cancelled")
+        except (ui.PlanOnly, SystemExit):
+            raise
+        except BaseException as e:                  # noqa: BLE001 - all or nothing (spec 01, I11)
+            if not bk.started:
+                raise
+            backup.restore(self.project)
+            raise Abort(f"the plan failed ({type(e).__name__}: {e}); "
+                        f"the state before the plan is restored")
         for line in done(picks):
             say(line)
         return 0
@@ -398,6 +417,20 @@ def remove(name, to=None):
                   lambda picks: [f"=> {name} removed; @Data/ stays untouched"])
 
 
+def offer_restore(to=None):
+    """A backup left by a broken plan: the next aios --fetch only offers to restore it (spec 06)."""
+    project = deploy.target_project(to)
+    if not backup.exists(project):
+        return None
+    plan = Plan()
+    plan.add(f"restore from the backup of {backup.created(project)} in {backup.folder(project)}",
+             lambda: backup.restore(project))
+    say(f"=> a plan in {project} did not finish; restore the state before it")
+    ui.confirm(plan, "restore?", "cancelled; the backup stays")
+    say(f"=> {project} restored; run aios --fetch again")
+    return 0
+
+
 def command(args):
     """Parse aios --fetch [spec] [--hub h] [--from repo] [--to p] | --upgrade [name] | --remove name."""
     opts, rest, i = {}, [], 0
@@ -415,6 +448,8 @@ def command(args):
             rest.append(a)
         i += 1
     to = opts.get("to")
+    if offer_restore(to) is not None:
+        return 0
     if "remove" in opts:
         if rest or opts.get("upgrade") or "hub" in opts or "from" in opts:
             raise Abort("usage: aios --fetch --remove <package> [--to <project>]")

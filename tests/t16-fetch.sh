@@ -98,9 +98,32 @@
    OUT="$(F "$S" test-assistent --yes)"
    assert_contains "$OUT" "assign the assistant to a project of the chain with /aios-assistant Testassistent" "assistant: hint (A5)"
    OUT="$(F "$S" test-hook --yes)"
-   assert_contains "$OUT" "hooks session-start have no effect in v0.4" "hook: reported"
+   assert_contains "$OUT" "hooks session-start have no effect in v0.5" "hook: reported"
    F "$S" test-befehl --from "$SANDBOX/hubs/aibex-aios/test-befehl" --yes >/dev/null
    assert_contains "$(cat "$S/.aios/lock.yaml")" "from: $SANDBOX/hubs/aibex-aios/test-befehl" "--from: repo in lock.yaml"
    assert_contains "$(cat "$S/@/@!Package/test-befehl/.aios-deploy")" "repo: $SANDBOX/hubs/aibex-aios/test-befehl" "--from: repo in the marker"
    assert_eq "$(ls "$D/@/@!Package" 2>/dev/null | wc -l | tr -d ' ')" "0" "packages of S-Sternwarte stay there"
+
+#===============================================================================
+# v0.5 step 5: all or nothing - backup, restore on failure, restore after a crash (spec 06, I11)
+#===============================================================================
+
+   SNAP() { (cd "$S" && find "@/@!Package" -maxdepth 2 | sort; cat .aios/config.yaml .aios/lock.yaml; ls .claude/skills 2>/dev/null); }
+   BEFORE="$(SNAP)"
+   assert_contains "$(F "$S" knowledge-orion --plan)" "back up what the plan changes -> $S/.aios/backup" "plan: names the backup"
+   OUT="$(AIOS_TEST_FAIL=3 F "$S" knowledge-orion --yes)"
+   assert_contains "$OUT" "the plan failed (RuntimeError: AIOS_TEST_FAIL: step 3 fails); the state before the plan is restored" "failure: restored"
+   assert_eq "$(SNAP)" "$BEFORE" "failure: config, lock, @!Package and registration as before"
+   [ ! -e "$S/.aios/backup" ] && ok || fail "failure: no backup left"
+   AIOS_TEST_FAIL=4:crash F "$S" knowledge-orion --yes >/dev/null; RC=$?
+   assert_eq "$RC" "70" "crash: process ended"
+   assert_file "$S/.aios/backup/index.txt"
+   OUT="$(F "$S" knowledge-orion --plan)"
+   assert_contains "$OUT" "restore from the backup of" "after a crash: only the restore is offered"
+   assert_not_contains "$OUT" "knowledge-orion 0.1.0" "after a crash: no new plan"
+   F "$S" --yes >/dev/null
+   assert_eq "$(SNAP)" "$BEFORE" "after a crash: restored to the state before the plan"
+   [ ! -e "$S/.aios/backup" ] && ok || fail "after a crash: backup removed after the restore"
+   F "$S" knowledge-orion --yes >/dev/null
+   [ -d "$S/@/@!Package/knowledge-orion" ] && [ ! -e "$S/.aios/backup" ] && ok || fail "success: package there, backup removed"
    unset AIOS_HUBS AIOS_GITHUB

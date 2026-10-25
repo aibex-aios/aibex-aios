@@ -324,6 +324,7 @@ Alle festen Orte lassen sich über Umgebungsvariablen umlenken, damit Tests in e
 | `AIOS_HUBS` | Hub-Liste für Tests, ersetzt `hubs` aus Vault-Root und Home: Einträge `name=url` (auch `file://`), durch Leerzeichen getrennt | — |
 | `AIOS_GITHUB` | Basis-URL für Hubs außerhalb der Hub-Liste (statt `https://github.com/`), für Tests auch `file://` | `https://github.com/` |
 | `AIOS_PIP` | Befehl, der `python/requirements.txt` in die venv installiert; gesetzt wird die venv ohne `pip` angelegt | `<venv>/bin/python -m pip install -q -r` |
+| `AIOS_TEST_FAIL` | `<n>` lässt den n-ten Schritt eines Plans scheitern, `<n>:crash` beendet den Prozess dort ohne Aufräumen (Tests der Sicherung, Spec 06; V0.5, Memo 51) | — |
 | `AIOS_PREPARE_PATH` | `PATH` für die Prüfung der Grund- und Entwicklerausstattung in `aios --prepare` und `aios --install` (V0.5, Memo 49) | `PATH` |
 | `AIOS_PIP_FIND_LINKS` | Ordner mit Wheels für das setup von Arbeitspferden: `pip` läuft dann mit `--no-index --find-links <ordner>`, nie ohne `--no-index` (Spec 07) | — |
 

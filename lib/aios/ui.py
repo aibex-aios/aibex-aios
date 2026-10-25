@@ -1,5 +1,6 @@
 """Dialog of the writing commands: plan, one confirmation, abort (spec 01, I7)."""
 
+import os
 import sys
 
 
@@ -32,8 +33,17 @@ class Plan:
             print(("      " if action else "      (") + text + ("" if action else ")"))
 
     def run(self):
+        """Run the actions in order. AIOS_TEST_FAIL=<n>[:crash] (tests, spec 04) lets the n-th
+        action fail, or with :crash end the process there without any clean-up."""
+        fail = os.environ.get("AIOS_TEST_FAIL", "")
+        n = 0
         for _, action in self.steps:
             if action:
+                n += 1
+                if fail and fail.split(":")[0] == str(n):
+                    if fail.endswith(":crash"):
+                        os._exit(70)
+                    raise RuntimeError(f"AIOS_TEST_FAIL: step {n} fails")
                 action()
 
 
