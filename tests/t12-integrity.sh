@@ -8,7 +8,7 @@
    export GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@t GIT_COMMITTER_NAME=t GIT_COMMITTER_EMAIL=t@t
    D="$SANDBOX/work/§Demo"
    mk() { mkdir -p "$(dirname "$1")"; printf '%s' "$2" > "$1"; }
-   GI=$'.DS_Store\n.claude/skills/\n.aios/registry\n'
+   GI=$'.DS_Store\n.claude/skills/\n.agents/\n.aios/registry\n.aios/backup/\n'
    mkproj() { mkdir -p "$1/@"; touch "$1/@/.gitkeep"; mk "$1/.gitignore" "$GI$2"; git -C "$1" init -q -b main
               git -C "$1" add -A && git -C "$1" commit -qm init; }
    A() { "$SRC/bin/aios" "$@" 2>&1; }
@@ -51,7 +51,7 @@
    assert_contains "$OUT" "- GB-Beet: missing own git repo" "GB-Beet: missing repo under Notes (A15)"
    assert_contains "$(printf '%s\n' "$OUT" | grep GB-Beet)" "—" "GB-Beet: no own repo, commit —"
    assert_contains "$(printf '%s\n' "$OUT" | grep '^ *S-Sternwarte')" "missing: 1 part" "S-Sternwarte: one missing part (A15)"
-   assert_contains "$OUT" "- S-Sternwarte: missing .gitignore lines: .DS_Store, .claude/skills/, .aios/registry" "S-Sternwarte: gitignore lines under Notes"
+   assert_contains "$OUT" "- S-Sternwarte: missing .gitignore lines: .DS_Store, .claude/skills/, .agents/, .aios/registry, .aios/backup/" "S-Sternwarte: gitignore lines under Notes"
    assert_contains "$(printf '%s\n' "$OUT" | grep S-Sternwarte)" "2 changed, 2 new" "changed and new separately (deleted .gitignore counts as changed, new files one by one)"
    assert_eq "$(printf '%s\n' "$OUT" | grep '^  G-Garten ' | tr -s ' ')" " G-Garten ok ok" "G-Garten integer"
    assert_contains "$OUT" "Result: 4 of 6 projects integer" "result line"
@@ -92,3 +92,19 @@
    assert_contains "$(A --integrity "$SANDBOX/nope")" "*** aios --integrity:" "missing path"
    assert_exit 1 "$SRC/bin/aios" --integrity "$SANDBOX/nope"
    assert_exit 1 "$SRC/bin/aios" --integrity "$D" "$D"
+
+#===============================================================================
+# v0.5 step 3: outdated copies in .agents/skills/ are notes (spec 05; V0.5, memos 10, 24, N11)
+#===============================================================================
+
+   N="$D/Notizen/N-Frei"
+   mk "$N/.aios/registry" $'# written by AIOS (registration), do not edit\nschema: 1\nregistered:\n  memo:\n    source: "x"\n    version: 6.0.1\n    digest: sha256:0\n'
+   mk "$N/.agents/skills/memo/.aios-deploy" $'# written by aios --deploy, do not edit\nname: memo\nversion: 6.0.0\nsource: "library"\n'
+   mk "$N/.agents/skills/alt/.aios-deploy" $'name: alt\nversion: 1.0.0\n'
+   mk "$N/.agents/skills/fremd/SKILL.md" $'---\nname: fremd\n---\n'
+   OUT="$(A --integrity "$N")"
+   assert_contains "$OUT" "- N-Frei: outdated copy .agents/skills/memo (memo 6.0.0): registered is 6.0.1" ".agents: other version than registered"
+   assert_contains "$OUT" "- N-Frei: outdated copy .agents/skills/alt (alt 1.0.0): skill not registered here" ".agents: skill not registered"
+   assert_not_contains "$OUT" "fremd" ".agents: copies without marker are not touched or named"
+   assert_contains "$OUT" "Result: 1 of 1 project integer" ".agents: only a note, the project stays integer"
+   [ -e "$N/.agents/skills/memo/.aios-deploy" ] && ok || fail ".agents: nothing removed"

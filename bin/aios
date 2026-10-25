@@ -2,7 +2,7 @@
 # aios: install, activate and maintain AIbex AIOS (spec 04)
 
    if [ "$*" == "-?" ] || [ "$*" == "--help" ]; then
-      echo '   usage: aios --prepare                      # prepare the machine (/opt/aios, ~/bin, stup)'
+      echo '   usage: aios --prepare [--dev]              # prepare the machine (/opt/aios, ~/bin, stup, kit)'
       echo '          aios --install [v<version>]         # install a version (includes --prepare)'
       echo '          aios --versions                     # installed versions and their locations'
       echo '          aios --remove-version v<version>    # remove an installed version'

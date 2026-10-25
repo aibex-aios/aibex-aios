@@ -122,6 +122,16 @@ def read_manifest(file):
     return result
 
 
+def read_manifest_marker(file):
+    """Keys of a marker .aios-deploy (name, version, source, digest), read without PyYAML."""
+    out = {}
+    for line in Path(file).read_text(encoding="utf-8", errors="replace").splitlines():
+        m = re.match(r"^([a-z]+):\s*(.*?)\s*$", line)
+        if m:
+            out[m.group(1)] = m.group(2).strip('"')
+    return out
+
+
 def write_manifest(file, entries):
     lines = ["# written by AIOS (registration), do not edit", "schema: 1", "registered:"]
     for name in sorted(entries):

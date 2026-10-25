@@ -263,14 +263,60 @@ def plan_prepare(plan):
     return root
 
 
-def prepare():
+KIT_HINTS = {                                       # spec 04, aios --prepare: the way to it, as text
+    "darwin": {"python3": "xcode-select --install (or python.org)", "git": "xcode-select --install",
+               "gh": "brew install gh or cli.github.com"},
+    "linux": {"python3": "sudo apt install python3 python3-venv python3-pip (dnf: python3 python3-pip)",
+              "git": "sudo apt install git (dnf: git)", "gh": "cli.github.com"},
+}
+KIT_NAMES = {"python3": "python3 >= 3.9 with venv and pip", "git": "git", "gh": "gh (developer kit)"}
+
+
+def basic_kit(dev=False):
+    """Missing parts of the basic kit (python3 >= 3.9 with venv and pip, git) and, with dev, of
+    the developer kit (gh); spec 04, aios --prepare; V0.5, memo 31. AIOS_PREPARE_PATH replaces
+    PATH for this check (tests)."""
+    path = os.environ.get("AIOS_PREPARE_PATH")
+    missing = []
+    py = shutil.which("python3", path=path)
+    good = False
+    if py:
+        r = subprocess.run([py, "-c", "import sys, venv, ensurepip; print('%d %d' % sys.version_info[:2])"],
+                           capture_output=True, text=True)
+        good = r.returncode == 0 and tuple(int(x) for x in r.stdout.split()) >= (3, 9)
+    if not good:
+        missing.append("python3")
+    if not shutil.which("git", path=path):
+        missing.append("git")
+    if dev and not shutil.which("gh", path=path):
+        missing.append("gh")
+    return missing
+
+
+def kit_lines(missing):
+    hints = KIT_HINTS.get("darwin" if sys.platform == "darwin" else "linux")
+    return [f"missing: {KIT_NAMES[m]} — {hints[m]}" for m in missing]
+
+
+def prepare(dev=False):
     plan = Plan()
     plan_prepare(plan)
+    missing = basic_kit(dev)
+    for line in kit_lines(missing):
+        plan.add(line)                              # a note only: AIOS installs none of it
     if not plan:
+        if missing:
+            say("=> AIbex AIOS: prepare the machine")
+            plan.show()
+            say("=> machine not prepared: install what is missing, then run aios --prepare again")
+            return 1
         say("=> machine prepared, nothing to do")
         return 0
     say("=> AIbex AIOS: prepare the machine")
     if not confirm(plan, "prepare?", "preparation cancelled"):
+        return 1
+    if missing:
+        say("=> machine not prepared: install what is missing, then run aios --prepare again")
         return 1
     say("=> machine prepared (open a new shell to use ~/bin in PATH)")
     return 0
@@ -634,6 +680,10 @@ def install(version):
     tag = choose_version(repo, version)
     plan = Plan()
     root, entries = plan_prepare(plan)
+    missing = basic_kit()
+    if missing:
+        raise Abort("the basic kit is missing (" + "; ".join(kit_lines(missing))
+                    + "); run aios --prepare")
     known = installations()
     stage = None
     try:

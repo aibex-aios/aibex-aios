@@ -25,7 +25,7 @@
    [ ! -e "$SRC/bin/aios-context" ] && ok || fail "bin/aios-context is gone (aios --context, V0.5, memo 04)"
 
    assert_contains "$(cat "$SRC/python/requirements.txt")" "pyyaml" "requirements"
-   assert_eq "$(cat "$SRC/templates/gitignore")" "$(printf '.DS_Store\n.claude/skills/\n.aios/registry')" "gitignore template"
+   assert_eq "$(cat "$SRC/templates/gitignore")" "$(printf '.DS_Store\n.claude/skills/\n.agents/\n.aios/registry\n.aios/backup/')" "gitignore template"
 
 #===============================================================================
 # bash scripts: syntax, help and version (bash convention)

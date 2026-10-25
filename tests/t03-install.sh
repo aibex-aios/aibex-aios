@@ -68,6 +68,26 @@ EOF
    assert_eq "$("$S/bin/aios" --prepare </dev/null 2>&1)" "=> machine prepared, nothing to do" "prepare again: nothing to do, no question"
 
 #===============================================================================
+# v0.5 step 3: basic kit and developer kit (spec 04, aios --prepare; V0.5, memo 31)
+#===============================================================================
+
+   mkdir -p "$SANDBOX/kit-none" "$SANDBOX/kit-ok"
+   ln -s "$(command -v python3)" "$SANDBOX/kit-ok/python3"; ln -s "$(command -v git)" "$SANDBOX/kit-ok/git"
+   printf '#!/bin/bash\nexit 1\n' > "$SANDBOX/kit-none/python3"; chmod +x "$SANDBOX/kit-none/python3"
+   OUT="$(AIOS_PREPARE_PATH="$SANDBOX/kit-none" "$S/bin/aios" --prepare </dev/null 2>&1)"; RC=$?
+   assert_eq "$RC" "1" "kit missing: exit 1"
+   assert_contains "$OUT" "missing: python3 >= 3.9 with venv and pip" "kit: python3 without venv/pip reported"
+   assert_contains "$OUT" "missing: git — " "kit: git reported with the way to it"
+   assert_contains "$OUT" "machine not prepared" "kit: not prepared"
+   assert_eq "$(AIOS_PREPARE_PATH="$SANDBOX/kit-ok" "$S/bin/aios" --prepare </dev/null 2>&1)" "=> machine prepared, nothing to do" "kit complete: nothing to do"
+   OUT="$(AIOS_PREPARE_PATH="$SANDBOX/kit-ok" "$S/bin/aios" --prepare --dev </dev/null 2>&1)"; RC=$?
+   assert_eq "$RC:$(grep -c 'missing: gh (developer kit)' <<< "$OUT")" "1:1" "--dev: gh reported"
+   OUT="$(AIOS_PREPARE_PATH="$SANDBOX/kit-none" "$S/bin/aios" --install v0.2.0 </dev/null 2>&1)"; RC=$?
+   assert_eq "$RC" "1" "install without the basic kit: exit 1"
+   assert_contains "$OUT" "the basic kit is missing" "install without the basic kit: aborted"
+   [ ! -e "$P/v0.2.0" ] && ok || fail "install without the basic kit: nothing installed"
+
+#===============================================================================
 # --install: errors, cancel, highest release tag
 #===============================================================================
 

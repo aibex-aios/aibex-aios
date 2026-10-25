@@ -106,6 +106,27 @@ def push_hints(p):
     return hints
 
 
+def agents_hints(p):
+    """Outdated copies in <p>/.agents/skills/ (spec 05, Integrität; V0.5, memos 10, 24, N11):
+    copies with the marker .aios-deploy whose version is not the registered one or whose skill
+    is not registered any more. AIOS changes and removes nothing there (option C)."""
+    from . import registry
+    base = Path(p) / ".agents" / "skills"
+    if not base.is_dir():
+        return []
+    registered = registry.read_registry(p)
+    hints = []
+    for d in sorted(x for x in base.iterdir() if (x / ".aios-deploy").is_file()):
+        marker = registry.read_manifest_marker(d / ".aios-deploy")
+        name, ver = marker.get("name") or d.name, marker.get("version", "?")
+        if name not in registered:
+            hints.append(f"outdated copy .agents/skills/{d.name} ({name} {ver}): skill not registered here")
+        elif registered[name].get("version") != ver:
+            hints.append(f"outdated copy .agents/skills/{d.name} ({name} {ver}): registered is "
+                         f"{registered[name].get('version')}")
+    return hints
+
+
 def check(p, depth):
     r = Result(p, depth, gaps=project.check(p), repo=project.own_repo(p))
     if r.gaps:
@@ -113,6 +134,7 @@ def check(p, depth):
     if r.repo:
         r.changed, r.new = commit_state(p)
         r.hints += push_hints(p)
+    r.hints += agents_hints(p)
     name = project.check_name(p)
     if not name.ok:
         r.hints.append("name violates the name rule (" + "; ".join(name.problems)

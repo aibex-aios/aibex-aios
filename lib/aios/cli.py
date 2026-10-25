@@ -5,7 +5,7 @@ import sys
 
 from . import activate, aiosinit, assign, contribute, deploy, fetch, gui, hub, install, integrity, paths, registry, resolver, skills, ui, worker, workspace
 
-USAGE = ("usage: aios --prepare | --install [v<version>] | --versions | --remove-version v<version>"
+USAGE = ("usage: aios --prepare [--dev] | --install [v<version>] | --versions | --remove-version v<version>"
          " | --uninstall | --activate v<version> [<path>] | --deactivate [<path>] | --config [<path>]"
          " | --register [<path>] | --init [<path>] [--assistant <value>] [--name <name>] [--accept-name]"
          " | --integrity [<path>] | --assistant <name|none|inherit> [--to <project>] [--session <id>]"
@@ -52,8 +52,8 @@ def main(argv):
             ui.MODE = mode
     cmd, args = argv[0], argv[1:]
     try:
-        if cmd == "--prepare" and not args:
-            return install.prepare()
+        if cmd == "--prepare" and args in ([], ["--dev"]):
+            return install.prepare(dev=args == ["--dev"])
         if cmd == "--install" and len(args) <= 1:
             return install.install(args[0] if args else None)
         if cmd == "--versions" and not args:

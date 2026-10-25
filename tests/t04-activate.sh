@@ -41,7 +41,7 @@
    OUT="$(at "$D" sh -c "echo y | '$SRC/bin/aios' --activate v0.1.0")"
    assert_contains "$OUT" "create @/ (with .gitkeep)" "plan: root masterspace"
    assert_contains "$OUT" "git init (branch main)" "plan: repo of the root project"
-   assert_contains "$OUT" ".gitignore: .DS_Store, .claude/skills/, .aios/registry" "plan: .gitignore"
+   assert_contains "$OUT" ".gitignore: .DS_Store, .claude/skills/, .agents/, .aios/registry, .aios/backup/" "plan: .gitignore"
    assert_contains "$OUT" "from the next chat" "hint: next chat"
    assert_dir "$D/@"
    assert_eq "$(cat "$D/.aios/config.yaml")" "aios: 0.1.0" "vault config written"

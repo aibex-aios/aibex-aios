@@ -154,7 +154,7 @@ for n in ('aios-assistant', 'aios-context', 'aios-init'):
    assert_contains "$OUT" "name Wiese: the name has no prefix" "init plan: name rule"
    assert_contains "$OUT" "proposal: W-Wiese" "init plan: proposal"
    assert_contains "$OUT" "create @/ (with .gitkeep)" "init plan: masterspace"
-   assert_contains "$OUT" ".gitignore: .DS_Store, .claude/skills/, .aios/registry" "init plan: gitignore"
+   assert_contains "$OUT" ".gitignore: .DS_Store, .claude/skills/, .agents/, .aios/registry, .aios/backup/" "init plan: gitignore"
    assert_contains "$OUT" "git init (branch main)" "init plan: git init"
    [ ! -e "$D/Wiese/@" ] && [ ! -e "$D/Wiese/.git" ] && ok || fail "init --plan: nothing written"
    OUT="$(at "$D/Wiese" "$SRC/bin/aios" --init --yes)"; RC=$?
@@ -168,7 +168,7 @@ for n in ('aios-assistant', 'aios-context', 'aios-init'):
    assert_eq "$OUT" "=> $D/Wiese is a project" "init --yes: only the result"
    assert_file "$D/Wiese/@/.gitkeep"
    [ ! -e "$D/Wiese/@Memo" ] && ok || fail "init: no @Memo/ (spec 05)"
-   assert_eq "$(cat "$D/Wiese/.gitignore")" "$(printf 'eigen.txt\n.DS_Store\n.claude/skills/\n.aios/registry')" "init: .gitignore completed, own lines kept"
+   assert_eq "$(cat "$D/Wiese/.gitignore")" "$(printf 'eigen.txt\n.DS_Store\n.claude/skills/\n.agents/\n.aios/registry\n.aios/backup/')" "init: .gitignore completed, own lines kept"
    assert_eq "$(git -C "$D/Wiese" symbolic-ref --short HEAD)" "main" "init: branch main"
    assert_eq "$(git -C "$D/Wiese" log --format=%s)" "AIOS: Projekt initialisiert" "init: first commit"
    assert_eq "$(git -C "$D/Wiese" show --name-only --format= | sort | tr '\n' ' ')" ".gitignore @/.gitkeep " "init: committed files"
