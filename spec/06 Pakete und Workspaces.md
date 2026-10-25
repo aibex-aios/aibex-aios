@@ -272,6 +272,8 @@ name: distribution-rothirsch
 version: 1.0.0
 type: distribution
 description: Rothirsch — AIOS mit Video-Analyse und der Assistentin Anja
+requires:
+  aios: ">=0.5,<0.6"
 kernel: "==0.5.0"
 depends:
   skill-video-analyse: "==0.2.0"
