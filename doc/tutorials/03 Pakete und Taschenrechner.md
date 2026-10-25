@@ -2,7 +2,7 @@
 
 Dieses Tutorial führt in etwa 20 Minuten durch Pakete und Hubs von AIbex AIOS. Du holst die Demo-App **Taschenrechner** mit ihrer Abhängigkeit, rechnest damit, belegst eine Funktionstaste, holst Wissenspakete aus zwei Hubs, wählst Versionen und Elemente und spielst eine Funktionstaste als Beitrag an das Paket zurück.
 
-Voraussetzung: AIOS v0.4 ist installiert, der Vault `~/tmp/§Demo` ist mit `aios --activate v0.4.0 ~/tmp/§Demo` aktiviert (Tutorial 01). Für die Suche in Hubs ohne Index und für den Rückfluss brauchst du `gh` (GitHub CLI), angemeldet mit `gh auth login`.
+Voraussetzung: AIOS v0.5 ist installiert, der Vault `~/tmp/§Demo` ist mit `aios --activate v0.5.0 ~/tmp/§Demo` aktiviert (Tutorial 01). Für die Suche in Hubs ohne Index und für den Rückfluss brauchst du `gh` (GitHub CLI), angemeldet mit `gh auth login`.
 
 ## 1. Hub und Hub-Liste
 
@@ -24,12 +24,12 @@ aios --library app-taschenrechner
 ```
 
 ```
-aibex-aios/app-taschenrechner  app           Programmierbarer RPN-Taschenrechner mit lernenden Funktionstasten
+aibex-aios/app-taschenrechner  app           Programmierbarer RPN-Taschenrechner nach dem Vorbild des HP-15C mit lernenden Funktionstasten (Demo-App von AIbex AIOS)
 
-aibex-aios/app-taschenrechner  0.1.0 0.1.1 0.2.0 0.2.1 0.3.0 0.3.1 0.3.2 0.4.0 0.4.1 0.4.2
+aibex-aios/app-taschenrechner  0.1.0 0.1.1 0.2.0 0.2.1 0.3.0 0.3.1 0.3.2 0.4.0 0.4.1 0.4.2 0.5.0
 ```
 
-Mit einem Suchwort sucht `aios --library` in Namen und Beschreibungen, mit einem Paketnamen zeigt es dessen Versionen.
+Mit einem Suchwort sucht `aios --library` in Namen und Beschreibungen, mit einem Paketnamen zeigt es dessen Versionen. Mit AIOS v0.5 lässt sich davon nur 0.5.0 holen; die älteren verlangen v0.4 (`requires.aios`, Abschnitt 5).
 
 ## 2. Den Taschenrechner holen
 
@@ -42,30 +42,35 @@ aios --fetch app-taschenrechner --plan
 
 ```
 => fetch app-taschenrechner into ~/tmp/§Demo
+   unchanged  assistant-gaertner 0.3.0 (aibex-aios)
    plan:
-      new        app-taschenrechner 0.4.2 (aibex-aios) -> ~/tmp/§Demo/@/@!Package/app-taschenrechner
-      new        skill-memo 6.0.0 (aibex-aios) -> ~/tmp/§Demo/@/@!Package/skill-memo
-      ~/tmp/§Demo/.aios/config.yaml: packages: app-taschenrechner: "~=0.4.2"
-      ~/tmp/§Demo/.aios/lock.yaml: 2 packages
+      back up what the plan changes -> ~/tmp/§Demo/.aios/backup
+      new        app-taschenrechner 0.5.0 (aibex-aios) -> ~/tmp/§Demo/@/@!Package/app-taschenrechner
+      new        skill-memo 6.0.1 (aibex-aios) -> ~/tmp/§Demo/@/@!Package/skill-memo
+      ~/tmp/§Demo/.aios/config.yaml: packages: app-taschenrechner: "~=0.5.0"
+      ~/tmp/§Demo/.aios/lock.yaml: 3 packages
       register the project skills of ~/tmp/§Demo
+      remove the backup
    (plan only, nothing written)
 ```
 
-Der Taschenrechner hängt von `skill-memo` ab; AIOS holt die Abhängigkeit mit. Ohne `--plan` fragt `aios` einmal und meldet:
+Der Taschenrechner hängt von `skill-memo` ab; AIOS holt die Abhängigkeit mit. `unchanged` nennt Pakete, die schon da sind, hier den Gärtner aus Tutorial 01. Ohne `--plan` fragt `aios` einmal und meldet:
 
 ```
    registered in ~/tmp/§Demo: new taschenrechner, taschenrechner-gui, memo
-=> packages of ~/tmp/§Demo: app-taschenrechner 0.4.2, skill-memo 6.0.0
+=> packages of ~/tmp/§Demo: app-taschenrechner 0.5.0, assistant-gaertner 0.3.0, skill-memo 6.0.1
    open the app app-taschenrechner with /taschenrechner-gui or the tile Apps of /aios-gui
+   assign the assistant to a project of the chain with /aios-assistant Gärtner
    new skills are available from the next chat (or after /reload-skills)
 ```
 
 **Holen** heißt drei Dinge in einem Schritt: das Paket ohne `.git` nach `@/@!Package/<name>/` kopieren, seine Elemente **ausrollen** (wirksam machen) und seine Skills **registrieren**. In `.aios/config.yaml` steht, was du verlangt hast:
 
 ```yaml
-aios: 0.4.0
+aios: 0.5.0
 packages:
-  app-taschenrechner: "~=0.4.2"
+  assistant-gaertner: "~=0.3.0"
+  app-taschenrechner: "~=0.5.0"
 ```
 
 In `.aios/lock.yaml` steht, was AIOS daraus aufgelöst hat:
@@ -75,20 +80,26 @@ In `.aios/lock.yaml` steht, was AIOS daraus aufgelöst hat:
 schema: 1
 packages:
   app-taschenrechner:
-    version: 0.4.2
+    version: 0.5.0
     hub: aibex-aios
-    repo: https://github.com/aibex-aios/app-taschenrechner
-    tag: v0.4.2
-    commit: 72d6d7ef7d4d745b5e62c5d86b3e9013b3043b92
-    requested: ~=0.4.2
+    repo: "https://github.com/aibex-aios/app-taschenrechner"
+    tag: v0.5.0
+    commit: 540134e1a65c9a32161395f09062c93f6b390b0f
+    requested: "~=0.5.0"
+  assistant-gaertner:
+    version: 0.3.0
+    hub: aibex-aios
+    repo: "https://github.com/aibex-aios/assistant-gaertner"
+    tag: v0.3.0
+    commit: a95f59d34fd7dc046f74cf58acfb6bd7bcd09387
+    requested: "~=0.3.0"
   skill-memo:
-    version: 6.0.0
+    version: 6.0.1
     hub: aibex-aios
-    repo: https://github.com/aibex-aios/skill-memo
-    tag: v6.0.0
-    commit: 8efa670fbe28b578a25505be8dbda9051d063d80
-    required_by:
-    - app-taschenrechner
+    repo: "https://github.com/aibex-aios/skill-memo"
+    tag: v6.0.1
+    commit: 5d3e626953b80ecab0bfde7e7be83e2e8f580e80
+    required_by: [app-taschenrechner]
 ```
 
 Committe beide Dateien. `aios --fetch` ohne Argument stellt genau diesen Stand wieder her, etwa nach einem Klon auf einem anderen Rechner; eine neuere Version holt es dabei nie still.
@@ -133,7 +144,7 @@ aios --gui --apps
 
 ```
 Apps (open with the skill of the surface):
-- /taschenrechner-gui — app-taschenrechner 0.4.2: Programmierbarer RPN-Taschenrechner nach dem Vorbild des HP-15C mit lernenden Funktionstasten (Demo-App von AIbex AIOS)
+- /taschenrechner-gui — app-taschenrechner 0.5.0: Programmierbarer RPN-Taschenrechner nach dem Vorbild des HP-15C mit lernenden Funktionstasten (Demo-App von AIbex AIOS)
 ```
 
 ## 4. Wissen aus zwei Hubs
@@ -155,14 +166,14 @@ aibex-aios          https://github.com/aibex-aios  (vault)
 aibex-hub           https://github.com/aibex-hub  (vault)
 ```
 
-`aibex-hub` hat keinen Index; `aios --library` meldet das und findet ein Paket dort nur mit vollem Namen:
+`aibex-hub` hat keinen Index; `aios --library scorpio` meldet das (`hub aibex-hub cannot be searched: no aios-index, …`) und findet ein Paket dort nur mit vollem Namen:
 
 ```bash
 aios --library aibex-hub/knowledge-scorpio
 ```
 
 ```
-aibex-hub/knowledge-scorpio  0.1.0
+aibex-hub/knowledge-scorpio  0.1.0 0.1.1
 ```
 
 Hole beide Pakete:
@@ -173,42 +184,38 @@ aios --fetch aibex-hub/knowledge-scorpio
 ```
 
 ```
-=> packages of ~/tmp/§Demo: app-taschenrechner 0.4.2, knowledge-orion 0.1.0, knowledge-scorpio 0.1.0, skill-memo 6.0.0
+=> packages of ~/tmp/§Demo: app-taschenrechner 0.5.0, assistant-gaertner 0.3.0, knowledge-orion 0.1.1, knowledge-scorpio 0.1.1, skill-memo 6.0.1
 ```
 
 Ein voller Name bindet das Paket an seinen Hub; `config.yaml` merkt sich das:
 
 ```yaml
 packages:
-  app-taschenrechner: "~=0.4.2"
-  knowledge-orion: "~=0.1.0"
-  knowledge-scorpio: {range: "~=0.1.0", hub: aibex-hub}
+  assistant-gaertner: "~=0.3.0"
+  app-taschenrechner: "~=0.5.0"
+  knowledge-orion: "~=0.1.1"
+  knowledge-scorpio: {range: "~=0.1.1", hub: aibex-hub}
+hubs:
+  - aibex-aios
+  - aibex-hub
 ```
 
 Wissen eines geholten Pakets zählt, als läge es in `@/`. Ordne in einem Chat in `S-Sternwarte` den Astronomen zu (Tutorial 01) und frag ihn nach Beteigeuze oder Antares. Er nennt jetzt die Werte aus den Tabellen mit ihrer Quelle.
 
 ## 5. Versionen und Elemente
 
-**Version wählen:** Ein Bereich hinter dem Namen wählt eine andere Version, hier eine ältere:
+**Version wählen:** Ein Bereich hinter dem Namen wählt eine bestimmte Version. Die älteren Versionen des Taschenrechners verlangen AIOS v0.4 (`requires.aios: ">=0.4,<0.5"`); AIOS v0.5 lehnt sie ab, bevor etwas geschieht:
 
 ```bash
 aios --fetch app-taschenrechner==0.3.2 --plan
 ```
 
 ```
-=> fetch app-taschenrechner into ~/tmp/§Demo
-   unchanged  knowledge-orion 0.1.0 (aibex-aios)
-   unchanged  knowledge-scorpio 0.1.0 (aibex-hub)
-   unchanged  skill-memo 6.0.0 (aibex-aios)
-   plan:
-      downgrade 0.4.2 -> 0.3.2 app-taschenrechner 0.3.2 (aibex-aios) -> ~/tmp/§Demo/@/@!Package/app-taschenrechner
-      ~/tmp/§Demo/.aios/config.yaml: packages: app-taschenrechner: "==0.3.2"
-      ~/tmp/§Demo/.aios/lock.yaml: 4 packages
-      register the project skills of ~/tmp/§Demo
-   (plan only, nothing written)
+*** aios --fetch: no versions fulfil all ranges:
+- app-taschenrechner: no fitting version runs with AIOS 0.5.0 (requires.aios); ==0.3.2 (packages:)
 ```
 
-Die Bereiche folgen pip: `==`, `!=`, `>=`, `<=`, `>`, `<`, `~=` und Kombinationen mit Komma. `aios --fetch --upgrade` wählt alle Versionen neu im Rahmen der Bereiche.
+In einem Vault, der noch an v0.4 gebunden ist, holt derselbe Befehl die Version 0.3.2. Die Bereiche folgen pip: `==`, `!=`, `>=`, `<=`, `>`, `<`, `~=` und Kombinationen mit Komma. `aios --fetch --upgrade` wählt alle Versionen neu im Rahmen der Bereiche.
 
 **Elemente wählen:** Ohne Angabe ist ein Paket ganz ausgerollt. `aios --deploy` zeigt, was wirkt:
 
@@ -218,11 +225,17 @@ aios --deploy
 
 ```
 => packages of ~/tmp/§Demo
-   app-taschenrechner 0.4.2 (aibex-aios) — all elements deployed
+   app-taschenrechner 0.5.0 (aibex-aios) — all elements deployed
       deployed      skill taschenrechner
       deployed      skill taschenrechner-gui
       deployed      knowledge
-   skill-memo 6.0.0 (aibex-aios) — all elements deployed
+   assistant-gaertner 0.3.0 (aibex-aios) — all elements deployed
+      deployed      assistant gaertner
+   knowledge-orion 0.1.1 (aibex-aios) — all elements deployed
+      deployed      knowledge
+   knowledge-scorpio 0.1.1 (aibex-hub) — all elements deployed
+      deployed      knowledge
+   skill-memo 6.0.1 (aibex-aios) — all elements deployed
       deployed      skill memo
 ```
 
@@ -260,12 +273,12 @@ aios --contribute @Data/app-taschenrechner/funktionstasten.yaml --to app-taschen
 | Holen | `aios --fetch`: kopieren, ausrollen, registrieren; Abhängigkeit `skill-memo` |
 | verlangt und aufgelöst | `packages:` in `config.yaml`, `lock.yaml` mit Version und Commit |
 | App und Daten | `/taschenrechner-gui`, Funktionstasten in `@Data/app-taschenrechner/` |
-| Version, Elemente | `==0.3.2`, `--upgrade`, `aios --deploy … --only`, `--remove` |
+| Version, Elemente | `==0.3.2` (abgelehnt: `requires.aios`), `--upgrade`, `aios --deploy … --only`, `--remove` |
 | Rückfluss | `aios --contribute`: Zweig, Fork, Pull Request |
 
 ## Weiter
 
 - Tutorial *04 Workspaces*: Paket-Repos und Projekte als Git-Checkouts eines Wurzelprojekts.
-- Bau dein eigenes Paket: ein Git-Repo mit `manifest.yaml` (`name`, `version`, `type`, `contents`), ein Tag `v0.1.0`, und `aios --fetch <paket> --from <repo-url>` holt es ohne Hub.
+- Bau dein eigenes Paket: ein Git-Repo mit `manifest.yaml` (`name`, `version`, `type`, `description`, `requires.aios`, `contents`), ein Tag `v0.1.0`, und `aios --fetch <paket> --from <repo-url>` holt es ohne Hub.
 
-Die vollständigen Regeln stehen in Spec 06 *Pakete und Workspaces*, installiert unter `/opt/aios/v0.4.0/doc/spec/`.
+Die vollständigen Regeln stehen in Spec 06 *Pakete und Workspaces*, installiert unter `/opt/aios/v0.5.0/doc/spec/`.

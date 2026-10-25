@@ -2,7 +2,7 @@
 
 Dieses Tutorial führt in etwa 15 Minuten durch Workspaces von AIbex AIOS. Ein **Workspace** ist ein Projekt, das in `.aios/workspace.yaml` weitere Repos nennt, mit Revision und Pfad. AIOS klont sie verschachtelt darunter, hält sie auf ihrer Revision und friert den Stand ein. So arbeitest du an Paketen als Git-Checkouts (Entwickler-Site), während ein Vault Pakete als Kopie in `@!Package/` hat (Anwender-Site).
 
-Voraussetzung: AIOS v0.4 ist installiert, der Vault `~/tmp/§Demo` ist aktiviert (Tutorial 01). Die Repos des Beispiels sind die Paket-Repos des Hubs `aibex-aios`; zum Klonen genügt Lesezugriff.
+Voraussetzung: AIOS v0.5 ist installiert, der Vault `~/tmp/§Demo` ist aktiviert (Tutorial 01). Die Repos des Beispiels sind die Paket-Repos des Hubs `aibex-aios`; zum Klonen genügt Lesezugriff.
 
 ## 1. Das Wurzelprojekt
 
@@ -97,7 +97,7 @@ aios --workspace status
 ```
 
 ```
-Workspace W-Werkstatt — 2026-10-21
+Workspace W-Werkstatt — 2026-10-25
 
 Project             Path                    Branch     Revision  Remote  Changes
 app-taschenrechner  app-taschenrechner      ws/v0.4.0  ok        —       ok
@@ -118,7 +118,7 @@ aios --integrity
 ```
 
 ```
-Integrity W-Werkstatt — 2026-10-21
+Integrity W-Werkstatt — 2026-10-25
 
 Project               Init          Commit
 W-Werkstatt           ok            ok
@@ -212,4 +212,4 @@ Das Wurzelprojekt wird behandelt wie ein Projekt des Workspace: Es landet im Ord
 | Einfrieren | `aios --workspace freeze`, Abschnitt `workspace:` in `lock.yaml` |
 | zweiter Rechner | `aios --workspace init <repo>` |
 
-Die vollständigen Regeln stehen in Spec 06 *Pakete und Workspaces*, Abschnitt *Workspaces*, und in Spec 05 *Projekte*, installiert unter `/opt/aios/v0.4.0/doc/spec/`.
+Die vollständigen Regeln stehen in Spec 06 *Pakete und Workspaces*, Abschnitt *Workspaces*, und in Spec 05 *Projekte*, installiert unter `/opt/aios/v0.5.0/doc/spec/`.

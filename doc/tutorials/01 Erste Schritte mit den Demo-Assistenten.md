@@ -2,7 +2,7 @@
 
 Dieses Tutorial führt in etwa 20 Minuten durch einen kleinen Vault mit zwei Projekten und den beiden Demo-Assistenten von AIbex AIOS: dem **Gärtner**, der nur mit Äpfeln und Birnen rechnet, und dem **Astronomen**, der nur mit Sonne und Mond rechnet. Am Ende weißt du, wie ein Chat sein Wissen bekommt, wie Assistenten als Pakete geholt und einem Projekt zugeordnet werden, warum ein Assistent nur in seinem Teil des Vaults sichtbar ist und wie du seine Oberfläche öffnest.
 
-Voraussetzung: AIOS v0.4 ist installiert (`aios --install v0.4.0`, siehe README) und Claude Code läuft als Desktop-App oder CLI.
+Voraussetzung: AIOS v0.5 ist installiert (`aios --install v0.5.0`, siehe README) und Claude Code läuft als Desktop-App oder CLI.
 
 ## 1. Vault anlegen und aktivieren
 
@@ -10,10 +10,10 @@ Ein Vault ist ein Verzeichnis, dessen Name mit `§` beginnt. Lege ihn an und bin
 
 ```bash
 mkdir -p ~/tmp/§Demo
-aios --activate v0.4.0 ~/tmp/§Demo
+aios --activate v0.5.0 ~/tmp/§Demo
 ```
 
-`aios --activate` zeigt einen Plan und fragt nach. Danach gibt es `§Demo/.aios/config.yaml` mit `aios: 0.4.0`, den **Root-Masterspace** `§Demo/@/` und ein Git-Repo mit einem ersten Commit: Die Vault-Root ist das Root-Projekt.
+`aios --activate` zeigt einen Plan und fragt nach. Danach gibt es `§Demo/.aios/config.yaml` mit `aios: 0.5.0`, den **Root-Masterspace** `§Demo/@/` und ein Git-Repo mit einem ersten Commit: Die Vault-Root ist das Root-Projekt.
 
 Lege eine Regel an, die jeder Chat im Vault laden soll:
 
@@ -49,57 +49,62 @@ Die Aufstellung zeigt die Kette `§Demo → G-Garten`, die Zeile *Assistant* `no
 Skills, Assistenten, Wissen und Apps kommen als **Pakete** aus einem **Hub**, einer GitHub-Organisation. Der Standard-Hub ist `aibex-aios`. Suche darin nach Assistenten:
 
 ```bash
-aios --library assistent
+aios --library assistant
 ```
 
 ```
-aibex-aios/assistent-astronom  assistant     Demo-Assistent Astronom, rechnet nur mit Sonne und Mond, nennt Sterndaten
-aibex-aios/assistent-gaertner  assistant     Demo-Assistent Gärtner, rechnet nur mit Äpfeln und Birnen
+aibex-aios/assistant-anja      assistant     Assistentin Anja, Spezialistin für die Entwicklung von AIOS-Paketen aller Typen
+aibex-aios/assistant-astronom  assistant     Demo-Assistent Astronom, rechnet nur mit Sonne und Mond, nennt Sterndaten aus verfügbarem Wissen
+aibex-aios/assistant-gaertner  assistant     Demo-Assistent Gärtner, rechnet nur mit Äpfeln und Birnen, mit Oberfläche
 ```
 
-Der Name eines Pakets nennt seine Art: `assistent-…`, `skill-…`, `knowledge-…`, `app-…`. Ein Paket wird nicht automatisch verwendet; du **holst** es in ein Projekt. Mehr über Pakete und Hubs zeigt Tutorial *03 Pakete und Taschenrechner*.
+Der Name eines Pakets nennt seine Art: `assistant-…`, `skill-…`, `knowledge-…`, `app-…`, `worker-…`, `distribution-…`. Bis v0.4 hießen die Assistenten `assistent-…`; `aios --activate v0.5.0` stellt einen älteren Vault um. Ein Paket wird nicht automatisch verwendet; du **holst** es in ein Projekt. Mehr über Pakete und Hubs zeigt Tutorial *03 Pakete und Taschenrechner*.
 
 ## 4. Den Gärtner holen
 
 Den Gärtner sollen alle Projekte des Vaults nutzen können, deshalb kommt er in das Root-Projekt. Im Chat:
 
 ```
-/aios-fetch assistent-gaertner
+/aios-fetch assistant-gaertner
 ```
 
 Der Skill fragt nach dem Ziel und schlägt das Root-Projekt vor, zeigt den Plan und holt nach deinem Ja. Dasselbe auf der Kommandozeile, zuerst nur der Plan:
 
 ```bash
-aios --fetch assistent-gaertner --to ~/tmp/§Demo --plan
+aios --fetch assistant-gaertner --to ~/tmp/§Demo --plan
 ```
 
 ```
-=> fetch assistent-gaertner into ~/tmp/§Demo
+=> fetch assistant-gaertner into ~/tmp/§Demo
    plan:
-      new        assistent-gaertner 0.2.1 (aibex-aios) -> ~/tmp/§Demo/@/@!Package/assistent-gaertner
-      ~/tmp/§Demo/.aios/config.yaml: packages: assistent-gaertner: "~=0.2.1"
+      back up what the plan changes -> ~/tmp/§Demo/.aios/backup
+      new        assistant-gaertner 0.3.0 (aibex-aios) -> ~/tmp/§Demo/@/@!Package/assistant-gaertner
+      ~/tmp/§Demo/.aios/config.yaml: packages: assistant-gaertner: "~=0.3.0"
       ~/tmp/§Demo/.aios/lock.yaml: 1 packages
       register the project skills of ~/tmp/§Demo
+      remove the backup
    (plan only, nothing written)
 ```
+
+Jeder Plan sichert zuerst, was er ändert, und entfernt die Sicherung erst nach Erfolg: Scheitert ein Schritt, ist der Stand wie vorher (alles oder nichts).
 
 Ohne `--plan` fragt `aios` einmal nach und meldet dann:
 
 ```
-=> packages of ~/tmp/§Demo: assistent-gaertner 0.2.1
+=> packages of ~/tmp/§Demo: assistant-gaertner 0.3.0
    assign the assistant to a project of the chain with /aios-assistant Gärtner
    new skills are available from the next chat (or after /reload-skills)
 ```
 
-Danach liegt das Paket in `§Demo/@/@!Package/assistent-gaertner/`, und `§Demo/.aios/config.yaml` enthält:
+Danach liegt das Paket in `§Demo/@/@!Package/assistant-gaertner/`, und `§Demo/.aios/config.yaml` enthält:
 
 ```yaml
-aios: 0.4.0
+aios: 0.5.0
 packages:
-  assistent-gaertner: "~=0.2.1"
+  assistant-gaertner: "~=0.3.0"
 ```
 
-`~=0.2.1` heißt: 0.2.1 oder eine neuere 0.2.x. Welche Version und welcher Commit genau geholt wurden, steht in `.aios/lock.yaml`; `aios --fetch` ohne Argument stellt diesen Stand wieder her, auch auf einem anderen Rechner.
+`~=0.3.0` heißt: 0.3.0 oder eine neuere 0.3.x. Welche Version und welcher Commit genau geholt wurden, steht in `.aios/lock.yaml`; `aios --fetch` ohne Argument stellt diesen Stand wieder her, auch auf einem anderen Rechner.
 
 Schau dir den Ordner `assistants/gaertner/` im Paket an: `ASSISTANT.md` mit Rollentext und Grenzen, die privaten Skills `@!Skill/apfel-birnen-algebra/` und `@!Skill/gaertner-gui/` (seine Oberfläche), das Wissen `@Wissen/` mit den Grundlagen (geladen) sowie Sortenkunde und Veredelung (verfügbar). Die Datei `.aios-deploy` merkt sich Version und Prüfsumme; änderst du das Paket direkt, meldet `aios --fetch` das beim nächsten Abgleich.
 
@@ -143,7 +148,7 @@ In der Desktop-App erscheint die Oberfläche des Gärtners im Chat: der **Apfel-
 Der Astronom soll nur in der Sternwarte arbeiten, deshalb kommt er in dieses Projekt:
 
 ```bash
-aios --fetch assistent-astronom --to ~/tmp/§Demo/S-Sternwarte
+aios --fetch assistant-astronom --to ~/tmp/§Demo/S-Sternwarte
 ```
 
 In einem Chat in `S-Sternwarte`:
@@ -162,10 +167,10 @@ Willst du einen Assistenten nur ausprobieren, ohne die Zuordnung eines Projekts 
 
 | Begriff | im Tutorial |
 |---|---|
-| Vault, Aktivierung | `§Demo`, `aios --activate v0.4.0` |
+| Vault, Aktivierung | `§Demo`, `aios --activate v0.5.0` |
 | Projekt, Kette, Name | `G-Garten`, `S-Sternwarte`; ein Chat sieht von der Vault-Root bis zu seinem Projekt |
 | Klassen | `@Rule` geladen, `@@Sortenkunde` verfügbar, `@!Assistant` verborgen |
-| Paket, Hub, Holen | `aios --library assistent`, `/aios-fetch assistent-gaertner`, `packages:` und `lock.yaml` |
+| Paket, Hub, Holen | `aios --library assistant`, `/aios-fetch assistant-gaertner`, `packages:` und `lock.yaml` |
 | Zuordnung | `/aios-assistant Gärtner` schreibt `assistant: gaertner`; neue Chats laden ihn, Unterprojekte erben ihn |
 | Oberfläche | `/gui` (Gärtner), `/aios-gui` (AIOS) |
 | Version | jeder Skill und Assistent trägt `version:`; ohne Version wird er nicht verwendet und gemeldet |
@@ -176,6 +181,7 @@ Willst du einen Assistenten nur ausprobieren, ohne die Zuordnung eines Projekts 
 - Schreib einen eigenen Skill in `§Demo/@/@!Skill/<name>/SKILL.md` mit `name`, `version: 0.1.0` und `description`. Er wird beim nächsten Chat-Start registriert und ist in jedem Projekt des Vaults aufrufbar. Fehlt `version`, meldet der Start ein `AIOS-WARNING`.
 - Tutorial *03 Pakete und Taschenrechner*: Hubs, Versionen, Ausrollen einzelner Elemente, die Demo-App und der Rückfluss.
 - Tutorial *04 Workspaces*: mehrere Repos als Projekte eines Wurzelprojekts.
+- Tutorial *05 Arbeitspferde und Distributionen*: Programme wie `yt-dlp` als Arbeitspferde und die Distribution Rothirsch.
 - Zum Aufräumen: `aios --deactivate ~/tmp/§Demo` schaltet AIOS für den Vault wieder aus; die Dateien bleiben.
 
-Die vollständigen Regeln stehen in der Spec, installiert unter `/opt/aios/v0.4.0/doc/spec/`.
+Die vollständigen Regeln stehen in der Spec, installiert unter `/opt/aios/v0.5.0/doc/spec/`.
