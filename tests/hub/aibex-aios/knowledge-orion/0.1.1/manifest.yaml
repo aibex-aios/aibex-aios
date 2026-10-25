@@ -1,0 +1,9 @@
+name: knowledge-orion
+version: 0.1.1
+type: knowledge
+description: Die 20 hellsten Sterne des Sternbilds Orion mit Helligkeit, Radius, Entfernung, Temperatur und Art
+requires:
+  aios: ">=0.4,<0.6"
+contents:
+  knowledge: true
+license: CC-BY-4.0

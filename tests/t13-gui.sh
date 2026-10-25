@@ -14,8 +14,8 @@
    mk() { mkdir -p "$(dirname "$1")"; printf '%s' "$2" > "$1"; }
    mk "$D/.aios/config.yaml" $'aios: 0.3.0\n'
    mkdir -p "$D/@/@!Assistant" "$G/@/@!Assistant" "$D/Wiese/@"
-   cp -R "$SRC/tests/hub/aibex-aios/assistent-gaertner/0.2.0/assistants/gaertner" "$G/@/@!Assistant/gaertner"
-   cp -R "$SRC/tests/hub/aibex-aios/assistent-astronom/0.2.0/assistants/astronom" "$D/@/@!Assistant/astronom"
+   cp -R "$SRC/tests/hub/aibex-aios/assistant-gaertner/0.3.0/assistants/gaertner" "$G/@/@!Assistant/gaertner"
+   cp -R "$SRC/tests/hub/aibex-aios/assistant-astronom/0.3.0/assistants/astronom" "$D/@/@!Assistant/astronom"
    at() { (cd "$1" && shift && "$@" 2>&1); }
    GUI() { local d="$1"; shift; at "$d" "$SRC/bin/aios" --gui "$@"; }
    GG="$G/@/@!Assistant/gaertner/@!Skill/gaertner-gui"
@@ -107,7 +107,7 @@ print('|'.join(gui.check(yaml.safe_load(sys.argv[1]), Path('$GG'))))" "$1"; }
    printf 'title: [kaputt\n' > "$GG/gui.yaml"
    assert_contains "$(GUI "$G")" "*** aios --gui: $GG/gui.yaml" "broken gui.yaml: error"
    assert_exit 1 bash -c "cd '$G' && '$SRC/bin/aios' --gui"
-   cp "$SRC/tests/hub/aibex-aios/assistent-gaertner/0.2.0/assistants/gaertner/@!Skill/gaertner-gui/gui.yaml" "$GG/gui.yaml"
+   cp "$SRC/tests/hub/aibex-aios/assistant-gaertner/0.3.0/assistants/gaertner/@!Skill/gaertner-gui/gui.yaml" "$GG/gui.yaml"
    sed -i.bak 's/^skills: .*/skills: [apfel-birnen-algebra]/' "$G/@/@!Assistant/gaertner/ASSISTANT.md"
    assert_contains "$(GUI "$G")" "gui gaertner-gui of the assistant gaertner is not in its skills" "gui must be in skills"
    assert_contains "$(at "$G" "$SRC/bin/aios" --context --assistant gaertner)" "gui gaertner-gui of the assistant gaertner is not in its skills" "aios --context --assistant reports it"
@@ -156,7 +156,7 @@ plan = ui.Plan(); install.plan_alias(plan); plan.run(); print(len(plan.steps))" 
    W="$SANDBOX/work/§Apps"; mkdir -p "$W/@" "$W/.aios"; printf 'aios: 0.4.0\n' > "$W/.aios/config.yaml"
    assert_contains "$(at "$W" "$SRC/bin/aios" --gui --apps)" "No apps in this project." "--apps: none yet"
    at "$W" "$SRC/bin/aios" --fetch app-taschenrechner --yes >/dev/null
-   assert_contains "$(at "$W" "$SRC/bin/aios" --gui --apps)" "- /taschenrechner-gui — app-taschenrechner 0.4.3" "--apps: the app with its surface"
+   assert_contains "$(at "$W" "$SRC/bin/aios" --gui --apps)" "- /taschenrechner-gui — app-taschenrechner 0.5.0" "--apps: the app with its surface"
    assert_contains "$(at "$W" "$SRC/bin/aios" --gui --skill taschenrechner-gui)" "run \`aios --gui --skill taschenrechner-gui --html\`" "--skill: instruction"
    assert_contains "$(at "$W" "$SRC/bin/aios" --gui --skill taschenrechner-gui --html)" "var saved = null;" "placeholder without data: null"
    assert_contains "$(at "$W" "$SRC/bin/aios" --gui --skill taschenrechner-gui --html)" "Gespeichert wird im Chat. Kommt dort keine Nachricht an, schreib:" "hint after assigning a function key (B4)"

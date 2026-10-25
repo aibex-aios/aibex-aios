@@ -49,7 +49,7 @@
    assert_contains "$OUT" "aios: 0.4.0 in $V/.aios/config.yaml (was 0.3.1)" "plan: activation"
    assert_contains "$OUT" "$V: skills: memo -> packages: skill-memo: \"~=6.0\"" "plan: skill memo -> skill-memo, default range of the same version"
    assert_contains "$OUT" "$V: assistants: gaertner -> packages: assistant-gaertner: \"~=0.2.0\"" "plan: assistant gaertner"
-   assert_contains "$OUT" "$V: note: assistant-astronom: 0.1.0 is not in the hub aibex-aios, takes 0.2.1" "plan: missing version, highest taken"
+   assert_contains "$OUT" "$V: note: assistant-astronom: 0.1.0 is not in the hub aibex-aios, takes 0.3.0" "plan: missing version, highest taken"
    assert_contains "$OUT" "$V: remove the deployed blueprint $V/@/@!Skill/memo (replaced by the package)" "plan: blueprint with marker removed"
    assert_contains "$OUT" "$V/@/@!Assistant/astronom changed directly, stays as local blueprint (covers the package)" "plan: changed blueprint stays (B6)"
    assert_not_contains "$OUT" "remove the deployed blueprint $V/@/@!Assistant/astronom" "plan: changed blueprint not removed (B6)"
@@ -72,7 +72,7 @@ assistant: gaertner
 packages:
   skill-memo: "~=6.0"
   assistant-gaertner: "~=0.2.0"
-  assistant-astronom: "~=0.2.1"' "config: packages:, unknown entries stay"
+  assistant-astronom: "~=0.3.0"' "config: packages:, unknown entries stay"
    [ ! -e "$V/@/@!Skill/memo" ] && [ ! -e "$V/@/@!Assistant/gaertner" ] && ok || fail "unchanged blueprints with marker removed"
    assert_contains "$(cat "$V/@/@!Assistant/astronom/ASSISTANT.md")" "## Eigener Abschnitt" "changed blueprint stays with its content (B6)"
    [ ! -e "$V/@/@!Assistant/astronom/.aios-deploy" ] && ok || fail "changed blueprint: marker removed, now local"
@@ -110,9 +110,9 @@ packages:
    assert_contains "$(cat "$V4/.aios/lock.yaml")" "version: 6.0.1" "v0.4: lock.yaml on 6.0.1"
    assert_contains "$(A "$V4" --activate v0.5.0 "$V4" </dev/null)" "nothing to do" "v0.4: second activation: nothing to do"
    V5="$SANDBOX/work/§Fuenf"; mkdir -p "$V5/@"; mk "$V5/.aios/config.yaml" $'aios: 0.4.0\n'
-   A "$V5" --fetch 'assistent-astronom==0.2.1' --yes >/dev/null
+   A "$V5" --fetch 'test-assistent==0.1.0' --yes >/dev/null
    OUT="$(A "$V5" --activate v0.5.0 "$V5" --yes)"; RC=$?
    assert_eq "$RC" "1" "v0.4 without a fitting version: exit 1"
-   assert_contains "$OUT" "$V5: assistent-astronom has no version that runs with AIOS 0.5.0 (requires.aios); remove it with aios --fetch --remove assistent-astronom --to $V5" "v0.4: conflict named"
+   assert_contains "$OUT" "$V5: test-assistent has no version that runs with AIOS 0.5.0 (requires.aios); remove it with aios --fetch --remove test-assistent --to $V5" "v0.4: conflict named"
    assert_eq "$(sed -n 1p "$V5/.aios/config.yaml")" "aios: 0.4.0" "v0.4: conflict changes nothing"
    unset AIOS_HUBS
