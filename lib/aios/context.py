@@ -1,4 +1,4 @@
-"""aios-context - master context (spec 02): vault, chain, classes, output, id, part files.
+"""aios --context - master context (spec 02): vault, chain, classes, output, id, part files.
 
 Standard library only. Without activation (legacy mode) the calls go to ai-brain.
 """
@@ -291,7 +291,7 @@ def context_check_message(ctx):
             f" Before answering, verify that BOTH exact markers <aios-context id=\"{ident}\"\n"
             f" and </aios-context id=\"{ident}\"> are present in your context (memory or a\n"
             f" summary of earlier loading does not count). If not: tell the user\n"
-            f" \"Lade Master-Kontext\", run `aios-context --load \"{ctx.cwd}\"` via Bash, read every\n"
+            f" \"Lade Master-Kontext\", run `aios --context --load \"{ctx.cwd}\"` via Bash, read every\n"
             f" listed part file completely with the Read tool, then tell the user\n"
             f" \"Master-Kontext geladen (id {ident})\". If both markers are present, do nothing.")
 
@@ -345,7 +345,7 @@ def assistant_check_message(ctx, name, ver):
     return (f"AIOS-ASSISTANT-CHECK: expected assistant={name} version={ver}.\n"
             f" Verify that BOTH markers <aios-assistant name=\"{name}\" and\n"
             f" </aios-assistant name=\"{name}\"> are present in your context. If not: run\n"
-            f" `aios-context --assistant {name} --load` via Bash in \"{ctx.cwd}\", read every\n"
+            f" `aios --context --assistant {name} --load` via Bash in \"{ctx.cwd}\", read every\n"
             f" listed part file completely, and continue in this role.")
 
 
@@ -413,7 +413,7 @@ def session(ctx, source="startup", sid=None):
 # ---------------------------------------------------------------------------
 
 def legacy(cmd, cwd, stdin=""):
-    """Without activation aios-context behaves like ai-brain (spec 02, Legacy-Modus)."""
+    """Without activation aios --context behaves like ai-brain (spec 02, Legacy-Modus)."""
     brain = shutil.which("ai-brain")
     if cmd == "--id":
         out = subprocess.run([brain, "--id"], capture_output=True, text=True, cwd=cwd).stdout.strip() \
@@ -427,14 +427,14 @@ def legacy(cmd, cwd, stdin=""):
     return 0
 
 
-USAGE = ("usage: aios-context --session | --advise | --context [<path>] | --load [<path>] | --id [<path>]"
+USAGE = ("usage: aios --context [<path>] | --session | --advise | --load [<path>] | --id [<path>]"
          " | --list [<path>] | --sync [--yes|--plan] | --assistant <name> [--load] | --assistants"
          " | --assignment [<path>] [--session <id>]")
 
 
 def main(argv):
     if argv and argv[0] in LATER:
-        print(f"aios-context {argv[0]}: not implemented yet (step {LATER[argv[0]]})", file=sys.stderr)
+        print(f"aios --context {argv[0]}: not implemented yet (step {LATER[argv[0]]})", file=sys.stderr)
         return 2
     cmd = argv[0] if argv else ""
     if cmd == "--sync" and argv[1:] in ([], ["--yes"], ["--plan"]):
@@ -451,14 +451,14 @@ def main(argv):
         try:
             return hook(cmd)
         except Exception as e:                      # noqa: BLE001 - a hook never breaks the session
-            print(f"AIOS-WARNING: aios-context {cmd} failed: {e}")
+            print(f"AIOS-WARNING: aios --context {cmd} failed: {e}")
             return 0
     if cmd not in ("--context", "--load", "--id", "--list") or len(argv) > 2:
         print(USAGE, file=sys.stderr)
         return 1
     cwd = os.path.abspath(argv[1]) if len(argv) == 2 else paths.cwd()
     if not os.path.isdir(cwd):
-        print(f"aios-context: {cwd} is not a directory", file=sys.stderr)
+        print(f"aios --context: {cwd} is not a directory", file=sys.stderr)
         return 1
     ctx = Context(cwd)
     if cmd == "--list":
@@ -469,12 +469,12 @@ def main(argv):
         if cmd == "--id":
             print(f"id=- files=0 cwd={ctx.cwd} mode=none")
         else:
-            print("aios-context: not in a vault, no master context", file=sys.stderr)
+            print("aios --context: not in a vault, no master context", file=sys.stderr)
         return 0
     if ctx.mode == "legacy":
         return legacy(cmd, cwd)
     for w in ctx.cfg.warnings:
-        print(f"aios-context: warning: {w}", file=sys.stderr)
+        print(f"aios --context: warning: {w}", file=sys.stderr)
     if cmd == "--id":
         print(f"id={ctx.id} files={len(ctx.loaded)} cwd={ctx.cwd} mode=aios-{version()}")
     elif cmd == "--context":
@@ -490,7 +490,7 @@ def assistant_cmd(argv):
     from .ui import Abort
     ctx = Context(paths.cwd())
     if ctx.mode != "aios":
-        print("aios-context: assistants need a vault activated with AIOS (aios --activate)", file=sys.stderr)
+        print("aios --context: assistants need a vault activated with AIOS (aios --activate)", file=sys.stderr)
         return 1
     try:
         if argv[0] == "--assistants":
@@ -502,7 +502,7 @@ def assistant_cmd(argv):
         else:
             sys.stdout.write(assistant.render(ctx, argv[1]))
     except Abort as e:
-        print(f"*** aios-context {argv[0]}: {e}", file=sys.stderr)
+        print(f"*** aios --context {argv[0]}: {e}", file=sys.stderr)
         return 1
     return 0
 
@@ -524,13 +524,13 @@ def assignment_cmd(args):
         return 1
     cwd = os.path.abspath(rest[0]) if rest else paths.cwd()
     if not os.path.isdir(cwd):
-        print(f"aios-context: {cwd} is not a directory", file=sys.stderr)
+        print(f"aios --context: {cwd} is not a directory", file=sys.stderr)
         return 1
     if sid is not None:
         try:
             marker = session.read(sid)
         except session.BadId as e:
-            print(f"*** aios-context --assignment: {e}", file=sys.stderr)
+            print(f"*** aios --context --assignment: {e}", file=sys.stderr)
             return 1
         if marker:
             print(f"assistant={marker['assistant']} from=session")

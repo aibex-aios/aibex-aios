@@ -59,18 +59,18 @@ from pathlib import Path
 m = install.frontmatter(Path('$SRC/skills/aios/aios-context/SKILL.md'))
 print(install.wrapper('aios-context', m['description'], m.get('allowed-tools', '')), end='')")"
    assert_contains "$W" $'---\nname: aios-context\ndescription: "Prüft, ob der Master-Kontext' "wrapper: name and description"
-   assert_contains "$W" "allowed-tools: Bash(aios --skill *), Bash(aios-context *), Read" "wrapper: allowed-tools"
+   assert_contains "$W" "allowed-tools: Bash(aios --skill *), Bash(aios --context *), Read" "wrapper: allowed-tools"
    assert_contains "$W" $'---\n\n!`aios --skill aios-context`' "wrapper: body"
 
 #===============================================================================
-# aios-context --list: listing for /aios-context
+# aios --context --list: listing for /aios-context
 #===============================================================================
 
-   at "$D" "$SRC/bin/aios-context" --sync --yes >/dev/null
+   at "$D" "$SRC/bin/aios" --context --sync --yes >/dev/null
    rm -rf "$D/.claude/skills/notiz"
-   OUT="$("$SRC/bin/aios-context" --list "$D")"
-   ID="$("$SRC/bin/aios-context" --id "$D" | sed 's/^id=\([^ ]*\).*/\1/')"
-   CH="$("$SRC/bin/aios-context" --context "$D" | python3 -c 'import sys; print(f"{len(sys.stdin.read()):,}".replace(",", "."))')"
+   OUT="$("$SRC/bin/aios" --context --list "$D")"
+   ID="$("$SRC/bin/aios" --context --id "$D" | sed 's/^id=\([^ ]*\).*/\1/')"
+   CH="$("$SRC/bin/aios" --context "$D" | python3 -c 'import sys; print(f"{len(sys.stdin.read()):,}".replace(",", "."))')"
    assert_eq "$OUT" "Master context id $ID, AIOS $(cat "$SRC/VERSION") — §Demo
 
 Chain                      §Demo
@@ -87,15 +87,15 @@ Hidden                     Blueprints: 3 skills, 1 assistant, 1 prompt
   Assistants   obstgaertner 0.1.0 (§Demo)
   Prompts      obstgaertner (§Demo)
 Note: blueprints and registered skills differ — /aios-register" "--list: exact listing"
-   assert_contains "$("$SRC/bin/aios-context" --list "$D/Garten")" "Chain                      §Demo → Garten" "--list: chain"
-   assert_contains "$("$SRC/bin/aios-context" --list "$D/Wiese")" "Wiese (not initialized, chain up to §Demo)" "--list: not initialized"
-   assert_eq "$("$SRC/bin/aios-context" --list "$SANDBOX/work/§Alt")" "Legacy mode (ai-brain, no aios: in the chain) — see /masterspace." "--list: legacy"
-   assert_eq "$("$SRC/bin/aios-context" --list "$SANDBOX/outside")" "No vault — no master context." "--list: outside a vault"
+   assert_contains "$("$SRC/bin/aios" --context --list "$D/Garten")" "Chain                      §Demo → Garten" "--list: chain"
+   assert_contains "$("$SRC/bin/aios" --context --list "$D/Wiese")" "Wiese (not initialized, chain up to §Demo)" "--list: not initialized"
+   assert_eq "$("$SRC/bin/aios" --context --list "$SANDBOX/work/§Alt")" "Legacy mode (ai-brain, no aios: in the chain) — see /masterspace." "--list: legacy"
+   assert_eq "$("$SRC/bin/aios" --context --list "$SANDBOX/outside")" "No vault — no master context." "--list: outside a vault"
    printf 'aios: 0.1.0\nassistant: obstgaertner\n' > "$D/.aios/config.yaml"
-   assert_contains "$("$SRC/bin/aios-context" --list "$D")" "Assistant                  obstgaertner 0.1.0 (assigned in §Demo)" "--list: own assignment"
-   assert_contains "$("$SRC/bin/aios-context" --list "$D/Garten")" "Assistant                  obstgaertner 0.1.0 (inherit, assigned in §Demo)" "--list: inherited assignment"
+   assert_contains "$("$SRC/bin/aios" --context --list "$D")" "Assistant                  obstgaertner 0.1.0 (assigned in §Demo)" "--list: own assignment"
+   assert_contains "$("$SRC/bin/aios" --context --list "$D/Garten")" "Assistant                  obstgaertner 0.1.0 (inherit, assigned in §Demo)" "--list: inherited assignment"
    printf 'aios: 0.1.0\nassistant: astronom\n' > "$D/.aios/config.yaml"
-   assert_contains "$("$SRC/bin/aios-context" --list "$D")" "Assistant                  astronom (not found) (assigned in §Demo)" "--list: assistant not found"
+   assert_contains "$("$SRC/bin/aios" --context --list "$D")" "Assistant                  astronom (not found) (assigned in §Demo)" "--list: assistant not found"
    printf 'aios: 0.1.0\n' > "$D/.aios/config.yaml"
 
 #===============================================================================
@@ -119,7 +119,7 @@ for n in ('aios-assistant', 'aios-context', 'aios-init'):
    WI="$(printf '%s\n' "$W" | sed -n '/^== aios-init/,$p')"
    assert_contains "$WA" '!`aios --skill aios-assistant`' "wrapper calls only aios --skill <name> (every version understands it)"
    assert_contains "$WA" 'Session-ID dieses Chats: `${CLAUDE_SESSION_ID}`' "wrapper: session id as a line of text"
-   case "$W" in *"--skill aios-assistant --session"*|*"--skill aios-context --session"*) fail "wrapper: no --session flag (v0.2 does not know it)" ;; *) ok ;; esac
+   case "$W" in *"--skill aios-assistant --session"*|*"--skill aios --context --session"*) fail "wrapper: no --session flag (v0.2 does not know it)" ;; *) ok ;; esac
    assert_contains "$(printf '%s\n' "$W" | sed -n '/^== aios-context/,/^== aios-init/p')" 'Session-ID dieses Chats' "wrapper of aios-context with the session line"
    case "$WI" in *"Session-ID"*) fail "wrapper without session id stays plain" ;; *) ok ;; esac
 
@@ -133,7 +133,7 @@ for n in ('aios-assistant', 'aios-context', 'aios-init'):
    assert_eq "$RC" "0" "--plan: exit 0"
    assert_contains "$OUT" "(plan only, nothing written)" "--plan: plan only"
    [ ! -e "$D/.claude/skills/notiz" ] && ok || fail "--plan: nothing written"
-   assert_contains "$(at "$D" "$SRC/bin/aios-context" --sync --plan)" "changed  notiz" "aios-context --sync --plan (copy deleted: changed)"
+   assert_contains "$(at "$D" "$SRC/bin/aios" --context --sync --plan)" "changed  notiz" "aios --context --sync --plan (copy deleted: changed)"
    [ ! -e "$D/.claude/skills/notiz" ] && ok || fail "--sync --plan: nothing written"
    "$SRC/bin/aios" --register "$D" --yes </dev/null >/dev/null 2>&1
    assert_file "$D/.claude/skills/notiz/SKILL.md"

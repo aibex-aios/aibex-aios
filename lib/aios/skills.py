@@ -1,4 +1,4 @@
-"""aios --skill <name> (version-neutral AIOS skills, spec 04) and aios-context --list (spec 02)."""
+"""aios --skill <name> (version-neutral AIOS skills, spec 04) and aios --context --list (spec 02)."""
 
 from __future__ import annotations
 
@@ -60,7 +60,7 @@ def body(name, session_id=None):
 
 
 # ---------------------------------------------------------------------------
-# aios-context --list
+# aios --context --list
 # ---------------------------------------------------------------------------
 
 def number(n):

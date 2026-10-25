@@ -5,7 +5,7 @@
       echo '   usage: tests/run            # run all tests'
       echo '          tests/run t01        # run tests whose file name starts with t01'
       echo '          tests/run --version  # print version'
-      echo '   see also: aios, aios-context'
+      echo '   see also: aios'
       exit 1
    fi
 

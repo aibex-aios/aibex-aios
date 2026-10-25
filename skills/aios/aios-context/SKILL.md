@@ -1,7 +1,7 @@
 ---
 name: aios-context
 description: Prüft, ob der Master-Kontext von AIbex AIOS (das geladene Wissen der Masterspace-Kette) in diesem Chat vollständig geladen ist, lädt ihn bei Bedarf nach und zeigt Kette, geladene Dateien, verfügbares Wissen und Blueprints. Nachfolger von /masterspace. Verwenden bei "/aios-context", "Master-Kontext", "was ist geladen?", "Kontext prüfen".
-allowed-tools: Bash(aios-context *), Read
+allowed-tools: Bash(aios --context *), Read
 ---
 
 # Master-Kontext
@@ -12,7 +12,7 @@ Ein AIOS-Skill von AIbex AIOS (Spec 02, *Skill `/aios-context`*). Er ändert nic
 
 ## Ablauf
 
-1. **Soll-Stand ermitteln:** Führe `aios-context --id` über das Bash-Werkzeug aus. Die Ausgabe hat die Form `id=<id> files=<n> cwd=<cwd> mode=<mode>`.
+1. **Soll-Stand ermitteln:** Führe `aios --context --id` über das Bash-Werkzeug aus. Die Ausgabe hat die Form `id=<id> files=<n> cwd=<cwd> mode=<mode>`.
 
 2. **Kein Vault:** Bei `mode=none` antworte nur: „Kein Vault — kein Master-Kontext." und beende.
 
@@ -26,12 +26,12 @@ Ein AIOS-Skill von AIbex AIOS (Spec 02, *Skill `/aios-context`*). Er ändert nic
 
 5. **Nachladen**, wenn die Marken fehlen oder eine andere id im Kontext steht:
    - Steht eine andere id im Kontext, sag „Master-Kontext veraltet (`<alt>` → `<neu>`)", sonst „Lade Master-Kontext".
-   - Führe `aios-context --load "<cwd>"` aus (mit dem `cwd` aus Schritt 1).
+   - Führe `aios --context --load "<cwd>"` aus (mit dem `cwd` aus Schritt 1).
    - Lies **jede** aufgelistete Part-Datei vollständig mit dem Read-Tool, in der angegebenen Reihenfolge.
    - Prüfe, dass die Endmarke `</aios-context id="<id>">` gelesen wurde.
 
-6. **Aufstellung zeigen:** Führe `aios-context --list "<cwd>"` aus. Zeige die Ausgabe unverändert in einem Codeblock, ersetze nur die erste Zeile `Master context id <id>, AIOS <version> — <Projekt>` durch „Master-Kontext geladen (id `<id>`, AIOS `<version>`) — `<Projekt>`".
+6. **Aufstellung zeigen:** Führe `aios --context --list "<cwd>"` aus. Zeige die Ausgabe unverändert in einem Codeblock, ersetze nur die erste Zeile `Master context id <id>, AIOS <version> — <Projekt>` durch „Master-Kontext geladen (id `<id>`, AIOS `<version>`) — `<Projekt>`".
 
-7. **Assistent der Session:** Führe `aios-context --assignment "<cwd>" --session <session-id>` aus; `<session-id>` ist die Session-ID aus der Zeile *Session-ID dieses Chats* am Ende dieser Anweisung. Steht dort `from=session` und ein anderer Assistent als in der Zeile *Assistant* der Aufstellung (die Zuordnung des Projekts), nenne beide: „Assistent dieses Chats: <name> (Zuordnung des Projekts: <wert>)".
+7. **Assistent der Session:** Führe `aios --context --assignment "<cwd>" --session <session-id>` aus; `<session-id>` ist die Session-ID aus der Zeile *Session-ID dieses Chats* am Ende dieser Anweisung. Steht dort `from=session` und ein anderer Assistent als in der Zeile *Assistant* der Aufstellung (die Zuordnung des Projekts), nenne beide: „Assistent dieses Chats: <name> (Zuordnung des Projekts: <wert>)".
 
 Steht in der Aufstellung ein Hinweis auf `/aios-register` (`Note: …`), nenne ihn. Die Aufstellung ist englisch; erkläre sie bei Bedarf in der Sprache des Users. Keine weiteren Kommentare, keine Zusammenfassung des Inhalts.

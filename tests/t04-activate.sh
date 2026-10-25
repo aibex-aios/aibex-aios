@@ -7,11 +7,11 @@
    mkdir -p "$HOME/bin" "$HOME/.aios"
    export PATH="$HOME/bin:/usr/bin:/bin:/usr/sbin:/sbin"
    export GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@t GIT_COMMITTER_NAME=t GIT_COMMITTER_EMAIL=t@t
-   cp "$SRC/templates/forwarder" "$HOME/bin/aios-context"; chmod +x "$HOME/bin/aios-context"
+   cp "$SRC/templates/forwarder" "$HOME/bin/aios"; chmod +x "$HOME/bin/aios"
    for V in 0.1.0 0.2.0; do
       mkdir -p "$AIOS_PREFIX/v$V/bin"
-      printf '#!/bin/bash\necho "%s $*"\n' "$V" > "$AIOS_PREFIX/v$V/bin/aios-context"
-      chmod +x "$AIOS_PREFIX/v$V/bin/aios-context"
+      printf '#!/bin/bash\necho "%s $*"\n' "$V" > "$AIOS_PREFIX/v$V/bin/aios"
+      chmod +x "$AIOS_PREFIX/v$V/bin/aios"
       echo "v$V: $AIOS_PREFIX/v$V" >> "$AIOS_PREFIX/installations.yaml"
    done
 
@@ -47,7 +47,7 @@
    assert_eq "$(cat "$D/.aios/config.yaml")" "aios: 0.1.0" "vault config written"
    assert_eq "$(git -C "$D" log --format=%s)" "AIOS: Projekt initialisiert" "root project: first commit"
    assert_eq "$(git -C "$D" show --name-only --format= | sort | tr '\n' ' ')" ".aios/config.yaml .gitignore @/.gitkeep " "root project: committed files"
-   assert_eq "$(at "$D/Garten/Beet/Reihe" aios-context --id)" "0.1.0 --id" "forwarder agrees with the activation"
+   assert_eq "$(at "$D/Garten/Beet/Reihe" aios --context --id)" "0.1.0 --context --id" "forwarder agrees with the activation"
    assert_eq "$(at "$D" sh -c "'$SRC/bin/aios' --activate 0.1.0 </dev/null")" "=> $D runs with AIOS 0.1.0 ($D/.aios/config.yaml), nothing to do" "same version again: nothing to do, no question"
 
 #===============================================================================
@@ -63,7 +63,7 @@
    assert_eq "$(grep -c '^aios:' "$D/Garten/.aios/config.yaml")" "1" "only one aios: line"
    assert_eq "$(head -1 "$D/Garten/.aios/config.yaml")" "aios: 0.1.0" "aios: replaced in place"
    echo y | A --activate v0.2.0 "$D/Garten" >/dev/null
-   assert_eq "$(at "$D/Garten/Beet/Reihe" aios-context --id)" "0.2.0 --id" "forwarder: nearest activation wins"
+   assert_eq "$(at "$D/Garten/Beet/Reihe" aios --context --id)" "0.2.0 --context --id" "forwarder: nearest activation wins"
 
 #===============================================================================
 # configuration chain: per key the nearest entry, skills per name
@@ -84,7 +84,7 @@
    assert_contains "$W3" "foo" "warning: unknown key"
    assert_contains "$W3" "$HOME/.aios/config.yaml: aios is not allowed here" "warning: aios in ~/.aios"
    assert_eq "$(CFG "$SANDBOX/outside" 'c.aios, c.hosts, c.inline_limit')" "(None, ['codex', 'claude-code'], 5000)" "outside a vault: only home"
-   assert_eq "$(at "$SANDBOX/outside" aios-context --id)" "id=- files=0 cwd=$SANDBOX/outside mode=none" "forwarder outside a vault: mode=none"
+   assert_eq "$(at "$SANDBOX/outside" aios --context --id)" "id=- files=0 cwd=$SANDBOX/outside mode=none" "forwarder outside a vault: mode=none"
 
    OUT="$(A --config "$C")"
    assert_contains "$OUT" "aios      0.2.0 ($D/Garten/.aios/config.yaml)" "--config: aios with origin"
@@ -116,11 +116,11 @@
    assert_eq "$(grep -c '^aios:' "$D/Garten/.aios/config.yaml")" "0" "aios: removed"
    assert_contains "$(cat "$D/Garten/.aios/config.yaml")" "memo: 6.1.0" "skills stay"
    assert_contains "$OUT" "runs with AIOS 0.1.0 ($D/.aios/config.yaml)" "now the vault decides"
-   assert_eq "$(at "$D/Garten" aios-context --id)" "0.1.0 --id" "forwarder follows"
+   assert_eq "$(at "$D/Garten" aios --context --id)" "0.1.0 --context --id" "forwarder follows"
 
    printf 'aios: 0.1.0\n' > "$D/.aios/config.yaml"
    OUT="$(at "$D" sh -c "echo y | '$SRC/bin/aios' --deactivate")"
    [ ! -e "$D/.aios" ] && ok || fail "empty config and .aios/ removed"
    assert_contains "$OUT" "legacy mode" "vault in legacy mode"
    assert_contains "$(A --deactivate "$D" </dev/null)" "nothing to do" "deactivate again: nothing to do"
-   assert_eq "$(at "$D/Garten" aios-context --id)" "id=- files=0 cwd=$D/Garten mode=legacy" "forwarder: legacy (no ai-brain here)"
+   assert_eq "$(at "$D/Garten" aios --context --id)" "id=- files=0 cwd=$D/Garten mode=legacy" "forwarder: legacy (no ai-brain here)"

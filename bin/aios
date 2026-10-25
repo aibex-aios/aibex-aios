@@ -10,6 +10,12 @@
       echo '          aios --activate v<version> [<path>] # bind a vault or project to a version'
       echo '          aios --deactivate [<path>]          # remove the binding'
       echo '          aios --config [<path>]              # effective configuration and its origin'
+      echo '          aios --context [<path>]             # master context of cwd or <path> (spec 02)'
+      echo '          aios --context --load|--id|--list [<path>] # part files, id, listing'
+      echo '          aios --context --session|--advise   # hooks (hook JSON on stdin)'
+      echo '          aios --context --assistant <name> [--load] | --assistants # assistants'
+      echo '          aios --context --assignment [<path>] [--session <id>] # assistant that applies'
+      echo '          aios --context --sync [--yes|--plan] # register the project skills'
       echo '          aios --register [<path>]            # register the project skills (spec 03)'
       echo '          aios --init [<path>]                # make a folder a project (@/, git, .gitignore)'
       echo '          aios --integrity [<path>]           # integrity of a project and its subprojects'
@@ -33,7 +39,7 @@
       echo '          aios <writing command> --plan       # show the plan only (for skills)'
       echo '          aios <writing command> --yes        # no question (after asking in the chat)'
       echo '          aios --version                      # print version'
-      echo '   see also: aios-context, ai-brain, stup'
+      echo '   see also: ai-brain, stup'
       exit 1
    fi
 
@@ -51,6 +57,16 @@
 
    if [ "$*" == "--version" ]; then
       cat "$HERE/VERSION"; exit 0
+   fi
+
+#===============================================================================
+# master context: aios --context [<option>] [<args>]  (spec 02; without loading the CLI, for the hooks)
+#===============================================================================
+
+   if [ "$1" == "--context" ]; then
+      shift
+      case "$1" in -*) ;; *) set -- --context "$@";; esac   # no option: print the master context
+      PYTHONPATH="$HERE/lib" exec "$PY" -m aios.context "$@"
    fi
 
 #===============================================================================

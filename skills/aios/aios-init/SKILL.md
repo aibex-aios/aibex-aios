@@ -1,7 +1,7 @@
 ---
 name: aios-init
 description: Macht einen Ordner in einem aktivierten AIbex-AIOS-Vault zum Projekt oder ergänzt ein Projekt um die fehlenden Teile der Struktur (@/, eigenes Git-Repo, .gitignore, Ausschluss im Repo darüber, Registrierung der Skills, Commit), mit Prüfung der Namensregel. Verwenden bei "/aios-init", "Projekt initialisieren", "Projekt ergänzen", nach PROJECT-UNINITIALIZED oder PROJECT-INCOMPLETE und nach /aios-integrity.
-allowed-tools: Bash(aios --init *), Bash(aios-context --assistants*)
+allowed-tools: Bash(aios --init *), Bash(aios --context --assistants*)
 ---
 
 # Projekt initialisieren
@@ -16,7 +16,7 @@ Ein AIOS-Skill von AIbex AIOS (Spec 05, *Initialisieren*).
    - Endet er mit einer Fehlermeldung (`*** aios --init: …`), nenne sie dem User mit dem Hinweis daraus und beende.
    - Meldet er „is a complete project, nothing to do", sag das und beende.
 2. **Rückfrage:**
-   - Stand `PROJECT-UNINITIALIZED` im Kontext: Zeige mit dem Auswahlwerkzeug (`AskUserQuestion`) den Dialog *Projekt initialisieren* mit drei Fragen: **Titel** des Chats (Ordnername ohne Prefix, ein Vorschlag), **Assistent** (`inherit` mit dem Assistenten, der geerbt würde, `none` und bis zu zwei Assistenten aus `aios-context --assistants`) und **Anlegen** (initialisieren oder ins Projekt darüber wechseln). Ohne Auswahlwerkzeug stellst du die Fragen als nummerierte Liste.
+   - Stand `PROJECT-UNINITIALIZED` im Kontext: Zeige mit dem Auswahlwerkzeug (`AskUserQuestion`) den Dialog *Projekt initialisieren* mit drei Fragen: **Titel** des Chats (Ordnername ohne Prefix, ein Vorschlag), **Assistent** (`inherit` mit dem Assistenten, der geerbt würde, `none` und bis zu zwei Assistenten aus `aios --context --assistants`) und **Anlegen** (initialisieren oder ins Projekt darüber wechseln). Ohne Auswahlwerkzeug stellst du die Fragen als nummerierte Liste.
    - Sonst: Zeige den Plan und frage einmal, ob du ihn ausführen sollst. Hat der User das in seiner Anfrage schon ausdrücklich bestätigt, entfällt die Frage.
    - Bei Nein: abbrechen, nichts anlegen.
 3. **Namensregel:** Enthält der Plan Zeilen `name …:` und `proposal: …`, verstößt der Name gegen die Namensregel. Frag den User mit drei Antworten: (1) mit dem Vorschlag fortfahren (empfohlen) → Option `--name <vorschlag>`, (2) mit dem eigenen Namen fortfahren → Option `--accept-name`, (3) abbrechen. Liegt die Session im Ordner, der umbenannt würde, sag vorher, dass der Chat danach ins umbenannte Projekt wechseln muss (Desktop-App: Werkzeug zum Wechsel des Arbeitsverzeichnisses; CLI: neu starten).

@@ -28,16 +28,16 @@
 # elements of fetched packages act in the chain: registration, knowledge, assistant
 #===============================================================================
 
-   at "$G" "$SRC/bin/aios-context" --sync --yes >/dev/null
+   at "$G" "$SRC/bin/aios" --context --sync --yes >/dev/null
    assert_eq "$(ls "$G/.claude/skills" | tr '\n' ' ')" "memo taschenrechner taschenrechner-gui " "skills of the packages registered in a project below"
    assert_file "$G/.aios/registry"
    assert_contains "$(cat "$G/.aios/registry")" "source: \"$D/@/@!Package/app-taschenrechner/skills/taschenrechner\"" "registry: source in @!Package/"
-   OUT="$(at "$G" "$SRC/bin/aios-context" --context)"
+   OUT="$(at "$G" "$SRC/bin/aios" --context)"
    assert_contains "$OUT" "$D/@/@!Package/knowledge-orion/knowledge/@@Orion/Sterne.md — Die 20 hellsten Sterne des Orion" "K6: knowledge of a package available, path in @!Package/"
    [ "$(printf '%s' "$OUT" | grep -c 'Funktionstasten')" == "0" ] && ok || fail "K6: hidden knowledge of a package not in the context"
-   assert_contains "$(at "$G" "$SRC/bin/aios-context" --assistants)" "Testassistent 0.1.0" "assistant of a package in the chain"
-   assert_contains "$(at "$G" "$SRC/bin/aios-context" --assistants)" "(§Demo, package test-assistent)" "assistant: origin with package"
-   assert_contains "$(at "$G" "$SRC/bin/aios-context" --assistant test-assistent)" "Du bist der Testassistent des Test-Hubs." "assistant of a package resolved"
+   assert_contains "$(at "$G" "$SRC/bin/aios" --context --assistants)" "Testassistent 0.1.0" "assistant of a package in the chain"
+   assert_contains "$(at "$G" "$SRC/bin/aios" --context --assistants)" "(§Demo, package test-assistent)" "assistant: origin with package"
+   assert_contains "$(at "$G" "$SRC/bin/aios" --context --assistant test-assistent)" "Du bist der Testassistent des Test-Hubs." "assistant of a package resolved"
 
 #===============================================================================
 # aios --deploy: show, --only, --all, checks
@@ -55,16 +55,16 @@
    A "$D" --deploy app-taschenrechner --only taschenrechner-gui --yes >/dev/null
    assert_contains "$(cat "$D/.aios/config.yaml")" "app-taschenrechner: {range: \"~=0.4.3\", only: [taschenrechner-gui]}" "--only written"
    assert_contains "$(A "$D" --deploy)" "      not deployed  skill taschenrechner" "show: not deployed element"
-   at "$G" "$SRC/bin/aios-context" --sync --yes >/dev/null
+   at "$G" "$SRC/bin/aios" --context --sync --yes >/dev/null
    assert_eq "$(ls "$G/.claude/skills" | tr '\n' ' ')" "memo taschenrechner-gui " "H3: not deployed skill not registered"
-   assert_contains "$(at "$G" "$SRC/bin/aios-context" --list)" "fetched, not deployed: skill taschenrechner" "/aios-context: fetched, not deployed"
+   assert_contains "$(at "$G" "$SRC/bin/aios" --context --list)" "fetched, not deployed: skill taschenrechner" "/aios-context: fetched, not deployed"
    assert_contains "$(A "$D" --deploy app-taschenrechner --only taschenrechner-gui)" "nothing to do" "--only again: nothing to do (I8)"
    assert_contains "$(A "$D" --fetch)" "nothing to do" "fetch keeps the selection"
    A "$D" --deploy app-taschenrechner --all --yes >/dev/null
    assert_contains "$(cat "$D/.aios/config.yaml")" 'app-taschenrechner: "~=0.4.3"' "--all: back to the range"
    A "$D" --deploy test-assistent --only test-assistent --yes >/dev/null
    sed -i.bak 's/knowledge-orion: "~=0.1.0"/knowledge-orion: {range: "~=0.1.0", only: [nichts]}/' "$D/.aios/config.yaml"; rm "$D/.aios/config.yaml.bak"
-   OUT="$(at "$G" "$SRC/bin/aios-context" --context)"
+   OUT="$(at "$G" "$SRC/bin/aios" --context)"
    [ "$(printf '%s' "$OUT" | grep -c 'Sterne.md')" == "0" ] && ok || fail "H3: knowledge not deployed, not in the context"
    sed -i.bak 's/knowledge-orion: {range: "~=0.1.0", only: \[nichts\]}/knowledge-orion: "~=0.1.0"/' "$D/.aios/config.yaml"; rm "$D/.aios/config.yaml.bak"
 
@@ -73,11 +73,11 @@
 #===============================================================================
 
    mk "$D/@/@!Skill/memo/SKILL.md" $'---\nname: memo\nversion: 9.0.0\ndescription: lokal\n---\n\n# Lokal\n'
-   at "$G" "$SRC/bin/aios-context" --sync --yes >/dev/null
+   at "$G" "$SRC/bin/aios" --context --sync --yes >/dev/null
    assert_contains "$(cat "$G/.claude/skills/memo/SKILL.md")" "# Lokal" "local blueprint before the package (S6)"
-   assert_contains "$(at "$G" "$SRC/bin/aios-context" --list)" "skill memo: covered by local blueprint (§Demo)" "/aios-context reports the covering"
+   assert_contains "$(at "$G" "$SRC/bin/aios" --context --list)" "skill memo: covered by local blueprint (§Demo)" "/aios-context reports the covering"
    mk "$G/@/@!Skill/memo/SKILL.md" $'---\nname: memo\nversion: 9.1.0\ndescription: Garten\n---\n\n# Garten\n'
-   at "$G" "$SRC/bin/aios-context" --sync --yes >/dev/null
+   at "$G" "$SRC/bin/aios" --context --sync --yes >/dev/null
    assert_contains "$(cat "$G/.claude/skills/memo/SKILL.md")" "# Garten" "nearest masterspace wins"
 
 #===============================================================================

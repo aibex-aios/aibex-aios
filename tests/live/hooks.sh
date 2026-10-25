@@ -5,7 +5,7 @@
       echo '   usage: tests/live/hooks.sh [<model>]   # headless sessions L1-L5, default model haiku'
       echo '          tests/live/hooks.sh --version   # print version'
       echo '   not part of tests/run: needs a logged-in claude CLI and uses tokens'
-      echo '   see also: tests/run, aios-context'
+      echo '   see also: tests/run, aios --context'
       exit 1
    fi
 
@@ -31,7 +31,7 @@
       printf 'aios: 0.4.0\n' > "$V/.aios/config.yaml"
       printf '# Geheimwort\nDas Geheimwort lautet: %s\n' "$SECRET" > "$V/@/@Rule/geheim.md"
       printf '# Garten\nIm Garten wachsen Äpfel.\n' > "$V/Garten/@/garten.md"
-      for TOOL in aios aios-context; do
+      for TOOL in aios; do
          printf '#!/bin/bash\nHOME="%s/home" exec "%s/bin/%s" "$@"\n' "$SB" "$REPO" "$TOOL" > "$SB/bin/$TOOL"
          chmod +x "$SB/bin/$TOOL"
       done
@@ -39,14 +39,14 @@
          python3 -c '
 import json, sys
 h = {}
-if sys.argv[1] != "-": h["SessionStart"] = [{"hooks": [{"type": "command", "command": "aios-context --session"}]}]
-if sys.argv[2] != "-": h["UserPromptSubmit"] = [{"hooks": [{"type": "command", "command": "aios-context --advise"}]}]
+if sys.argv[1] != "-": h["SessionStart"] = [{"hooks": [{"type": "command", "command": "aios --context --session"}]}]
+if sys.argv[2] != "-": h["UserPromptSubmit"] = [{"hooks": [{"type": "command", "command": "aios --context --advise"}]}]
 print(json.dumps({"hooks": h}))' "$1" "$2"
       }
       ask() {                                       # ask <dir> <settings> <prompt>
          (cd "$1" && PATH="$SB/bin:$PATH" claude -p "$3" --model "$MODEL" --settings "$2" \
             --setting-sources project --add-dir "$SB" \
-            --allowedTools "Read" "Bash(aios-context --load:*)" "Bash(aios --init *)" </dev/null 2>&1)
+            --allowedTools "Read" "Bash(aios --context --load:*)" "Bash(aios --init *)" </dev/null 2>&1)
       }
       PASS=0; FAIL=0
       check() {                                     # check <name> <answer> <expected> [<expected> …]

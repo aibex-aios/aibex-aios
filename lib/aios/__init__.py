@@ -1,6 +1,6 @@
 """AIbex AIOS - operating system for the context of AI assistants.
 
-Python part of AIOS (logic behind `aios` and `aios-context`), see spec/.
+Python part of AIOS (logic behind `aios` and `aios --context`), see spec/.
 """
 
 from pathlib import Path

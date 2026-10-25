@@ -29,7 +29,7 @@
    mk "$SANDBOX/work/§Alt/@/@!Skill/x/SKILL.md" $'---\nname: x\n---\n'
    mkdir -p "$SANDBOX/work/§Alt/P/@"
 
-   SY() { (cd "$1" && shift && "$SRC/bin/aios-context" --sync "$@" 2>&1); }
+   SY() { (cd "$1" && shift && "$SRC/bin/aios" --context --sync "$@" 2>&1); }
    K="$G/.claude/skills"
 
 #===============================================================================
@@ -111,18 +111,18 @@ registered:
 
    skill "$D/@/@!Skill/neu" neu 1.0.0
    json() { printf '{"hook_event_name":"SessionStart","cwd":"%s"}' "$1"; }
-   OUT="$(json "$G" | "$SRC/bin/aios-context" --session)"
+   OUT="$(json "$G" | "$SRC/bin/aios" --context --session)"
    assert_contains "$OUT" "AIOS-SKILLS: new neu — effective from the next chat" "session: AIOS-SKILLS line"
    assert_contains "$OUT" "AIOS-WARNING: $D/@/@!Skill/aios-evil: the name aios-evil is reserved" "session: problems as warnings"
    assert_file "$K/neu/SKILL.md"
-   case "$(json "$G" | "$SRC/bin/aios-context" --session)" in *AIOS-SKILLS*) fail "second session: no AIOS-SKILLS line" ;; *) ok ;; esac
+   case "$(json "$G" | "$SRC/bin/aios" --context --session)" in *AIOS-SKILLS*) fail "second session: no AIOS-SKILLS line" ;; *) ok ;; esac
 
 #===============================================================================
 # nothing is registered outside an initialized project of an activated vault
 #===============================================================================
 
    assert_contains "$(SY "$G/Neu")" "is not a project (no @/)" "not initialized: nothing registered"
-   json "$G/Neu" | "$SRC/bin/aios-context" --session >/dev/null
+   json "$G/Neu" | "$SRC/bin/aios" --context --session >/dev/null
    [ ! -e "$G/Neu/.claude" ] && [ ! -e "$G/Neu/.aios" ] && ok || fail "not initialized: hook writes nothing"
    assert_contains "$(SY "$SANDBOX/work/§Alt/P")" "legacy mode" "legacy: nothing registered"
    [ ! -e "$SANDBOX/work/§Alt/P/.claude" ] && ok || fail "legacy: nothing written"

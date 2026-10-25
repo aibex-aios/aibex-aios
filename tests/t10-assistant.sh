@@ -1,4 +1,4 @@
-# t10-assistant.sh: step 10 of the plan (memo 18) - aios-context --assistant/--assistants, resolution of prompt and skills; v0.3 step 5: assignment, aios --assistant, marker
+# t10-assistant.sh: step 10 of the plan (memo 18) - aios --context --assistant/--assistants, resolution of prompt and skills; v0.3 step 5: assignment, aios --assistant, marker
 
 #===============================================================================
 # setup: Obstgärtner and Astronom in AIOS layout (after PC-Custom-AI), shared and private skills
@@ -27,7 +27,7 @@
    A="$D/@/@!Assistant/astronom"
    mk "$A/ASSISTANT.md" $'---\nname: astronom\ntitle: Astronom\nversion: 0.1.0\ndescription: Poetisch-präziser Astronom\nskills: [sonne-mond-zahlen]\nmodel: opus\n---\n\nSonne und Mond.\n'
    mk "$D/Wiese/@/wiese.md" $'# Wiese\n'
-   AC() { (cd "$1" && shift && "$SRC/bin/aios-context" "$@" 2>&1); }
+   AC() { (cd "$1" && shift && "$SRC/bin/aios" --context "$@" 2>&1); }
 
 #===============================================================================
 # --assistants and resolution of the name
@@ -43,7 +43,7 @@
       esac
    done
    assert_contains "$(AC "$G" --assistant Obstgartner)" "astronom             Astronom 0.1.0" "unknown name: available assistants listed"
-   assert_exit 1 "$SRC/bin/aios-context" --assistant nobody
+   assert_exit 1 "$SRC/bin/aios" --context --assistant nobody
    assert_contains "$(AC "$D/Wiese" --assistant obstgaertner)" "no assistant named" "assistant of a sibling project is not in the chain"
    assert_contains "$(AC "$D/Wiese" --assistant astronom)" '<aios-assistant name="astronom"' "vault assistant from a sibling project"
 
@@ -148,10 +148,10 @@ version: 0.1.0
    case "$(AC "$G" --context)" in *AGENT.md*) fail "@!Agent/ stays hidden" ;; *) ok ;; esac
 
 #===============================================================================
-# step 5 (V0.3, memo 32): assignment assistant: in the chain, aios-context --assignment
+# step 5 (V0.3, memo 32): assignment assistant: in the chain, aios --context --assignment
 #===============================================================================
 
-   AS() { (cd "$1" && shift && "$SRC/bin/aios-context" --assignment "$@" 2>&1); }
+   AS() { (cd "$1" && shift && "$SRC/bin/aios" --context --assignment "$@" 2>&1); }
    AI() { (cd "$1" && shift && "$SRC/bin/aios" --assistant "$@" 2>&1); }
    CFGF="$D/.aios/config.yaml"
    assert_eq "$(AS "$G")" "assistant=none from=-" "no entry up to the vault root: no assistant"
@@ -238,7 +238,7 @@ assistant: astronom" "marker: header, cwd, assistant"
    [ ! -e "$HOME/.aios/sessions/alt.yaml" ] && [ -e "$M" ] && ok || fail "clean: old marker removed, recent kept"
 
 #===============================================================================
-# step 6: aios-context --assistant <name> --load (part files like --load)
+# step 6: aios --context --assistant <name> --load (part files like --load)
 #===============================================================================
 
    OUT="$(AC "$G" --assistant Astronom --load)"
@@ -248,4 +248,4 @@ assistant: astronom" "marker: header, cwd, assistant"
    assert_eq "$(cat "$P1")" "$(AC "$G" --assistant astronom)" "--load: part = --assistant output"
    assert_contains "$OUT" 'The assistant is loaded once </aios-assistant name="astronom"> (end of the last part) has been read.' "--load: end marker"
    assert_contains "$(AC "$G" --assistant nobody --load)" "no assistant named 'nobody'" "--load: unknown name"
-   assert_exit 1 "$SRC/bin/aios-context" --assistant astronom --nope
+   assert_exit 1 "$SRC/bin/aios" --context --assistant astronom --nope

@@ -110,16 +110,16 @@ print('|'.join(gui.check(yaml.safe_load(sys.argv[1]), Path('$GG'))))" "$1"; }
    cp "$SRC/tests/hub/aibex-aios/assistent-gaertner/0.2.0/assistants/gaertner/@!Skill/gaertner-gui/gui.yaml" "$GG/gui.yaml"
    sed -i.bak 's/^skills: .*/skills: [apfel-birnen-algebra]/' "$G/@/@!Assistant/gaertner/ASSISTANT.md"
    assert_contains "$(GUI "$G")" "gui gaertner-gui of the assistant gaertner is not in its skills" "gui must be in skills"
-   assert_contains "$(at "$G" "$SRC/bin/aios-context" --assistant gaertner)" "gui gaertner-gui of the assistant gaertner is not in its skills" "aios-context --assistant reports it"
+   assert_contains "$(at "$G" "$SRC/bin/aios" --context --assistant gaertner)" "gui gaertner-gui of the assistant gaertner is not in its skills" "aios --context --assistant reports it"
    mv "$G/@/@!Assistant/gaertner/ASSISTANT.md.bak" "$G/@/@!Assistant/gaertner/ASSISTANT.md"
-   assert_contains "$(at "$G" "$SRC/bin/aios-context" --assistant gaertner)" "gui: gaertner-gui" "meta block names the gui"
+   assert_contains "$(at "$G" "$SRC/bin/aios" --context --assistant gaertner)" "gui: gaertner-gui" "meta block names the gui"
 
 #===============================================================================
 # reserved name gui, alias /gui in --install and --uninstall
 #===============================================================================
 
    mk "$D/@/@!Skill/gui/SKILL.md" $'---\nname: gui\nversion: 0.1.0\ndescription: d\n---\n'
-   assert_contains "$(at "$G" "$SRC/bin/aios-context" --sync --plan)" "the name gui is reserved for the alias /gui, not registered" "blueprint gui: not registered"
+   assert_contains "$(at "$G" "$SRC/bin/aios" --context --sync --plan)" "the name gui is reserved for the alias /gui, not registered" "blueprint gui: not registered"
    rm -rf "$D/@/@!Skill/gui"
    AL() { PYTHONPATH="$SRC/lib" python3 -c "
 from aios import install, ui
@@ -127,7 +127,7 @@ plan = ui.Plan(); install.plan_alias(plan); plan.run(); print(len(plan.steps))" 
    AL >/dev/null
    A="$AIOS_CLAUDE_DIR/skills/gui/SKILL.md"
    assert_contains "$(cat "$A")" '!`aios --gui --session ${CLAUDE_SESSION_ID}`' "alias written"
-   assert_contains "$(cat "$A")" "allowed-tools: Bash(aios --gui *), Bash(aios-context *)" "alias: allowed-tools"
+   assert_contains "$(cat "$A")" "allowed-tools: Bash(aios --gui *), Bash(aios --context *)" "alias: allowed-tools"
    assert_eq "$(AL)" "0" "alias unchanged: nothing to do"
    printf -- '---\nname: gui\n---\neigener Skill\n' > "$A"
    assert_contains "$(AL)" "was not written by AIOS, left untouched" "foreign gui folder: warning"

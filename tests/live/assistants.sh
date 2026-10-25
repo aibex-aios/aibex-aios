@@ -6,7 +6,7 @@
       echo '          tests/live/assistants.sh --version   # print version'
       echo '   not part of tests/run: needs a logged-in claude CLI and uses tokens;'
       echo '   copies the demo assistants of the test hub (tests/hub/aibex-aios/assistent-*) into a sandbox'
-      echo '   see also: tests/live/skills.sh, aios-context --assistant'
+      echo '   see also: tests/live/skills.sh, aios --context --assistant'
       exit 1
    fi
 
@@ -37,7 +37,7 @@
       printf '\n## Sandkasten\n\n| Sorte | Genussreife |\n|---|---|\n| %s | nur am 29. Februar eines Schaltjahres |\n' "$SORTE" >> "$O/@Wissen/@@Sortenkunde/sortenkunde.md"
       printf '# Garten\n' > "$G/@/garten.md"
       printf '.DS_Store\n.claude/skills/\n.aios/registry\n' > "$G/.gitignore"; git -C "$G" init -q   # Garten complete (S1-S4): no PROJECT-INCOMPLETE
-      for TOOL in aios aios-context; do
+      for TOOL in aios; do
          printf '#!/bin/bash\nHOME="%s/home" exec "%s/bin/%s" "$@"\n' "$SB" "$REPO" "$TOOL" > "$SB/bin/$TOOL"; chmod +x "$SB/bin/$TOOL"
       done
       PYTHONPATH="$REPO/lib" python3 -c '
@@ -51,7 +51,7 @@ d = Path(sys.argv[2]) / ".claude/skills/aios-assistant"; d.mkdir(parents=True)
 g = Path(sys.argv[2]) / ".claude/skills/gui"; g.mkdir(parents=True)
 (g / "SKILL.md").write_text(install.ALIAS)' "$REPO" "$G"
       HOOKS="{\"hooks\":{\"SessionStart\":[{\"hooks\":[{\"type\":\"command\",\"command\":\"$SB/bin/aios-context --session\"}]}],\"UserPromptSubmit\":[{\"hooks\":[{\"type\":\"command\",\"command\":\"$SB/bin/aios-context --advise\"}]}]}}"
-      TOOLS=("Skill" "Read" "Bash(aios --skill *)" "Bash(aios --assistant *)" "Bash(aios --gui *)" "Bash(aios-context *)")
+      TOOLS=("Skill" "Read" "Bash(aios --skill *)" "Bash(aios --assistant *)" "Bash(aios --gui *)" "Bash(aios --context *)")
       ask() {                                       # ask <prompt> [<claude options>]: new chat with the AIOS hooks
          local P="$1"; shift
          (cd "$G" && PATH="$SB/bin:$PATH" claude -p "$P" --model "$MODEL" --settings "$HOOKS" \

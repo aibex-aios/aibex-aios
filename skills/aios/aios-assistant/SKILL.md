@@ -1,7 +1,7 @@
 ---
 name: aios-assistant
 description: Ordnet dem Projekt einen Assistenten von AIbex AIOS zu (Persönlichkeit, Skills, Wissen und Modell aus @!Assistant/<name>/ASSISTANT.md der Masterspace-Kette) und wechselt sofort in diese Rolle; --none legt die Rolle ab, --inherit übernimmt den Assistenten des übergeordneten Projekts. Aufruf "/aios-assistant <Name>[: <Titel>]", z. B. "/aios-assistant Gärtner: Teste Apfel-Birne". Verwenden bei "/aios-assistant", "Assistent zuordnen", "Assistent wechseln", "welche Assistenten gibt es?".
-allowed-tools: Bash(aios --assistant *), Bash(aios-context --assistant *), Bash(aios-context --assistants *), Bash(aios-context --assignment *), Read
+allowed-tools: Bash(aios --assistant *), Bash(aios --context --assistant *), Bash(aios --context --assistants *), Bash(aios --context --assignment *), Read
 ---
 
 # Assistent zuordnen
@@ -14,13 +14,13 @@ Ein AIOS-Skill von AIbex AIOS (Spec 03, *Wechsel*). Jeder Aufruf ist eine **Zuor
 
 ## Ablauf
 
-1. **Argument lesen:** `<Name>[: <Titel>]`, `--none` oder `--inherit`, optional `--to <projekt>` (ein Projekt der Kette, z. B. die Vault-Root für den Standard des Vaults). Ohne Argument oder bei „welche Assistenten gibt es?" `aios-context --assistants` und `aios-context --assignment` ausführen, die Liste und die Zuordnung zeigen und beenden.
+1. **Argument lesen:** `<Name>[: <Titel>]`, `--none` oder `--inherit`, optional `--to <projekt>` (ein Projekt der Kette, z. B. die Vault-Root für den Standard des Vaults). Ohne Argument oder bei „welche Assistenten gibt es?" `aios --context --assistants` und `aios --context --assignment` ausführen, die Liste und die Zuordnung zeigen und beenden.
 2. **Plan:** `aios --assistant <wert> [--to <projekt>] --plan` über das Bash-Werkzeug ausführen. `<wert>` ist der Name bzw. Titel (`aios --assistant` löst ihn ohne Rücksicht auf Groß-/Kleinschreibung und Umlaute auf), `none` bei `--none`, `inherit` bei `--inherit`.
    - Endet der Befehl mit `no assistant named …` oder `more than one assistant …`, zeige die mitgelieferte Liste und frage, welcher gemeint ist. Beende danach.
    - Meldet er „nothing to do", ist die Zuordnung schon gesetzt: weiter mit Schritt 3 ohne Rückfrage.
    - Sonst zeige den Plan (z. B. `project G-Garten: Gärtner → Astronom`) und frage einmal, ob du ihn ausführen sollst. Hat der User den Wechsel in seinem Aufruf schon ausdrücklich bestätigt, entfällt die Frage. Bei Nein: abbrechen.
 3. **Zuordnen:** `aios --assistant <wert> [--to <projekt>] --yes --session <session-id>` ausführen. Die letzte Zeile `session …: <name>` nennt den neuen Assistenten dieses Chats; fehlt sie (bei `--to`, wenn sich für diesen Chat nichts ändert), bleibt der bisherige.
-4. **Rolle:** Ist der neue Assistent dieses Chats nicht `none`: `aios-context --assistant <name>` ausführen und die Ausgabe zwischen `<aios-assistant name="<name>" …>` und `</aios-assistant name="<name>">` vollständig lesen; fehlt die Endmarke in der Ausgabe des Werkzeugs, lies den Rest nach. Ab jetzt antwortest du als dieser Assistent:
+4. **Rolle:** Ist der neue Assistent dieses Chats nicht `none`: `aios --context --assistant <name>` ausführen und die Ausgabe zwischen `<aios-assistant name="<name>" …>` und `</aios-assistant name="<name>">` vollständig lesen; fehlt die Endmarke in der Ausgabe des Werkzeugs, lies den Rest nach. Ab jetzt antwortest du als dieser Assistent:
    - `class="prompt"` ist deine Persönlichkeit, `class="assistant"` dein Rollentext mit Handwerk, Wissen und Grenzen. Halte die Grenzen genau ein.
    - `class="load"` ist dein Wissen. Die Zeilen in `<aios-available>` sind Wissen, das du **bei Bedarf** mit dem Read-Tool liest, bevor du eine Frage dazu beantwortest; sag, aus welchem Dokument die Antwort stammt.
    - `class="skill"` sind deine Skills. Wende sie an, als wären sie aufgerufen, ohne das Skill-Werkzeug.

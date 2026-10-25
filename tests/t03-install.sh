@@ -89,7 +89,8 @@ EOF
 
    I="$P/v0.2.0"
    assert_eq "$(cat "$I/VERSION")" "0.2.0" "VERSION of the tag"
-   for F in bin/aios bin/aios-context lib/aios/install.py templates/forwarder templates/gitignore \
+   [ ! -e "$I/bin/aios-context" ] && ok || fail "no bin/aios-context in the installation"
+   for F in bin/aios lib/aios/install.py templates/forwarder templates/gitignore \
             skills/aios/aios-demo/SKILL.md python/requirements.txt manifest.yaml; do
       assert_file "$I/$F"
    done
@@ -107,13 +108,13 @@ EOF
 #===============================================================================
 
    assert_contains "$(cat "$HOME/bin/aios")" "# forwarder: ~/bin/aios" "prototype replaced by the forwarder"
-   assert_exec "$HOME/bin/aios-context"
+   [ ! -e "$HOME/bin/aios-context" ] && ok || fail "no forwarder ~/bin/aios-context"
    [ ! -e "$HOME/etc/aios" ] && ok || fail "~/etc/aios of the prototype removed"
    assert_eq "$(cat "$HOME/.aios/config.yaml")" "hosts: [claude-code]" "~/.aios/config.yaml"
    assert_eq "$(cat "$HOME/.aios/repo")" "$S" "~/.aios/repo"
    J() { python3 -c "import json,sys; d=json.load(open(sys.argv[1])); print($1)" "$2"; }
    CMDS='" ".join(h["command"] for e in ("SessionStart","UserPromptSubmit") for g in d.get("hooks",{}).get(e,[]) for h in g["hooks"])'
-   assert_eq "$(J "$CMDS" "$SET")" 'aios-context --session python3 "/x/zeiterfassung.py" export --quiet aios-context --advise' "hooks: AIOS in, ai-brain out, others kept"
+   assert_eq "$(J "$CMDS" "$SET")" 'aios --context --session python3 "/x/zeiterfassung.py" export --quiet aios --context --advise' "hooks: AIOS in, ai-brain out, others kept"
    assert_eq "$(J 'd["model"]' "$SET")" "opus" "other settings kept"
    assert_eq "$(J "$CMDS" "$HOME/.aios/hooks-backup.json")" "ai-brain --session ai-brain --advise" "ai-brain hooks saved"
    W="$AIOS_CLAUDE_DIR/skills/aios-demo/SKILL.md"
@@ -199,17 +200,50 @@ EOF
 # broken settings.json: abort before anything is written
 #===============================================================================
 
-   echo "{ broken" > "$SET"; rm "$HOME/bin/aios-context"
+   echo "{ broken" > "$SET"; rm "$HOME/bin/aios"
    OUT="$(echo y | "$S/bin/aios" --install v0.2.0 2>&1)"; RC=$?
    assert_eq "$RC" "1" "invalid settings.json: exit 1"
    assert_contains "$OUT" "is not valid JSON" "invalid settings.json: message"
-   [ ! -e "$HOME/bin/aios-context" ] && [ "$(cat "$SET")" == "{ broken" ] && ok || fail "invalid settings.json: nothing written"
+   [ ! -e "$HOME/bin/aios" ] && [ "$(cat "$SET")" == "{ broken" ] && ok || fail "invalid settings.json: nothing written"
 
 #===============================================================================
 # documentation in the installation (step 11)
 #===============================================================================
 
-   for P in "$S"/spec/0*.md; do
-      F="$(basename "$P")"
-      [ -f "$I/doc/spec/$F" ] && assert_eq "$(cat "$I/doc/spec/$F")" "$(cat "$P")" "doc/spec: $F" || fail "doc/spec: $F missing"
+   for SP in "$S"/spec/0*.md; do
+      F="$(basename "$SP")"
+      [ -f "$I/doc/spec/$F" ] && assert_eq "$(cat "$I/doc/spec/$F")" "$(cat "$SP")" "doc/spec: $F" || fail "doc/spec: $F missing"
    done
+
+#===============================================================================
+# v0.5: changeover of a v0.4 setup - aios-context hooks and forwarder replaced,
+# vaults on older versions named (spec 04, Umstieg auf v0.5; V0.5, memos 04, 41)
+#===============================================================================
+
+   cat > "$SET" <<'EOF2'
+{
+  "hooks": {
+    "SessionStart": [ { "hooks": [ { "type": "command", "command": "aios-context --session" } ] },
+                      { "hooks": [ { "type": "command", "command": "other --hook" } ] } ],
+    "UserPromptSubmit": [ { "hooks": [ { "type": "command", "command": "aios-context --advise" } ] } ]
+  }
+}
+EOF2
+   printf '#!/bin/bash\n# forwarder: ~/bin/aios and ~/bin/aios-context, choose the AIOS version\n' > "$HOME/bin/aios-context"
+   printf '#!/bin/bash\necho mine\n' > "$HOME/bin/aios-context.keep"
+   V4="$SANDBOX/work/§Alt4"; mkdir -p "$V4/.aios" "$V4/G-Garten" "$HOME/.aios/sessions"
+   printf 'aios: 0.4.0\n' > "$V4/.aios/config.yaml"
+   printf 'cwd: "%s"\nassistant: none\nused: 2026-10-25T10:00:00\n' "$V4/G-Garten" > "$HOME/.aios/sessions/s4.yaml"
+   G -C "$S" tag v0.5.0
+   OUT="$("$S/bin/aios" --install v0.5.0 --plan 2>&1)"
+   assert_contains "$OUT" "remove the forwarder ~/bin/aios-context (replaced by aios --context)" "v0.5: plan removes ~/bin/aios-context"
+   assert_contains "$OUT" "add aios --context --session, aios --context --advise" "v0.5: plan adds the new hooks"
+   assert_contains "$OUT" "note: vault $V4 is bound to aios 0.4.0; after this install run: aios --activate v0.5.0 $V4" "v0.5: plan names the vault on v0.4 (N7)"
+   OUT="$(echo y | "$S/bin/aios" --install v0.5.0 2>&1)"; RC=$?
+   assert_eq "$RC" "0" "v0.5: install exit 0"
+   [ ! -e "$HOME/bin/aios-context" ] && [ -e "$HOME/bin/aios-context.keep" ] && ok || fail "v0.5: old forwarder removed, other files kept"
+   assert_eq "$(J "$CMDS" "$SET")" "aios --context --session other --hook aios --context --advise" "v0.5: aios-context hooks replaced, others kept"
+   case "$(cat "$HOME/.aios/hooks-backup.json" 2>/dev/null)" in *aios-context*) fail "v0.5: old AIOS hooks are not saved as ai-brain hooks" ;; *) ok ;; esac
+   assert_contains "$(cat "$AIOS_CLAUDE_DIR/skills/gui/SKILL.md")" "Bash(aios --context *)" "v0.5: alias with aios --context"
+   OUT="$(echo y | "$S/bin/aios" --uninstall 2>&1)"
+   case "$(cat "$SET")" in *aios-context*|*"aios --context"*) fail "uninstall: AIOS hooks of both forms removed" ;; *) ok ;; esac

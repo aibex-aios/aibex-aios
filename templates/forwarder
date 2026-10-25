@@ -1,27 +1,24 @@
 #!/bin/bash
-# forwarder: ~/bin/aios and ~/bin/aios-context, choose the AIOS version and call it (spec 04)
-
-   TOOL="$(basename "$0")"                          # aios or aios-context
-   case "$TOOL" in aios|aios-context) ;; *) TOOL="aios";; esac
+# forwarder: ~/bin/aios, choose the AIOS version and call it (spec 04)
 
    if [ "$*" == "---help" ]; then
-      echo "   usage: $TOOL <args>      # forward <args> to $TOOL of the chosen version"
-      echo "          $TOOL ---which    # show the chosen installation and why"
-      echo "          $TOOL ---version  # print version of this forwarder"
-      echo "          $TOOL ---help     # this help"
+      echo "   usage: aios <args>      # forward <args> to aios of the chosen version"
+      echo "          aios ---which    # show the chosen installation and why"
+      echo "          aios ---version  # print version of this forwarder"
+      echo "          aios ---help     # this help"
       echo '   order: AIOS_HOME, aios --activate v<version> (that version), aios: in'
-      echo '          .aios/config.yaml up to the vault root, otherwise aios: highest'
-      echo '          installed version, aios-context: ai-brain'
-      echo '   see also: aios, aios-context, ai-brain'
+      echo '          .aios/config.yaml up to the vault root, otherwise aios --context: ai-brain,'
+      echo '          everything else: highest installed version'
+      echo '   see also: aios, ai-brain'
       exit 1
    fi
 
 #===============================================================================
-# print version: <tool> ---version
+# print version: aios ---version
 #===============================================================================
 
    if [ "$*" == "---version" ]; then
-      echo "0.1.4"; exit 0
+      echo "0.2.0"; exit 0
    fi
 
 #===============================================================================
@@ -108,25 +105,25 @@
       local A E
       KIND=""; TARGET=""; WHY=""
       if [ -n "$AIOS_HOME" ]; then
-         KIND=aios; TARGET="$AIOS_HOME/bin/$TOOL"; WHY="AIOS_HOME=$AIOS_HOME"; return 0
+         KIND=aios; TARGET="$AIOS_HOME/bin/aios"; WHY="AIOS_HOME=$AIOS_HOME"; return 0
       fi
-      if [ "$TOOL" == "aios" ] && [ "$ARG1" == "--activate" ] && [[ "$ARG2" =~ ^v([0-9][^[:space:]]*)$ ]] \
+      if [ "$ARG1" == "--activate" ] && [[ "$ARG2" =~ ^v([0-9][^[:space:]]*)$ ]] \
             && E="$(lookup "${BASH_REMATCH[1]}")"; then
-         KIND=aios; TARGET="$E/bin/$TOOL"; WHY="aios --activate $ARG2"; return 0   # V0.3, memo 54 (A1)
+         KIND=aios; TARGET="$E/bin/aios"; WHY="aios --activate $ARG2"; return 0   # V0.3, memo 54 (A1)
       fi
       if A="$(activation)"; then
          WHY="aios: ${A%%|*} in ${A#*|}"
          if E="$(lookup "${A%%|*}")"; then
-            KIND=aios; TARGET="$E/bin/$TOOL"; return 0
+            KIND=aios; TARGET="$E/bin/aios"; return 0
          fi
          KIND=missing; TARGET="v${A%%|*}"; return 0
       fi
-      if [ "$TOOL" == "aios-context" ]; then
+      if [ "$ARG1" == "--context" ]; then           # only the group --context falls back (V0.5, memo 03)
          KIND=legacy; TARGET="$(command -v ai-brain)"; WHY="not activated (legacy mode)"
          return 0
       fi
       if E="$(highest)"; then
-         KIND=aios; TARGET="${E#*|}/bin/$TOOL"; WHY="not activated, highest installed ${E%%|*}"
+         KIND=aios; TARGET="${E#*|}/bin/aios"; WHY="not activated, highest installed ${E%%|*}"
          return 0
       fi
       KIND=none; WHY="no installation of AIOS found"
@@ -135,39 +132,44 @@
    ARG1="$1"; ARG2="$2"
 
 #===============================================================================
-# aios-context --context|--load|--id|--list <path>: the version follows <path>
+# aios --context [--load|--id|--list] <path>: the version follows <path>
 #===============================================================================
 
-   if [ "$TOOL" == "aios-context" ] && [ -d "$2" ] && [ "$3" == "" ]; then
-      case "$1" in
-         --context|--load|--id|--list)
-            cd "$2" || exit 1
-            choose; [ "$KIND" == "legacy" ] && set -- "$1"                 # ai-brain takes no path
-            ;;
-      esac
+   if [ "$1" == "--context" ]; then
+      P=""
+      if [ -d "$2" ] && [ "$3" == "" ]; then P="$2"
+      elif [ -d "$3" ] && [ "$4" == "" ]; then
+         case "$2" in --load|--id|--list) P="$3";; esac
+      fi
+      if [ -n "$P" ]; then
+         cd "$P" || exit 1
+         choose; [ "$KIND" == "legacy" ] && { [ "$P" == "$2" ] && set -- --context || set -- --context "$2"; }
+      fi
    fi
 
 #===============================================================================
-# show choice: <tool> ---which
+# show choice: aios ---which
 #===============================================================================
 
    if [ "$*" == "---which" ]; then
       choose
-      echo "tool=$TOOL kind=$KIND target=${TARGET:--} why=$WHY"
+      echo "tool=aios kind=$KIND target=${TARGET:--} why=$WHY"
       exit 0
    fi
 
 #===============================================================================
-# forward: <tool> <args>
+# forward: aios <args>
 #===============================================================================
 
    choose
    case "$KIND" in
       aios)
-         [ -x "$TARGET" ] || { echo "*** $TOOL: $TARGET not found ($WHY)" >&2; exit 1; }
+         [ -x "$TARGET" ] || { echo "*** aios: $TARGET not found ($WHY)" >&2; exit 1; }
          exec "$TARGET" "$@"
          ;;
       legacy)
+         shift                                      # ai-brain takes the arguments after --context
+         [ "$*" == "" ] && set -- --context         # aios --context = master context
          if [ "$*" == "--list" ]; then              # spec 02: listing of /aios-context
             if vault_root >/dev/null; then echo "Legacy mode (ai-brain, no aios: in the chain) — see /masterspace."
             else echo "No vault — no master context."; fi
@@ -186,7 +188,7 @@
          exec "$TARGET" "$@"
          ;;
       missing)
-         echo "*** $TOOL: AIOS $TARGET is not installed ($WHY)" >&2
+         echo "*** aios: AIOS $TARGET is not installed ($WHY)" >&2
          echo "    run: aios --install $TARGET" >&2
          exit 1
          ;;
@@ -196,6 +198,6 @@
 # cannot deal with anything else ...
 #===============================================================================
 
-   echo "*** $TOOL: $WHY" >&2
+   echo "*** aios: $WHY" >&2
    echo "    run: ./bin/aios --install in a clone of aibex-aios" >&2
    exit 1

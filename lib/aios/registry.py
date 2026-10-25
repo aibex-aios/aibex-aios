@@ -229,7 +229,7 @@ def sync_for(cwd):
 
 
 def register(cwd, yes=False):
-    """aios-context --sync [--yes], aios --register: preview, (question), apply."""
+    """aios --context --sync [--yes], aios --register: preview, (question), apply."""
     from . import ui
     from .ui import say, warn
     ctx, s = sync_for(cwd)

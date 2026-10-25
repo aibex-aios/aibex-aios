@@ -1,4 +1,4 @@
-# t06-hooks.sh: step 6 of the plan (memo 18) - aios-context --session/--advise (spec 02, Hooks); v0.3 steps 3, 6
+# t06-hooks.sh: step 6 of the plan (memo 18) - aios --context --session/--advise (spec 02, Hooks); v0.3 steps 3, 6
 
 #===============================================================================
 # setup: activated vault, project, not initialized folder, legacy vault, fake ai-brain
@@ -18,9 +18,9 @@
    mk "$SANDBOX/work/§Alt/@/a.md" $'# A\n'
    printf '#!/bin/bash\necho "ai-brain $* stdin=$(cat)"\n' > "$SANDBOX/fake/ai-brain"; chmod +x "$SANDBOX/fake/ai-brain"
 
-   AC="$SRC/bin/aios-context"
+   AC() { "$SRC/bin/aios" --context "$@"; }
    json() { printf '{"session_id":"t","hook_event_name":"SessionStart","source":"%s","cwd":"%s"}' "${SRCE:-startup}" "$1"; }
-   HOOK() { json "$2" | (cd "$SANDBOX" && "$AC" "$1"); }          # hook call, cwd only from JSON
+   HOOK() { json "$2" | (cd "$SANDBOX" && AC "$1"); }          # hook call, cwd only from JSON
 
 #===============================================================================
 # outside a vault and legacy mode
@@ -37,13 +37,13 @@
 #===============================================================================
 
    OUT="$(HOOK --session "$D/Garten"; echo x)"; OUT="${OUT%x}"
-   CTX="$(cd "$D/Garten" && "$AC" --context; echo x)"; CTX="${CTX%x}"
+   CTX="$(cd "$D/Garten" && AC --context; echo x)"; CTX="${CTX%x}"
    assert_eq "$OUT" "AIOS-CONTEXT (loaded automatically by SessionStart hook):
 $CTX" "session: inline = header + --context"
    case "$OUT" in *PROJECT-UNINITIALIZED*|*AIOS-WARNING*) fail "session: no extra lines for an initialized project" ;; *) ok ;; esac
    [ ! -e "$HOME/.aios/cache" ] && ok || fail "session inline: no part files written"
-   ID="$(cd "$D/Garten" && "$AC" --id | sed 's/^id=\([^ ]*\).*/\1/')"
-   assert_eq "$("$AC" --id "$D/Garten" | sed 's/^id=\([^ ]*\).*/\1/')" "$ID" "--id <path> = --id in the directory"
+   ID="$(cd "$D/Garten" && AC --id | sed 's/^id=\([^ ]*\).*/\1/')"
+   assert_eq "$(AC --id "$D/Garten" | sed 's/^id=\([^ ]*\).*/\1/')" "$ID" "--id <path> = --id in the directory"
    assert_contains "$OUT" "<aios-context id=\"$ID\"" "session: id of the hook cwd"
 
 #===============================================================================
@@ -74,7 +74,7 @@ Give no other answer until the user decides." "uninitialized: skill /aios-init, 
    for S in resume clear compact; do
       case "$(SRCE=$S HOOK --session "$D/Wiese")" in *PROJECT-INCOMPLETE*) fail "incomplete: no check at $S" ;; *) ok ;; esac
    done
-   case "$(json "$D/Wiese" >/dev/null; cd "$D/Wiese" && "$AC" --session </dev/null)" in *PROJECT-INCOMPLETE*) ok ;; *) fail "incomplete: without JSON counts as startup" ;; esac
+   case "$(json "$D/Wiese" >/dev/null; cd "$D/Wiese" && AC --session </dev/null)" in *PROJECT-INCOMPLETE*) ok ;; *) fail "incomplete: without JSON counts as startup" ;; esac
 
 #===============================================================================
 # --session: master context larger than inline_limit -> part files
@@ -99,8 +99,8 @@ Give no other answer until the user decides." "uninitialized: skill /aios-init, 
    assert_eq "$(printf '%s\n' "$OUT" | head -1)" "AIOS-CONTEXT-CHECK: expected id=$ID (files=2, cwd=$D/Garten)." "advise: first line"
    assert_contains "$OUT" "<aios-context id=\"$ID\"" "advise: start marker"
    assert_contains "$OUT" "</aios-context id=\"$ID\">" "advise: end marker"
-   assert_contains "$OUT" "run \`aios-context --load \"$D/Garten\"\` via Bash" "advise: load with explicit path"
-   assert_eq "$(cd "$D/Garten" && "$AC" --advise </dev/null | head -1)" "AIOS-CONTEXT-CHECK: expected id=$ID (files=2, cwd=$D/Garten)." "advise without JSON: cwd of the process"
+   assert_contains "$OUT" "run \`aios --context --load \"$D/Garten\"\` via Bash" "advise: load with explicit path"
+   assert_eq "$(cd "$D/Garten" && AC --advise </dev/null | head -1)" "AIOS-CONTEXT-CHECK: expected id=$ID (files=2, cwd=$D/Garten)." "advise without JSON: cwd of the process"
 
 #===============================================================================
 # warnings and failures never break the session
@@ -112,7 +112,7 @@ Give no other answer until the user decides." "uninitialized: skill /aios-init, 
    OUT="$(HOOK --session "$D/Garten")"; RC=$?
    chmod 644 "$D/Garten/@/garten.md"
    assert_eq "$RC" "0" "failure: exit 0"
-   assert_contains "$OUT" "AIOS-WARNING: aios-context --session failed:" "failure: one warning line"
+   assert_contains "$OUT" "AIOS-WARNING: aios --context --session failed:" "failure: one warning line"
 
 #===============================================================================
 # v0.3 step 6: assistant of the session (spec 02, Assistent der Session)
@@ -122,7 +122,7 @@ Give no other answer until the user decides." "uninitialized: skill /aios-init, 
    mk "$D/@/@!Assistant/gaertner/ASSISTANT.md" $'---\nname: gaertner\ntitle: Gärtner\nversion: 0.1.0\ndescription: Gärtner\n---\n\nNur Äpfel und Birnen.\n'
    mk "$D/Garten/.aios/config.yaml" $'assistant: gaertner\n'
    SJ() { printf '{"session_id":"%s","source":"%s","cwd":"%s"}' "$1" "$2" "$3"; }
-   SH() { SJ "$2" "$3" "$4" | (cd "$SANDBOX" && "$AC" "$1"); }       # SH --session|--advise <sid> <source> <cwd>
+   SH() { SJ "$2" "$3" "$4" | (cd "$SANDBOX" && AC "$1"); }       # SH --session|--advise <sid> <source> <cwd>
    M="$HOME/.aios/sessions"
    OUT="$(SH --session s1 startup "$D/Garten")"
    assert_contains "$OUT" "AIOS-ASSISTANT (assistant of this session, from project $D/Garten/.aios/config.yaml):
@@ -143,7 +143,7 @@ assistant: gaertner" "startup: marker written"
    assert_contains "$OUT" "AIOS-ASSISTANT-CHECK: expected assistant=gaertner version=0.1.0.
  Verify that BOTH markers <aios-assistant name=\"gaertner\" and
  </aios-assistant name=\"gaertner\"> are present in your context. If not: run
- \`aios-context --assistant gaertner --load\` via Bash in \"$D/Garten\", read every
+ \`aios --context --assistant gaertner --load\` via Bash in \"$D/Garten\", read every
  listed part file completely, and continue in this role." "advise: assistant check after the context check"
    case "$OUT" in AIOS-CONTEXT-CHECK*) ok ;; *) fail "advise: context check first" ;; esac
    OUT="$(SH --session s1 clear "$D/Garten")"
@@ -173,7 +173,7 @@ assistant: gaertner" "startup: marker written"
    OUT="$(SH --session s5 startup "$D/Garten/Neu")"
    case "$OUT" in *"AIOS-ASSISTANT ("*) fail "not initialized: no assistant" ;; *) ok ;; esac
    [ ! -e "$M/s5.yaml" ] && ok || fail "not initialized: no marker"
-   OUT="$(printf '{"source":"startup","cwd":"%s"}' "$D/Garten" | (cd "$SANDBOX" && "$AC" --session))"
+   OUT="$(printf '{"source":"startup","cwd":"%s"}' "$D/Garten" | (cd "$SANDBOX" && AC --session))"
    assert_contains "$OUT" "AIOS-ASSISTANT (assistant of this session" "without session_id: assignment, no marker"
 
    printf 'inline_limit: 2000\n' > "$HOME/.aios/config.yaml"

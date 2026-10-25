@@ -22,7 +22,7 @@
    assert_file "$SRC/VERSION"
    assert_file "$SRC/python/requirements.txt"
    assert_file "$SRC/templates/gitignore"
-   assert_exec "$SRC/bin/aios-context"
+   [ ! -e "$SRC/bin/aios-context" ] && ok || fail "bin/aios-context is gone (aios --context, V0.5, memo 04)"
 
    assert_contains "$(cat "$SRC/python/requirements.txt")" "pyyaml" "requirements"
    assert_eq "$(cat "$SRC/templates/gitignore")" "$(printf '.DS_Store\n.claude/skills/\n.aios/registry')" "gitignore template"
@@ -31,13 +31,14 @@
 # bash scripts: syntax, help and version (bash convention)
 #===============================================================================
 
-   for S in "$SRC/bin/aios-context" "$REPO/tests/run"; do
+   for S in "$SRC/bin/aios" "$SRC/templates/forwarder" "$REPO/tests/run"; do
       bash -n "$S" && ok || fail "syntax: $S"
    done
-   assert_exit 1 "$SRC/bin/aios-context" -?
-   assert_exit 1 "$SRC/bin/aios-context"
-   assert_eq "$("$SRC/bin/aios-context" --version)" "$(cat "$SRC/VERSION")" "aios-context --version"
-   assert_exit 1 "$SRC/bin/aios-context" --assistant obstgaertner
+   assert_exit 1 "$SRC/bin/aios" --context -?
+   assert_exit 1 "$SRC/bin/aios" --context --nope
+   assert_eq "$("$SRC/bin/aios" --version)" "$(cat "$SRC/VERSION")" "aios --version"
+   assert_exit 1 "$SRC/bin/aios" --context --assistant obstgaertner
+   assert_contains "$("$SRC/bin/aios" -? 2>&1)" "aios --context --session|--advise" "help names the group --context"
 
 #===============================================================================
 # python part: paths follow the redirection variables
@@ -53,7 +54,7 @@ print(aios.version()); print(p.prefix()); print(p.user_dir()); print(p.claude_di
    assert_eq "$(sed -n 5p <<< "$PYOUT")" "$HOME/bin" "paths.bin_dir()"
 
 #===============================================================================
-# development state: bin/ holds aios and aios-context (spec 04)
+# development state: bin/ holds aios (spec 04)
 #===============================================================================
 
    assert_exec "$SRC/bin/aios"

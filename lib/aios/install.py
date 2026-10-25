@@ -25,18 +25,20 @@ from . import paths
 from .ui import Abort, Plan, confirm, say, warn  # noqa: F401 - Abort is part of the API
 
 
-FORWARDER_MARK = "# forwarder: ~/bin/aios and ~/bin/aios-context"
+FORWARDER_MARK = "# forwarder: ~/bin/aios"            # also in the forwarder of v0.4 (~/bin/aios-context)
 PROTOTYPE_MARK = 'ETC="$HOME/etc/aios"'
 WRAPPER_MARK = "!`aios --skill "
 ALIAS_MARK = "!`aios --gui "
 ALIAS = ('---\nname: gui\ndescription: "Zeigt die Oberfläche des aktiven Assistenten (AIbex AIOS). '
-         'Auslöser: /gui, „Oberfläche“, „Menü“."\nallowed-tools: Bash(aios --gui *), Bash(aios-context *)\n'
+         'Auslöser: /gui, „Oberfläche“, „Menü“."\nallowed-tools: Bash(aios --gui *), Bash(aios --context *)\n'
          '---\n\n!`aios --gui --session ${CLAUDE_SESSION_ID}`\n')
-AIOS_HOOKS = {"SessionStart": "aios-context --session", "UserPromptSubmit": "aios-context --advise"}
+AIOS_HOOKS = {"SessionStart": "aios --context --session", "UserPromptSubmit": "aios --context --advise"}
+OLD_AIOS_HOOKS = {"SessionStart": "aios-context --session", "UserPromptSubmit": "aios-context --advise"}  # v0.3, v0.4
 LEGACY_HOOKS = {"SessionStart": "ai-brain --session", "UserPromptSubmit": "ai-brain --advise"}
 RELEASE = re.compile(r"^v(\d+)\.(\d+)\.(\d+)$")
 ENTRY = re.compile(r"^(v\d[^:\s]*):\s*(.*?)\s*$")
-TOOLS = ("aios", "aios-context")
+TOOLS = ("aios",)
+OLD_TOOLS = ("aios-context",)                          # forwarders up to v0.4 (V0.5, memo 04)
 
 
 
@@ -416,6 +418,10 @@ def plan_forwarders(plan, src):
                 target.write_text(text, encoding="utf-8")
                 target.chmod(0o755)
             plan.add(what, put)
+    for tool in OLD_TOOLS:
+        target = bindir / tool
+        if target.is_file() and FORWARDER_MARK in target.read_text(encoding="utf-8", errors="replace"):
+            plan.add(f"remove the forwarder ~/bin/{tool} (replaced by aios --context)", target.unlink)
     etc = paths.home() / "etc" / "aios"
     if etc.is_dir():
         plan.add("remove ~/etc/aios of the prototype", lambda: shutil.rmtree(etc))
@@ -427,10 +433,19 @@ def is_command(hook, cmd):
 
 
 def merge_hooks(settings):
-    """Remove the ai-brain hooks, add the AIOS hooks; other keys and hooks stay."""
+    """Remove the ai-brain hooks and the aios-context hooks of v0.3/v0.4, add the AIOS hooks;
+    other keys and hooks stay. Only the ai-brain hooks are reported as removed (they are saved)."""
     new = json.loads(json.dumps(settings))
     hooks = new.setdefault("hooks", {})
     removed = {}
+    for event, old in OLD_AIOS_HOOKS.items():
+        if event in hooks:
+            groups = []
+            for group in hooks[event]:
+                rest = [h for h in group.get("hooks", []) if not is_command(h, old)]
+                if rest or not group.get("hooks"):
+                    groups.append(dict(group, hooks=rest))
+            hooks[event] = groups
     for event, legacy in LEGACY_HOOKS.items():
         groups = []
         for group in hooks.get(event, []):
@@ -460,7 +475,8 @@ def unmerge_hooks(settings, backup):
             continue
         groups = []
         for group in hooks[event]:
-            rest = [h for h in group.get("hooks", []) if not is_command(h, cmd)]
+            rest = [h for h in group.get("hooks", []) if not is_command(h, cmd)
+                    and not is_command(h, OLD_AIOS_HOOKS[event])]
             if rest or not group.get("hooks"):
                 groups.append(dict(group, hooks=rest))
         hooks[event] = groups
@@ -590,6 +606,29 @@ def plan_user(plan, src, repo):
         plan.add(f"remember the clone {repo} in ~/.aios/repo", remember)
 
 
+def older_vaults(tag):
+    """Vaults known from the markers of the sessions that are bound to a version below 0.5: they
+    have no aios --context and need aios --activate (spec 04, Umstieg auf v0.5; V0.5, memo 41, N7)."""
+    if semver_key(tag) < semver_key("v0.5.0"):
+        return []
+    from . import config
+    seen, lines = set(), []
+    for f in sorted((paths.user_dir() / "sessions").glob("*.yaml")):
+        m = re.search(r'^cwd:\s*"?(.*?)"?\s*$', f.read_text(encoding="utf-8", errors="replace"), re.M)
+        if not m or not os.path.isdir(m.group(1)):
+            continue
+        try:
+            cfg = config.load(m.group(1))
+        except Exception:                           # noqa: BLE001 - a hint only
+            continue
+        if cfg.vault and cfg.aios and semver_key("v" + str(cfg.aios)) < semver_key("v0.5.0") \
+                and str(cfg.vault) not in seen:
+            seen.add(str(cfg.vault))
+            lines.append(f"note: vault {cfg.vault} is bound to aios {cfg.aios}; after this install "
+                         f"run: aios --activate {tag} {cfg.vault}")
+    return lines
+
+
 def install(version):
     repo = find_repo()
     tag = choose_version(repo, version)
@@ -606,6 +645,8 @@ def install(version):
             plan.add(f"install {tag} from {repo} -> {root / tag} (read-only)",
                      lambda: build(stage, tag, root, entries))
         plan_user(plan, src, repo if clone_of_this() else None)
+        for line in older_vaults(tag):
+            plan.add(line)
         if not plan:
             say(f"=> AIbex AIOS {tag}: nothing to do")
             return 0
@@ -684,7 +725,7 @@ def remove_version(version):
 
 def uninstall():
     plan = Plan()
-    for tool in TOOLS:
+    for tool in TOOLS + OLD_TOOLS:
         target = paths.bin_dir() / tool
         if target.is_file() and FORWARDER_MARK in target.read_text(encoding="utf-8", errors="replace"):
             plan.add(f"remove the forwarder ~/bin/{tool}", target.unlink)

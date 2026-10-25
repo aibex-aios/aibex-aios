@@ -32,7 +32,7 @@
       printf '# Garten\nIm Garten wachsen Äpfel.\n' > "$G/@/garten.md"
       printf '# 01 Beete planen\n\n**Datum:** 2026-09-01\n**Status:** Entscheidung\n\n## Entscheidung\nDrei Beete.\n\n## Offen\n- Bewässerung der Beete klären\n' > "$G/@Memo/01 Beete planen.md"
       printf '# 02 Zaun\n\n**Datum:** 2026-09-10\n**Status:** Notiz\n\n## Ergebnis\nZaun gebaut.\n' > "$G/@Memo/02 Zaun.md"
-      for TOOL in aios aios-context; do
+      for TOOL in aios; do
          printf '#!/bin/bash\nHOME="%s/home" exec "%s/bin/%s" "$@"\n' "$SB" "$REPO" "$TOOL" > "$SB/bin/$TOOL"
          chmod +x "$SB/bin/$TOOL"
       done
@@ -53,11 +53,11 @@ for f in sorted((repo / "skills" / "aios").glob("*/SKILL.md")):
     (d / "SKILL.md").write_text(install.wrapper(f.parent.name, m["description"], m.get("allowed-tools", ""), session))' "$REPO" "$1"
       }
       wrappers "$G"; wrappers "$G/GN-Neu"
-      HOOKS='{"hooks":{"SessionStart":[{"hooks":[{"type":"command","command":"aios-context --session"}]}],"UserPromptSubmit":[{"hooks":[{"type":"command","command":"aios-context --advise"}]}]}}'
+      HOOKS='{"hooks":{"SessionStart":[{"hooks":[{"type":"command","command":"aios --context --session"}]}],"UserPromptSubmit":[{"hooks":[{"type":"command","command":"aios --context --advise"}]}]}}'
       ask() {                                       # ask <dir> <prompt>
          (cd "$1" && PATH="$SB/bin:$PATH" claude -p "$2" --model "$MODEL" --settings "$HOOKS" \
             --setting-sources project --add-dir "$SB" \
-            --allowedTools "Skill" "Read" "Glob" "Bash(aios --skill *)" "Bash(aios-context *)" \
+            --allowedTools "Skill" "Read" "Glob" "Bash(aios --skill *)" "Bash(aios --context *)" \
                            "Bash(aios --init *)" "Bash(aios --register *)" "Bash(aios --integrity *)" "Bash(aios --gui *)" "Bash(git log *)" </dev/null 2>&1)
       }
       PASS=0; FAIL=0

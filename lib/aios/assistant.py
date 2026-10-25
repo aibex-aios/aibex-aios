@@ -1,4 +1,4 @@
-"""aios-context --assistant <name>, --assistants (spec 03, Assistenten). Stateless: nothing is written."""
+"""aios --context --assistant <name>, --assistants (spec 03, Assistenten). Stateless: nothing is written."""
 
 from __future__ import annotations
 

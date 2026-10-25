@@ -1,4 +1,4 @@
-# t05-context.sh: step 5 of the plan (memo 18) - aios-context --context/--load/--id, classes K1-K5 (spec 02)
+# t05-context.sh: step 5 of the plan (memo 18) - aios --context/--load/--id, classes K1-K5 (spec 02)
 
 #===============================================================================
 # setup: activated vault with every class rule, a sibling, a container, fake ai-brain
@@ -29,7 +29,7 @@
    mkdir -p "$D/Garten/Beet"                                                            # not initialized
 
    at() { (cd "$1" && shift && "$@" 2>&1); }
-   CTX() { at "$1" "$SRC/bin/aios-context" "${@:2}"; }
+   CTX() { at "$1" "$SRC/bin/aios" --context "${@:2}"; }
    IDOF() { CTX "$1" --id | sed 's/^id=\([^ ]*\).*/\1/'; }
 
 #===============================================================================
@@ -84,7 +84,7 @@ Apfel
    assert_contains "$B" "src=\"$D/Garten/@/garten.md\"" "not initialized: chain up to the project above"
    [ "$(IDOF "$D/Garten/Beet")" != "$ID" ] && ok || fail "id depends on cwd"
    assert_eq "$(CTX "$SANDBOX/outside" --id)" "id=- files=0 cwd=$SANDBOX/outside mode=none" "outside a vault: mode=none"
-   assert_eq "$(cd "$SANDBOX/outside" && "$SRC/bin/aios-context" --context 2>/dev/null)" "" "outside a vault: no master context on stdout"
+   assert_eq "$(cd "$SANDBOX/outside" && "$SRC/bin/aios" --context 2>/dev/null)" "" "outside a vault: no master context on stdout"
 
 #===============================================================================
 # id (K5): what changes it and what does not
@@ -133,7 +133,7 @@ Apfel
    assert_dir "$CD"
 
 #===============================================================================
-# legacy mode (no aios: in the chain): aios-context behaves like ai-brain
+# legacy mode (no aios: in the chain): aios --context behaves like ai-brain
 #===============================================================================
 
    L="$SANDBOX/work/§Alt"; mk "$L/@/a.md" $'# A\n'
@@ -143,7 +143,7 @@ Apfel
    chmod +x "$SANDBOX/fake/ai-brain"
    assert_eq "$(CTX "$L" --id)" "id=feed0001 files=1 cwd=$L mode=legacy" "legacy --id: ai-brain plus mode=legacy"
    assert_eq "$(CTX "$L" --load)" "ai-brain --load" "legacy --load: ai-brain"
-   assert_exit 1 "$SRC/bin/aios-context" --assistant obstgaertner
+   assert_exit 1 "$SRC/bin/aios" --context --assistant obstgaertner
 
 #===============================================================================
 # physical paths: a symlink without § reaches the same vault and the same id
@@ -151,8 +151,8 @@ Apfel
 
    ln -s "$D" "$SANDBOX/Vault"
    assert_eq "$(CTX "$SANDBOX/Vault/Garten" --id)" "$(CTX "$D/Garten" --id)" "symlink: same id, same cwd"
-   assert_contains "$("$SRC/bin/aios-context" --id "$SANDBOX/Vault/Garten")" "mode=aios-" "symlink: vault recognized"
-   mkdir -p "$HOME/bin"; cp "$SRC/templates/forwarder" "$HOME/bin/aios-context"; chmod +x "$HOME/bin/aios-context"
-   mkdir -p "$AIOS_PREFIX/v0.1.0/bin"; printf '#!/bin/bash\necho "fwd $*"\n' > "$AIOS_PREFIX/v0.1.0/bin/aios-context"
-   chmod +x "$AIOS_PREFIX/v0.1.0/bin/aios-context"; echo "v0.1.0: $AIOS_PREFIX/v0.1.0" > "$AIOS_PREFIX/installations.yaml"
-   assert_eq "$(at "$SANDBOX/Vault/Garten" "$HOME/bin/aios-context" --id)" "fwd --id" "forwarder: vault recognized through the symlink"
+   assert_contains "$("$SRC/bin/aios" --context --id "$SANDBOX/Vault/Garten")" "mode=aios-" "symlink: vault recognized"
+   mkdir -p "$HOME/bin"; cp "$SRC/templates/forwarder" "$HOME/bin/aios"; chmod +x "$HOME/bin/aios"
+   mkdir -p "$AIOS_PREFIX/v0.1.0/bin"; printf '#!/bin/bash\necho "fwd $*"\n' > "$AIOS_PREFIX/v0.1.0/bin/aios"
+   chmod +x "$AIOS_PREFIX/v0.1.0/bin/aios"; echo "v0.1.0: $AIOS_PREFIX/v0.1.0" > "$AIOS_PREFIX/installations.yaml"
+   assert_eq "$(at "$SANDBOX/Vault/Garten" "$HOME/bin/aios" --context --id)" "fwd --context --id" "forwarder: vault recognized through the symlink"
