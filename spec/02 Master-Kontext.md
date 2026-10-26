@@ -32,7 +32,7 @@ Ausgangspunkt ist immer das Arbeitsverzeichnis `cwd` der Session, als **physisch
 | **Projekt** | `cwd` selbst, wenn es ein `@/` hat. Hat `cwd` kein `@/`, ist das Projekt **nicht initialisiert** (siehe unten). |
 | **Master-Space-Kette** | alle Verzeichnisse `D/@` mit `D` von der Vault-Root abwärts bis `cwd`, sofern `D/@` existiert; Reihenfolge von der Vault-Root zum Projekt |
 
-Ein Chat im Root-Projekt ist erlaubt; die Kette besteht dann nur aus dem Root-Masterspace.
+Ein Chat im Root-Projekt ist erlaubt; die Kette besteht dann nur aus dem Root-Masterspace. In einer Arbeitskopie tritt diese an die Stelle des Projekts, in dem sie liegt (unten, *Arbeitskopie*).
 
 ### Nicht initialisiertes Projekt
 
@@ -206,6 +206,7 @@ Ein Host kann eine Session statt im gewählten Ordner in einer **Arbeitskopie** 
 | Arbeitskopie | `git rev-parse --show-toplevel` |
 | gewählter Ordner | der Ordner über dem gemeinsamen `.git`, dazu der Pfad von `cwd` relativ zur Arbeitskopie |
 | Ausgabe | SessionStart-Hook bei jedem `source`, im aktivierten Vault auch in einem nicht initialisierten Ordner: `AIOS-WORKTREE` vor `PROJECT-UNINITIALIZED`; die Konsistenzprüfung entfällt |
+| Kette | Liegt die Arbeitskopie im Ordner ihres Haupt-Repos (dessen `.git` ist `<haupt>/.git`, ihre `.git`-Datei zeigt auf `<haupt>/.git/worktrees/<name>`), tritt sie an die Stelle von `<haupt>`: Die Kette führt von `cwd` bis zur Arbeitskopie und dann oberhalb von `<haupt>` weiter; Masterspace und `.aios/config.yaml` von `<haupt>` und der Ordner dazwischen gehören nicht dazu. Ist `<haupt>` die Vault-Root, endet die Kette an der Arbeitskopie, und deren `.aios/config.yaml` gilt als Konfiguration des Vaults (V0.5, Memo 79: B9). Erkannt wird das an der `.git`-Datei, ohne `git` aufzurufen |
 
 Arbeitskopien unter `.claude/worktrees/` schließt die `.gitignore`-Vorlage aus (Spec 04); so erscheinen sie im gewählten Ordner nicht als neue Dateien und erfüllen S4 (Spec 05). `/aios-integrity` steigt nicht in Ordner mit `.` ab.
 

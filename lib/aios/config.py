@@ -178,17 +178,43 @@ def vault_root(path):
     return None
 
 
+def worktree_main(d):
+    """Main working tree of the linked git worktree whose root is d, or None; reads d/.git
+    (gitdir: <main>/.git/worktrees/<name>) without calling git, submodules do not count."""
+    f = d / ".git"
+    try:
+        line = f.read_text(encoding="utf-8").strip() if f.is_file() else ""
+    except (OSError, UnicodeDecodeError):
+        return None
+    if not line.startswith("gitdir:"):
+        return None
+    gitdir = Path(os.path.realpath(d / line[len("gitdir:"):].strip()))
+    if gitdir.parent.name != "worktrees" or gitdir.parent.parent.name != ".git":
+        return None
+    return gitdir.parent.parent.parent
+
+
 def chain_dirs(path):
-    """Directories from path up to the vault root, nearest first; empty outside a vault."""
+    """Directories from path up to the vault root, nearest first; empty outside a vault.
+    A linked worktree inside its main working tree takes the place of the main working
+    tree: the chain continues above it, the last directory counts as the vault root
+    (spec 02, Arbeitskopie; V0.5, memo 79: B9)."""
     p = Path(os.path.realpath(path))
     root = vault_root(p)
     if root is None:
         return []
     dirs = []
-    for d in [p, *p.parents]:
+    d = p
+    while True:
         dirs.append(d)
-        if d == root:
+        main = worktree_main(d)
+        if main is not None and main in d.parents and (main == root or root in main.parents):
+            if main == root:
+                break
+            d = main
+        elif d == root:
             break
+        d = d.parent
     return dirs
 
 
@@ -284,12 +310,13 @@ def load(path="."):
     """Read the chain of path: .aios/config.yaml up to the vault root, then ~/.aios/config.yaml."""
     cfg = Config(path)
     home = paths.home()
-    for d in chain_dirs(cfg.path):
+    dirs = chain_dirs(cfg.path)
+    for d in dirs:
         if d == home:                               # ~/.aios/config.yaml is the home level
             continue
         f = d / ".aios" / "config.yaml"
         if f.is_file():
-            level = "vault" if d == cfg.vault else "project"
+            level = "vault" if d == dirs[-1] else "project"     # a worktree may replace the root
             cfg.files.append(f)
             try:
                 cfg.take(f, level, read(f))

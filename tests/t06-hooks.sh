@@ -103,6 +103,21 @@ Give no other answer until the user decides." "uninitialized: skill /aios-init, 
    assert_eq "$(git -C "$D/Garten" status --porcelain)" "" "worktree: ignored in the chosen folder (.gitignore template)"
    case "$(HOOK --session "$D/Garten")" in *AIOS-WORKTREE*) fail "main folder: no worktree line" ;; *) ok ;; esac
    case "$(HOOK --session "$D/Wiese")" in *AIOS-WORKTREE*) fail "no repo: no worktree line" ;; *) ok ;; esac
+   OUT="$(HOOK --session "$W")"                  # B9: the worktree takes the place of Garten
+   assert_contains "$OUT" "src=\"$W/@/garten.md\"" "B9: masterspace of the worktree"
+   case "$OUT" in *"src=\"$D/Garten/@/garten.md\""*) fail "B9: not the masterspace of the chosen folder" ;; *) ok ;; esac
+   assert_contains "$OUT" "src=\"$D/@/@Rule/stil.md\"" "B9: chain continues above the chosen folder"
+   assert_contains "$(AC --list "$W")" "§Demo → w1" "B9: chain §Demo → w1"
+   H="$SANDBOX/work/§Hirsch"                       # B9: worktree of the vault root
+   mk "$H/.aios/config.yaml" $'aios: 0.1.0\n'
+   mk "$H/@/hirsch.md" $'# Hirsch\n'
+   mk "$H/.gitignore" $'.claude/worktrees/\n'
+   git -C "$H" init -q && git -C "$H" add -A && git -C "$H" commit -qm init
+   git -C "$H" worktree add -q -b claude/h1 .claude/worktrees/h1 2>/dev/null
+   OUT="$(HOOK --session "$H/.claude/worktrees/h1")"
+   assert_contains "$OUT" "not in the chosen folder $H." "B9 root: chosen folder = vault root"
+   assert_contains "$OUT" "src=\"$H/.claude/worktrees/h1/@/hirsch.md\"" "B9 root: masterspace of the worktree"
+   case "$OUT" in *"src=\"$H/@/hirsch.md\""*|*AIOS-WARNING*) fail "B9 root: loaded once, aios: allowed in the worktree" ;; *) ok ;; esac
    git -C "$D/Garten" worktree remove --force "$W"
 
 #===============================================================================
