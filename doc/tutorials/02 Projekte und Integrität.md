@@ -12,7 +12,7 @@ Ein Projekt ist ein Ordner mit `@/`. Seine **Struktur** ist vollständig, wenn v
 |---|---|---|
 | S1 | lokaler Masterspace | `@/` existiert |
 | S2 | eigenes Repo | das Projekt ist die Wurzel eines eigenen Git-Repos |
-| S3 | `.gitignore` | enthält `.DS_Store`, `.claude/skills/`, `.agents/`, `.aios/registry` und `.aios/backup/` |
+| S3 | `.gitignore` | enthält `.DS_Store`, `.claude/skills/`, `.claude/worktrees/`, `.agents/`, `.aios/registry` und `.aios/backup/` |
 | S4 | Ausschluss darüber | das nächste Repo darüber ignoriert das Projekt und versioniert keine Datei darin |
 
 Jedes Projekt hat also ein eigenes Repo, auch jedes Unterprojekt. Der Ausschluss darüber darf breiter sein, z. B. `/P-Projekte/` für alle Projekte darunter. `@Memo/` gehört nicht zur Struktur; ihn legt der Memo-Skill beim ersten Memo an.
@@ -44,7 +44,7 @@ Beschädige die Struktur absichtlich:
 rm ~/tmp/§Demo/S-Sternwarte/.gitignore
 ```
 
-Öffne einen **neuen** Chat in `S-Sternwarte`. Vor der ersten Antwort meldet AIOS `PROJECT-INCOMPLETE` mit der Lücke (`.gitignore lines: .DS_Store, .claude/skills/, .agents/, .aios/registry, .aios/backup/`) und bietet an, das Projekt mit `aios --init` zu ergänzen. Sagst du nein, arbeitet der Chat normal weiter und fragt nicht noch einmal.
+Öffne einen **neuen** Chat in `S-Sternwarte`. Vor der ersten Antwort meldet AIOS `PROJECT-INCOMPLETE` mit der Lücke (`.gitignore lines: .DS_Store, .claude/skills/, .claude/worktrees/, .agents/, .aios/registry, .aios/backup/`) und bietet an, das Projekt mit `aios --init` zu ergänzen. Sagst du nein, arbeitet der Chat normal weiter und fragt nicht noch einmal.
 
 Die Prüfung läuft nur beim ersten Start eines Chats, nicht beim Fortsetzen oder nach einer Compaction, und nur für das Projekt des Chats. Sie schreibt nie selbst.
 
@@ -74,7 +74,7 @@ Project         Init             Commit
   S-Sternwarte  missing: 1 part  1 changed, 0 new
 
 Notes
-- S-Sternwarte: missing .gitignore lines: .DS_Store, .claude/skills/, .agents/, .aios/registry, .aios/backup/
+- S-Sternwarte: missing .gitignore lines: .DS_Store, .claude/skills/, .claude/worktrees/, .agents/, .aios/registry, .aios/backup/
 
 Result: 2 of 4 projects integer
 ```

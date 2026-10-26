@@ -66,7 +66,7 @@ Vor dem Dialog ruft Claude `aios --init --plan` auf. Meldet der Plan einen Verst
 
 ### Unvollständiges Projekt — Konsistenzprüfung
 
-Hat `cwd` ein `@/`, prüft der SessionStart-Hook beim **ersten Start einer Session** (`source` `startup`) die Struktur des Projekts nach Spec 05. Nach Resume, Clear und Compaction prüft er nicht; eine abgelehnte Ergänzung wird in derselben Session also nicht erneut angeboten. Fehlt etwas, gibt der Hook vor dem Master-Kontext `PROJECT-INCOMPLETE` mit der Liste der Lücken aus. Claude bietet vor der ersten inhaltlichen Antwort an, die Lücken mit `aios --init` zu ergänzen (Plan und Rückfrage, Spec 05). Anders als beim nicht initialisierten Projekt arbeitet der Chat auch weiter, wenn der User ablehnt.
+Hat `cwd` ein `@/`, prüft der SessionStart-Hook beim **ersten Start einer Session** (`source` `startup`) die Struktur des Projekts nach Spec 05. Nach Resume, Clear und Compaction prüft er nicht; eine abgelehnte Ergänzung wird in derselben Session also nicht erneut angeboten. In einer Arbeitskopie (unten, *Arbeitskopie*) prüft er ebenfalls nicht: Eine Ergänzung landete auf dem Branch der Arbeitskopie bzw. im Repo des gewählten Ordners. Fehlt etwas, gibt der Hook vor dem Master-Kontext `PROJECT-INCOMPLETE` mit der Liste der Lücken aus. Claude bietet vor der ersten inhaltlichen Antwort an, die Lücken mit `aios --init` zu ergänzen (Plan und Rückfrage, Spec 05). Anders als beim nicht initialisierten Projekt arbeitet der Chat auch weiter, wenn der User ablehnt.
 
 Geprüft wird nur die Struktur, keine Inhalte; ob geholte Pakete zu `lock.yaml` fehlen, meldet `aios --fetch` (Spec 06). Eine Vault-Root ohne `@/` wird nicht geprüft.
 
@@ -184,13 +184,38 @@ If the user declines, continue normally and do not offer it again.
 
 Die Lücken werden mit den Namen aus Spec 05 genannt (z. B. `own git repo`, `.gitignore lines: .aios/registry`, `exclusion in parent repo /…/§Demo`).
 
+Läuft die Session in einer Arbeitskopie, steht davor:
+
+```
+AIOS-WORKTREE: this session runs in a git worktree on branch <branch>
+ (<arbeitskopie>), not in the chosen folder <gewählter ordner>.
+ Before your first work, tell the user in one sentence that results land on
+ branch <branch> and not in the chosen folder. After writing work (files
+ changed or committed), offer to merge the branch into <gewählter ordner>
+ instead of only reporting it as done.
+```
+
+### Arbeitskopie
+
+Ein Host kann eine Session statt im gewählten Ordner in einer **Arbeitskopie** starten, einem verknüpften Git-Worktree auf einem eigenen Branch (die Desktop-App von Claude Code z. B. in `<projekt>/.claude/worktrees/<name>/`, Branch `claude/<name>`). Was die Session schreibt und committet, landet dann auf diesem Branch und erscheint im gewählten Ordner erst nach dem Übernehmen (V0.5, Memo 71, B6). AIOS ändert daran nichts; es macht es sichtbar (Memo 73):
+
+| Punkt | Regel |
+|---|---|
+| Erkennen | `git rev-parse --git-dir` und `--git-common-dir` in `cwd` sind verschieden und das gemeinsame Git-Verzeichnis heißt `.git` |
+| Branch | `git symbolic-ref --short HEAD`, ohne Branch `detached HEAD` |
+| Arbeitskopie | `git rev-parse --show-toplevel` |
+| gewählter Ordner | der Ordner über dem gemeinsamen `.git`, dazu der Pfad von `cwd` relativ zur Arbeitskopie |
+| Ausgabe | SessionStart-Hook bei jedem `source`, im aktivierten Vault auch in einem nicht initialisierten Ordner: `AIOS-WORKTREE` vor `PROJECT-UNINITIALIZED`; die Konsistenzprüfung entfällt |
+
+Arbeitskopien unter `.claude/worktrees/` schließt die `.gitignore`-Vorlage aus (Spec 04); so erscheinen sie im gewählten Ordner nicht als neue Dateien und erfüllen S4 (Spec 05). `/aios-integrity` steigt nicht in Ordner mit `.` ab.
+
 ## Hooks
 
 `aios --install` trägt in `~/.claude/settings.json` zwei Hooks ein und entfernt dabei die Hooks von `ai-brain` (Spec 04). Beide rufen nur den Weiterleiter auf.
 
 | Hook | Aufruf | Verhalten |
 |---|---|---|
-| **SessionStart** (Start, Resume, Clear, nach Compaction) | `aios --context --session` | 1. außerhalb eines Vaults: nichts. 2. Legacy-Modus: Verhalten von `ai-brain --session`. 3. aktiviert: Registrierung der Projekt-Skills ohne Rückfrage (`--sync --yes`), bei Änderungen eine Zeile `AIOS-SKILLS: … — effective from the next chat` (Spec 03). 4. bei nicht initialisiertem Projekt: `PROJECT-UNINITIALIZED`; sonst bei `source` `startup` die Konsistenzprüfung, bei Lücken `PROJECT-INCOMPLETE`. 5. Master-Kontext inline, wenn er höchstens `inline_limit` Zeichen hat (Standard 9000), sonst `AIOS-CONTEXT-MANDATORY` mit der Liste der Part-Dateien. 6. Assistent der Session bestimmen und den Merker schreiben (unten); ist es nicht `none`, seinen Kontext ausgeben, inline mit `AIOS-ASSISTANT` oder bei mehr als `inline_limit` Zeichen `AIOS-ASSISTANT-MANDATORY` mit Part-Dateien |
+| **SessionStart** (Start, Resume, Clear, nach Compaction) | `aios --context --session` | 1. außerhalb eines Vaults: nichts. 2. Legacy-Modus: Verhalten von `ai-brain --session`. 3. aktiviert: Registrierung der Projekt-Skills ohne Rückfrage (`--sync --yes`), bei Änderungen eine Zeile `AIOS-SKILLS: … — effective from the next chat` (Spec 03). 4. in einer Arbeitskopie: `AIOS-WORKTREE` (*Arbeitskopie*). 5. bei nicht initialisiertem Projekt: `PROJECT-UNINITIALIZED`; sonst bei `source` `startup` und nicht in einer Arbeitskopie die Konsistenzprüfung, bei Lücken `PROJECT-INCOMPLETE`. 6. Master-Kontext inline, wenn er höchstens `inline_limit` Zeichen hat (Standard 9000), sonst `AIOS-CONTEXT-MANDATORY` mit der Liste der Part-Dateien. 7. Assistent der Session bestimmen und den Merker schreiben (unten); ist es nicht `none`, seinen Kontext ausgeben, inline mit `AIOS-ASSISTANT` oder bei mehr als `inline_limit` Zeichen `AIOS-ASSISTANT-MANDATORY` mit Part-Dateien |
 | **UserPromptSubmit** | `aios --context --advise` | außerhalb eines Vaults: nichts. Legacy-Modus: Verhalten von `ai-brain --advise`. Aktiviert: `AIOS-CONTEXT-CHECK: expected id=<id>` mit der Anweisung, bei fehlenden Marken „Lade Master-Kontext" zu sagen, `aios --context --load "<cwd>"` auszuführen, alle Part-Dateien vollständig zu lesen und „Master-Kontext geladen (id <id>)" zu melden. Ist der Assistent der Session nicht `none`, zusätzlich `AIOS-ASSISTANT-CHECK`. Fehlen auf dem Rechner Arbeitspferde aus `lock.yaml` der Kette, zusätzlich `AIOS-WORKERS: missing <paket> <version>, … — run aios --fetch` (Spec 07; V0.5, Memo 29) |
 
 Die Hooks erzeugen außer der Registrierung und dem Merker der Session keine Dateien und fragen nie nach. Beide nehmen `cwd` aus dem Hook-JSON auf stdin, ohne JSON das Arbeitsverzeichnis des Prozesses; im Legacy-Modus erhält `ai-brain` dasselbe JSON. Warnungen der Konfigurationskette gibt `--session` als Zeilen `AIOS-WARNING: …` aus. Scheitert ein Hook, gibt er eine Zeile `AIOS-WARNING: aios --context --session failed: …` aus und endet mit Exit 0: Ein Hook bricht nie die Session ab.

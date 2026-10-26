@@ -86,6 +86,13 @@ to the project. Open a chat in a new folder and AIOS offers to initialize it
 (`/aios-init`); at the first start of a chat it checks the structure of the
 project and offers to complete it.
 
+Start a chat directly in the project folder. If the host starts it in a git
+worktree instead (Claude Code desktop app: `.claude/worktrees/<name>/` on a
+branch of its own), results land on that branch and do not appear in the
+folder, e.g. in Obsidian, until the branch is merged. AIOS recognizes this at
+the start of the chat: Claude says so before the first work and offers the
+merge afterwards.
+
 In a chat:
 
 | Skill | Purpose |

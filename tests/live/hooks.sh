@@ -1,8 +1,8 @@
 #!/bin/bash
-# hooks.sh: live test of hooks and registration with real headless Claude sessions (steps 6, 7; costs tokens)
+# hooks.sh: live test of hooks and registration with real headless Claude sessions (steps 6, 7; v0.5.1 step 1; costs tokens)
 
    if [ "$*" == "-?" ] || [ "$*" == "--help" ]; then
-      echo '   usage: tests/live/hooks.sh [<model>]   # headless sessions L1-L5, default model haiku'
+      echo '   usage: tests/live/hooks.sh [<model>]   # headless sessions L1-L6, default model haiku'
       echo '          tests/live/hooks.sh --version   # print version'
       echo '   not part of tests/run: needs a logged-in claude CLI and uses tokens'
       echo '   see also: tests/run, aios --context'
@@ -88,6 +88,12 @@ print(json.dumps({"hooks": h}))' "$1" "$2"
             --setting-sources project --allowedTools "Skill" 2>&1)"
       case "$A" in *"$TOKEN"*) check "L5c control: without AIOS the skill is unknown" "token found" "unknown";;
                    *) check "L5c control: without AIOS the skill is unknown" "unknown" "unknown";; esac
+
+      printf '.claude/worktrees/\n' > "$V/Garten/.gitignore"      # L6: worktree of the host (v0.5.1, B6)
+      git -C "$V/Garten" add -A && git -C "$V/Garten" -c user.name=t -c user.email=t@t commit -qm init
+      git -C "$V/Garten" worktree add -q -b claude/live-w1 .claude/worktrees/w1 2>/dev/null
+      A="$(ask "$V/Garten/.claude/worktrees/w1" "$(hooks on on)" "Lege eine Notiz notiz.md mit dem Wort Apfel an? Sag nur, wo sie landen würde, schreib nichts.")"
+      check "L6 worktree: the chat names the branch of the worktree" "$A" "claude/live-w1"
 
       echo "=> $PASS passed, $FAIL failed"
       rm -rf "$SB"

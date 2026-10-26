@@ -4,6 +4,8 @@ Dieses Tutorial führt in etwa 20 Minuten durch einen kleinen Vault mit zwei Pro
 
 Voraussetzung: AIOS v0.5 ist installiert (`aios --install v0.5.0`, siehe README) und Claude Code läuft als Desktop-App oder CLI.
 
+Starte jeden Chat direkt im Ordner des Projekts. Legt die Desktop-App für den Chat eine Arbeitskopie an (`.claude/worktrees/<name>/` auf einem eigenen Branch), landen die Ergebnisse auf diesem Branch und erscheinen erst nach dem Übernehmen (Merge) im Ordner. AIOS erkennt das beim Start: Claude sagt es dir vor der ersten Arbeit und bietet danach das Übernehmen an.
+
 ## 1. Vault anlegen und aktivieren
 
 Ein Vault ist ein Verzeichnis, dessen Name mit `§` beginnt. Lege ihn an und binde ihn an AIOS:

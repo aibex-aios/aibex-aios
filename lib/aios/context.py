@@ -270,6 +270,15 @@ def incomplete_message(ctx, gaps):
             f"If the user declines, continue normally and do not offer it again.")
 
 
+def worktree_message(w):
+    return (f"AIOS-WORKTREE: this session runs in a git worktree on branch {w.branch}\n"
+            f" ({w.root}), not in the chosen folder {w.chosen}.\n"
+            f" Before your first work, tell the user in one sentence that results land on\n"
+            f" branch {w.branch} and not in the chosen folder. After writing work (files\n"
+            f" changed or committed), offer to merge the branch into {w.chosen}\n"
+            f" instead of only reporting it as done.")
+
+
 def mandatory_message(ctx, size, limit):
     ident = ctx.id
     return (f"AIOS-CONTEXT-MANDATORY: the master context of this project is too large\n"
@@ -387,8 +396,8 @@ def assistant_lines(ctx, name, origin):
 
 
 def session(ctx, source="startup", sid=None):
-    """SessionStart: warnings, PROJECT-UNINITIALIZED or (at startup) PROJECT-INCOMPLETE,
-    master context inline or part files, then the assistant of the session."""
+    """SessionStart: warnings, AIOS-WORKTREE, PROJECT-UNINITIALIZED or (at startup, not in a
+    worktree) PROJECT-INCOMPLETE, master context inline or part files, then the assistant."""
     from . import project, registry
     out = [f"AIOS-WARNING: {w}" for w in ctx.cfg.warnings]
     if ctx.initialized:                             # registration for the next chat (spec 03)
@@ -397,9 +406,12 @@ def session(ctx, source="startup", sid=None):
         if s:
             s.apply()
             out.append(f"AIOS-SKILLS: {s.summary()} — effective from the next chat")
+    wt = project.worktree(ctx.cwd)
+    if wt:
+        out.append(worktree_message(wt))
     if not ctx.initialized:
         out.append(uninitialized_message(ctx))
-    elif source == "startup":                       # consistency check, first start only (spec 02)
+    elif source == "startup" and not wt:            # consistency check, first start only (spec 02)
         gaps = project.check(ctx.cwd)
         if gaps:
             out.append(incomplete_message(ctx, gaps))

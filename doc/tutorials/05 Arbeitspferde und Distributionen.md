@@ -51,7 +51,7 @@ aios --install distribution-rothirsch ~/tmp/§Rothirsch --plan
       back up what the plan changes -> ~/tmp/§Rothirsch/.aios/backup
       create @/ (with .gitkeep)
       git init (branch main)
-      .gitignore: .DS_Store, .claude/skills/, .agents/, .aios/registry, .aios/backup/
+      .gitignore: .DS_Store, .claude/skills/, .claude/worktrees/, .agents/, .aios/registry, .aios/backup/
       create ~/tmp/§Rothirsch/.aios/config.yaml with aios: 0.5.0
       commit "AIOS: Projekt initialisiert" with the files AIOS wrote
       new        assistant-anja 0.2.0 (aibex-aios) -> ~/tmp/§Rothirsch/@/@!Package/assistant-anja
@@ -92,13 +92,13 @@ Im Chat geht dasselbe mit „installiere distribution-rothirsch": `/aios-package
 
 ## 3. Die Video-Analyse
 
-Öffne einen Chat in `~/tmp/§Rothirsch` (die Skills gelten ab dem nächsten Chat) und schick einen YouTube-Link mit dem Wort „Video-Analyse":
+Öffne einen Chat direkt in `~/tmp/§Rothirsch`, nicht in einer Arbeitskopie (die Skills gelten ab dem nächsten Chat) und schick einen YouTube-Link mit dem Wort „Video-Analyse":
 
 ```
 https://www.youtube.com/watch?v=<video-id> Video-Analyse
 ```
 
-Der Skill ruft `yt-dlp` über `~/.aios/bin/yt-dlp` auf, legt das Transkript in `@Video/` und eine 5-8-Zusammenfassung in `@Summary/` ab und committet beides. Installiert hast du dafür nichts: `yt-dlp` kam mit dem Paket.
+Der Skill ruft `yt-dlp` über `~/.aios/bin/yt-dlp` auf, legt das Transkript in `@Video/` und eine 5-8-Zusammenfassung in `@Summary/` ab und committet beides. Installiert hast du dafür nichts: `yt-dlp` kam mit dem Paket. Läuft der Chat doch in einer Arbeitskopie der Desktop-App, sagt Claude das vor der Analyse und bietet danach an, den Branch in `~/tmp/§Rothirsch` zu übernehmen; erst dann siehst du die Dateien in Obsidian.
 
 ## 4. Weiterleiter und Stand
 

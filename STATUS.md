@@ -31,7 +31,7 @@ Umsetzungsschritte nach dem Implementierungsplan v0.5.1 (Memo 74 in `AA-AIbex-AI
 | # | Schritt | Ergebnis | Spec | Stand |
 |---|---|---|---|---|
 | 0 | **Repo auf v0.5.1 umstellen:** `VERSION`, `manifest.yaml`, `STATUS.md`, `CLAUDE.md` | `VERSION` und `manifest.yaml` `0.5.1-dev`; Schritt 16 von v0.5 nachgetragen; `CLAUDE.md` mit Plan, Memos und Regeln von v0.5.1 (Vorabregel entfällt) | — | ☑ abgeschlossen |
-| 1 | **Arbeitskopie (B6):** `AIOS-WORKTREE:`, `.gitignore`-Vorlage mit `.claude/worktrees/`, Doku | | 02, 05 | ☐ |
+| 1 | **Arbeitskopie (B6):** `AIOS-WORKTREE:`, `.gitignore`-Vorlage mit `.claude/worktrees/`, Doku | `project.worktree` erkennt eine Arbeitskopie (`--git-dir` ≠ `--git-common-dir`, gemeinsames Verzeichnis `.git`) mit Branch (sonst `detached HEAD`), Arbeitskopie und gewähltem Ordner samt Unterordner; SessionStart gibt `AIOS-WORKTREE:` bei jedem `source` vor `PROJECT-UNINITIALIZED` aus, die Konsistenzprüfung entfällt in einer Arbeitskopie; Vorlage `.gitignore` mit `.claude/worktrees/`; Spec 02 *Arbeitskopie*, Hooks und Ausgabe, Spec 04 Vorlage; README, Tutorials 01, 02, 05; t06 (+10), t01, t04, t08, t11, t12 auf die Vorlage; Live-Test `hooks.sh` L6 (nicht gelaufen); 1139 Prüfungen grün | 02, 04 | ☑ abgeschlossen |
 | 2 | **Distribution auf frischem Rechner (B7):** Kernel zuerst ohne PyYAML, dann Übergabe; Ziel der Arbeitspferde im Plan | | 04, 07 | ☐ |
 | 3 | **Abgleich und Kleinigkeiten:** B8, O1, O2, O3, O5 | | 02, 06, 07 | ☐ |
 | 4 | **Version 0.5.1 und Abnahme**, danach Veröffentlichen | | 01 | ☐ |

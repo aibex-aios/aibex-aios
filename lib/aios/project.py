@@ -79,6 +79,28 @@ def parent_repo(p):
     return None
 
 
+@dataclass
+class Worktree:
+    """A linked git worktree a session runs in instead of the chosen folder (V0.5, memo 73: B6)."""
+    branch: str                                     # branch of the worktree, or "detached HEAD"
+    root: Path                                      # folder of the worktree
+    chosen: Path                                    # the same folder in the main working tree
+
+
+def worktree(p):
+    """The linked worktree p lies in (--git-dir differs from --git-common-dir), or None."""
+    r = git(p, "rev-parse", "--path-format=absolute", "--git-dir", "--git-common-dir", "--show-toplevel")
+    lines = [os.path.realpath(line) for line in r.stdout.splitlines()]
+    if r.returncode or len(lines) != 3 or lines[0] == lines[1]:
+        return None
+    _, common, top = map(Path, lines)
+    if common.name != ".git":                      # bare repo: no main working tree
+        return None
+    rel = Path(os.path.realpath(p)).relative_to(top)
+    branch = git(p, "symbolic-ref", "--short", "-q", "HEAD").stdout.strip() or "detached HEAD"
+    return Worktree(branch, top, common.parent / rel)
+
+
 def check(p):
     """Gaps of the structure of the project p (S1-S4), empty if complete."""
     p = Path(os.path.realpath(p))

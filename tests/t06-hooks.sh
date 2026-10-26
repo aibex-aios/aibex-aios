@@ -12,7 +12,7 @@
    mk "$D/@/@Rule/stil.md"        $'# Stil\nschreib klar\n'
    mk "$D/Garten/@/garten.md"     $'# Garten\nApfel\n'
    mkdir -p "$D/Garten/Neu"
-   mk "$D/Garten/.gitignore"      $'.DS_Store\n.claude/skills/\n.agents/\n.aios/registry\n.aios/backup/\n'
+   mk "$D/Garten/.gitignore"      $'.DS_Store\n.claude/skills/\n.claude/worktrees/\n.agents/\n.aios/registry\n.aios/backup/\n'
    git -C "$D/Garten" init -q                      # Garten is a complete project (spec 05, S1-S4)
    mk "$D/Wiese/@/wiese.md"       $'# Wiese\n'
    mk "$SANDBOX/work/§Alt/@/a.md" $'# A\n'
@@ -66,7 +66,7 @@ Give no other answer until the user decides." "uninitialized: skill /aios-init, 
 #===============================================================================
 
    OUT="$(HOOK --session "$D/Wiese")"
-   assert_eq "$(printf '%s\n' "$OUT" | head -1)" "PROJECT-INCOMPLETE: $D/Wiese is an AIOS project but lacks: own git repo, .gitignore lines: .DS_Store, .claude/skills/, .agents/, .aios/registry, .aios/backup/." "incomplete: gaps named"
+   assert_eq "$(printf '%s\n' "$OUT" | head -1)" "PROJECT-INCOMPLETE: $D/Wiese is an AIOS project but lacks: own git repo, .gitignore lines: .DS_Store, .claude/skills/, .claude/worktrees/, .agents/, .aios/registry, .aios/backup/." "incomplete: gaps named"
    assert_contains "$OUT" "call the skill /aios-init
 (Skill tool) for \"$D/Wiese\" and follow it (plan from --plan, after yes run with
 --yes; never answer a question of aios yourself)." "incomplete: offer /aios-init (A2, A3)"
@@ -75,6 +75,35 @@ Give no other answer until the user decides." "uninitialized: skill /aios-init, 
       case "$(SRCE=$S HOOK --session "$D/Wiese")" in *PROJECT-INCOMPLETE*) fail "incomplete: no check at $S" ;; *) ok ;; esac
    done
    case "$(json "$D/Wiese" >/dev/null; cd "$D/Wiese" && AC --session </dev/null)" in *PROJECT-INCOMPLETE*) ok ;; *) fail "incomplete: without JSON counts as startup" ;; esac
+
+#===============================================================================
+# v0.5.1 step 1: worktree of the host (spec 02, Arbeitskopie; V0.5, memos 71, 73: B6)
+#===============================================================================
+
+   git -C "$D/Garten" add -A && git -C "$D/Garten" commit -qm init
+   git -C "$D/Garten" worktree add -q -b claude/w1 .claude/worktrees/w1 2>/dev/null
+   W="$D/Garten/.claude/worktrees/w1"
+   OUT="$(HOOK --session "$W")"
+   assert_eq "$(printf '%s\n' "$OUT" | head -6)" "AIOS-WORKTREE: this session runs in a git worktree on branch claude/w1
+ ($W), not in the chosen folder $D/Garten.
+ Before your first work, tell the user in one sentence that results land on
+ branch claude/w1 and not in the chosen folder. After writing work (files
+ changed or committed), offer to merge the branch into $D/Garten
+ instead of only reporting it as done." "worktree: branch, worktree, chosen folder, instruction"
+   case "$OUT" in *PROJECT-INCOMPLETE*) fail "worktree: no consistency check" ;; *) ok ;; esac
+   for S in resume compact; do
+      assert_contains "$(SRCE=$S HOOK --session "$W")" "AIOS-WORKTREE: this session runs in a git worktree on branch claude/w1" "worktree: also at $S"
+   done
+   mkdir -p "$W/Neu"
+   OUT="$(HOOK --session "$W/Neu")"
+   assert_contains "$OUT" "not in the chosen folder $D/Garten/Neu." "worktree: chosen folder keeps the subfolder"
+   case "$OUT" in AIOS-WORKTREE*PROJECT-UNINITIALIZED*) ok ;; *) fail "worktree: before PROJECT-UNINITIALIZED" ;; esac
+   git -C "$W" checkout -q --detach
+   assert_contains "$(HOOK --session "$W")" "on branch detached HEAD" "worktree: detached HEAD"
+   assert_eq "$(git -C "$D/Garten" status --porcelain)" "" "worktree: ignored in the chosen folder (.gitignore template)"
+   case "$(HOOK --session "$D/Garten")" in *AIOS-WORKTREE*) fail "main folder: no worktree line" ;; *) ok ;; esac
+   case "$(HOOK --session "$D/Wiese")" in *AIOS-WORKTREE*) fail "no repo: no worktree line" ;; *) ok ;; esac
+   git -C "$D/Garten" worktree remove --force "$W"
 
 #===============================================================================
 # --session: master context larger than inline_limit -> part files

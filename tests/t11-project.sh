@@ -8,7 +8,7 @@
    export GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@t GIT_COMMITTER_NAME=t GIT_COMMITTER_EMAIL=t@t
    D="$SANDBOX/work/§Demo"
    mk() { mkdir -p "$(dirname "$1")"; printf '%s' "$2" > "$1"; }
-   GI=$'.DS_Store\n.claude/skills/\n.agents/\n.aios/registry\n.aios/backup/\n'
+   GI=$'.DS_Store\n.claude/skills/\n.claude/worktrees/\n.agents/\n.aios/registry\n.aios/backup/\n'
    mkproj() { mkdir -p "$1/@"; mk "$1/.gitignore" "$GI"; git -C "$1" init -q; }
 
    mkproj "$D"
@@ -35,9 +35,9 @@ n = project.check_name('$1'); print(('ok' if n.ok else 'bad') + '|' + n.proposal
    assert_eq "$(GAPS "$D")" "" "root project complete (no parent repo above the vault root)"
    assert_eq "$(GAPS "$D/G-Garten")" "" "G-Garten complete"
    assert_eq "$(GAPS "$D/P-Projekte/PB-Blogs")" "" "broader exclusion /P-Projekte/ counts"
-   assert_eq "$(GAPS "$D/S-Sternwarte")" "own git repo|.gitignore lines: .DS_Store, .claude/skills/, .agents/, .aios/registry, .aios/backup/|exclusion in parent repo $D" "S-Sternwarte: repo, gitignore, parent"
+   assert_eq "$(GAPS "$D/S-Sternwarte")" "own git repo|.gitignore lines: .DS_Store, .claude/skills/, .claude/worktrees/, .agents/, .aios/registry, .aios/backup/|exclusion in parent repo $D" "S-Sternwarte: repo, gitignore, parent"
    assert_eq "$(GAPS "$D/P-Projekte/PB-Blogs/PB1-Die-KI-Kann-Viel")" "exclusion in parent repo $D/P-Projekte/PB-Blogs" "nested repo needs exclusion in the nearest repo above"
-   assert_eq "$(GAPS "$D/L-Labor")" ".gitignore lines: .claude/skills/, .agents/, .aios/registry, .aios/backup/|exclusion in parent repo $D" "L-Labor: missing lines, not excluded"
+   assert_eq "$(GAPS "$D/L-Labor")" ".gitignore lines: .claude/skills/, .claude/worktrees/, .agents/, .aios/registry, .aios/backup/|exclusion in parent repo $D" "L-Labor: missing lines, not excluded"
    mkdir -p "$D/N-Neu"
    assert_contains "$(GAPS "$D/N-Neu")" "local masterspace @/" "S1 reported"
 
@@ -51,7 +51,7 @@ p = project.parent_repo('$D/S-Sternwarte'); print(p.rel, p.ignored, p.tracked)")
    case "$(GAPS "$D/S-Sternwarte")" in *"exclusion"*) fail "ignored and untracked: S4 fulfilled" ;; *) ok ;; esac
 
    mkdir -p "$SANDBOX/work/Draussen/X-Proj/@"; git -C "$SANDBOX/work/Draussen" init -q
-   assert_eq "$(GAPS "$SANDBOX/work/Draussen/X-Proj")" "own git repo|.gitignore lines: .DS_Store, .claude/skills/, .agents/, .aios/registry, .aios/backup/" "outside a vault: no parent repo"
+   assert_eq "$(GAPS "$SANDBOX/work/Draussen/X-Proj")" "own git repo|.gitignore lines: .DS_Store, .claude/skills/, .claude/worktrees/, .agents/, .aios/registry, .aios/backup/" "outside a vault: no parent repo"
 
 #===============================================================================
 # name rule and proposal

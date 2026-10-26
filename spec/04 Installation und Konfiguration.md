@@ -303,12 +303,13 @@ v0.5 liefert die AIOS-Skills `aios-context`, `aios-init`, `aios-register`, `aios
 ```gitignore
 .DS_Store
 .claude/skills/
+.claude/worktrees/
 .agents/
 .aios/registry
 .aios/backup/
 ```
 
-`.agents/` enthält Kopien von Skills für andere Agenten (V0.5, Memo 10), `.aios/backup/` die Sicherung während eines Plans (Spec 06).
+`.claude/worktrees/` enthält Arbeitskopien, die der Host für eine Session anlegen kann (V0.5, Memos 71, 73), `.agents/` Kopien von Skills für andere Agenten (V0.5, Memo 10), `.aios/backup/` die Sicherung während eines Plans (Spec 06).
 
 ## Umlenkung für Tests
 
