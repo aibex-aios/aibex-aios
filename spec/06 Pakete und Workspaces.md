@@ -141,7 +141,7 @@ hubs:
 
 Die Hub-Liste ist eine **Suchliste**, keine Sperrliste. Ein voller Paketname darf jeden Hub nennen (unten).
 
-**Pflege:** `aios --hubs` zeigt die Liste mit Herkunft (Vault, Home). `aios --hubs add <name> [<url>] [--vault]` und `aios --hubs remove <name> [--vault]` ändern sie in Home bzw. mit `--vault` an der Vault-Root, mit Plan und Bestätigung (Spec 01, I7). Legt `add` die erste Hub-Liste an (es gibt noch keinen Eintrag `hubs:`), übernimmt AIOS den Standard-Hub `aibex-aios` an erster Stelle, damit er weiter gilt (V0.4, Memo 60). `/aios-package` versteht Sätze wie „füge den Hub aibex-hub hinzu" (V0.4, Memo 25).
+**Pflege:** `aios --hubs` zeigt die Liste mit Herkunft (Vault, Home). `aios --hubs add <name> [<url>] [--vault]` und `aios --hubs remove <name> [--vault]` ändern sie in Home bzw. mit `--vault` an der Vault-Root, mit Plan und Bestätigung (Spec 01, I7); `--vault` geht auch in einem Vault, der noch nicht gebunden ist, damit eine Distribution aus einem eigenen Hub kommen kann (V0.5, Memo 64). Legt `add` die erste Hub-Liste an (es gibt noch keinen Eintrag `hubs:`), übernimmt AIOS den Standard-Hub `aibex-aios` an erster Stelle, damit er weiter gilt (V0.4, Memo 60). `/aios-package` versteht Sätze wie „füge den Hub aibex-hub hinzu" (V0.4, Memo 25).
 
 ### Paket finden
 

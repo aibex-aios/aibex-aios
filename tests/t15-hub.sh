@@ -70,6 +70,9 @@ aibex-hub           https://github.com/aibex-hub  (home)
    A "$D" --hubs remove firma --vault --yes >/dev/null
    assert_eq "$(cat "$D/.aios/config.yaml")" "aios: 0.4.0" "remove the last vault hub: block gone"
    assert_contains "$(A "$SANDBOX" --hubs add x --vault --yes)" "is not in a vault" "--vault outside a vault"
+   N="$SANDBOX/work/§Neu"; mkdir -p "$N"                  # before the binding (distribution, V0.5, memo 64)
+   A "$N" --hubs add lokal file:///tmp/lokal --vault --yes >/dev/null
+   assert_eq "$(cat "$N/.aios/config.yaml")" $'hubs:\n  - lokal: file:///tmp/lokal' "add --vault in a vault without binding: only hubs:"
    assert_contains "$(A "$D" --hubs add 'bad name')" "bad name is not a hub name" "invalid hub name"
    assert_contains "$(A "$D" --hubs drop x)" "usage: aios --hubs" "usage"
    rm "$HOME/.aios/config.yaml"

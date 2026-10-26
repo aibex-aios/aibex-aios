@@ -230,9 +230,7 @@ def target(vault):
     cfg = config.load(paths.cwd())
     if cfg.vault is None:
         raise Abort(f"{paths.cwd()} is not in a vault")
-    if not cfg.aios:
-        raise Abort(f"the vault {cfg.vault} is not activated; run: aios --activate v<version> {cfg.vault}")
-    return cfg.vault / ".aios" / "config.yaml"
+    return cfg.vault / ".aios" / "config.yaml"     # also before the binding (distribution, V0.5, memo 64)
 
 
 def hubs_block(lines):
