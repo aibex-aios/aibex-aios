@@ -345,7 +345,7 @@ Weiterleiter und `aios` verwenden ausschließlich diese Variablen, nie fest verd
    - `aios --context …`: **Legacy-Modus**, d. h. `ai-brain` mit den Argumenten nach `--context` aufrufen, falls vorhanden (`--session`, `--advise`, `--load`, `--context`); sonst nichts ausgeben. Ausnahme `--id`: Ausgabe von `ai-brain --id` mit angehängtem `mode=legacy`, außerhalb eines Vaults `mode=none` (Spec 02). Nur die Gruppe `--context` fällt auf `ai-brain` zurück (V0.5, Memo 03).
    - jeder andere Aufruf: die höchste installierte Version aufrufen.
 
-Ist `cwd` an eine Version unter 0.5 gebunden, übersetzt der Weiterleiter `aios --context` nicht; solche Vaults werden vor der Installation von v0.5 aktiviert (V0.5, Memo 04).
+Ist `cwd` an eine Version unter 0.5 gebunden, ruft der Weiterleiter `aios --context …` als `<installation>/bin/aios-context …` dieser Version auf (Weiterleiter 0.3.1). So behalten Vaults auf v0.3 und v0.4 nach der Installation von v0.5 ihren Master-Kontext, bis sie mit `aios --activate v0.5.<n>` umgestellt sind (V0.5, Memos 04, 63).
 
 „Höchste Version" gilt nach Semver: `0.10.0` liegt über `0.3.0`, eine Vorabversion wie `0.3.0-dev` unter `0.3.0`. In `installations.yaml` darf ein Pfad in Anführungszeichen stehen und mit `~/` beginnen.
 

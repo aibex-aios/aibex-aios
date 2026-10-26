@@ -9,7 +9,8 @@
       echo '   order: AIOS_HOME, aios --activate v<version> (that version), aios: in'
       echo '          .aios/config.yaml up to the vault root, otherwise aios --context: ai-brain,'
       echo '          everything else: highest installed version; aios --install distribution-*:'
-      echo '          always the highest installed version, at least 0.5'
+      echo '          always the highest installed version, at least 0.5; aios --context with a'
+      echo '          version below 0.5: its aios-context'
       echo '   see also: aios, ai-brain'
       exit 1
    fi
@@ -19,7 +20,7 @@
 #===============================================================================
 
    if [ "$*" == "---version" ]; then
-      echo "0.3.0"; exit 0
+      echo "0.3.1"; exit 0
    fi
 
 #===============================================================================
@@ -176,6 +177,12 @@
    case "$KIND" in
       aios)
          [ -x "$TARGET" ] || { echo "*** aios: $TARGET not found ($WHY)" >&2; exit 1; }
+         if [ "$1" == "--context" ] && [ -x "${TARGET%/aios}/aios-context" ]; then   # versions below 0.5
+            V="$(cat "${TARGET%/bin/aios}/VERSION" 2>/dev/null)"                   # have aios-context
+            if [ -n "$V" ] && newer v0.5.0 "v$V"; then                             # (V0.5, memo 63, B3)
+               shift; exec "${TARGET%/aios}/aios-context" "$@"
+            fi
+         fi
          exec "$TARGET" "$@"
          ;;
       legacy)
