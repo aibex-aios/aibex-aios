@@ -164,6 +164,14 @@ def relocate(old, new):
             f.write_bytes(data.replace(str(old).encode(), str(new).encode()))
 
 
+def prune(folder):
+    """Remove the folder of a package under workers/ when no version is left in it (V0.5, memo 66, B5)."""
+    try:
+        folder.rmdir()
+    except OSError:
+        pass                                        # not empty or already gone
+
+
 def setup(d, m, project):
     """Build the version of m from the package folder d in v<version>.new, then rename (N1)."""
     w = m.worker
@@ -206,6 +214,7 @@ def setup(d, m, project):
         if new.exists():
             make_writable(new)
             shutil.rmtree(new)
+        prune(new.parent)
         raise
     data = read_state()
     entry = data["workers"].setdefault(m.name, {}).setdefault(str(m.version), {})
@@ -225,6 +234,7 @@ def remove(pkg, version, d=None, m=None):
             subprocess.run(["bash", str(d / m.worker["remove"])], cwd=d, env=env_for(d, target),
                            capture_output=True)
         shutil.rmtree(target)
+    prune(target.parent)
     data = read_state()
     versions = data["workers"].get(pkg) or {}
     gone = versions.pop(str(version), None) or {}

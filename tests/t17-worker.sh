@@ -126,6 +126,7 @@
    OUT="$(echo y | A "$D" --fetch --remove worker-test)"
    assert_contains "$OUT" "remove     worker-test 0.1.1 -> $J (no project uses it)" "orphaned project does not count"
    [ ! -e "$J" ] && [ ! -e "$T" ] && ok || fail "removal: installation and forwarder gone"
+   [ ! -e "$(dirname "$J")" ] && ok || fail "removal: no empty folder of the package under workers/ (B5)"
 
 #===============================================================================
 # kind script: plan shows the script, failing setup restores everything (I11)
@@ -139,6 +140,7 @@
    OUT="$(AIOS_TEST_SETUP_FAIL=1 A "$D" --fetch worker-test-script --yes)"
    assert_contains "$OUT" "the plan failed" "script: failing setup fails the plan"
    [ ! -e "$S" ] && [ ! -e "$S.new" ] && [ ! -e "$D/@/@!Package/worker-test-script" ] && ok || fail "script: failing setup leaves nothing"
+   [ ! -e "$(dirname "$S")" ] && ok || fail "script: no empty folder of the package under workers/ (B5)"
    [ ! -e "$HOME/.aios/bin/aios-test-script" ] && ok || fail "script: no forwarder after a failure"
    assert_eq "$(cat "$D/.aios/lock.yaml")" "$LOCK" "script: lock.yaml as before"
    A "$D" --fetch worker-test-script --yes >/dev/null
