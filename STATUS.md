@@ -1,4 +1,4 @@
-# Stand der Umsetzung AIOS v0.5
+# Stand der Umsetzung AIOS v0.5 und v0.5.1
 
 Umsetzungsschritte nach dem Implementierungsplan v0.5 (Memo 44 in `AA-AIbex-AIOS/@Memo/V0.5/`, freigegeben in Memo 45, ergänzt durch spätere Memos). Jeder Schritt wird im selben Commit `Schritt N: …` abgehakt, der ihn abschließt. Vor jedem Schritt kommt ein Fragepaket nach der Regel *Weiter*.
 
@@ -22,4 +22,16 @@ v0.4.0 ist abgeschlossen (Tag `v0.4.0`, Abnahme in den Memos 63–75 von `AA-AIb
 | 13 | **`skill-video-analyse` 0.2.0, `distribution-rothirsch` 1.0.0** | `skill-video-analyse` 0.2.0 (lokal getaggt): `depends: worker-yt-dlp ~=0.1.0`, Aufruf über `~/.aios/bin/yt-dlp`, V3 prüft den Weiterleiter, M3 ohne Installationswege, `requires.aios ">=0.5,<0.6"`; `distribution-rothirsch` 1.0.0 (neues Repo, lokal getaggt; Kernel 0.5.0, `skill-video-analyse` 0.2.0, `assistant-anja` 0.2.0); Konzeptprojekt `M-Module/MD-Rothirsch`; Live-Test `tests/live/rothirsch.sh` 0.1.0 im Sandkasten (Kernel aus Sandkasten-Klon mit v0.5.0, lokaler Hub `aibex-local` aus Klonen, Testversionen 1.0.1 und `worker-yt-dlp` 0.1.1 nur in den Klonen, echtes PyPI): 22 grün; Befund behoben: Registrieren in einer Vault-Root, die erst im selben Plan gebunden wird (`deploy.register_session(later=…)`); t21 (+1); 1122 Prüfungen grün | 01 | ☑ abgeschlossen |
 | 14 | **Doku:** README, Tutorials, Hilfe | README für v0.5 (Arbeitspferde, Distributionen, `aios --context`, `assistant-*`, neue Pakete, Befehle, Live-Tests, Stand); Tutorials 01–04 auf v0.5 (Aktivierung, Namen, Versionen, Sicherung im Plan, `.gitignore`-Zeilen, Versionswahl mit `requires.aios`); neues Tutorial `05 Arbeitspferde und Distributionen` (Rothirsch, Weiterleiter, `aios --worker`, `workers.yaml`, zweiter Rechner, Entfernen); Ausgaben mit `dev/doc-outputs.sh` 0.1.0 aus einem Sandkasten mit lokalem Hub aus den getaggten Paket-Repos (Rückfluss nicht neu erzeugt); Hilfe von `aios` (`--worker [<package> setup]`); 1122 Prüfungen grün | 04 | ☑ abgeschlossen |
 | 15 | **Version 0.5.0:** Live-Tests, Index, Tag lokal | `VERSION` und `manifest.yaml` 0.5.0; Live-Tests auf v0.5 umgestellt (`aios: 0.5.0`, `aios --context`, `assistant-*` 0.3.0) und mit haiku gelaufen: hooks 7/7, skills 9/9, assistants 13/13 (einzelne Ausreißer von haiku im ersten Lauf, im zweiten grün), workers 14/14, rothirsch 22/22; Befund: `tests/live/rothirsch.sh` ließ das echte `~/bin` im `PATH`, so dass die Vorbereitung von `aios --install` das `stup` des Users durch die Test-Attrappe ersetzte; wiederhergestellt aus dem lokalen Klon, `rothirsch.sh` und `dev/doc-outputs.sh` setzen jetzt einen eigenen `PATH`; `aios-index` lokal (`assistant-*`, `skill-video-analyse`, `worker-*`, `distribution-rothirsch`); Tag `v0.5.0` lokal; 1122 Prüfungen grün | 01, 04 | ☑ abgeschlossen |
-| 16 | **Abnahme** v0.5.0 mit „Rothirsch 1.0", danach Veröffentlichen | | 01 | ☐ |
+| 16 | **Abnahme** v0.5.0 mit „Rothirsch 1.0", danach Veröffentlichen | Abnahmetest mit 17 Schritten auf dem Arbeitsrechner bestanden (V0.5, Memos 62–68); Befunde B3 (Weiterleiter 0.3.1 für Vaults unter 0.5), B4 (`--hubs --vault` vor der Bindung), B5 (leere Ordner unter `workers/`) behoben; Tag `v0.5.0` auf `13290d1` gepusht; Begleitpakete, neue Repos und Index veröffentlicht; Tag `v0.5.0` im Konzept-Repo auf dem Abnahme-Memo | 01 | ☑ abgeschlossen |
+
+## v0.5.1
+
+Umsetzungsschritte nach dem Implementierungsplan v0.5.1 (Memo 74 in `AA-AIbex-AIOS/@Memo/V0.5/`, freigegeben in Memo 75). Jeder Schritt wird im selben Commit `v0.5.1 Schritt N: …` abgehakt; Fragepakete nur, wenn eine Entscheidung offen ist. Grundlage sind die Befunde B6–B8 und die Beobachtungen O1–O5 (Memos 71, 72) mit den Entscheidungen in Memo 73.
+
+| # | Schritt | Ergebnis | Spec | Stand |
+|---|---|---|---|---|
+| 0 | **Repo auf v0.5.1 umstellen:** `VERSION`, `manifest.yaml`, `STATUS.md`, `CLAUDE.md` | `VERSION` und `manifest.yaml` `0.5.1-dev`; Schritt 16 von v0.5 nachgetragen; `CLAUDE.md` mit Plan, Memos und Regeln von v0.5.1 (Vorabregel entfällt) | — | ☑ abgeschlossen |
+| 1 | **Arbeitskopie (B6):** `AIOS-WORKTREE:`, `.gitignore`-Vorlage mit `.claude/worktrees/`, Doku | | 02, 05 | ☐ |
+| 2 | **Distribution auf frischem Rechner (B7):** Kernel zuerst ohne PyYAML, dann Übergabe; Ziel der Arbeitspferde im Plan | | 04, 07 | ☐ |
+| 3 | **Abgleich und Kleinigkeiten:** B8, O1, O2, O3, O5 | | 02, 06, 07 | ☐ |
+| 4 | **Version 0.5.1 und Abnahme**, danach Veröffentlichen | | 01 | ☐ |
