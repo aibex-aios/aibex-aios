@@ -2,7 +2,7 @@
 
 Dieses Tutorial führt in etwa 20 Minuten durch Pakete und Hubs von AIbex AIOS. Du holst die Demo-App **Taschenrechner** mit ihrer Abhängigkeit, rechnest damit, belegst eine Funktionstaste, holst Wissenspakete aus zwei Hubs, wählst Versionen und Elemente und spielst eine Funktionstaste als Beitrag an das Paket zurück.
 
-Voraussetzung: AIOS v0.5 ist installiert, der Vault `~/tmp/§Demo` ist mit `aios --activate v0.5.0 ~/tmp/§Demo` aktiviert (Tutorial 01). Für die Suche in Hubs ohne Index und für den Rückfluss brauchst du `gh` (GitHub CLI), angemeldet mit `gh auth login`.
+Voraussetzung: AIOS v0.5 ist installiert, der Vault `~/tmp/§Demo` ist mit `aios --activate v0.5.1 ~/tmp/§Demo` aktiviert (Tutorial 01). Für die Suche in Hubs ohne Index und für den Rückfluss brauchst du `gh` (GitHub CLI), angemeldet mit `gh auth login`.
 
 ## 1. Hub und Hub-Liste
 
@@ -67,7 +67,7 @@ Der Taschenrechner hängt von `skill-memo` ab; AIOS holt die Abhängigkeit mit. 
 **Holen** heißt drei Dinge in einem Schritt: das Paket ohne `.git` nach `@/@!Package/<name>/` kopieren, seine Elemente **ausrollen** (wirksam machen) und seine Skills **registrieren**. In `.aios/config.yaml` steht, was du verlangt hast:
 
 ```yaml
-aios: 0.5.0
+aios: 0.5.1
 packages:
   assistant-gaertner: "~=0.3.0"
   app-taschenrechner: "~=0.5.0"
@@ -281,4 +281,4 @@ aios --contribute @Data/app-taschenrechner/funktionstasten.yaml --to app-taschen
 - Tutorial *04 Workspaces*: Paket-Repos und Projekte als Git-Checkouts eines Wurzelprojekts.
 - Bau dein eigenes Paket: ein Git-Repo mit `manifest.yaml` (`name`, `version`, `type`, `description`, `requires.aios`, `contents`), ein Tag `v0.1.0`, und `aios --fetch <paket> --from <repo-url>` holt es ohne Hub.
 
-Die vollständigen Regeln stehen in Spec 06 *Pakete und Workspaces*, installiert unter `/opt/aios/v0.5.0/doc/spec/`.
+Die vollständigen Regeln stehen in Spec 06 *Pakete und Workspaces*, installiert unter `/opt/aios/v0.5.1/doc/spec/`.

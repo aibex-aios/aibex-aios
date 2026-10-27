@@ -32,17 +32,17 @@ Setting up workhorses needs access to PyPI.
 Copy this line into a terminal:
 
 ```sh
-R=~/git/AIbex/aibex-aios; ([ -d "$R/.git" ] || git clone https://github.com/aibex-aios/aibex-aios "$R") && "$R/bin/aios" --install v0.5.0
+R=~/git/AIbex/aibex-aios; ([ -d "$R/.git" ] || git clone https://github.com/aibex-aios/aibex-aios "$R") && "$R/bin/aios" --install v0.5.1
 ```
 
 It clones the repository to `~/git/AIbex/aibex-aios` unless a clone is already
 there (an existing clone is left as it is), then prepares the machine and
-installs. The installed files always come from the tag `v0.5.0`, not from the
+installs. The installed files always come from the tag `v0.5.1`, not from the
 working tree of the clone; without a version, the highest release tag is
 installed.
 
 `aios --install` shows a plan and asks once before it writes anything. It
-installs the version read-only to `/opt/aios/v0.5.0/` (without `sudo`:
+installs the version read-only to `/opt/aios/v0.5.1/` (without `sudo`:
 `~/.aios/versions/`), puts the forwarder `aios` into
 `~/bin`, adds two hooks to `~/.claude/settings.json`, the AIOS skills and the
 alias `/gui` to `~/.claude/skills/`. Hooks of `ai-brain` are saved and restored by
@@ -50,7 +50,7 @@ alias `/gui` to `~/.claude/skills/`. Hooks of `ai-brain` are saved and restored 
 
 Installing does not touch any vault. A vault runs with AIOS only after it has
 been **activated**; all other vaults keep working as before (legacy mode). A
-vault of v0.4 (or v0.3) is switched over with `aios --activate v0.5.0 <vault>`:
+vault of v0.4 (or v0.3) is switched over with `aios --activate v0.5.1 <vault>`:
 the plan renames `assistent-gaertner` to `assistant-gaertner`, moves packages
 that require v0.4 to their highest version for v0.5 and, from v0.3, turns
 `skills:` and `assistants:` into packages. Since v0.5 there is no
@@ -68,7 +68,7 @@ aios --install distribution-rothirsch ~/Vaults/§Rothirsch
 
 ```sh
   mkdir ~/Vaults/§Demo
-  aios --activate v0.5.0 ~/Vaults/§Demo      # writes §Demo/.aios/config.yaml, creates §Demo/@/ and a git repo
+  aios --activate v0.5.1 ~/Vaults/§Demo      # writes §Demo/.aios/config.yaml, creates §Demo/@/ and a git repo
 ```
 
 Put knowledge into the **masterspace** `@/` of a project. The prefix of a
@@ -226,7 +226,7 @@ installed to `/opt/aios/v<version>/doc/spec/`; tutorials are installed from
 ```
 
 A clone can be used without installing: point `AIOS_HOME` to it, or add a
-line `v0.5.1-dev: ~/git/AIbex/aibex-aios` to `~/.aios/installations.yaml`.
+line `v0.5.2-dev: ~/git/AIbex/aibex-aios` to `~/.aios/installations.yaml`.
 `AIOS_HUBS` and `AIOS_GITHUB` redirect hubs for tests (spec 04).
 `CLAUDE.md` holds the rules for working on the repository, `STATUS.md` the
 state of the implementation.
@@ -234,11 +234,13 @@ state of the implementation.
 
 ## Status
 
-Version **0.5.0** (`STATUS.md`): workhorses and loading packages — programs
+Version **0.5.1** (`STATUS.md`): workhorses and loading packages — programs
 like `yt-dlp` as packages of type `worker`, set up once per version on the
 machine and chosen by `lock.yaml` through forwarders in `~/.aios/bin/`; every
 plan of `aios --fetch` is all or nothing; distributions install a kernel with
 its packages (`aios --install distribution-<name>`, `/aios-distribution`);
 `aios --context` replaces `aios-context`; the assistant packages are named `assistant-*`.
-Versions 0.1.0, 0.2.0, 0.3.1 and 0.4.0 are released (tags `v0.1.0`, `v0.2.0`,
-`v0.3.1`, `v0.4.0`). All versions below 1.0 are alpha and beta versions.
+0.5.1 recognizes worktrees of the host, installs a distribution on a fresh machine
+without PyYAML and fixes findings of the acceptance of 0.5.0.
+Versions 0.1.0, 0.2.0, 0.3.1, 0.4.0 and 0.5.0 are released (tags `v0.1.0`, `v0.2.0`,
+`v0.3.1`, `v0.4.0`, `v0.5.0`). All versions below 1.0 are alpha and beta versions.

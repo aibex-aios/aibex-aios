@@ -2,7 +2,7 @@
 
 Dieses Tutorial führt in etwa 20 Minuten durch einen kleinen Vault mit zwei Projekten und den beiden Demo-Assistenten von AIbex AIOS: dem **Gärtner**, der nur mit Äpfeln und Birnen rechnet, und dem **Astronomen**, der nur mit Sonne und Mond rechnet. Am Ende weißt du, wie ein Chat sein Wissen bekommt, wie Assistenten als Pakete geholt und einem Projekt zugeordnet werden, warum ein Assistent nur in seinem Teil des Vaults sichtbar ist und wie du seine Oberfläche öffnest.
 
-Voraussetzung: AIOS v0.5 ist installiert (`aios --install v0.5.0`, siehe README) und Claude Code läuft als Desktop-App oder CLI.
+Voraussetzung: AIOS v0.5 ist installiert (`aios --install v0.5.1`, siehe README) und Claude Code läuft als Desktop-App oder CLI.
 
 Starte jeden Chat direkt im Ordner des Projekts. Legt die Desktop-App für den Chat eine Arbeitskopie an (`.claude/worktrees/<name>/` auf einem eigenen Branch), landen die Ergebnisse auf diesem Branch und erscheinen erst nach dem Übernehmen (Merge) im Ordner. AIOS erkennt das beim Start: Claude sagt es dir vor der ersten Arbeit und bietet danach das Übernehmen an.
 
@@ -12,10 +12,10 @@ Ein Vault ist ein Verzeichnis, dessen Name mit `§` beginnt. Lege ihn an und bin
 
 ```bash
 mkdir -p ~/tmp/§Demo
-aios --activate v0.5.0 ~/tmp/§Demo
+aios --activate v0.5.1 ~/tmp/§Demo
 ```
 
-`aios --activate` zeigt einen Plan und fragt nach. Danach gibt es `§Demo/.aios/config.yaml` mit `aios: 0.5.0`, den **Root-Masterspace** `§Demo/@/` und ein Git-Repo mit einem ersten Commit: Die Vault-Root ist das Root-Projekt.
+`aios --activate` zeigt einen Plan und fragt nach. Danach gibt es `§Demo/.aios/config.yaml` mit `aios: 0.5.1`, den **Root-Masterspace** `§Demo/@/` und ein Git-Repo mit einem ersten Commit: Die Vault-Root ist das Root-Projekt.
 
 Lege eine Regel an, die jeder Chat im Vault laden soll:
 
@@ -60,7 +60,7 @@ aibex-aios/assistant-astronom  assistant     Demo-Assistent Astronom, rechnet nu
 aibex-aios/assistant-gaertner  assistant     Demo-Assistent Gärtner, rechnet nur mit Äpfeln und Birnen, mit Oberfläche
 ```
 
-Der Name eines Pakets nennt seine Art: `assistant-…`, `skill-…`, `knowledge-…`, `app-…`, `worker-…`, `distribution-…`. Bis v0.4 hießen die Assistenten `assistent-…`; `aios --activate v0.5.0` stellt einen älteren Vault um. Ein Paket wird nicht automatisch verwendet; du **holst** es in ein Projekt. Mehr über Pakete und Hubs zeigt Tutorial *03 Pakete und Taschenrechner*.
+Der Name eines Pakets nennt seine Art: `assistant-…`, `skill-…`, `knowledge-…`, `app-…`, `worker-…`, `distribution-…`. Bis v0.4 hießen die Assistenten `assistent-…`; `aios --activate v0.5.1` stellt einen älteren Vault um. Ein Paket wird nicht automatisch verwendet; du **holst** es in ein Projekt. Mehr über Pakete und Hubs zeigt Tutorial *03 Pakete und Taschenrechner*.
 
 ## 4. Den Gärtner holen
 
@@ -101,7 +101,7 @@ Ohne `--plan` fragt `aios` einmal nach und meldet dann:
 Danach liegt das Paket in `§Demo/@/@!Package/assistant-gaertner/`, und `§Demo/.aios/config.yaml` enthält:
 
 ```yaml
-aios: 0.5.0
+aios: 0.5.1
 packages:
   assistant-gaertner: "~=0.3.0"
 ```
@@ -169,7 +169,7 @@ Willst du einen Assistenten nur ausprobieren, ohne die Zuordnung eines Projekts 
 
 | Begriff | im Tutorial |
 |---|---|
-| Vault, Aktivierung | `§Demo`, `aios --activate v0.5.0` |
+| Vault, Aktivierung | `§Demo`, `aios --activate v0.5.1` |
 | Projekt, Kette, Name | `G-Garten`, `S-Sternwarte`; ein Chat sieht von der Vault-Root bis zu seinem Projekt |
 | Klassen | `@Rule` geladen, `@@Sortenkunde` verfügbar, `@!Assistant` verborgen |
 | Paket, Hub, Holen | `aios --library assistant`, `/aios-fetch assistant-gaertner`, `packages:` und `lock.yaml` |
@@ -186,4 +186,4 @@ Willst du einen Assistenten nur ausprobieren, ohne die Zuordnung eines Projekts 
 - Tutorial *05 Arbeitspferde und Distributionen*: Programme wie `yt-dlp` als Arbeitspferde und die Distribution Rothirsch.
 - Zum Aufräumen: `aios --deactivate ~/tmp/§Demo` schaltet AIOS für den Vault wieder aus; die Dateien bleiben.
 
-Die vollständigen Regeln stehen in der Spec, installiert unter `/opt/aios/v0.5.0/doc/spec/`.
+Die vollständigen Regeln stehen in der Spec, installiert unter `/opt/aios/v0.5.1/doc/spec/`.
