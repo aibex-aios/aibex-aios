@@ -91,7 +91,8 @@ worktree instead (Claude Code desktop app: `.claude/worktrees/<name>/` on a
 branch of its own), results land on that branch and do not appear in the
 folder, e.g. in Obsidian, until the branch is merged. AIOS recognizes this at
 the start of the chat: Claude says so before the first work and offers the
-merge afterwards.
+merge afterwards. This works only for worktrees inside the vault, as the desktop app
+creates them by default; a worktree outside the vault is not recognized.
 
 In a chat:
 

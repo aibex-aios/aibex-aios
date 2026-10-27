@@ -63,6 +63,15 @@
    A "$D" --deploy app-taschenrechner --all --yes >/dev/null
    assert_contains "$(cat "$D/.aios/config.yaml")" 'app-taschenrechner: "~=0.5.0"' "--all: back to the range"
    A "$D" --deploy test-assistent --only test-assistent --yes >/dev/null
+   OUT="$(at "$G" "$SRC/bin/aios" --context --list)"                    # v0.5.1, O2
+   assert_contains "$OUT" "(§Demo, package test-assistent)" "O2: assistant of a package under Hidden"
+   assert_contains "$OUT" "1 assistant," "O2: counted under Hidden"
+   mk "$G/.aios/config.yaml" $'assistant: test-assistent\n'                 # v0.5.1, O5
+   OUT="$(A "$D" --fetch --remove test-assistent --plan)"
+   assert_contains "$OUT" "note: assistant: test-assistent in $G/.aios/config.yaml then points nowhere; assign another one with /aios-assistant" "O5: --remove names the assignment that points nowhere"
+   mk "$G/@/@!Assistant/test-assistent/ASSISTANT.md" $'---\nname: test-assistent\nversion: 0.1.0\ndescription: lokal\n---\n\nLokal.\n'
+   assert_not_contains "$(A "$D" --fetch --remove test-assistent --plan)" "points nowhere" "O5: not when a local blueprint stays"
+   rm -rf "$G/@/@!Assistant" "$G/.aios/config.yaml"
    sed -i.bak 's/knowledge-orion: "~=0.1.1"/knowledge-orion: {range: "~=0.1.1", only: [nichts]}/' "$D/.aios/config.yaml"; rm "$D/.aios/config.yaml.bak"
    OUT="$(at "$G" "$SRC/bin/aios" --context)"
    [ "$(printf '%s' "$OUT" | grep -c 'Sterne.md')" == "0" ] && ok || fail "H3: knowledge not deployed, not in the context"

@@ -229,10 +229,11 @@ class Fetch:
         needed = {d for p in picks.values() for d in p.manifest.depends} | set(packages)
         return picks if needed == set(picks) else None
 
-    def plan(self, picks, packages, title, done, machine=None, first=None):
+    def plan(self, picks, packages, title, done, machine=None, first=None, notes=()):
         """Show the plan for the new state and execute it after one confirmation. machine: steps
         that run before the backup (aios --install distribution-*: kernel; the setups of the
-        workhorses then go there too); first: steps after the backup, before fetching (binding)."""
+        workhorses then go there too); first: steps after the backup, before fetching (binding);
+        notes: lines without action at the end of the plan."""
         check(picks, self.source)
         plan = Plan()
         if first:
@@ -298,13 +299,15 @@ class Fetch:
                      lambda: write_lock(self.project, lock))
         if machine is not None and not any(a for _, a in machine.steps):
             machine = None                          # kernel and workhorses are on the machine
-        if not plan and not machine:
+        users = Plan()                              # a missing entry in workers.yaml alone is a plan (B8)
+        self.worker_users(users, picks)
+        if not plan and not machine and not users:
             say(f"=> the packages of {self.project} match lock.yaml, nothing to do")
             for line in lines:
                 say(f"   {line}")
             return 0
         deploy.register_session(plan, later=bool(first) and Path(paths.cwd()).resolve() == self.project.resolve())
-        self.worker_users(plan, picks)
+        plan.steps += users.steps + list(notes)
         session = Path(paths.cwd())
         bk = backup.Backup(self.project)
         copied = [config_file(self.project), lock_file(self.project),
@@ -479,6 +482,31 @@ def upgrade(name=None, to=None):
     return f.plan(picks, f.packages, f"=> upgrade {name or 'the packages'} of {f.project}", hints(f.project))
 
 
+def orphaned_assignments(project, name):
+    """[(config.yaml, assistant)] of the projects at or below project whose assistant: names an
+    assistant that only the package name brings into their chain (V0.5, memo 71: O5)."""
+    from . import context, elements
+    d = package_dir(project, name) / "assistants"
+    names = {a.name for a in d.iterdir() if (a / "ASSISTANT.md").is_file()} if d.is_dir() else set()
+    out = []
+    for root, dirs, _ in os.walk(project) if names else []:
+        dirs[:] = sorted(x for x in dirs if not x.startswith((".", "@")))
+        f = Path(root) / ".aios" / "config.yaml"
+        try:
+            value = str(config.read(f).get("assistant") or "") if f.is_file() else ""
+        except (config.ConfigError, UnicodeDecodeError):
+            continue
+        if value not in names:
+            continue
+        other = any((ms / "@!Assistant" / value / "ASSISTANT.md").is_file()
+                    or any(pkg.name != name and (pkg.dir / "assistants" / value / "ASSISTANT.md").is_file()
+                           and pkg.deployed(value) for pkg in elements.packages(ms))
+                    for ms in context.chain(root))
+        if not other:
+            out.append((f, value))
+    return out
+
+
 def remove(name, to=None):
     f = Fetch(to)
     if name not in f.packages:
@@ -487,8 +515,10 @@ def remove(name, to=None):
     picks = f.resolve(packages)
     if name in picks:
         raise Abort(f"{name} is still required by " + ", ".join(picks[name].required_by))
+    notes = [(f"note: assistant: {a} in {file} then points nowhere; assign another one with "
+              f"/aios-assistant", None) for file, a in orphaned_assignments(f.project, name)]
     return f.plan(picks, packages, f"=> remove {name} from {f.project}",
-                  lambda picks: [f"=> {name} removed; @Data/ stays untouched"])
+                  lambda picks: [f"=> {name} removed; @Data/ stays untouched"], notes=notes)
 
 
 def offer_restore(to=None):

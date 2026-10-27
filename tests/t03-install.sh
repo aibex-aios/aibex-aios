@@ -267,3 +267,11 @@ EOF2
    assert_contains "$(cat "$AIOS_CLAUDE_DIR/skills/gui/SKILL.md")" "Bash(aios --context *)" "v0.5: alias with aios --context"
    OUT="$(echo y | "$S/bin/aios" --uninstall 2>&1)"
    case "$(cat "$SET")" in *aios-context*|*"aios --context"*) fail "uninstall: AIOS hooks of both forms removed" ;; *) ok ;; esac
+
+#===============================================================================
+# v0.5.1 step 3 (O1): pip of the kernel and of the workhorses without the version notice
+#===============================================================================
+
+   for F in install.py worker.py; do
+      grep -q -- '"--disable-pip-version-check"' "$SRC/lib/aios/$F" && ok || fail "O1: pip in $F with --disable-pip-version-check"
+   done

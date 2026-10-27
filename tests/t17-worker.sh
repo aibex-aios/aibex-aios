@@ -122,6 +122,16 @@
    X="$D/X-Weg"; mkdir -p "$X/@"
    A "$X" --fetch 'worker-test~=0.1.0' --yes >/dev/null
    assert_contains "$(cat "$HOME/.aios/workers.yaml")" "projects: [\"$D\", \"$X\"]" "third project noted"
+   chmod u+w "$HOME/.aios/workers.yaml"; sed -i.bak "s|, \"$X\"||" "$HOME/.aios/workers.yaml"   # v0.5.1, B8
+   OUT="$(A "$X" --fetch --plan)"
+   assert_contains "$OUT" "$HOME/.aios/workers.yaml: $X uses worker-test 0.1.1" "B8: missing entry in workers.yaml alone gives a plan"
+   assert_not_contains "$OUT" "nothing to do" "B8: not nothing to do"
+   A "$X" --fetch --yes >/dev/null
+   assert_contains "$(cat "$HOME/.aios/workers.yaml")" "projects: [\"$D\", \"$X\"]" "B8: project noted again"
+   assert_contains "$(A "$X" --fetch --plan)" "nothing to do" "B8: then nothing to do"
+   OUT="$(A "$X" --context --list)"                                     # v0.5.1, O3
+   assert_contains "$OUT" "worker-test 0.1.1 (aibex-aios, X-Weg) — no elements" "O3: package without elements"
+   assert_not_contains "$OUT" "no elements deployed" "O3: not 'no elements deployed'"
    rm -rf "$X"
    OUT="$(echo y | A "$D" --fetch --remove worker-test)"
    assert_contains "$OUT" "remove     worker-test 0.1.1 -> $J (no project uses it)" "orphaned project does not count"

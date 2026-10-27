@@ -108,6 +108,7 @@ def listing(ctx):
                + (" (not loaded, table of contents in the master context)" if ctx.available else ""))
     out += [f"  {rel(p)}" for p in ctx.available]
 
+    from . import elements
     chain, problems = registry.blueprints(ctx)
     sync = registry.Sync(ctx) if ctx.initialized else None
     pending = {n for n, *_ in (sync.new + sync.changed)} if sync else set()
@@ -123,6 +124,10 @@ def listing(ctx):
             for s in sorted((a.parent / "@!Skill").glob("*/SKILL.md")):
                 skills.append(f"{s.parent.name} {registry.version_of(frontmatter(s))}".rstrip()
                               + f" (assistant {a.parent.name}, private)")
+        for pkg in elements.packages(ms):           # assistants of packages count too (O2)
+            for d in pkg.dirs("assistants"):
+                assistants.append(f"{d.name} {registry.version_of(frontmatter(d / 'ASSISTANT.md'))}".rstrip()
+                                  + f" ({ms.parent.name}, package {pkg.name})")
         prompts += [f"{p.stem} ({ms.parent.name})" for p in sorted((ms / "@!Prompt").glob("*.md"))]
     out.append(f"{'Hidden':27}Blueprints: {plural(len(skills), 'skill', 'skills')}, "
                f"{plural(len(assistants), 'assistant', 'assistants')}, {plural(len(prompts), 'prompt', 'prompts')}")
@@ -154,7 +159,7 @@ def package_lines(ctx):
         for kind, name in on:
             kinds.setdefault(kind, []).append(name)
         what = "; ".join(("knowledge" if k == "knowledge" else f"{k} " + ", ".join(n))
-                         for k, n in kinds.items()) or "no elements deployed"
+                         for k, n in kinds.items()) or ("no elements deployed" if off else "no elements")  # O3
         out.append(f"  {p.name} {p.version} ({p.hub}, {p.masterspace.parent.name}) — {what}")
         out += [f"      {c}" for c in covered.get(f"package {p.name} ({p.masterspace.parent.name})", [])]
         if off:

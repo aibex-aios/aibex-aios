@@ -421,7 +421,8 @@ def build(stage, tag, root, entries):
             if pip:
                 run(f"{pip} {shlex.quote(str(req))}", shell=True)
             else:
-                run([str(inst / "python" / "bin" / "python"), "-m", "pip", "install", "-q", "-r", str(req)])
+                run([str(inst / "python" / "bin" / "python"), "-m", "pip", "install", "-q",
+                     "--disable-pip-version-check", "-r", str(req)])      # no [notice] lines (O1)
         run([str(inst / "python" / "bin" / "python"), "-m", "compileall", "-q", str(inst / "lib")],
             stdout=subprocess.DEVNULL)
         os.rename(inst, final)
