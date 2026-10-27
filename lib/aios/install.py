@@ -264,17 +264,17 @@ def plan_prepare(plan):
 
 
 KIT_HINTS = {                                       # spec 04, aios --prepare: the way to it, as text
-    "darwin": {"python3": "xcode-select --install (or python.org)", "git": "xcode-select --install",
+    "darwin": {"python3": "brew install python (or python.org)", "git": "xcode-select --install",
                "gh": "brew install gh or cli.github.com"},
     "linux": {"python3": "sudo apt install python3 python3-venv python3-pip (dnf: python3 python3-pip)",
               "git": "sudo apt install git (dnf: git)", "gh": "cli.github.com"},
 }
-KIT_NAMES = {"python3": "python3 >= 3.9 with venv and pip", "git": "git", "gh": "gh (developer kit)"}
+KIT_NAMES = {"python3": "python3 >= 3.11 with venv and pip", "git": "git", "gh": "gh (developer kit)"}
 
 
 def basic_kit(dev=False):
-    """Missing parts of the basic kit (python3 >= 3.9 with venv and pip, git) and, with dev, of
-    the developer kit (gh); spec 04, aios --prepare; V0.5, memo 31. AIOS_PREPARE_PATH replaces
+    """Missing parts of the basic kit (python3 >= 3.11 with venv and pip, git) and, with dev, of
+    the developer kit (gh); spec 04, aios --prepare; V0.5, memos 31, 91 (B11: workhorses need 3.11). AIOS_PREPARE_PATH replaces
     PATH for this check (tests)."""
     path = os.environ.get("AIOS_PREPARE_PATH")
     missing = []
@@ -283,7 +283,7 @@ def basic_kit(dev=False):
     if py:
         r = subprocess.run([py, "-c", "import sys, venv, ensurepip; print('%d %d' % sys.version_info[:2])"],
                            capture_output=True, text=True)
-        good = r.returncode == 0 and tuple(int(x) for x in r.stdout.split()) >= (3, 9)
+        good = r.returncode == 0 and tuple(int(x) for x in r.stdout.split()) >= (3, 11)
     if not good:
         missing.append("python3")
     if not shutil.which("git", path=path):

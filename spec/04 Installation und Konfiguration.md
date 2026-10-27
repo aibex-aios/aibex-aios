@@ -402,7 +402,7 @@ Alle schreibenden Befehle zeigen zuerst einen Plan und fragen `[Y/n]` (I7). Für
 | `~/bin`, `~/etc`, `~/tmp`, `~/git` | anlegen |
 | stup vorhanden und aktuell | installieren nach `~/bin/stup` bzw. aktualisieren (von `bluccino/tool-stup`, Vergleich mit `stup --version`); ist die Quelle nicht erreichbar, nur eine Warnung, sofern stup vorhanden ist |
 | `~/bin/profile.sh` | mit `stup --profile` anlegen, nur wenn sie fehlt; nie überschreiben |
-| **Grundausstattung:** `python3` ≥ 3.9 mit den Modulen `venv` und `pip`, `git` | Meldung mit dem Weg dazu (z. B. Paketverwaltung des Systems); AIOS installiert nichts davon ohne Rückfrage. Ohne Grundausstattung gibt es kein setup von Arbeitspferden; Pakete ohne Arbeitspferde lassen sich weiter holen (V0.5, Memo 31) |
+| **Grundausstattung:** `python3` ≥ 3.11 mit den Modulen `venv` und `pip`, `git` | Meldung mit dem Weg dazu (z. B. Paketverwaltung des Systems, auf macOS `brew install python`); AIOS installiert nichts davon ohne Rückfrage. Ohne Grundausstattung installiert `aios --install` nichts (Version und Distribution), und es gibt kein setup von Arbeitspferden; Pakete ohne Arbeitspferde lassen sich weiter holen (V0.5, Memo 31). 3.11, weil Arbeitspferde wie `yt-dlp` und `deno` es verlangen; das `python3` von macOS (3.9) genügt nicht (V0.5, Memos 90, 91: B11) |
 | **Entwicklerausstattung** (nur `--dev`): zusätzlich `gh` | Meldung mit dem Weg dazu; gebraucht für Veröffentlichen und `aios --contribute` |
 
 Ist alles vorhanden: „Rechner vorbereitet", keine Rückfrage. `deno` ist keine Voraussetzung, sondern das Arbeitspferd `worker-deno` (Spec 07).
@@ -434,7 +434,7 @@ Erkennt AIOS am Argument ein Paket `distribution-<name>` statt einer Version, in
 
 Ist die Distribution schon installiert, aktualisiert derselbe Befehl auf die höchste Version im Bereich.
 
-**Frischer Rechner ohne PyYAML** (V0.5, Memos 71, 73: B7): Läuft `aios` aus einem Klon und fehlt im `python3` des Systems PyYAML (z. B. das `python3` von macOS), kann AIOS die Manifeste nicht lesen, bevor ein Kernel installiert ist. Derselbe Befehl zeigt dann **zwei Pläne** nacheinander:
+**Frischer Rechner ohne PyYAML** (V0.5, Memos 71, 73: B7): Läuft `aios` aus einem Klon und fehlt im `python3` des Systems PyYAML (das ist die Regel, z. B. bei Homebrew oder einer Linux-Distribution), kann AIOS die Manifeste nicht lesen, bevor ein Kernel installiert ist. Derselbe Befehl zeigt dann **zwei Pläne** nacheinander:
 
 1. **Plan des Kernels**, nur mit der Standardbibliothek: Version aus der Zeile `kernel: "==X.Y.Z"` der gewählten Version der Distribution (Auflösung über die Tags der Hubs bzw. `--from`), ohne `kernel:` die Bindung der Vault-Root, sonst der höchste Release-Tag des Klons. Der Plan entspricht `aios --install v<version>` und nennt als letzte Zeile `then: aios --install … with AIOS v<version> (plan of the distribution)`. Ein Ja.
 2. Danach übergibt AIOS mit `exec` an `bin/aios` der neuen Installation, mit denselben Argumenten (auch `--plan` bzw. `--yes`); diese zeigt den Plan der Distribution wie oben. Ein zweites Ja.

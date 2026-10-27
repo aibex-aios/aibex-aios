@@ -2,7 +2,7 @@
 
 Dieses Tutorial führt in etwa 20 Minuten durch **Arbeitspferde** und **Distributionen** von AIbex AIOS. Du installierst die Distribution **Rothirsch** mit der Video-Analyse und der Assistentin Anja, siehst, wie AIOS das Programm `yt-dlp` einrichtet, ohne dass du etwas installierst, und wie ein zweiter Rechner, ein Update und das Entfernen damit umgehen.
 
-Voraussetzung: AIOS v0.5 ist installiert (`aios --install v0.5.0`, siehe README) mit der Grundausstattung aus `aios --prepare` (`python3` ab 3.9 mit `venv` und `pip`, `git`). Für das Einrichten der Arbeitspferde braucht der Rechner Zugang zu PyPI.
+Voraussetzung: AIOS v0.5 ist installiert (`aios --install v0.5.1`, siehe README) mit der Grundausstattung aus `aios --prepare` (`python3` ab 3.11 mit `venv` und `pip`, `git`; auf macOS z. B. `brew install python`). Für das Einrichten der Arbeitspferde braucht der Rechner Zugang zu PyPI.
 
 ## 1. Was ein Arbeitspferd ist
 

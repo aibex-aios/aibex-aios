@@ -20,8 +20,9 @@ come as **workhorses**: AIOS sets them up once per version on the machine. A
 
 ## Requirements
 
-macOS or Linux with `bash`, `git`, `python3` (3.9 or newer, with the modules
-`venv` and `pip`) and [Claude Code](https://claude.com/claude-code) as the host
+macOS or Linux with `bash`, `git`, `python3` (3.11 or newer, with the modules
+`venv` and `pip`; on macOS e.g. `brew install python`, the `python3` of the system
+is too old) and [Claude Code](https://claude.com/claude-code) as the host
 (`aios --prepare` checks this basic kit). `gh` (GitHub CLI) is needed only to
 search hubs without an index and for `aios --contribute` (`aios --prepare --dev`).
 Setting up workhorses needs access to PyPI.

@@ -4,8 +4,13 @@
 # setup: PATH without the real ~/bin, fake stup, no real sudo, no pip, no network
 #===============================================================================
 
+   PYDIR=""                                      # basic kit: python3 >= 3.11 (V0.5, memo 91: B11)
+   for P in $(type -ap python3) /opt/homebrew/bin/python3 /usr/local/bin/python3 /usr/bin/python3; do
+      [ -x "$P" ] && "$P" -c "import sys, venv, ensurepip; sys.exit(sys.version_info < (3, 11))" 2>/dev/null && { PYDIR="$(dirname "$P")"; break; }
+   done
+   [ -n "$PYDIR" ] && ok || fail "t03 needs a python3 >= 3.11 with venv and ensurepip"
    mkdir -p "$SANDBOX/fake" "$SANDBOX/stup-src" "$HOME/bin" "$HOME/etc/aios"
-   export PATH="$HOME/bin:$SANDBOX/fake:/usr/bin:/bin:/usr/sbin:/sbin"
+   export PATH="$HOME/bin:$SANDBOX/fake:$PYDIR:/usr/bin:/bin:/usr/sbin:/sbin"
    export AIOS_SUDO="$SANDBOX/fake/no-sudo"         # does not exist: no sudo
    export AIOS_PIP=true                             # requirements are not installed
    export AIOS_STUP_URL="file://$SANDBOX/stup-src/stup"
@@ -76,7 +81,7 @@ EOF
    printf '#!/bin/bash\nexit 1\n' > "$SANDBOX/kit-none/python3"; chmod +x "$SANDBOX/kit-none/python3"
    OUT="$(AIOS_PREPARE_PATH="$SANDBOX/kit-none" "$S/bin/aios" --prepare </dev/null 2>&1)"; RC=$?
    assert_eq "$RC" "1" "kit missing: exit 1"
-   assert_contains "$OUT" "missing: python3 >= 3.9 with venv and pip" "kit: python3 without venv/pip reported"
+   assert_contains "$OUT" "missing: python3 >= 3.11 with venv and pip" "kit: python3 without venv/pip reported"
    assert_contains "$OUT" "missing: git — " "kit: git reported with the way to it"
    assert_contains "$OUT" "machine not prepared" "kit: not prepared"
    assert_eq "$(AIOS_PREPARE_PATH="$SANDBOX/kit-ok" "$S/bin/aios" --prepare </dev/null 2>&1)" "=> machine prepared, nothing to do" "kit complete: nothing to do"
@@ -86,6 +91,10 @@ EOF
    assert_eq "$RC" "1" "install without the basic kit: exit 1"
    assert_contains "$OUT" "the basic kit is missing" "install without the basic kit: aborted"
    [ ! -e "$P/v0.2.0" ] && ok || fail "install without the basic kit: nothing installed"
+   mkdir -p "$SANDBOX/kit-old"; ln -s "$(command -v git)" "$SANDBOX/kit-old/git"        # v0.5.1, B11
+   printf '#!/bin/bash\necho "3 10"\n' > "$SANDBOX/kit-old/python3"; chmod +x "$SANDBOX/kit-old/python3"
+   OUT="$(AIOS_PREPARE_PATH="$SANDBOX/kit-old" "$S/bin/aios" --prepare </dev/null 2>&1)"; RC=$?
+   assert_eq "$RC:$(grep -c 'missing: python3 >= 3.11 with venv and pip' <<< "$OUT")" "1:1" "B11: python3 3.10 is too old"
 
 #===============================================================================
 # --install: errors, cancel, highest release tag
