@@ -27,7 +27,7 @@ Memos und ToDos im Projekt `~/vault/§AIOS/A-AIOS/AA-AIbex-AIOS/` (Regeln `@/@Ru
 | `@Memo/V0.3/` | v0.3 (abgeschlossen, Tag `v0.3.1`); in Memos 01–11 heißt der Assistent noch *Agent* (Memo 13) |
 | `@Memo/V0.2/` | v0.2 (abgeschlossen, Tag `v0.2.0`) |
 | `@Memo/V0.1/`, `@Spec/V0.1/` | Grundlage aus v0.1 (abgeschlossen, Tag `v0.1.0`) |
-| `@Memo/V0.6/`, `@Memo/V0.7/`, `@Memo/V0.99/` | Ideen für spätere Versionen (Workflows, Wissen) bzw. ohne Version, nicht Teil der laufenden Arbeit |
+| `@Memo/V0.7/`, `@Memo/V0.8/`, `@Memo/V0.99/` | Ideen für spätere Versionen (Workflows v0.7, Wissen v0.8) bzw. ohne Version, nicht Teil der laufenden Arbeit; bis 2026-10-27 lagen sie in `V0.6/` und `V0.7/` (`@Memo/07`) |
 
 ## Stand ermitteln
 
