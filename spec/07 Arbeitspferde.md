@@ -88,7 +88,7 @@ Jede Version eines Arbeitspferds wird **einmal je Rechner** installiert. Version
 |---|---|
 | `/opt/aios/workers/<paket>/v<version>/` | Installation einer Version; nach setup schreibgeschützt |
 | `/opt/aios/workers.yaml` | Verzeichnis der Installationen (Format Spec 04) |
-| `~/.aios/workers/<paket>/v<version>/`, `~/.aios/workers.yaml` | Ersatzorte, wenn `/opt/aios` nicht eingerichtet werden kann (wie `~/.aios/versions/`, Spec 04) |
+| `~/.aios/workers/<paket>/v<version>/`, `~/.aios/workers.yaml` | Ersatzorte, wenn `/opt/aios` nicht eingerichtet werden kann (wie `~/.aios/versions/`, Spec 04). Legt der Plan einer Distribution `/opt/aios` erst an, gilt schon im Plan `/opt/aios` (V0.5, Memo 71, B7) |
 | `~/.aios/bin/<programm>` | Weiterleiter |
 
 Der Ordner heißt nach dem Paket, nicht nach dem Programm (V0.5, Memo 18, F1).

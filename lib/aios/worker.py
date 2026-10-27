@@ -27,8 +27,14 @@ FORWARDER_MARK = "# worker-forwarder: ~/.aios/bin/<program>"
 # where: root, workers.yaml, installation of a version
 # ---------------------------------------------------------------------------
 
+PLANNED = None                                      # AIOS_PREFIX a plan creates before its workhorses
+
+
 def root():
-    """AIOS_PREFIX (/opt/aios) if it is a writable folder, else ~/.aios (spec 07, Installation)."""
+    """AIOS_PREFIX (/opt/aios) if it is a writable folder, else ~/.aios (spec 07, Installation);
+    PLANNED if the plan of a distribution creates AIOS_PREFIX first (V0.5, memo 71: B7)."""
+    if PLANNED is not None:
+        return PLANNED
     prefix = paths.prefix()
     if prefix.is_dir() and os.access(prefix, os.W_OK):
         return prefix

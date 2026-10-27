@@ -434,6 +434,15 @@ Erkennt AIOS am Argument ein Paket `distribution-<name>` statt einer Version, in
 
 Ist die Distribution schon installiert, aktualisiert derselbe Befehl auf die höchste Version im Bereich.
 
+**Frischer Rechner ohne PyYAML** (V0.5, Memos 71, 73: B7): Läuft `aios` aus einem Klon und fehlt im `python3` des Systems PyYAML (z. B. das `python3` von macOS), kann AIOS die Manifeste nicht lesen, bevor ein Kernel installiert ist. Derselbe Befehl zeigt dann **zwei Pläne** nacheinander:
+
+1. **Plan des Kernels**, nur mit der Standardbibliothek: Version aus der Zeile `kernel: "==X.Y.Z"` der gewählten Version der Distribution (Auflösung über die Tags der Hubs bzw. `--from`), ohne `kernel:` die Bindung der Vault-Root, sonst der höchste Release-Tag des Klons. Der Plan entspricht `aios --install v<version>` und nennt als letzte Zeile `then: aios --install … with AIOS v<version> (plan of the distribution)`. Ein Ja.
+2. Danach übergibt AIOS mit `exec` an `bin/aios` der neuen Installation, mit denselben Argumenten (auch `--plan` bzw. `--yes`); diese zeigt den Plan der Distribution wie oben. Ein zweites Ja.
+
+Ist der Kernel schon installiert, entfällt der erste Plan. Mit `--plan` zeigt der Befehl nur den Plan des Kernels; mit `--yes` laufen beide ohne Rückfrage. Läuft `aios` nicht aus einem Klon und fehlt PyYAML, bricht es mit Hinweis auf `aios --install` ab.
+
+Entsteht `/opt/aios` erst im Plan (Rechnerteil), nennt der Plan als Ziel der Arbeitspferde schon `/opt/aios/workers/…`, nicht den Ersatzort (Spec 07).
+
 ### `aios --activate v<version> [<pfad>]`
 
 | Schritt | Regel |
