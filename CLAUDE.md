@@ -58,6 +58,9 @@ Das Memo wird im Versionsordner der laufenden Version angelegt (`AA-AIbex-AIOS/@
 - **Paket-Repos und Hubs:** Paket-Repos entstehen lokal unter `~/git/AIbex/<paket>/` und werden lokal getaggt; in die Hubs gepusht wird erst in der Abnahme (V0.5, Memos 30, 45). v0.5.1 bringt keine neuen Paketversionen, außer ein Befund verlangt es (Memo 75, U3). Tests holen Pakete nur aus Test-Hubs unter `file://` (`AIOS_HUBS`, `tests/hub/`) und Wheels nur aus `AIOS_PIP_FIND_LINKS`; kein Test erreicht das Netz außer `tests/live/`.
 - **Push:** nach jedem Schritt nur mit Rückfrage (V0.5, Memo 45, Q5). Ein gepushter Tag wird nie bewegt; v0.5.1 entsteht über `v0.5.0` (Memo 75, U2).
 - **Fragepakete nach der Regel *Weiter*** (`AA-AIbex-AIOS/@/@Rule/Weiter.md`): vor jedem Schritt des Plans ein kurzes Fragepaket; in v0.5.1 nur, wenn eine Entscheidung offen ist (Memo 74).
+- **Kleinste Umgebung:** Eine Abnahme, die installiert oder Arbeitspferde einrichtet, enthält einen Lauf im Sandkasten mit frischem `HOME` und `AIOS_PREFIX`, einem `python3` an der Untergrenze der Grundausstattung und ohne PyYAML, gegen den echten Hub und PyPI (V0.5, Memos 90, 96–97: V1).
+- **Tag nach der Abnahme:** Den lokalen Versions-Tag erst nach bestandener Abnahme setzen; bis dahin trägt `VERSION` die Version ohne Tag (V0.5, Memos 96–97: V3).
+- **Spec zitieren:** Beruft sich eine Entscheidung oder ein Memo auf die Spec, mit Dokument, Abschnitt und Wortlaut; vorher nachlesen (V0.5, Memos 96–97: V4).
 
 ## Bash-Konvention
 
