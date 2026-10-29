@@ -107,7 +107,7 @@ EOF
 
    OUT="$(echo n | "$S/bin/aios" --install 2>&1)"
    assert_contains "$OUT" "install v0.2.0 from $S" "highest release tag, rc ignored"
-   assert_contains "$OUT" "replaces the prototype" "plan: prototype"
+   assert_contains "$OUT" "legacy: ~/bin/aios stays untouched" "plan: the prototype in ~/bin stays (legacy, V0.6)"
    assert_contains "$OUT" "remove the ai-brain hooks" "plan: hooks"
    [ ! -e "$U/v0.2.0" ] && cmp -s "$SET" "$SANDBOX/settings.orig" && ok || fail "install cancelled: nothing written"
 
@@ -139,50 +139,49 @@ EOF
 # --install: user setup
 #===============================================================================
 
-   assert_contains "$(cat "$HOME/bin/aios")" "# forwarder: ~/.aios/bin/aios" "prototype replaced by the forwarder"
+   F="$HOME/.aios/bin/aios"                         # forwarder of v0.6 (spec 04, Weiterleiter)
+   assert_contains "$(cat "$F")" "# forwarder: ~/.aios/bin/aios" "forwarder in ~/.aios/bin"
+   assert_contains "$(cat "$HOME/bin/aios")" "# aios: prototype" "~/bin/aios untouched (legacy)"
    [ ! -e "$HOME/bin/aios-context" ] && ok || fail "no forwarder ~/bin/aios-context"
-   [ ! -e "$HOME/etc/aios" ] && ok || fail "~/etc/aios of the prototype removed"
+   [ -e "$HOME/etc/aios" ] && ok || fail "~/etc/aios untouched (nothing outside ~/.aios)"
    assert_eq "$(cat "$HOME/.aios/config.yaml")" "hosts: [claude-code]" "~/.aios/config.yaml"
    assert_eq "$(cat "$HOME/.aios/repo")" "$S" "~/.aios/repo"
    J() { python3 -c "import json,sys; d=json.load(open(sys.argv[1])); print($1)" "$2"; }
    CMDS='" ".join(h["command"] for e in ("SessionStart","UserPromptSubmit") for g in d.get("hooks",{}).get(e,[]) for h in g["hooks"])'
-   assert_eq "$(J "$CMDS" "$SET")" 'aios --context --session python3 "/x/zeiterfassung.py" export --quiet aios --context --advise' "hooks: AIOS in, ai-brain out, others kept"
+   assert_eq "$(J "$CMDS" "$SET")" "$F --context --session python3 \"/x/zeiterfassung.py\" export --quiet $F --context --advise" "hooks: AIOS in with the absolute path, ai-brain out, others kept"
+   assert_eq "$(J '" ".join(g.get("matcher","-")+":"+h["command"] for g in d["hooks"]["PreToolUse"] for h in g["hooks"])' "$SET")" "Bash:$F --context --permit" "hooks: PreToolUse with the matcher Bash"
    assert_eq "$(J 'd["model"]' "$SET")" "opus" "other settings kept"
    assert_eq "$(J "$CMDS" "$HOME/.aios/hooks-backup.json")" "ai-brain --session ai-brain --advise" "ai-brain hooks saved"
-   W="$AIOS_CLAUDE_DIR/skills/aios-demo/SKILL.md"
-   assert_contains "$(cat "$W")" 'description: "Demo skill of AIOS, two lines."' "wrapper: description from the version"
-   assert_contains "$(cat "$W")" '!`aios --skill aios-demo`' "wrapper: body"
-   [ ! -e "$AIOS_CLAUDE_DIR/skills/memo" ] && ok || fail "basic skills are not registered by --install"
-   assert_contains "$(cat "$AIOS_CLAUDE_DIR/skills/gui/SKILL.md" 2>/dev/null)" '!`aios --gui --session ${CLAUDE_SESSION_ID}`' "install: alias /gui"
+   [ ! -e "$AIOS_CLAUDE_DIR/skills" ] && ok || fail "install: no global wrappers (I3, V0.6)"
 
-   assert_eq "$(cd "$SANDBOX" && aios --version)" "0.2.0" "forwarder: not activated, highest version"
-   assert_contains "$(cd "$SANDBOX" && aios --versions)" "v0.2.0" "--versions"
+   assert_eq "$(cd "$SANDBOX" && "$F" --version)" "0.2.0" "forwarder: not activated, highest version"
+   assert_contains "$(cd "$SANDBOX" && "$F" --versions)" "v0.2.0" "--versions"
 
 #===============================================================================
 # --install via the forwarder: older version, idempotent user setup
 #===============================================================================
 
    cp "$SET" "$SANDBOX/settings.1"; cp "$HOME/.aios/hooks-backup.json" "$SANDBOX/backup.1"
-   OUT="$(cd "$SANDBOX" && echo y | aios --install v0.1.0 2>&1)"; RC=$?
+   OUT="$(cd "$SANDBOX" && echo y | "$F" --install v0.1.0 2>&1)"; RC=$?
    assert_eq "$RC" "0" "install v0.1.0 via forwarder (clone from ~/.aios/repo)"
    assert_eq "$(sed -n 's/^version: //p' "$U/v0.1.0/manifest.yaml")" "0.1.0" "v0.1.0: manifest.yaml with the version of the tag"
    cmp -s "$SET" "$SANDBOX/settings.1" && cmp -s "$HOME/.aios/hooks-backup.json" "$SANDBOX/backup.1" && ok || fail "second install: hooks and backup unchanged"
-   assert_eq "$(cd "$SANDBOX" && aios --install v0.1.0 </dev/null 2>&1)" "=> AIbex AIOS v0.1.0: nothing to do" "installed version: nothing to do, no question"
-   assert_eq "$(cd "$SANDBOX" && aios --version)" "0.2.0" "forwarder still calls the highest version"
+   assert_eq "$(cd "$SANDBOX" && "$F" --install v0.1.0 </dev/null 2>&1)" "=> AIbex AIOS v0.1.0: nothing to do" "installed version: nothing to do, no question"
+   assert_eq "$(cd "$SANDBOX" && "$F" --version)" "0.2.0" "forwarder still calls the highest version"
 
 #===============================================================================
 # --remove-version: installation directory and clone entry
 #===============================================================================
 
-   OUT="$(cd "$SANDBOX" && echo n | aios --remove-version v0.1.0 2>&1)"
+   OUT="$(cd "$SANDBOX" && echo n | "$F" --remove-version v0.1.0 2>&1)"
    assert_dir "$U/v0.1.0"
-   OUT="$(cd "$SANDBOX" && echo y | aios --remove-version v0.1.0 2>&1)"; RC=$?
+   OUT="$(cd "$SANDBOX" && echo y | "$F" --remove-version v0.1.0 2>&1)"; RC=$?
    assert_eq "$RC" "0" "remove-version: exit 0"
    [ ! -e "$U/v0.1.0" ] && ok || fail "v0.1.0 removed"
    assert_eq "$(cat "$HOME/.aios/installations.yaml")" "v0.2.0: $I" "entry removed"
 
    printf 'v0.3.0-dev: "%s"\n' "$S" > "$HOME/.aios/installations.yaml"
-   OUT="$(cd "$SANDBOX" && echo y | aios --remove-version v0.3.0-dev 2>&1)"
+   OUT="$(cd "$SANDBOX" && echo y | "$F" --remove-version v0.3.0-dev 2>&1)"
    assert_contains "$OUT" "is not an installation directory, it is kept" "clone entry: directory kept"
    assert_file "$S/bin/aios"
    assert_eq "$(cat "$HOME/.aios/installations.yaml")" "" "clone entry removed"
@@ -194,7 +193,8 @@ EOF
 
    OUT="$(echo y | "$S/bin/aios" --uninstall 2>&1)"; RC=$?
    assert_eq "$RC" "0" "uninstall: exit 0"
-   [ ! -e "$HOME/bin/aios" ] && [ ! -e "$HOME/bin/aios-context" ] && ok || fail "forwarders removed"
+   [ ! -e "$F" ] && [ -e "$HOME/bin/aios" ] && ok || fail "forwarder removed, ~/bin/aios untouched"
+   assert_contains "$OUT" "legacy: ~/bin/aios stays untouched" "uninstall names ~/bin/aios"
    [ ! -e "$AIOS_CLAUDE_DIR/skills/aios-demo" ] && ok || fail "AIOS skill removed"
    [ ! -e "$AIOS_CLAUDE_DIR/skills/gui" ] && ok || fail "uninstall: alias /gui removed"
    [ ! -e "$HOME/.aios/hooks-backup.json" ] && ok || fail "backup removed"
@@ -228,11 +228,11 @@ EOF
 # broken settings.json: abort before anything is written
 #===============================================================================
 
-   echo "{ broken" > "$SET"; rm "$HOME/bin/aios"
+   echo "{ broken" > "$SET"; rm -f "$F"
    OUT="$(echo y | "$S/bin/aios" --install v0.2.0 2>&1)"; RC=$?
    assert_eq "$RC" "1" "invalid settings.json: exit 1"
    assert_contains "$OUT" "is not valid JSON" "invalid settings.json: message"
-   [ ! -e "$HOME/bin/aios" ] && [ "$(cat "$SET")" == "{ broken" ] && ok || fail "invalid settings.json: nothing written"
+   [ ! -e "$F" ] && [ "$(cat "$SET")" == "{ broken" ] && ok || fail "invalid settings.json: nothing written"
 
 #===============================================================================
 # documentation in the installation (step 11)
@@ -244,37 +244,49 @@ EOF
    done
 
 #===============================================================================
-# v0.5: changeover of a v0.4 setup - aios-context hooks and forwarder replaced,
-# vaults on older versions named (spec 04, Umstieg auf v0.5; V0.5, memos 04, 41)
+# v0.6 step 7: changeover of a v0.5.1 setup - hooks in place with the absolute path, PreToolUse,
+# ~/bin and the global wrappers stay, vaults named, legacy marker with its own question
+# (spec 04, Umstieg auf v0.6; V0.6, memos 17, 19, 24, 49)
 #===============================================================================
 
    cat > "$SET" <<'EOF2'
 {
   "hooks": {
-    "SessionStart": [ { "hooks": [ { "type": "command", "command": "aios-context --session" } ] },
-                      { "hooks": [ { "type": "command", "command": "other --hook" } ] } ],
-    "UserPromptSubmit": [ { "hooks": [ { "type": "command", "command": "aios-context --advise" } ] } ]
+    "SessionStart": [ { "hooks": [ { "type": "command", "command": "other --hook" } ] },
+                      { "hooks": [ { "type": "command", "command": "aios --context --session" } ] } ],
+    "UserPromptSubmit": [ { "hooks": [ { "type": "command", "command": "aios --context --advise" } ] } ]
   }
 }
 EOF2
-   printf '#!/bin/bash\n# forwarder: ~/bin/aios and ~/bin/aios-context, choose the AIOS version\n' > "$HOME/bin/aios-context"
-   printf '#!/bin/bash\necho mine\n' > "$HOME/bin/aios-context.keep"
-   V4="$SANDBOX/work/§Alt4"; mkdir -p "$V4/.aios" "$V4/G-Garten" "$HOME/.aios/sessions"
-   printf 'aios: 0.4.0\n' > "$V4/.aios/config.yaml"
-   printf 'cwd: "%s"\nassistant: none\nused: 2026-10-25T10:00:00\n' "$V4/G-Garten" > "$HOME/.aios/sessions/s4.yaml"
-   G -C "$S" tag v0.5.0
-   OUT="$("$S/bin/aios" --install v0.5.0 --plan 2>&1)"
-   assert_contains "$OUT" "remove the forwarder ~/bin/aios-context (replaced by aios --context)" "v0.5: plan removes ~/bin/aios-context"
-   assert_contains "$OUT" "add aios --context --session, aios --context --advise" "v0.5: plan adds the new hooks"
-   assert_contains "$OUT" "note: vault $V4 is bound to aios 0.4.0; after this install run: aios --activate v0.5.0 $V4" "v0.5: plan names the vault on v0.4 (N7)"
-   OUT="$(echo y | "$S/bin/aios" --install v0.5.0 2>&1)"; RC=$?
-   assert_eq "$RC" "0" "v0.5: install exit 0"
-   [ ! -e "$HOME/bin/aios-context" ] && [ -e "$HOME/bin/aios-context.keep" ] && ok || fail "v0.5: old forwarder removed, other files kept"
-   assert_eq "$(J "$CMDS" "$SET")" "aios --context --session other --hook aios --context --advise" "v0.5: aios-context hooks replaced, others kept"
-   case "$(cat "$HOME/.aios/hooks-backup.json" 2>/dev/null)" in *aios-context*) fail "v0.5: old AIOS hooks are not saved as ai-brain hooks" ;; *) ok ;; esac
-   assert_contains "$(cat "$AIOS_CLAUDE_DIR/skills/gui/SKILL.md")" "Bash(aios --context *)" "v0.5: alias with aios --context"
+   mkdir -p "$AIOS_CLAUDE_DIR/skills/aios-init" "$AIOS_CLAUDE_DIR/skills/gui" "$AIOS_CLAUDE_DIR/skills/synced"
+   printf -- '---\nname: aios-init\n---\n\n!`aios --skill aios-init`\n' > "$AIOS_CLAUDE_DIR/skills/aios-init/SKILL.md"
+   printf -- '---\nname: gui\n---\n\n!`aios --gui --session ${CLAUDE_SESSION_ID}`\n' > "$AIOS_CLAUDE_DIR/skills/gui/SKILL.md"
+   printf 'mine\n' > "$AIOS_CLAUDE_DIR/skills/synced/SKILL.md"
+   V5="$SANDBOX/work/§Alt5"; NB="$SANDBOX/work/§Nachbar"
+   mkdir -p "$V5/.aios" "$V5/G-Garten" "$NB/@" "$HOME/.aios/sessions" "$SANDBOX/fake"
+   printf 'aios: 0.5.1\n' > "$V5/.aios/config.yaml"
+   printf 'cwd: "%s"\nassistant: none\nused: 2026-10-25T10:00:00\n' "$V5/G-Garten" > "$HOME/.aios/sessions/s5.yaml"
+   printf '#!/bin/bash\necho ai-brain\n' > "$SANDBOX/fake/ai-brain"; chmod +x "$SANDBOX/fake/ai-brain"
+   G -C "$S" tag v0.6.0; F="$HOME/.aios/bin/aios"
+   OUT="$("$S/bin/aios" --install v0.6.0 --plan 2>&1)"
+   assert_contains "$OUT" "$F --context --session (in place of aios --context --session)" "v0.6: hook replaced in place"
+   assert_contains "$OUT" "$F --context --permit" "v0.6: PreToolUse added"
+   assert_contains "$OUT" "vault $V5: binding 0.5.1 below 0.6; change over with: aios --activate v0.6.0 $V5" "v0.6: vault with a binding below 0.6 named"
+   assert_contains "$OUT" "(then with its own question: mark $NB with legacy: ai-brain)" "v0.6: sibling without binding offered for legacy: ai-brain"
+   case "$OUT" in *"$V5 with legacy"*) fail "v0.6: a bound vault is not offered for the marker" ;; *) ok ;; esac
+   OUT="$(printf 'y\ny\n' | "$S/bin/aios" --install v0.6.0 2>&1)"; RC=$?
+   assert_eq "$RC" "0" "v0.6: install exit 0"
+   assert_eq "$(J "$CMDS" "$SET")" "other --hook $F --context --session $F --context --advise" "v0.6: AIOS hooks at their place with the absolute path, others kept"
+   assert_eq "$(head -1 "$NB/.aios/config.yaml")" "legacy: ai-brain" "v0.6: marked after the own question"
+   [ -e "$AIOS_CLAUDE_DIR/skills/aios-init" ] && [ -e "$AIOS_CLAUDE_DIR/skills/gui" ] && ok || fail "v0.6: install leaves the global wrappers (a vault is still on 0.5)"
+   rm "$NB/.aios/config.yaml"
+   OUT="$("$S/bin/aios" --install v0.6.0 --yes 2>&1)"
+   assert_contains "$OUT" "not marked: $NB" "v0.6: --yes marks nothing, names the line (F32)"
+   [ ! -e "$NB/.aios/config.yaml" ] && ok || fail "v0.6: --yes wrote no marker"
+   rm "$SANDBOX/fake/ai-brain"
    OUT="$(echo y | "$S/bin/aios" --uninstall 2>&1)"
-   case "$(cat "$SET")" in *aios-context*|*"aios --context"*) fail "uninstall: AIOS hooks of both forms removed" ;; *) ok ;; esac
+   case "$(cat "$SET")" in *"aios --context"*) fail "uninstall: AIOS hooks removed" ;; *) ok ;; esac
+   [ ! -e "$AIOS_CLAUDE_DIR/skills/aios-init" ] && [ ! -e "$AIOS_CLAUDE_DIR/skills/gui" ] && [ -e "$AIOS_CLAUDE_DIR/skills/synced" ] && ok || fail "uninstall: wrappers of earlier versions removed, foreign skills kept"
 
 #===============================================================================
 # v0.5.1 step 3 (O1): pip of the kernel and of the workhorses without the version notice

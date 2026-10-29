@@ -77,6 +77,23 @@ def proceed(question, cancelled):
         raise Cancelled()
 
 
+def extra(lines, question, hint):
+    """A step with its own question after the plan (spec 04; V0.6, memos 17, 30, 49): --plan
+    shows it, --yes skips it and names the hint, otherwise the lines and the question."""
+    if MODE == "plan":
+        for line in lines:
+            print(f"   then with its own question: {line}")
+        return False
+    if MODE == "yes":
+        if hint:
+            print(f"   {hint}")
+        return False
+    print("   own question:")
+    for line in lines:
+        print(f"      {line}")
+    return ask(question)
+
+
 class Cancelled(Exception):
     """The user said no (exit 1)."""
 

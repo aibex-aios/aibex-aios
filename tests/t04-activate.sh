@@ -28,7 +28,7 @@
    assert_contains "$(A --activate v0.1.0 "$SANDBOX/outside")" "is not in a vault" "outside a vault"
    assert_contains "$(A --activate v0.9.0 "$D")" "run: aios --install v0.9.0" "version not installed"
    assert_contains "$(A --activate 0.x "$D")" "is not a version" "no version"
-   assert_contains "$(A --activate v0.1.0 "$D/Wiese")" "/aios-init" "container: hint to /aios-init"
+   assert_contains "$(A --activate v0.1.0 "$D/Wiese")" "is not a vault root; AIOS binds only a vault root: aios --activate v0.1.0 $D" "not the vault root: abort with the vault root (F5)"
    assert_exit 1 "$SRC/bin/aios" --activate v0.1.0 "$D/Wiese"
    [ ! -e "$D/.aios" ] && [ ! -e "$D/Wiese/.aios" ] && ok || fail "checks: nothing written"
 
@@ -51,19 +51,25 @@
    assert_eq "$(at "$D" sh -c "'$SRC/bin/aios' --activate 0.1.0 </dev/null")" "=> $D runs with AIOS 0.1.0 ($D/.aios/config.yaml), nothing to do" "same version again: nothing to do, no question"
 
 #===============================================================================
-# --activate a project: other keys and comments stay, aios: replaced once
+# --activate only at the vault root: a project aborts, nothing written (V0.6, F5)
 #===============================================================================
 
    mkdir -p "$D/Garten/.aios"
    printf '# Garten\nskills:\n  memo: 6.1.0   # newer memo\n' > "$D/Garten/.aios/config.yaml"
-   OUT="$(echo y | A --activate v0.2.0 "$D/Garten")"
-   assert_eq "$(cat "$D/Garten/.aios/config.yaml")" "$(printf 'aios: 0.2.0\n# Garten\nskills:\n  memo: 6.1.0   # newer memo')" "aios: added on top"
-   OUT="$(echo y | A --activate v0.1.0 "$D/Garten")"
-   assert_contains "$OUT" "(was 0.2.0)" "plan shows the old version"
-   assert_eq "$(grep -c '^aios:' "$D/Garten/.aios/config.yaml")" "1" "only one aios: line"
-   assert_eq "$(head -1 "$D/Garten/.aios/config.yaml")" "aios: 0.1.0" "aios: replaced in place"
-   echo y | A --activate v0.2.0 "$D/Garten" >/dev/null
+   OUT="$(echo y | A --activate v0.2.0 "$D/Garten")"; RC=$?
+   assert_contains "$OUT" "is not a vault root" "project: abort"
+   assert_eq "$(cat "$D/Garten/.aios/config.yaml")" "$(printf '# Garten\nskills:\n  memo: 6.1.0   # newer memo')" "project: config unchanged"
+   echo y | A --activate v0.2.0 "$D" >/dev/null
+   assert_eq "$(grep -c '^aios:' "$D/.aios/config.yaml")" "1" "vault root: only one aios: line"
+   assert_eq "$(head -1 "$D/.aios/config.yaml")" "aios: 0.2.0" "vault root: aios: replaced in place"
+   assert_contains "$(echo n | A --activate v0.1.0 "$D")" "(was 0.2.0)" "plan shows the old version"
+   echo y | A --activate v0.1.0 "$D" >/dev/null
    assert_eq "$(at "$D/Garten/Beet/Reihe" aios --context --id)" "0.1.0 --context --id" "forwarder: only the vault root binds (I14)"
+   printf 'legacy: ai-brain\naios: 0.1.0\n' > "$D/.aios/config.yaml"
+   OUT="$(echo y | A --activate v0.2.0 "$D")"
+   assert_contains "$OUT" "remove legacy: from $D/.aios/config.yaml (aios: applies)" "legacy: removed with the binding (F33)"
+   assert_eq "$(cat "$D/.aios/config.yaml")" "aios: 0.2.0" "legacy: gone, aios: written"
+   printf 'aios: 0.1.0\n' > "$D/.aios/config.yaml"
 
 #===============================================================================
 # configuration chain: per key the nearest entry, skills per name
@@ -102,27 +108,50 @@
    assert_contains "$(P $'aios: 1\naios: 2')" "key aios appears twice" "duplicate key"
    assert_contains "$(P $'  x: 1')" "indented line without a key" "indent without key"
 
-   printf 'aios 0.1.0\n' > "$D/Garten/Beet/.aios.cfg"; mkdir -p "$D/Garten/Beet/.aios"; mv "$D/Garten/Beet/.aios.cfg" "$D/Garten/Beet/.aios/config.yaml"
-   OUT="$(echo y | A --activate v0.1.0 "$D/Garten/Beet")"
+   cp "$D/.aios/config.yaml" "$SANDBOX/root.keep"; printf 'aios 0.1.0\n' > "$D/.aios/config.yaml"
+   OUT="$(echo y | A --activate v0.1.0 "$D")"
    assert_contains "$OUT" "expected 'key: value'" "broken config: activate aborts"
-   assert_eq "$(cat "$D/Garten/Beet/.aios/config.yaml")" "aios 0.1.0" "broken config: unchanged"
+   assert_eq "$(cat "$D/.aios/config.yaml")" "aios 0.1.0" "broken config: unchanged"
    assert_contains "$(CFG "$D/Garten/Beet" '"|".join(c.warnings)')" "file ignored" "broken config: chain ignores the file"
-   rm -rf "$D/Garten/Beet/.aios"
+   mv "$SANDBOX/root.keep" "$D/.aios/config.yaml"
 
 #===============================================================================
-# --deactivate: other keys stay, empty file and .aios/ are removed
+# --deactivate: only the vault root; other keys stay, empty file and .aios/ are removed
 #===============================================================================
 
-   OUT="$(echo y | A --deactivate "$D/Garten")"
-   assert_contains "$OUT" "(inline_limit, foo, skills stay)" "plan names the remaining keys"
-   assert_eq "$(grep -c '^aios:' "$D/Garten/.aios/config.yaml")" "0" "aios: removed"
-   assert_contains "$(cat "$D/Garten/.aios/config.yaml")" "memo: 6.1.0" "skills stay"
-   assert_contains "$OUT" "runs with AIOS 0.1.0 ($D/.aios/config.yaml)" "now the vault decides"
-   assert_eq "$(at "$D/Garten" aios --context --id)" "0.1.0 --context --id" "forwarder follows"
+   assert_contains "$(echo y | A --deactivate "$D/Garten")" "is not a vault root" "deactivate a project: abort (I14)"
+   printf 'aios: 0.1.0\ninline_limit: 100\nskills:\n  memo: 6.1.0\n' > "$D/.aios/config.yaml"
+   OUT="$(echo y | A --deactivate "$D")"
+   assert_contains "$OUT" "(inline_limit, skills stay)" "plan names the remaining keys"
+   assert_eq "$(grep -c '^aios:' "$D/.aios/config.yaml")" "0" "aios: removed"
+   assert_contains "$(cat "$D/.aios/config.yaml")" "memo: 6.1.0" "skills stay"
+   assert_contains "$OUT" "has no binding (no effect); for ai-brain write legacy: ai-brain" "vault without binding: hint to legacy: ai-brain"
 
    printf 'aios: 0.1.0\n' > "$D/.aios/config.yaml"
    OUT="$(at "$D" sh -c "echo y | '$SRC/bin/aios' --deactivate")"
    [ ! -e "$D/.aios" ] && ok || fail "empty config and .aios/ removed"
-   assert_contains "$OUT" "legacy mode" "vault in legacy mode"
    assert_contains "$(A --deactivate "$D" </dev/null)" "nothing to do" "deactivate again: nothing to do"
    assert_eq "$(at "$D/Garten" aios --context --id)" "id=- files=0 cwd=$D/Garten mode=none" "forwarder: vault without binding, mode=none"
+
+#===============================================================================
+# v0.6 step 7: binding to 0.6 registers the vault, wrappers of earlier versions with
+# their own question (spec 04, aios --activate; V0.6, memos 30, 49: F18, F19)
+#===============================================================================
+
+   echo "v0.6.0: $SRC" >> "$AIOS_PREFIX/installations.yaml"
+   V6="$W/§Sechs"; mkdir -p "$V6/P-Projekt/@"
+   OLDW="$AIOS_CLAUDE_DIR/skills"; mkdir -p "$OLDW/aios-init" "$OLDW/gui" "$OLDW/synced"
+   printf -- '---\nname: aios-init\n---\n\n!`aios --skill aios-init`\n' > "$OLDW/aios-init/SKILL.md"
+   printf -- '---\nname: gui\n---\n\n!`aios --gui --session ${CLAUDE_SESSION_ID}`\n' > "$OLDW/gui/SKILL.md"
+   printf 'mine\n' > "$OLDW/synced/SKILL.md"
+   OUT="$(A --activate v0.6.0 "$V6" --plan)"
+   assert_contains "$OUT" "register the wrappers of the kernel skills in" "0.6: plan registers the vault"
+   assert_contains "$OUT" "(then with its own question: remove 2 wrappers of earlier versions in $OLDW)" "0.6: plan names the own question"
+   OUT="$(printf 'y\nn\n' | A --activate v0.6.0 "$V6")"
+   assert_eq "$(ls "$V6/.claude/skills" | grep -c '^aios-')" "12" "0.6: wrappers at the vault root"
+   assert_eq "$(ls "$V6/P-Projekt/.claude/skills" | grep -c '^aios-')" "12" "0.6: wrappers in the project"
+   [ -e "$OLDW/aios-init" ] && [ -e "$OLDW/gui" ] && ok || fail "0.6: no at the own question keeps the wrappers"
+   OUT="$(A --activate v0.6.0 "$V6" --yes)"
+   assert_contains "$OUT" "to remove them run aios --activate v0.6.0 $V6 in a terminal" "0.6: --yes removes nothing, names the command"
+   OUT="$(echo y | A --activate v0.6.0 "$V6")"
+   [ ! -e "$OLDW/aios-init" ] && [ ! -e "$OLDW/gui" ] && [ -e "$OLDW/synced" ] && ok || fail "0.6: yes removes only the AIOS wrappers"

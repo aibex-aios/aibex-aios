@@ -428,6 +428,12 @@ def set_key(file, key, value):
     file.write_text("\n".join(out) + "\n", encoding="utf-8")
 
 
+def drop_key(file, key):
+    """Remove the line <key>: (line based, comments and other keys stay)."""
+    lines = [line for line in file.read_text(encoding="utf-8").splitlines() if not line.startswith(f"{key}:")]
+    file.write_text("\n".join(lines) + ("\n" if lines else ""), encoding="utf-8")
+
+
 def drop_aios(file):
     """Remove the key aios; an empty file (and an empty .aios/) is removed. Returns what is left."""
     lines = [line for line in file.read_text(encoding="utf-8").splitlines() if not line.startswith("aios:")]

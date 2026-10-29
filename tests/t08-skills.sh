@@ -136,7 +136,7 @@ for n in ('aios-assistant', 'aios-context', 'aios-init'):
 #===============================================================================
 
    OUT="$("$SRC/bin/aios" --activate v0.6.0 "$D/Garten/Beet" --plan 2>&1)"; RC=$?
-   assert_contains "$OUT" "/aios-init" "--plan: checks still apply"
+   assert_contains "$OUT" "is not a vault root" "--plan: checks still apply (only the vault root, V0.6)"
    OUT="$("$SRC/bin/aios" --register "$D" --plan 2>&1)"; RC=$?
    assert_eq "$RC" "0" "--plan: exit 0"
    assert_contains "$OUT" "(plan only, nothing written)" "--plan: plan only"

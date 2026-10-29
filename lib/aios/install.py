@@ -22,7 +22,7 @@ import urllib.request
 from pathlib import Path
 
 from . import paths
-from .ui import Abort, Plan, confirm, say, warn  # noqa: F401 - Abort is part of the API
+from .ui import Abort, Plan, confirm, extra, say, warn  # noqa: F401 - Abort is part of the API
 
 
 FORWARDER_MARKS = ("# forwarder: ~/bin/aios",          # up to 0.3.1, also ~/bin/aios-context of v0.4
@@ -37,7 +37,8 @@ ALIAS_MARK = "!`aios --gui "
 ALIAS = ('---\nname: gui\ndescription: "Zeigt die Oberfläche des aktiven Assistenten (AIbex AIOS). '
          'Auslöser: /gui, „Oberfläche“, „Menü“."\nallowed-tools: Bash(aios --gui *), Bash(aios --context *)\n'
          '---\n\n!`aios --gui --session ${CLAUDE_SESSION_ID}`\n')
-AIOS_HOOKS = {"SessionStart": "aios --context --session", "UserPromptSubmit": "aios --context --advise"}
+AIOS_HOOKS = {"SessionStart": "aios --context --session", "UserPromptSubmit": "aios --context --advise",
+              "PreToolUse": "aios --context --permit"}       # PreToolUse with the matcher Bash (V0.6)
 OLD_AIOS_HOOKS = {"SessionStart": "aios-context --session", "UserPromptSubmit": "aios-context --advise"}  # v0.3, v0.4
 LEGACY_HOOKS = {"SessionStart": "ai-brain --session", "UserPromptSubmit": "ai-brain --advise"}
 RELEASE = re.compile(r"^v(\d+)\.(\d+)\.(\d+)$")
@@ -457,41 +458,41 @@ def forwarder_version(text):
 
 
 def plan_forwarders(plan, src):
+    """The forwarder ~/.aios/bin/aios; ~/bin stays untouched, its aios is named as legacy
+    (spec 04, Weiterleiter; V0.6, memos 06, 07)."""
     text = (src / "templates" / "forwarder").read_text(encoding="utf-8")
     new = forwarder_version(text)
-    bindir = paths.bin_dir()
-    for tool in TOOLS:
-        target = bindir / tool
-        what = None
-        if not target.exists():
-            what = f"forwarder ~/bin/{tool} {new}"
+    target = paths.forwarder()
+    what = None
+    if not target.exists():
+        what = f"forwarder {target} {new}"
+    else:
+        old = target.read_text(encoding="utf-8", errors="replace")
+        if is_forwarder(old):
+            if semver_key(new) > semver_key(forwarder_version(old)):
+                what = f"forwarder {target}: update {forwarder_version(old)} -> {new}"
         else:
-            old = target.read_text(encoding="utf-8", errors="replace")
-            if PROTOTYPE_MARK in old:
-                what = f"forwarder ~/bin/{tool} {new}, replaces the prototype"
-            elif is_forwarder(old):
-                if semver_key(new) > semver_key(forwarder_version(old)):
-                    what = f"forwarder ~/bin/{tool}: update {forwarder_version(old)} -> {new}"
-            else:
-                warn(f"~/bin/{tool} is not an AIOS forwarder, left untouched")
-        if what:
-            def put(target=target):
-                target.parent.mkdir(parents=True, exist_ok=True)
-                target.write_text(text, encoding="utf-8")
-                target.chmod(0o755)
-            plan.add(what, put)
-    for tool in OLD_TOOLS:
-        target = bindir / tool
-        if target.is_file() and is_forwarder(target.read_text(encoding="utf-8", errors="replace")):
-            plan.add(f"remove the forwarder ~/bin/{tool} (replaced by aios --context)", target.unlink)
-    etc = paths.home() / "etc" / "aios"
-    if etc.is_dir():
-        plan.add("remove ~/etc/aios of the prototype", lambda: shutil.rmtree(etc))
+            warn(f"{target} is not an AIOS forwarder, left untouched")
+    if what:
+        def put():
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(text, encoding="utf-8")
+            target.chmod(0o755)
+        plan.add(what, put)
+    for tool in TOOLS + OLD_TOOLS:
+        old = paths.bin_dir() / tool
+        if old.is_file():
+            plan.add(f"legacy: ~/bin/{tool} stays untouched (hooks and wrappers call {target})")
 
 
 def is_command(hook, cmd):
     c = str(hook.get("command", "")).strip()
     return hook.get("type") == "command" and (c == cmd or c.endswith("/" + cmd))
+
+
+def full_command(cmd):
+    """aios --context --… with the absolute path of the forwarder (spec 04; V0.6, memo 06)."""
+    return f"{paths.forwarder()} {cmd[len('aios '):]}"
 
 
 def merge_hooks(settings):
@@ -521,10 +522,21 @@ def merge_hooks(settings):
             hooks[event] = groups
     added = []
     for event, cmd in AIOS_HOOKS.items():
+        full = full_command(cmd)
         groups = hooks.setdefault(event, [])
-        if not any(is_command(h, cmd) for g in groups for h in g.get("hooks", [])):
-            groups.insert(0, {"hooks": [{"type": "command", "command": cmd}]})
-            added.append(cmd)
+        found = False
+        for g in groups:
+            for h in g.get("hooks", []):
+                if is_command(h, cmd):
+                    found = True
+                    if h.get("command") != full:     # in place, with the absolute path (F10)
+                        h["command"] = full
+                        added.append(f"{full} (in place of {cmd})")
+        if not found:
+            group = {"matcher": "Bash"} if event == "PreToolUse" else {}
+            group["hooks"] = [{"type": "command", "command": full}]
+            groups.insert(0, group)
+            added.append(full)
     return new, removed, added
 
 
@@ -583,7 +595,7 @@ def plan_hooks(plan):
     new, removed, added = merge_hooks(settings)
     if new == settings:
         return
-    parts = [f"add {', '.join(added)}"] if added else []
+    parts = [f"AIOS hooks: {', '.join(added)}"] if added else []
     if removed:
         parts.append("remove the ai-brain hooks (saved in ~/.aios/hooks-backup.json)")
 
@@ -658,14 +670,68 @@ def plan_user(plan, src, repo):
             config.parent.mkdir(parents=True, exist_ok=True)
             config.write_text("hosts: [claude-code]\n", encoding="utf-8")
         plan.add("create ~/.aios/config.yaml (hosts: [claude-code])", create)
-    plan_hooks(plan)
-    plan_skills(plan, src)
+    plan_hooks(plan)                                # no global wrappers since v0.6 (spec 03, I3)
     record = paths.user_dir() / "repo"
     if repo and (not record.is_file() or record.read_text(encoding="utf-8").strip() != str(repo)):
         def remember():
             record.parent.mkdir(parents=True, exist_ok=True)
             record.write_text(f"{repo}\n", encoding="utf-8")
         plan.add(f"remember the clone {repo} in ~/.aios/repo", remember)
+
+
+def known_vaults():
+    """Vault roots known from the markers of the sessions, ~/.aios/repo and workers.yaml (spec 04)."""
+    from . import config
+    found = set()
+    for f in sorted((paths.user_dir() / "sessions").glob("*.yaml")):
+        m = re.search(r'^cwd:\s*"?(.*?)"?\s*$', f.read_text(encoding="utf-8", errors="replace"), re.M)
+        if m and os.path.isdir(m.group(1)):
+            found.add(config.vault_root(m.group(1)))
+    repo = paths.user_dir() / "repo"
+    if repo.is_file():
+        found.add(config.vault_root(repo.read_text(encoding="utf-8").strip() or "/"))
+    for f in (paths.user_dir() / "workers.yaml", paths.prefix() / "workers.yaml"):
+        if f.is_file():
+            for m in re.finditer(r'"([^"]+)"', f.read_text(encoding="utf-8", errors="replace")):
+                if os.path.isdir(m.group(1)):
+                    found.add(config.vault_root(m.group(1)))
+    return sorted(v for v in found if v is not None)
+
+
+def legacy_candidates():
+    """§-folders without binding and without marker among the known vaults and their siblings,
+    if ai-brain is installed (V0.6, memos 17, 49: F9)."""
+    from . import config
+    if not shutil.which("ai-brain"):
+        return []
+    dirs = set()
+    for v in known_vaults():
+        dirs.add(v)
+        try:
+            dirs.update(d for d in v.parent.iterdir() if d.is_dir() and d.name.startswith("§"))
+        except OSError:
+            pass
+    return sorted(d for d in dirs if config.load(d).kind == "none")
+
+
+def mark_legacy(d):
+    f = d / ".aios" / "config.yaml"
+    f.parent.mkdir(parents=True, exist_ok=True)
+    old = f.read_text(encoding="utf-8") if f.is_file() else ""
+    f.write_text("legacy: ai-brain\n" + old, encoding="utf-8")
+
+
+def vault_lines(tag):
+    """Known vaults with their kind; bindings below 0.6 with the command of the changeover."""
+    from . import config
+    lines = []
+    for v in known_vaults():
+        cfg = config.load(v)
+        if cfg.kind == "alt":
+            lines.append(f"vault {v}: binding {cfg.aios} below 0.6; change over with: aios --activate {tag} {v}")
+        elif cfg.kind in ("aios", "legacy"):
+            lines.append(f"vault {v}: " + (f"AIBOS workspace ({cfg.aios})" if cfg.kind == "aios" else "legacy: ai-brain"))
+    return lines
 
 
 def older_vaults(tag):
@@ -711,14 +777,23 @@ def install(version, system=False):
             plan.add(f"install {tag} from {repo} -> {root / tag} (read-only)",
                      lambda: build(stage, tag, root, entries))
         plan_user(plan, src, repo if clone_of_this() else None)
-        for line in older_vaults(tag):
+        for line in vault_lines(tag):
             plan.add(line)
-        if not plan:
+        marks = legacy_candidates()
+        for d in marks:
+            plan.add(f"then with its own question: mark {d} with legacy: ai-brain")
+        if not plan and not marks:
             say(f"=> AIbex AIOS {tag}: nothing to do")
             return 0
         say(f"=> AIbex AIOS {tag}")
-        if not confirm(plan, "install?", "installation cancelled"):
+        if plan and not confirm(plan, "install?", "installation cancelled"):
             return 1
+        for d in marks:                              # own question per vault (F9, F32)
+            if extra([f"mark {d} with legacy: ai-brain (ai-brain keeps giving the context there)"],
+                     f"mark {d.name}?", f"not marked: {d}; for ai-brain there write legacy: ai-brain "
+                     f"into {d / '.aios' / 'config.yaml'}"):
+                mark_legacy(d)
+                say(f"   {d}: legacy: ai-brain")
     finally:
         if stage:
             shutil.rmtree(stage, ignore_errors=True)
@@ -789,21 +864,35 @@ def remove_version(version):
     return 0
 
 
-def uninstall():
-    plan = Plan()
-    for tool in TOOLS + OLD_TOOLS:
-        target = paths.bin_dir() / tool
-        if target.is_file() and is_forwarder(target.read_text(encoding="utf-8", errors="replace")):
-            plan.add(f"remove the forwarder ~/bin/{tool}", target.unlink)
+def old_wrappers():
+    """Wrappers of earlier versions in ~/.claude/skills/ (aios-* and gui) that AIOS wrote."""
     skills = paths.claude_dir() / "skills"
+    found = []
     if skills.is_dir():
         for d in sorted(skills.glob("aios-*")):
             f = d / "SKILL.md"
             if f.is_file() and WRAPPER_MARK in f.read_text(encoding="utf-8", errors="replace"):
-                plan.add(f"remove the AIOS skill {d}", lambda d=d: shutil.rmtree(d))
+                found.append(d)
         alias = skills / "gui" / "SKILL.md"
         if alias.is_file() and ALIAS_MARK in alias.read_text(encoding="utf-8", errors="replace"):
-            plan.add(f"remove the alias {alias.parent}", lambda: shutil.rmtree(alias.parent))
+            found.append(alias.parent)
+    return found
+
+
+def plan_old_wrappers(plan):
+    for d in old_wrappers():
+        plan.add(f"remove the wrapper {d}", lambda d=d: shutil.rmtree(d))
+
+
+def uninstall():
+    plan = Plan()
+    target = paths.forwarder()
+    if target.is_file() and is_forwarder(target.read_text(encoding="utf-8", errors="replace")):
+        plan.add(f"remove the forwarder {target}", target.unlink)
+    for tool in TOOLS + OLD_TOOLS:
+        if (paths.bin_dir() / tool).is_file():
+            plan.add(f"legacy: ~/bin/{tool} stays untouched; remove it yourself if you like")
+    plan_old_wrappers(plan)
     sessions = paths.user_dir() / "sessions"
     if sessions.is_dir():
         plan.add(f"remove the markers of the sessions {sessions}", lambda: shutil.rmtree(sessions))
