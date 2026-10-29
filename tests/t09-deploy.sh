@@ -29,7 +29,7 @@
 #===============================================================================
 
    at "$G" "$SRC/bin/aios" --context --sync --yes >/dev/null
-   assert_eq "$(ls "$G/.claude/skills" | tr '\n' ' ')" "memo taschenrechner taschenrechner-gui " "skills of the packages registered in a project below"
+   assert_eq "$(ls "$G/.claude/skills" | grep -v -e '^aios-' -e '^gui$' | tr '\n' ' ')" "memo taschenrechner taschenrechner-gui " "skills of the packages registered in a project below"
    assert_file "$G/.aios/registry"
    assert_contains "$(cat "$G/.aios/registry")" "source: \"$D/@/@!Package/app-taschenrechner/skills/taschenrechner\"" "registry: source in @!Package/"
    OUT="$(at "$G" "$SRC/bin/aios" --context)"
@@ -56,7 +56,7 @@
    assert_contains "$(cat "$D/.aios/config.yaml")" "app-taschenrechner: {range: \"~=0.5.0\", only: [taschenrechner-gui]}" "--only written"
    assert_contains "$(A "$D" --deploy)" "      not deployed  skill taschenrechner" "show: not deployed element"
    at "$G" "$SRC/bin/aios" --context --sync --yes >/dev/null
-   assert_eq "$(ls "$G/.claude/skills" | tr '\n' ' ')" "memo taschenrechner-gui " "H3: not deployed skill not registered"
+   assert_eq "$(ls "$G/.claude/skills" | grep -v -e '^aios-' -e '^gui$' | tr '\n' ' ')" "memo taschenrechner-gui " "H3: not deployed skill not registered"
    assert_contains "$(at "$G" "$SRC/bin/aios" --context --list)" "fetched, not deployed: skill taschenrechner" "/aios-context: fetched, not deployed"
    assert_contains "$(A "$D" --deploy app-taschenrechner --only taschenrechner-gui)" "nothing to do" "--only again: nothing to do (I8)"
    assert_contains "$(A "$D" --fetch)" "nothing to do" "fetch keeps the selection"
@@ -98,5 +98,5 @@
    assert_contains "$OUT" "rename   .aios/manifest -> .aios/registry" "register: plan renames the manifest"
    at "$G" "$SRC/bin/aios" --register --yes >/dev/null
    [ -f "$G/.aios/registry" ] && [ ! -e "$G/.aios/manifest" ] && ok || fail "manifest of v0.3 replaced by the registry"
-   assert_eq "$(ls "$G/.claude/skills" | tr '\n' ' ')" "memo taschenrechner taschenrechner-gui " "skills of the old manifest stay managed"
+   assert_eq "$(ls "$G/.claude/skills" | grep -v -e '^aios-' -e '^gui$' | tr '\n' ' ')" "memo taschenrechner taschenrechner-gui " "skills of the old manifest stay managed"
    unset AIOS_HUBS

@@ -36,6 +36,7 @@
 # --session: small master context inline, cwd taken from the hook JSON
 #===============================================================================
 
+   HOOK --session "$D/Garten" >/dev/null         # first session registers the wrappers (AIOS-SKILLS), V0.6
    OUT="$(HOOK --session "$D/Garten"; echo x)"; OUT="${OUT%x}"
    CTX="$(cd "$D/Garten" && AC --context; echo x)"; CTX="${CTX%x}"
    assert_eq "$OUT" "AIOS-CONTEXT (loaded automatically by SessionStart hook):
@@ -65,6 +66,7 @@ Give no other answer until the user decides." "uninitialized: skill /aios-init, 
 # --session: consistency check at startup only (spec 02, Unvollstaendiges Projekt)
 #===============================================================================
 
+   HOOK --session "$D/Wiese" >/dev/null          # registers the wrappers first (V0.6)
    OUT="$(HOOK --session "$D/Wiese")"
    assert_eq "$(printf '%s\n' "$OUT" | head -1)" "PROJECT-INCOMPLETE: $D/Wiese is an AIOS project but lacks: own git repo, .gitignore lines: .DS_Store, .claude/skills/, .claude/worktrees/, .agents/, .aios/registry, .aios/backup/." "incomplete: gaps named"
    assert_contains "$OUT" "call the skill /aios-init
@@ -83,6 +85,7 @@ Give no other answer until the user decides." "uninitialized: skill /aios-init, 
    git -C "$D/Garten" add -A && git -C "$D/Garten" commit -qm init
    git -C "$D/Garten" worktree add -q -b claude/w1 .claude/worktrees/w1 2>/dev/null
    W="$D/Garten/.claude/worktrees/w1"
+   HOOK --session "$W" >/dev/null                 # registers the wrappers first (V0.6)
    OUT="$(HOOK --session "$W")"
    assert_eq "$(printf '%s\n' "$OUT" | head -6)" "AIOS-WORKTREE: this session runs in a git worktree on branch claude/w1
  ($W), not in the chosen folder $D/Garten.

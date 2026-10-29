@@ -1,21 +1,25 @@
-"""Registration of the project skills (spec 03, Registrieren; registry format spec 04).
+"""Registration of the kernel skills and the project skills (spec 03, Registrieren; registry spec 04).
 
-The blueprints @/@!Skill/<name>/ and the deployed skills of fetched packages
-@/@!Package/<paket>/skills/<name>/ of the chain are copied to <project>/.claude/skills/<name>/
-and recorded in <project>/.aios/registry (in v0.3: .aios/manifest). Standard library only.
+The wrappers of the kernel skills and of the alias gui are written (source: kernel), the blueprints
+@/@!Skill/<name>/ and the deployed skills of fetched packages @/@!Package/<paket>/skills/<name>/ of
+the chain are copied to <project>/.claude/skills/<name>/; all are recorded in
+<project>/.aios/registry (in v0.3: .aios/manifest). A project below the vault root also brings the
+vault root up to date (V0.6, memo 48). Standard library only.
 """
 
 from __future__ import annotations
 
 import hashlib
+import json
 import os
 import re
 import shutil
 import tempfile
 from pathlib import Path
 
-from . import context, elements
-from .install import frontmatter, make_writable
+from . import context, elements, paths
+from . import version as kernel_version
+from .install import SESSION_LINE, frontmatter, make_writable
 
 NAME = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}$")
 SEMVER = re.compile(r"^\d+\.\d+\.\d+$")
@@ -37,6 +41,37 @@ def digest(d):
             h.update(p.read_bytes())
             h.update(b"\n")
     return "sha256:" + h.hexdigest()
+
+
+def text_digest(text):
+    """digest of a skill directory that holds only SKILL.md with text (the wrappers of the kernel)."""
+    h = hashlib.sha256()
+    h.update(b"SKILL.md\n")
+    h.update(text.encode("utf-8"))
+    h.update(b"\n")
+    return "sha256:" + h.hexdigest()
+
+
+def kernel_wrappers():
+    """{name: text of SKILL.md} of the wrappers of the kernel skills and of the alias gui, with the
+    absolute path of the forwarder; allowed-tools only for their own call (spec 03, Kernel-Skills
+    im Vault; spec 04; V0.6, memos 29, 30, F20, F27)."""
+    fwd = paths.forwarder()
+    base = Path(__file__).resolve().parents[2] / "skills" / "aios"
+    out = {}
+    for name in context.kernel_skills():
+        f = base / name / "SKILL.md"
+        meta = frontmatter(f)
+        desc = " ".join(str(meta.get("description", "")).split())
+        session = "<session-id>" in f.read_text(encoding="utf-8").split("\n---", 1)[-1]
+        out[name] = (f"---\nname: {name}\ndescription: {json.dumps(desc, ensure_ascii=False)}\n"
+                     f"allowed-tools: Bash({fwd} --skill {name})\n---\n\n!`{fwd} --skill {name}`\n"
+                     + (f"\n{SESSION_LINE}\n" if session else ""))
+    out["gui"] = ('---\nname: gui\ndescription: "Zeigt die Oberfläche des aktiven Assistenten (AIbex AIOS). '
+                  'Auslöser: /gui, „Oberfläche“, „Menü“."\n'
+                  f"allowed-tools: Bash({fwd} --gui --session *)\n---\n\n"
+                  f"!`{fwd} --gui --session ${{CLAUDE_SESSION_ID}}`\n")
+    return out
 
 
 def version_of(meta):
@@ -149,9 +184,10 @@ def write_manifest(file, entries):
 # ---------------------------------------------------------------------------
 
 class Sync:
-    """Difference between the blueprints of the chain and the registered skills of a project."""
+    """Difference between the wanted skills (wrappers of the kernel, blueprints of the chain) and the
+    registered skills of a project; below the vault root also of the vault root (V0.6, memo 48)."""
 
-    def __init__(self, ctx):
+    def __init__(self, ctx, with_root=True):
         self.ctx = ctx
         self.project = ctx.cwd
         self.skills_dir = self.project / ".claude" / "skills"
@@ -159,7 +195,26 @@ class Sync:
         self.manifest = read_registry(self.project)
         self.old = old_file(self.project).is_file()      # .aios/manifest of v0.3, removed on apply
         self.chain, self.problems = blueprints(ctx)
+        self.kernel = kernel_wrappers()
         self.new, self.changed, self.removed, self.foreign = [], [], [], []
+        self.new_k, self.changed_k = [], []
+        for name, text in self.kernel.items():
+            dig = text_digest(text)
+            target = self.skills_dir / name
+            entry = self.manifest.get(name)
+            if entry is None:
+                if target.exists():
+                    self.foreign.append(name)
+                else:
+                    self.new_k.append((name, text, dig))
+            elif (entry.get("source") != "kernel" or entry.get("digest") != dig
+                  or not target.is_dir() or digest(target) != dig):
+                self.changed_k.append((name, text, dig))
+        root = ctx.vault
+        self.root = None
+        if with_root and root is not None and root != self.project and (root / "@").is_dir():
+            self.root = Sync(context.Context(root), with_root=False)
+            self.problems += self.root.problems
         for name, (src, version) in self.chain.items():
             dig = digest(src)
             target = self.skills_dir / name
@@ -173,36 +228,65 @@ class Sync:
                   or not target.is_dir() or digest(target) != dig):
                 self.changed.append((name, src, version, dig))
         for name in self.manifest:
-            if name not in self.chain:
+            if name not in self.chain and name not in self.kernel:
                 self.removed.append(name)
         for name in self.foreign:
             self.problems.append(f"{self.skills_dir / name} exists and is not managed by AIOS, left untouched")
 
+    def own(self):
+        return bool(self.new or self.changed or self.new_k or self.changed_k or self.removed or self.old)
+
     def __bool__(self):
-        return bool(self.new or self.changed or self.removed or self.old)
+        return self.own() or bool(self.root)
 
     def lines(self):
-        out = [f"new      {n} {v}".rstrip() + f"  ({s})" for n, s, v, _ in self.new]
+        out = [f"new      {n} {kernel_version()}  (kernel)" for n, *_ in self.new_k]
+        out += [f"changed  {n} {kernel_version()}  (kernel)" for n, *_ in self.changed_k]
+        out += [f"new      {n} {v}".rstrip() + f"  ({s})" for n, s, v, _ in self.new]
         out += [f"changed  {n} {v}".rstrip() + f"  ({s})" for n, s, v, _ in self.changed]
         out += [f"remove   {n}" for n in self.removed]
         if self.old:
             out.append("rename   .aios/manifest -> .aios/registry")
+        if self.root:
+            out += [f"vault root {self.root.project}: {line}" for line in self.root.lines()]
         return out
 
     def summary(self):
         parts = []
-        if self.new:
-            parts.append("new " + ", ".join(n for n, *_ in self.new))
-        if self.changed:
-            parts.append("changed " + ", ".join(n for n, *_ in self.changed))
+        new = [n for n, *_ in self.new_k] + [n for n, *_ in self.new]
+        changed = [n for n, *_ in self.changed_k] + [n for n, *_ in self.changed]
+        if new:
+            parts.append("new " + ", ".join(new))
+        if changed:
+            parts.append("changed " + ", ".join(changed))
         if self.removed:
             parts.append("removed " + ", ".join(self.removed))
         if self.old and not parts:
             parts.append(".aios/manifest renamed to .aios/registry")
+        if self.root:
+            parts.append("vault root: " + self.root.summary())
         return "; ".join(parts)
 
     def apply(self):
-        entries = {k: v for k, v in self.manifest.items() if k in self.chain}
+        if self.root:
+            self.root.apply()
+        if not self.own():
+            return
+        entries = {k: v for k, v in self.manifest.items() if k in self.chain or k in self.kernel}
+        self.skills_dir.mkdir(parents=True, exist_ok=True)
+        for name, text, dig in self.new_k + self.changed_k:
+            target = self.skills_dir / name
+            tmp = Path(tempfile.mkdtemp(prefix=f".{name}.", dir=self.skills_dir))
+            try:
+                (tmp / name).mkdir()
+                (tmp / name / "SKILL.md").write_text(text, encoding="utf-8")
+                if target.exists():
+                    make_writable(target)
+                    shutil.rmtree(target)
+                os.rename(tmp / name, target)
+            finally:
+                shutil.rmtree(tmp, ignore_errors=True)
+            entries[name] = {"source": "kernel", "version": kernel_version(), "digest": dig}
         self.skills_dir.mkdir(parents=True, exist_ok=True)
         for name, src, version, dig in self.new + self.changed:
             target = self.skills_dir / name
@@ -250,9 +334,9 @@ def register(cwd, yes=False):
     for p in s.problems:
         warn(p)
     if not s:
-        say(f"=> project skills of {ctx.cwd} are up to date")
+        say(f"=> skills of {ctx.cwd} are up to date")
         return 0
-    say(f"=> register the project skills of {ctx.cwd} in .claude/skills/")
+    say(f"=> register the kernel skills and project skills of {ctx.cwd} in .claude/skills/")
     for line in s.lines():
         say(f"      {line}")
     if yes:

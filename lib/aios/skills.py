@@ -37,10 +37,28 @@ def memo_registered():
     return ctx.project is not None and "memo" in registry.read_registry(ctx.project)
 
 
+def in_aibos_workspace():
+    """Location check of aios --skill (spec 03, Ortsprüfung; V0.6, memo 23): cwd in an A/W."""
+    from . import config, paths
+    return config.load(paths.cwd()).kind == "aios"
+
+
+def with_forwarder(text):
+    """Every call in backticks that starts with aios gets the absolute path of the forwarder, so that
+    the model never calls an aios from the PATH (V0.6, F42)."""
+    from . import paths
+    return text.replace("`aios ", f"`{paths.forwarder()} ")
+
+
 def body(name, session_id=None):
     """Print the body of skills/aios/<name>/SKILL.md of the running version (the valid one);
     with --session the placeholder <session-id> is replaced by the id (wrappers give the id as a
-    line of text instead, spec 04)."""
+    line of text instead, spec 04). Outside an A/W only the line of the location check."""
+    import sys
+    from . import paths
+    if not in_aibos_workspace():
+        print(f"Kein AIBOS-Workspace: {paths.cwd()}", file=sys.stderr)
+        return 1
     f = source(name)
     if not f.is_file():
         raise Abort(f"AIOS {version()} has no AIOS skill {name}")
@@ -55,7 +73,7 @@ def body(name, session_id=None):
         except session.BadId as e:
             raise Abort(str(e))
         text = text.replace(SESSION, session_id)
-    print(text, end="")
+    print(with_forwarder(text), end="")
     return 0
 
 

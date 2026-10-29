@@ -86,7 +86,7 @@ print(len(re.findall("<script", inner)), len(re.findall("<script", t)))')" "0 2"
    assert_contains "$OUT" "(sends: Run the skill /aios-integrity.)" "--aios: /aios-integrity"
    assert_contains "$OUT" "\`aios --gui --aios --html\`" "--aios: instruction for HTML"
    case "$(GUI "$SANDBOX" --aios --html)" in "<div class=\"aios-gui\">"*"<h2>AIbex AIOS</h2>"*) ok ;; *) fail "--aios --html outside a vault" ;; esac
-   assert_contains "$(at "$G" "$SRC/bin/aios" --skill aios-gui)" "Führe \`aios --gui --aios\` über das Bash-Werkzeug aus." "skill aios-gui calls aios --gui --aios"
+   assert_contains "$(at "$G" "$SRC/bin/aios" --skill aios-gui)" "Führe \`$HOME/.aios/bin/aios --gui --aios\` über das Bash-Werkzeug aus." "skill aios-gui calls aios --gui --aios"
 
 #===============================================================================
 # checks of gui.yaml and of the assistant

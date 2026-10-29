@@ -38,7 +38,7 @@
 #===============================================================================
 
    assert_eq "$(at "$D" aios --skill aios-init)" "$(python3 -c "
-import sys; t=open(sys.argv[1],encoding='utf-8').read(); e=t.find('\n---',3); print(t[t.find('\n',e+4)+1:].lstrip('\n'),end='')" "$SRC/skills/aios/aios-init/SKILL.md")" "--skill: body without frontmatter"
+import sys; t=open(sys.argv[1],encoding='utf-8').read(); e=t.find('\n---',3); print(t[t.find('\n',e+4)+1:].lstrip('\n').replace(chr(96)+'aios ', chr(96)+sys.argv[2]+' '),end='')" "$SRC/skills/aios/aios-init/SKILL.md" "$HOME/.aios/bin/aios")" "--skill: body without frontmatter, forwarder with absolute path (F42)"
    case "$(at "$D" aios --skill aios-init)" in *"name: aios-init"*|*"allowed-tools"*) fail "--skill: no frontmatter" ;; *) ok ;; esac
    case "$(at "$D" aios --skill aios-init)" in *"Nur in Version 0.7.0"*) fail "--skill in §Demo: version 0.6.0" ;; *) ok ;; esac
    assert_not_contains "$(at "$D/Garten" aios --skill aios-init)" "Nur in Version 0.7.0" "--skill in Garten: the vault root decides (I14)"
@@ -248,4 +248,5 @@ import sys; t=open(sys.argv[1],encoding='utf-8').read(); e=t.find('\n---',3); pr
    assert_eq "$(at "$D/Notiz/@" aios --skill aios-memo)" "Use \`/memo\` — the skill \`memo\` is registered in this project." "precedence from a folder inside the project"
    mk "$D/Notiz/.aios/registry" $'# written by AIOS (registration), do not edit\nschema: 1\nregistered:\n  notiz:\n    source: "x"\n    version: 0.1.0\n    digest: sha256:0\n'
    case "$(at "$D/Notiz" aios --skill aios-memo)" in *"$MEMO_BODY"*) ok ;; *) fail "other skills registered: body" ;; esac
-   case "$(at "$SANDBOX/outside" "$SRC/bin/aios" --skill aios-memo)" in *"$MEMO_BODY"*) ok ;; *) fail "outside a vault: body" ;; esac
+   OUT="$(at "$SANDBOX/outside" "$SRC/bin/aios" --skill aios-memo 2>&1)"; RC=$?
+   assert_eq "$RC:$OUT" "1:Kein AIBOS-Workspace: $SANDBOX/outside" "outside an A/W: only the location check (V0.6)"

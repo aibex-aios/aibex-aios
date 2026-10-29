@@ -52,14 +52,14 @@
    [ ! -e "$K/memo" ] && [ ! -e "$G/.aios/registry" ] && ok || fail "cancelled: nothing written"
 
    OUT="$(echo y | SY "$G")"
-   assert_contains "$OUT" "=> registered: new memo, shared" "registered"
+   assert_contains "$OUT" "=> registered: new aios-assistant, aios-context, aios-deploy, aios-distribution, aios-fetch, aios-gui, aios-init, aios-integrity, aios-memo, aios-package, aios-register, aios-status, gui, memo, shared" "registered: wrappers of the kernel and project skills"
    assert_contains "$OUT" "from the next chat (or after /reload-skills)" "hint: next chat"
    assert_eq "$(cat "$K/memo/SKILL.md")" "$(cat "$G/@/@!Skill/memo/SKILL.md")" "memo copied from Garten"
    assert_file "$K/memo/vorlagen/brief.md"
    assert_eq "$(cat "$K/own/SKILL.md")" "$(printf -- '---\nname: own\ndescription: test\n---\n\n# own\n')" "foreign skill untouched"
    [ ! -e "$K/privat" ] && [ ! -e "$K/aios-evil" ] && ok || fail "assistant skill and reserved name not registered"
    DIG="$(cd "$G/@/@!Skill/memo" && find . -type f | sed 's|^\./||' | sort | while IFS= read -r F; do printf '%s\n' "$F"; cat "$F"; printf '\n'; done | shasum -a 256 | cut -c1-64)"
-   assert_eq "$(cat "$G/.aios/registry")" "# written by AIOS (registration), do not edit
+   assert_eq "$(grep -v -e '^  aios-' -e '^  gui:' "$G/.aios/registry" | awk '/^    source: "kernel"/{skip=3} skip>0{skip--; next} {print}')" "# written by AIOS (registration), do not edit
 schema: 1
 registered:
   memo:
@@ -112,7 +112,8 @@ registered:
    skill "$D/@/@!Skill/neu" neu 1.0.0
    json() { printf '{"hook_event_name":"SessionStart","cwd":"%s"}' "$1"; }
    OUT="$(json "$G" | "$SRC/bin/aios" --context --session)"
-   assert_contains "$OUT" "AIOS-SKILLS: new neu — effective from the next chat" "session: AIOS-SKILLS line"
+   assert_contains "$OUT" "AIOS-SKILLS: new neu" "session: AIOS-SKILLS line"
+   assert_contains "$OUT" "— effective from the next chat" "session: AIOS-SKILLS line, next chat"
    assert_contains "$OUT" "AIOS-WARNING: $D/@/@!Skill/aios-evil: the name aios-evil is reserved" "session: problems as warnings"
    assert_file "$K/neu/SKILL.md"
    case "$(json "$G" | "$SRC/bin/aios" --context --session)" in *AIOS-SKILLS*) fail "second session: no AIOS-SKILLS line" ;; *) ok ;; esac
@@ -136,3 +137,28 @@ registered:
    assert_contains "$OUT" "new      zwei 2.0.0" "aios --register <path>: preview"
    assert_file "$K/zwei/SKILL.md"
    assert_contains "$(cd "$G" && "$SRC/bin/aios" --register </dev/null 2>&1)" "are up to date" "aios --register in cwd"
+
+#===============================================================================
+# v0.6 step 6: wrappers of the kernel skills and of the alias in the vault (spec 03, 04; V0.6, memos 28-30, 48)
+#===============================================================================
+
+   FW="$HOME/.aios/bin/aios"
+   assert_eq "$(ls "$K" | grep -c '^aios-')" "12" "12 wrappers of the kernel skills in the project"
+   assert_eq "$(cat "$K/aios-init/SKILL.md" | sed -n '2p;4p;7p')" "name: aios-init
+allowed-tools: Bash($FW --skill aios-init)
+!\`$FW --skill aios-init\`" "wrapper: name, own call only, absolute path (F20, F27)"
+   assert_contains "$(sed -n 3p "$K/aios-init/SKILL.md")" "description: \"Macht einen Ordner" "wrapper: description of the kernel skill"
+   assert_contains "$(cat "$K/aios-assistant/SKILL.md")" 'Session-ID dieses Chats: `${CLAUDE_SESSION_ID}`' "wrapper: session id as a line of text"
+   assert_eq "$(sed -n 4p "$K/gui/SKILL.md")" "allowed-tools: Bash($FW --gui --session *)" "alias gui: allowed-tools"
+   assert_contains "$(cat "$K/gui/SKILL.md")" "!\`$FW --gui --session \${CLAUDE_SESSION_ID}\`" "alias gui: body"
+   assert_eq "$(sed -n '/^  aios-init:/,/^  [a-z]/p' "$G/.aios/registry" | sed -n 2p)" '    source: "kernel"' "registry: source kernel"
+   assert_contains "$(sed -n '/^  aios-init:/,/digest/p' "$G/.aios/registry")" "version: $(cat "$SRC/VERSION")" "registry: version of the kernel"
+   assert_eq "$(ls "$D/.claude/skills" | grep -c '^aios-')" "12" "vault root brought up to date from a project below"
+   assert_file "$D/.claude/skills/gui/SKILL.md"
+   printf 'changed\n' >> "$K/aios-init/SKILL.md"
+   assert_contains "$(SY "$G" --plan)" "changed  aios-init" "changed wrapper: written anew"
+   SY "$G" --yes >/dev/null
+   assert_contains "$(SY "$G" --plan)" "are up to date" "after the sync: up to date"
+   mkdir -p "$G/.claude/skills/aios-fremd"
+   rm -rf "$G/.claude/skills/aios-status"; mkdir -p "$G/.claude/skills/aios-status"; printf 'mine\n' > "$G/.claude/skills/aios-status/SKILL.md"
+   assert_contains "$(SY "$G" --plan)" "changed  aios-status" "a wrapper in the registry is managed by AIOS"
