@@ -92,7 +92,7 @@ license: MIT
 
 **Prüfung beim Holen:** Jeder in `contents` genannte Name muss als Ordner bzw. Datei vorhanden sein, jeder Skill braucht eine gültige `version` (Spec 03), `gui` muss in `skills` stehen, Elementnamen dürfen sich nicht wiederholen. Bei `type: worker` gelten die Regeln von Spec 07 (`kind`, `programs`, Datei mit Hashes bzw. Skripte), bei `type: distribution` exakte Versionen (`==`) in `kernel` und `depends`. Ein Paket mit dem Feld `workers:` aus v0.4 wird abgelehnt, mit Hinweis auf `type: worker` (V0.5, Memo 30, L9). Ein Paket, das die Prüfung nicht besteht, wird nicht geholt.
 
-**Hooks** (`contents.hooks`) sind im Format vorgesehen, in v0.5 aber ohne Wirkung: `aios --fetch` meldet sie und holt das Paket ohne sie.
+**Hooks** (`contents.hooks`) sind im Format vorgesehen, in v0.6 aber ohne Wirkung: `aios --fetch` meldet sie und holt das Paket ohne sie.
 
 ## Versionen und Bereiche
 
@@ -396,7 +396,7 @@ projects:
 | `projects[].revision` | ja | Zweig, Tag oder Commit-SHA |
 | `projects[].path` | ja | relativ zum Wurzelprojekt, darunter, ohne `..` |
 | `projects[].groups` | nein | Liste von Gruppennamen |
-| `projects[].import` | nein | im Format vorgesehen, in v0.5 ohne Wirkung; `aios --workspace` meldet ihn und übergeht ihn |
+| `projects[].import` | nein | im Format vorgesehen, in v0.6 ohne Wirkung; `aios --workspace` meldet ihn und übergeht ihn |
 
 Die Datei wird mit PyYAML gelesen und vom User gepflegt.
 

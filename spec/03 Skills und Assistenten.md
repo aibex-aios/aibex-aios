@@ -246,7 +246,7 @@ tools: [read, search]
 | `skills` | nein | Namen von Skills |
 | `gui` | nein | Name des Skills mit der Oberfläche des Assistenten; muss in `skills` stehen (siehe *Oberflächen*) |
 | `model` | nein | Wunsch an den Host, Modell je Host; in der Desktop-App nur ein Hinweis an den User |
-| `tools` | nein | Wunsch an den Host, neutrale Namen; in v0.5 nur dokumentierend, nicht erzwungen |
+| `tools` | nein | Wunsch an den Host, neutrale Namen; in v0.6 nur dokumentierend, nicht erzwungen |
 
 **Auflösung von `prompt`, `skills` und `gui`:** zuerst im Assistentenordner (`<assistant>/@!Prompt/<prompt>.md`, `<assistant>/@!Skill/<skill>/SKILL.md`), danach in den Masterspaces der Kette vom Projekt aufwärts (`<D>/@/@!Prompt/…`, `<D>/@/@!Skill/…`, `<D>/@/@!Package/<paket>/skills/…`); der nächstgelegene Treffer gewinnt. Ein nicht gefundener Name, ein Skill ohne gültige `version` und ein `gui`, das nicht in `skills` steht, sind Fehler, die `aios --context --assistant` meldet.
 
