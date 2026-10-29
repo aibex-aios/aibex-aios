@@ -8,7 +8,7 @@ Regeln für Sessions, die an AIbex AIOS arbeiten, ob sie im Repo laufen oder im 
 |---|---|
 | Spec (Soll-Stand, verbindlich) | `spec/` |
 | Memos (Begründungen, Verlauf) | Projekt `AA-AIbex-AIOS`, Versionsordner, siehe unten |
-| Implementierungsplan | v0.6: noch keiner (Spec freigegeben in V0.6, Memo 39; Plan als nächstes Memo); v0.5.1: Memo 74 in V0.5, freigegeben in Memo 75; v0.5: Memo 44 in V0.5, freigegeben in Memo 45; spätere Memos gehen ihm vor (v0.4: Memo 18 in V0.4, v0.3: Memo 32 in V0.3, v0.2: Memo 20 in V0.2, v0.1: Memo 18 in V0.1) |
+| Implementierungsplan | v0.6: Memo 40 in V0.6, freigegeben in Memo 41 (Spec freigegeben in Memo 39); v0.5.1: Memo 74 in V0.5, freigegeben in Memo 75; v0.5: Memo 44 in V0.5, freigegeben in Memo 45; spätere Memos gehen ihm vor (v0.4: Memo 18 in V0.4, v0.3: Memo 32 in V0.3, v0.2: Memo 20 in V0.2, v0.1: Memo 18 in V0.1) |
 | Stand der Umsetzung | `STATUS.md` |
 | Code | `bin/` (Bash: `aios`; `aios --context` für Hooks und lesende Skills), `templates/forwarder` (Weiterleiter `~/bin/aios`), `lib/aios/` (Python) |
 | Skills | `skills/aios/<name>/SKILL.md` (AIOS-Skills); Pakete (Skills, Assistenten, Wissen, Arbeitspferde, Distributionen) in eigenen Paket-Repos unter `~/git/AIbex/<paket>/` |
@@ -22,7 +22,7 @@ Memos und ToDos im Projekt `~/vault/§AIOS/A-AIOS/AA-AIbex-AIOS/` (Regeln `@/@Ru
 
 | Ordner | Inhalt |
 |---|---|
-| `@Memo/V0.6/` | **laufende Version v0.6** (AIBOS 0.6.0), Spec freigegeben: Memos 01–17 (Konzept), 18 (Bewertung), 19–33 (Konsolidierung mit Proben P1–P5), 34 (Soll-Bild), 35 (Skizze mit Abnahmetest), 36–38 (Spezifikation, Festlegungen F26–F41), 39 (Freigabe); der Installer kommt mit v0.6.1 (Memos 01, 04–08, 13) |
+| `@Memo/V0.6/` | **laufende Version v0.6** (AIBOS 0.6.0), Spec freigegeben: Memos 01–17 (Konzept), 18 (Bewertung), 19–33 (Konsolidierung mit Proben P1–P5), 34 (Soll-Bild), 35 (Skizze mit Abnahmetest), 36–38 (Spezifikation, Festlegungen F26–F41), 39 (Freigabe der Spec), 40, 41 (Implementierungsplan und Freigabe); der Installer kommt mit v0.6.1 (Memos 01, 04–08, 13) |
 | `@Memo/V0.5/` | v0.5.1 (abgeschlossen, Tag `v0.5.1`, Abnahme Memo 94, Veröffentlichung Memo 95, Rückblick Memos 96, 97): Memos 70–72 (Neuinstallation, Befunde B6–B8, Umfang), 73–75 (Entscheidungen, Plan, Freigabe), 76–93 (Umsetzung, Abnahme mit B9–B11); v0.5.0 (abgeschlossen, Tag `v0.5.0`, Abnahme Memo 68): Memos 01–12 (Wünsche), 13–40 (Konzept), 41–43 (Spec), 44–45 (Plan), 46–67 (Umsetzung und Abnahme) |
 | `@Memo/V0.4/`, `@ToDo/V0.4/` | v0.4 (abgeschlossen, Tag `v0.4.0`, Abnahme Memo 75) |
 | `@Memo/V0.3/` | v0.3 (abgeschlossen, Tag `v0.3.1`); in Memos 01–11 heißt der Assistent noch *Agent* (Memo 13) |
