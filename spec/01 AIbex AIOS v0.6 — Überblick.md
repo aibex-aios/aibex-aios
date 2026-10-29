@@ -2,7 +2,7 @@
 title: "AIbex AIOS v0.6 — Überblick"
 date: 2026-10-29
 author: iHux
-status: Entwurf
+status: Spec
 tags: [spec, aios, v0.6]
 number: 01
 related:
