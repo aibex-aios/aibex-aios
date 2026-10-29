@@ -6,7 +6,7 @@ status: Spec
 tags: [spec, aios, v0.5, arbeitspferde]
 number: 07
 related:
-  - "Spec 01 AIbex AIOS v0.5 — Überblick"
+  - "Spec 01 AIbex AIOS v0.6 — Überblick"
   - "Spec 03 Skills und Assistenten"
   - "Spec 04 Installation und Konfiguration"
   - "Spec 06 Pakete und Workspaces"

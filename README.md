@@ -204,7 +204,7 @@ installed to `/opt/aios/v<version>/doc/spec/`; tutorials are installed from
 
 | Spec | Content |
 |---|---|
-| `01 AIbex AIOS v0.5 — Überblick` | definition, terms, scope, pre-releases, invariants, acceptance test |
+| `01 AIbex AIOS v0.6 — Überblick` | definition, terms, scope, pre-releases, invariants, acceptance test |
 | `02 Master-Kontext` | projects, chain, classes, `aios --context`, hooks, assistant of the session, consistency check |
 | `03 Skills und Assistenten` | skills, versions, registry, assistants and their assignment, GUIs, `aios-package`, `aios-distribution`, `aios-memo` |
 | `04 Installation und Konfiguration` | files, formats, forwarders, the command `aios` |

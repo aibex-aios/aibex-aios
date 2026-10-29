@@ -6,7 +6,7 @@ status: Spec
 tags: [spec, aios, v0.5, skills, assistenten]
 number: 03
 related:
-  - "Spec 01 AIbex AIOS v0.5 — Überblick"
+  - "Spec 01 AIbex AIOS v0.6 — Überblick"
   - "Spec 02 Master-Kontext"
   - "Spec 04 Installation und Konfiguration"
   - "Spec 05 Projekte"
