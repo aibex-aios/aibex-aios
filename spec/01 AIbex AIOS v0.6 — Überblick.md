@@ -148,6 +148,7 @@ v0.6.0 baut auf v0.5.1 auf. Schwerpunkt ist die **Grenze von AIBOS**: AIBOS-Verh
 | Zuordnung zur Session nur beim gespeicherten Arbeitsverzeichnis | Workflows (v0.7), Wissen mit Rohwissen und Fassung (v0.8) |
 | Umstieg von v0.5 in vier Schritten (Spec 04) | |
 | Cache von `--from` nach Quelle und Commit; `aios --install <distribution> <vault>` registriert im Ziel-Vault; Plan nennt offene Dateien des Ziels | |
+| Begleitpakete in neuen Patch-Versionen mit `requires.aios` bis `<0.7` (V0.6, Memo 38) | Distributionen mit Kernel 0.6 (mit dem Installer, v0.6.1) |
 
 ## Vorabversionen
 
@@ -196,7 +197,7 @@ Der Abnahmetest von v0.6.0 läuft auf dem Arbeitsrechner nach der Implementierun
 | 12 | `aios:` in `P-Probe/.aios/config.yaml`; neue Session; `/aios-integrity`; danach `legacy: ai-brain` neben `aios:` an der Vault-Root | Warnung im Vault und Meldung von `/aios-integrity`; Warnung bei `aios:` und `legacy:` zusammen; Einträge danach entfernen |
 | 13 | Session in `P-Probe` mit `/aios-assistant Anja`; Wechsel des Arbeitsverzeichnisses an die Vault-Root; Frage nach Arbeitsverzeichnis und Assistent; zurück nach `P-Probe` | an der Vault-Root kein Assistent; zurück in `P-Probe` wieder Anja |
 | 14 | in einer Session an der Vault-Root `/compact` | Master-Kontext mit Block neu geladen; die Prüfung der id findet beide Marken |
-| 15 | zwei Quellen derselben Version mit `--from` nacheinander installieren; `aios --install <distribution> ~/vault/§Probe-AIBOS` aus einem anderen Arbeitsverzeichnis | `lock.yaml` nennt den Commit der zweiten Quelle; registriert wird im Ziel-Vault |
+| 15 | zwei Quellen derselben Version einer Testdistribution aus dem lokalen Hub mit `--from` nacheinander installieren; `aios --install <distribution> ~/vault/§Probe-AIBOS` aus einem anderen Arbeitsverzeichnis | `lock.yaml` nennt den Commit der zweiten Quelle; registriert wird im Ziel-Vault |
 | 16 | eine offene Änderung an `§Probe-AIBOS/.aios/config.yaml`; `aios --fetch <paket> --plan` | der Plan nennt die offene Datei |
 | 17 | `aios --activate v0.6.0 ~/vault/§AIOS --plan`, dann mit Ja | Bindung, Registrierung der Kernel-Skills in `§AIOS` und seinen Projekten; Angebot, die globalen Hüllen (12 `aios-*` und `gui`) zu entfernen; fremde Ordner in `~/.claude/skills/` bleiben |
 | 18 | neue Session außerhalb jedes Vaults in der interaktiven CLI: `/aios-init` | „Unknown command"; Grundregel 6 gilt auf dem Rechner |

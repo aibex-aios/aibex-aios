@@ -140,7 +140,7 @@ Skills und Assistenten kommen als **Pakete** in ein Projekt: Ein Paket wird vom 
 
 `/aios-package` versteht unscharfe Namen („installiere mir den Rechner"): Es sucht mit `aios --library` in Namen und Beschreibungen der Pakete der Hub-Liste und fragt bei mehreren Treffern nach. Einen vollen Paketnamen `<hub>/<paket>` gibt es unverändert weiter. Meldet `aios --fetch`, dass ein Name in mehreren Hubs liegt, fragt es, welcher gemeint ist. Es fragt nach dem Ziel und schlägt das Root-Projekt vor. Wie jeder schreibende Skill holt es den Plan mit `--plan`, fragt im Chat und ruft erst nach Ja mit `--yes` auf (Spec 01, I7). Nach dem Holen sagt es, dass neue Skills ab dem nächsten Chat verfügbar sind, und nennt bei einer App ihre Oberfläche (*Oberflächen*).
 
-**Pakete der Grundausstattung** (Stand v0.5 mit `requires.aios: ">=0.4,<0.6"`; V0.5, Memo 41; für v0.6 brauchen sie neue Versionen, deren `requires.aios` 0.6 einschließt):
+**Pakete der Grundausstattung** (Stand v0.5 mit `requires.aios: ">=0.4,<0.6"`; V0.5, Memo 41; für v0.6 bekommen sie Patch-Versionen mit der Obergrenze `<0.7`; V0.6, Memo 38):
 
 | Paket | Hub | Typ | Version | Inhalt |
 |---|---|---|---|---|
