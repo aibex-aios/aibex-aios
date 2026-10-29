@@ -253,9 +253,9 @@ def uninitialized_message(ctx):
                if ctx.project else "(title, assistant, initialize)")
     return (f"PROJECT-UNINITIALIZED: {ctx.cwd} has no local masterspace (@/). Before your first\n"
             f"answer, call the skill /aios-init (Skill tool) and follow it: it runs\n"
-            f"`aios --init \"{ctx.cwd}\" --plan`, shows the dialog \"Projekt initialisieren\"\n"
+            f"`{paths.forwarder()} --init \"{ctx.cwd}\" --plan`, shows the dialog \"Projekt initialisieren\"\n"
             f"{choices} and, after the user's choice,\n"
-            f"runs aios --init with --yes. Without that skill, do the same yourself: run the plan,\n"
+            f"runs {paths.forwarder()} --init with --yes. Without that skill, do the same yourself: run the plan,\n"
             f"ask these questions, then run with --yes. Never answer a question of aios yourself.\n"
             f"Give no other answer until the user decides.")
 
@@ -299,7 +299,8 @@ def workers_message(ctx):
     gone = worker.missing([ms.parent for ms in ctx.masterspaces])
     if not gone:
         return ""
-    return "\nAIOS-WORKERS: missing " + ", ".join(f"{p} {v}" for p, v in gone) + " — run aios --fetch"
+    return ("\nAIOS-WORKERS: missing " + ", ".join(f"{p} {v}" for p, v in gone)
+            + f" — run {paths.forwarder()} --fetch")
 
 
 def context_check_message(ctx):
@@ -308,7 +309,7 @@ def context_check_message(ctx):
             f" Before answering, verify that BOTH exact markers <aios-context id=\"{ident}\"\n"
             f" and </aios-context id=\"{ident}\"> are present in your context (memory or a\n"
             f" summary of earlier loading does not count). If not: tell the user\n"
-            f" \"Lade Master-Kontext\", run `aios --context --load \"{ctx.cwd}\"` via Bash, read every\n"
+            f" \"Lade Master-Kontext\", run `{paths.forwarder()} --context --load \"{ctx.cwd}\"` via Bash, read every\n"
             f" listed part file completely with the Read tool, then tell the user\n"
             f" \"Master-Kontext geladen (id {ident})\". If both markers are present, do nothing.")
 
@@ -317,10 +318,30 @@ def context_check_message(ctx):
 # assistant of the session (spec 02, Assistent der Session)
 # ---------------------------------------------------------------------------
 
+def project_of(path):
+    """Nearest directory with @/ at or above path, up to the vault root; None if there is none."""
+    p = Path(os.path.realpath(path))
+    root = config.vault_root(p)
+    if root is None:
+        return None
+    for d in [p, *p.parents]:
+        if (d / "@").is_dir():
+            return d
+        if d == root:
+            break
+    return None
+
+
+def marker_applies(ctx, m):
+    """The marker counts only in the project it was written in (spec 02; V0.6, memos 33, 45)."""
+    return bool(m) and project_of(m.get("cwd") or "") == project_of(ctx.cwd)
+
+
 def assistant_of_session(ctx, source, sid):
     """(name or none, origin) for the SessionStart hook; writes or updates the marker.
-    startup, clear: assignment of the project; resume, compact: the marker (if missing:
-    assignment, marker created). Not initialized folders get no assistant."""
+    startup, clear: assignment of the project; resume, compact: the marker if it belongs to the
+    project of cwd (if missing: assignment, marker created; another project: assignment, marker
+    unchanged). Not initialized folders get no assistant."""
     from . import session as marker
     if not ctx.initialized:
         return "none", None
@@ -332,6 +353,8 @@ def assistant_of_session(ctx, source, sid):
         marker.clean()
     if source in ("resume", "compact"):
         m = marker.read(sid)
+        if m and not marker_applies(ctx, m):
+            return name, origin
         if m:
             marker.write(sid, m.get("cwd") or ctx.cwd, m["assistant"])      # used
             return m["assistant"], "session"
@@ -347,7 +370,7 @@ def session_assistant(ctx, sid):
     if not ctx.initialized:
         return None
     m = marker.read(sid) if sid and marker.ID.match(sid) else None
-    name = m["assistant"] if m else ctx.cfg.assignment[0]
+    name = m["assistant"] if marker_applies(ctx, m) else ctx.cfg.assignment[0]
     if name == "none":
         return None
     try:
@@ -362,7 +385,7 @@ def assistant_check_message(ctx, name, ver):
     return (f"AIOS-ASSISTANT-CHECK: expected assistant={name} version={ver}.\n"
             f" Verify that BOTH markers <aios-assistant name=\"{name}\" and\n"
             f" </aios-assistant name=\"{name}\"> are present in your context. If not: run\n"
-            f" `aios --context --assistant {name} --load` via Bash in \"{ctx.cwd}\", read every\n"
+            f" `{paths.forwarder()} --context --assistant {name} --load` via Bash in \"{ctx.cwd}\", read every\n"
             f" listed part file completely, and continue in this role.")
 
 
@@ -471,8 +494,7 @@ def main(argv):
         try:
             return hook(cmd)
         except Exception as e:                      # noqa: BLE001 - a hook never breaks the session
-            print(f"AIOS-WARNING: aios --context {cmd} failed: {e}")
-            return 0
+            return hook_failed(cmd, e)
     if cmd not in ("--context", "--load", "--id", "--list") or len(argv) > 2:
         print(USAGE, file=sys.stderr)
         return 1
@@ -553,7 +575,7 @@ def assignment_cmd(args):
         except session.BadId as e:
             print(f"*** aios --context --assignment: {e}", file=sys.stderr)
             return 1
-        if marker:
+        if marker and project_of(marker.get("cwd") or "") == project_of(cwd):
             print(f"assistant={marker['assistant']} from=session")
             return 0
     cfg = config.load(cwd)
@@ -562,9 +584,27 @@ def assignment_cmd(args):
     return 0
 
 
+HOOK_CWD = None                                     # cwd of the running hook, for hook_failed
+
+
+def hook_failed(cmd, e):
+    """A failing hook: a line in the log; AIOS-WARNING only in an A/W (spec 02, Hooks; V0.6, memo 45)."""
+    cwd = HOOK_CWD or paths.cwd()
+    paths.log(cmd, cwd, f"aios --context {cmd} failed: {e}")
+    try:
+        inside = config.load(cwd).kind == "aios"
+    except Exception:                               # noqa: BLE001
+        inside = False
+    if inside:
+        print(f"AIOS-WARNING: aios --context {cmd} failed: {e}")
+    return 0
+
+
 def hook(cmd):
+    global HOOK_CWD
     given, raw = hook_input()
     cwd = given or paths.cwd()
+    HOOK_CWD = cwd
     ctx = Context(cwd)
     if ctx.mode in ("none", "alt"):                 # outside an A/W nothing (spec 02)
         return 0

@@ -28,6 +28,23 @@ def bin_dir() -> Path:
     return home() / "bin"
 
 
+def forwarder() -> Path:
+    """Absolute path of the forwarder ~/.aios/bin/aios, named in every text of AIOS (spec 02; V0.6, F34)."""
+    return user_dir() / "bin" / "aios"
+
+
+def log(hook, cwd, message):
+    """One line in ~/.aios/log/context.log (spec 02, Hooks; V0.6, memo 15); never fails."""
+    import time
+    try:
+        d = user_dir() / "log"
+        d.mkdir(parents=True, exist_ok=True)
+        with open(d / "context.log", "a", encoding="utf-8") as f:
+            f.write(f"{time.strftime('%Y-%m-%dT%H:%M:%S')} {hook} cwd={cwd} {message}\n")
+    except OSError:
+        pass
+
+
 def user_versions() -> Path:
     """Fallback for installations when /opt/aios cannot be set up, ~/.aios/versions."""
     return user_dir() / "versions"

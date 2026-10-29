@@ -195,7 +195,8 @@ def session_assistant(ctx, session_id):
             m = session.read(session_id)
         except session.BadId as e:
             raise Abort(str(e))
-        if m:
+        from .context import marker_applies
+        if marker_applies(ctx, m):
             return m["assistant"]
     return ctx.cfg.assignment[0]
 

@@ -53,9 +53,9 @@ $CTX" "session: inline = header + --context"
    OUT="$(HOOK --session "$D/Garten/Neu")"
    assert_eq "$(printf '%s\n' "$OUT" | head -7)" "PROJECT-UNINITIALIZED: $D/Garten/Neu has no local masterspace (@/). Before your first
 answer, call the skill /aios-init (Skill tool) and follow it: it runs
-\`aios --init \"$D/Garten/Neu\" --plan\`, shows the dialog \"Projekt initialisieren\"
+\`$HOME/.aios/bin/aios --init \"$D/Garten/Neu\" --plan\`, shows the dialog \"Projekt initialisieren\"
 (title, assistant, initialize or continue in the project $D/Garten) and, after the user's choice,
-runs aios --init with --yes. Without that skill, do the same yourself: run the plan,
+runs $HOME/.aios/bin/aios --init with --yes. Without that skill, do the same yourself: run the plan,
 ask these questions, then run with --yes. Never answer a question of aios yourself.
 Give no other answer until the user decides." "uninitialized: skill /aios-init, dialog, X = project above, --yes (A2, A3)"
    assert_contains "$OUT" "src=\"$D/Garten/@/garten.md\"" "uninitialized: master context up to X"
@@ -143,7 +143,7 @@ Give no other answer until the user decides." "uninitialized: skill /aios-init, 
    assert_eq "$(printf '%s\n' "$OUT" | head -1)" "AIOS-CONTEXT-CHECK: expected id=$ID (files=2, cwd=$D/Garten)." "advise: first line"
    assert_contains "$OUT" "<aios-context id=\"$ID\"" "advise: start marker"
    assert_contains "$OUT" "</aios-context id=\"$ID\">" "advise: end marker"
-   assert_contains "$OUT" "run \`aios --context --load \"$D/Garten\"\` via Bash" "advise: load with explicit path"
+   assert_contains "$OUT" "run \`$HOME/.aios/bin/aios --context --load \"$D/Garten\"\` via Bash" "advise: load with explicit path"
    assert_eq "$(cd "$D/Garten" && AC --advise </dev/null | head -1)" "AIOS-CONTEXT-CHECK: expected id=$ID (files=2, cwd=$D/Garten)." "advise without JSON: cwd of the process"
 
 #===============================================================================
@@ -187,7 +187,7 @@ assistant: gaertner" "startup: marker written"
    assert_contains "$OUT" "AIOS-ASSISTANT-CHECK: expected assistant=gaertner version=0.1.0.
  Verify that BOTH markers <aios-assistant name=\"gaertner\" and
  </aios-assistant name=\"gaertner\"> are present in your context. If not: run
- \`aios --context --assistant gaertner --load\` via Bash in \"$D/Garten\", read every
+ \`$HOME/.aios/bin/aios --context --assistant gaertner --load\` via Bash in \"$D/Garten\", read every
  listed part file completely, and continue in this role." "advise: assistant check after the context check"
    case "$OUT" in AIOS-CONTEXT-CHECK*) ok ;; *) fail "advise: context check first" ;; esac
    OUT="$(SH --session s1 clear "$D/Garten")"
@@ -230,3 +230,32 @@ assistant: gaertner" "startup: marker written"
    assert_file "$P1"
    case "$OUT" in *"AIOS-ASSISTANT ("*) fail "mandatory: no inline assistant" ;; *) ok ;; esac
    rm "$HOME/.aios/config.yaml"
+
+#===============================================================================
+# v0.6 step 3: quiet outside an A/W, log, marker only in its project (spec 02; V0.6, memos 33, 45)
+#===============================================================================
+
+   O="$SANDBOX/work/§Ohne"; mk "$O/@/a.md" $'# A\n'
+   assert_eq "$(HOOK --session "$O")$(HOOK --advise "$O")" "" "vault without binding: hooks print nothing"
+   F5="$SANDBOX/work/§Fuenf"; mk "$F5/@/a.md" $'# A\n'; mk "$F5/.aios/config.yaml" $'aios: 0.5.1\n'
+   assert_eq "$(HOOK --session "$F5")$(HOOK --advise "$F5")" "" "binding below 0.6: hooks of 0.6 print nothing"
+
+   X="$SANDBOX/work/§Wechsel"; mk "$X/.aios/config.yaml" $'aios: 0.6.0\n'; mk "$X/@/x.md" $'# X\n'
+   mk "$X/@/@!Assistant/gaertner/ASSISTANT.md" $'---\nname: gaertner\ntitle: Gärtner\nversion: 0.1.0\ndescription: Gärtner\n---\n\nNur Äpfel.\n'
+   mk "$X/P1/@/p.md" $'# P1\n'; mk "$X/P1/.aios/config.yaml" $'assistant: gaertner\n'; mkdir -p "$X/P1/sub"
+   mk "$X/P2/@/p.md" $'# P2\n'
+   SH --session w1 startup "$X/P1" >/dev/null
+   case "$(SH --advise w1 x "$X/P1/sub")" in *AIOS-ASSISTANT-CHECK*) fail "marker: not initialized subfolder has no assistant" ;; *) ok ;; esac
+   assert_contains "$(SH --advise w1 x "$X/P1")" "AIOS-ASSISTANT-CHECK: expected assistant=gaertner" "marker: its project keeps the assistant"
+   case "$(SH --advise w1 x "$X/P2")" in *AIOS-ASSISTANT-CHECK*) fail "marker: another project, no assistant of the session" ;; *) ok ;; esac
+   OUT="$(SH --session w1 resume "$X/P2")"
+   case "$OUT" in *"AIOS-ASSISTANT ("*) fail "resume in another project: no assistant from the marker" ;; *) ok ;; esac
+   assert_contains "$(cat "$M/w1.yaml")" "cwd: \"$X/P1\"" "resume in another project: marker unchanged"
+   assert_contains "$(SH --session w1 resume "$X/P1")" "AIOS-ASSISTANT (assistant of this session, from session):" "back in the project: assistant from the marker"
+   assert_eq "$(cd "$SANDBOX" && "$SRC/bin/aios" --context --assignment "$X/P2" --session w1)" "assistant=none from=-" "--assignment --session: marker only in its project"
+
+   chmod 000 "$X/@/x.md"
+   OUT="$(HOOK --session "$X/P1")"
+   assert_contains "$OUT" "AIOS-WARNING: aios --context --session failed:" "failure in an A/W: warning"
+   assert_contains "$(cat "$HOME/.aios/log/context.log")" "--session cwd=$X/P1 aios --context --session failed:" "failure: line in the log"
+   chmod 644 "$X/@/x.md"

@@ -82,7 +82,7 @@
 
    chmod -R u+w "$I"; rm -rf "$I"
    assert_contains "$(A "$D" --worker)" "worker-test 0.1.0  not installed (fetched in $D); run: aios --worker worker-test setup" "--worker: fetched, not installed"
-   assert_contains "$(at "$G" "$SRC/bin/aios" --context --advise </dev/null)" "AIOS-WORKERS: missing worker-test 0.1.0 — run aios --fetch" "advise: missing workhorse of the chain (N3)"
+   assert_contains "$(at "$G" "$SRC/bin/aios" --context --advise </dev/null)" "AIOS-WORKERS: missing worker-test 0.1.0 — run $HOME/.aios/bin/aios --fetch" "advise: missing workhorse of the chain (N3)"
    OUT="$(echo y | A "$D" --fetch)"
    assert_contains "$OUT" "setup      worker-test 0.1.0 -> $I" "reconcile: setup of the missing version"
    assert_eq "$(at "$D" "$T")" "aios-test-tool 1.0.0" "reconcile: installed again"
