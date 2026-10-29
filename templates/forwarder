@@ -187,6 +187,10 @@
    choose
    case "$KIND" in
       aios)
+         if [ "$1" == "--context" ] && [ "$2" == "--permit" ] && [ -z "$AIOS_HOME" ]; then
+            V="$(cat "${TARGET%/bin/aios}/VERSION" 2>/dev/null)"           # below 0.6: no --permit,
+            if [[ "$V" =~ ^0\.([0-5])\. ]] || [ -z "$V" ]; then exit 0; fi  # the host asks (V0.6, memo 47)
+         fi
          [ -x "$TARGET" ] || { echo "*** aios: $TARGET not found ($WHY)" >&2; exit 1; }
          if [ "$1" == "--context" ] && [ -x "${TARGET%/aios}/aios-context" ]; then   # versions below 0.5
             V="$(cat "${TARGET%/bin/aios}/VERSION" 2>/dev/null)"                   # have aios-context

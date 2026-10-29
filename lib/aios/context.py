@@ -494,7 +494,7 @@ def legacy(cmd, cwd, stdin=""):
     return 0
 
 
-USAGE = ("usage: aios --context [<path>] | --session | --advise | --load [<path>] | --id [<path>]"
+USAGE = ("usage: aios --context [<path>] | --session | --advise | --permit | --load [<path>] | --id [<path>]"
          " | --list [<path>] | --sync [--yes|--plan] | --assistant <name> [--load] | --assistants"
          " | --assignment [<path>] [--session <id>]")
 
@@ -514,6 +514,9 @@ def main(argv):
         return assistant_cmd(argv)
     if cmd == "--assignment":
         return assignment_cmd(argv[1:])
+    if cmd == "--permit" and len(argv) == 1:      # PreToolUse hook (spec 02, Freigabe)
+        from . import permit
+        return permit.main()
     if cmd in ("--session", "--advise") and len(argv) == 1:
         try:
             return hook(cmd)
