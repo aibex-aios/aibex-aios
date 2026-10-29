@@ -17,7 +17,7 @@
    export AIOS_HUBS="aibex-aios=file://$SANDBOX/hubs/aibex-aios"
    export AIOS_PIP_FIND_LINKS="$SANDBOX/hubs/wheels"
    D="$SANDBOX/work/§Demo"; G="$D/G-Garten"
-   mkdir -p "$D/@" "$D/.aios" "$G/@" "$SANDBOX/outside"; printf 'aios: 0.5.0\n' > "$D/.aios/config.yaml"
+   mkdir -p "$D/@" "$D/.aios" "$G/@" "$SANDBOX/outside"; printf 'aios: 0.6.0\n' > "$D/.aios/config.yaml"
    at() { (cd "$1" && shift && "$@" 2>&1); }
    A() { local d="$1"; shift; at "$d" "$SRC/bin/aios" "$@"; }
    T="$HOME/.aios/bin/aios-test-tool"; I="$HOME/.aios/workers/worker-test/v0.1.0"

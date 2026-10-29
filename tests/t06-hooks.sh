@@ -8,14 +8,14 @@
    export PATH="$SANDBOX/fake:/usr/bin:/bin:/usr/sbin:/sbin"
    D="$SANDBOX/work/§Demo"
    mk() { mkdir -p "$(dirname "$1")"; printf '%s' "$2" > "$1"; }
-   mk "$D/.aios/config.yaml"      $'aios: 0.1.0\n'
+   mk "$D/.aios/config.yaml"      $'aios: 0.6.0\n'
    mk "$D/@/@Rule/stil.md"        $'# Stil\nschreib klar\n'
    mk "$D/Garten/@/garten.md"     $'# Garten\nApfel\n'
    mkdir -p "$D/Garten/Neu"
    mk "$D/Garten/.gitignore"      $'.DS_Store\n.claude/skills/\n.claude/worktrees/\n.agents/\n.aios/registry\n.aios/backup/\n'
    git -C "$D/Garten" init -q                      # Garten is a complete project (spec 05, S1-S4)
    mk "$D/Wiese/@/wiese.md"       $'# Wiese\n'
-   mk "$SANDBOX/work/§Alt/@/a.md" $'# A\n'
+   mk "$SANDBOX/work/§Alt/@/a.md" $'# A\n'; mk "$SANDBOX/work/§Alt/.aios/config.yaml" $'legacy: ai-brain\n'
    printf '#!/bin/bash\necho "ai-brain $* stdin=$(cat)"\n' > "$SANDBOX/fake/ai-brain"; chmod +x "$SANDBOX/fake/ai-brain"
 
    AC() { "$SRC/bin/aios" --context "$@"; }
@@ -109,7 +109,7 @@ Give no other answer until the user decides." "uninitialized: skill /aios-init, 
    assert_contains "$OUT" "src=\"$D/@/@Rule/stil.md\"" "B9: chain continues above the chosen folder"
    assert_contains "$(AC --list "$W")" "§Demo → w1" "B9: chain §Demo → w1"
    H="$SANDBOX/work/§Hirsch"                       # B9: worktree of the vault root
-   mk "$H/.aios/config.yaml" $'aios: 0.1.0\n'
+   mk "$H/.aios/config.yaml" $'aios: 0.6.0\n'
    mk "$H/@/hirsch.md" $'# Hirsch\n'
    mk "$H/.gitignore" $'.claude/worktrees/\n'
    git -C "$H" init -q && git -C "$H" add -A && git -C "$H" commit -qm init
@@ -150,7 +150,7 @@ Give no other answer until the user decides." "uninitialized: skill /aios-init, 
 # warnings and failures never break the session
 #===============================================================================
 
-   printf 'aios: 0.1.0\nfoo: 1\n' > "$D/.aios/config.yaml"
+   printf 'aios: 0.6.0\nfoo: 1\n' > "$D/.aios/config.yaml"
    assert_contains "$(HOOK --session "$D/Garten")" "AIOS-WARNING: $D/.aios/config.yaml: unknown key foo ignored" "session: config warning"
    chmod 000 "$D/Garten/@/garten.md"
    OUT="$(HOOK --session "$D/Garten")"; RC=$?
@@ -162,7 +162,7 @@ Give no other answer until the user decides." "uninitialized: skill /aios-init, 
 # v0.3 step 6: assistant of the session (spec 02, Assistent der Session)
 #===============================================================================
 
-   printf 'aios: 0.1.0\n' > "$D/.aios/config.yaml"
+   printf 'aios: 0.6.0\n' > "$D/.aios/config.yaml"
    mk "$D/@/@!Assistant/gaertner/ASSISTANT.md" $'---\nname: gaertner\ntitle: Gärtner\nversion: 0.1.0\ndescription: Gärtner\n---\n\nNur Äpfel und Birnen.\n'
    mk "$D/Garten/.aios/config.yaml" $'assistant: gaertner\n'
    SJ() { printf '{"session_id":"%s","source":"%s","cwd":"%s"}' "$1" "$2" "$3"; }

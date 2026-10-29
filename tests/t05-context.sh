@@ -10,7 +10,7 @@
    D="$SANDBOX/work/§Demo"; M="$D/@"
    mk() { mkdir -p "$(dirname "$1")"; printf '%s' "$2" > "$1"; }
 
-   mk "$D/.aios/config.yaml"                   $'aios: 0.1.0\n'
+   mk "$D/.aios/config.yaml"                   $'aios: 0.6.0\n'
    mk "$M/README.md"                           $'# Root\nroot text\n'                  # K3
    mk "$M/@Rule/stil.md"                       $'# Stil\nschreib klar\n'
    mk "$M/@Rule/sub/tief.md"                   'no newline at the end'                  # K1, no trailing newline
@@ -133,16 +133,37 @@ Apfel
    assert_dir "$CD"
 
 #===============================================================================
-# legacy mode (no aios: in the chain): aios --context behaves like ai-brain
+# legacy mode (legacy: ai-brain at the vault root): aios --context behaves like ai-brain
 #===============================================================================
 
-   L="$SANDBOX/work/§Alt"; mk "$L/@/a.md" $'# A\n'
+   L="$SANDBOX/work/§Alt"; mk "$L/@/a.md" $'# A\n'; mk "$L/.aios/config.yaml" $'legacy: ai-brain\n'
    assert_eq "$(CTX "$L" --id)" "id=- files=0 cwd=$L mode=legacy" "legacy --id without ai-brain"
    assert_eq "$(CTX "$L" --context)" "" "legacy --context without ai-brain: nothing"
    printf '#!/bin/bash\n[ "$*" == "--id" ] && echo "id=feed0001 files=1 cwd=$PWD" || echo "ai-brain $*"\n' > "$SANDBOX/fake/ai-brain"
    chmod +x "$SANDBOX/fake/ai-brain"
    assert_eq "$(CTX "$L" --id)" "id=feed0001 files=1 cwd=$L mode=legacy" "legacy --id: ai-brain plus mode=legacy"
    assert_eq "$(CTX "$L" --load)" "ai-brain --load" "legacy --load: ai-brain"
+
+#===============================================================================
+# kinds of vaults (spec 02, Arten von Vaults; V0.6, memos 14, 17, 42)
+#===============================================================================
+
+   N="$SANDBOX/work/§Leer"; mk "$N/@/a.md" $'# A\n'
+   assert_eq "$(CTX "$N" --id)" "id=- files=0 cwd=$N mode=none" "vault without binding: mode=none"
+   assert_contains "$(CTX "$N" --context)" "not in an AIBOS workspace, no master context" "vault without binding: no master context"
+   O="$SANDBOX/work/§Old"; mk "$O/@/a.md" $'# A\n'; mk "$O/.aios/config.yaml" $'aios: 0.5.1\n'
+   assert_eq "$(CTX "$O" --id)" "id=- files=0 cwd=$O mode=alt-0.5.1" "binding below 0.6: mode=alt"
+   assert_contains "$(CTX "$O" --context)" "not in an AIBOS workspace, no master context" "binding below 0.6: no master context"
+   V="$SANDBOX/work/§Dev"; mk "$V/@/a.md" $'# A\n'; mk "$V/.aios/config.yaml" $'aios: 0.6.0-dev\n'
+   assert_contains "$(CTX "$V" --id)" "mode=aios-" "0.6.0-dev counts as AIBOS (MAJOR.MINOR)"
+   mk "$N/.aios/config.yaml" $'legacy: something\n'
+   assert_eq "$(CTX "$N" --id)" "id=- files=0 cwd=$N mode=none" "legacy: other value ignored"
+   assert_contains "$(PYTHONPATH="$SRC/lib" python3 -c "from aios import config; print(config.load('$N').warnings)")" "legacy: something is not ai-brain, ignored" "legacy: warning for another value"
+   mk "$O/.aios/config.yaml" $'aios: 0.6.0\nlegacy: ai-brain\n'
+   assert_contains "$(CTX "$O" --id)" "mode=aios-" "aios: and legacy: together: aios: applies"
+   assert_contains "$(PYTHONPATH="$SRC/lib" python3 -c "from aios import config; print(config.load('$O').warnings)")" "aios: and legacy: together, aios: applies" "aios: and legacy: together: warning"
+   mk "$O/P/@/a.md" $'# A\n'; mk "$O/P/.aios/config.yaml" $'aios: 0.5.1\nlegacy: ai-brain\n'
+   assert_contains "$(CTX "$O/P" --id)" "mode=aios-" "project: aios: and legacy: do not count"
    assert_exit 1 "$SRC/bin/aios" --context --assistant obstgaertner
 
 #===============================================================================
@@ -153,6 +174,6 @@ Apfel
    assert_eq "$(CTX "$SANDBOX/Vault/Garten" --id)" "$(CTX "$D/Garten" --id)" "symlink: same id, same cwd"
    assert_contains "$("$SRC/bin/aios" --context --id "$SANDBOX/Vault/Garten")" "mode=aios-" "symlink: vault recognized"
    mkdir -p "$HOME/bin"; cp "$SRC/templates/forwarder" "$HOME/bin/aios"; chmod +x "$HOME/bin/aios"
-   mkdir -p "$AIOS_PREFIX/v0.1.0/bin"; printf '#!/bin/bash\necho "fwd $*"\n' > "$AIOS_PREFIX/v0.1.0/bin/aios"
-   chmod +x "$AIOS_PREFIX/v0.1.0/bin/aios"; echo "v0.1.0: $AIOS_PREFIX/v0.1.0" > "$AIOS_PREFIX/installations.yaml"
+   mkdir -p "$AIOS_PREFIX/v0.6.0/bin"; printf '#!/bin/bash\necho "fwd $*"\n' > "$AIOS_PREFIX/v0.6.0/bin/aios"
+   chmod +x "$AIOS_PREFIX/v0.6.0/bin/aios"; echo "v0.6.0: $AIOS_PREFIX/v0.6.0" > "$AIOS_PREFIX/installations.yaml"
    assert_eq "$(at "$SANDBOX/Vault/Garten" "$HOME/bin/aios" --context --id)" "fwd --context --id" "forwarder: vault recognized through the symlink"

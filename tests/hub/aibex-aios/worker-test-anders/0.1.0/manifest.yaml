@@ -3,7 +3,7 @@ version: 0.1.0
 type: worker
 description: Testpaket Arbeitspferd mit demselben Programm wie worker-test (Konflikt)
 requires:
-  aios: ">=0.5,<0.6"
+  aios: ">=0.5,<0.7"
 worker:
   kind: script
   setup: worker/setup.sh

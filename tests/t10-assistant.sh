@@ -9,7 +9,7 @@
    mk() { mkdir -p "$(dirname "$1")"; printf '%s' "$2" > "$1"; }
    skill() { mk "$1/SKILL.md" "$(printf -- '---\nname: %s\ndescription: %s\n%s---\n\n# %s\n' "$2" "$3" "${4-version: 0.1.0
 }" "$2")"; }
-   mk "$D/.aios/config.yaml" $'aios: 0.1.0\n'
+   mk "$D/.aios/config.yaml" $'aios: 0.6.0\n'
    mk "$D/@/@Rule/stil.md" $'# Stil\n'
    mk "$D/@/@!Prompt/obstgaertner.md" $'# Obstgärtner (Vault)\nvom Vault\n'
    skill "$D/@/@!Skill/memo" memo "Memo des Vaults"
@@ -155,7 +155,7 @@ version: 0.1.0
    AI() { (cd "$1" && shift && "$SRC/bin/aios" --assistant "$@" 2>&1); }
    CFGF="$D/.aios/config.yaml"
    assert_eq "$(AS "$G")" "assistant=none from=-" "no entry up to the vault root: no assistant"
-   printf '# Vault\naios: 0.1.0\nassistant: astronom\n' > "$CFGF"
+   printf '# Vault\naios: 0.6.0\nassistant: astronom\n' > "$CFGF"
    assert_eq "$(AS "$G")" "assistant=astronom from=$CFGF" "inherit without entry: vault assistant"
    mk "$G/.aios/config.yaml" $'assistant: inherit\n'
    assert_eq "$(AS "$G")" "assistant=astronom from=$CFGF" "inherit counts as no entry"
@@ -214,7 +214,7 @@ assistant: astronom" "marker: header, cwd, assistant"
    assert_eq "$(AS "$G" --session S-none)" "assistant=astronom from=$CFGF" "no marker: assignment of the project"
    assert_contains "$(AI "$G" none --to "$D" --plan)" "project §Demo: Astronom → no assistant" "--to the vault root"
    assert_eq "$(AI "$G" none --to "$D" --yes --session S-1)" $'=> §Demo: assistant none\n   session S-1: none' "--to: the session follows when its assistant changes"
-   assert_contains "$(cat "$CFGF")" $'aios: 0.1.0\nassistant: none' "vault: line replaced, aios kept"
+   assert_contains "$(cat "$CFGF")" $'aios: 0.6.0\nassistant: none' "vault: line replaced, aios kept"
    assert_eq "$(AI "$G" obstgaertner --yes --session S-1)" $'=> Garten: assistant obstgaertner\n   session S-1: obstgaertner' "switch with session"
    assert_eq "$(AI "$G" astronom --to "$D" --yes --session S-1)" "=> §Demo: assistant astronom" "--to: session unchanged when its assistant stays"
    assert_eq "$(AS "$G" --session S-1)" "assistant=obstgaertner from=session" "marker kept"

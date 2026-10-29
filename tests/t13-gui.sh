@@ -12,7 +12,7 @@
    export PATH="$PYDIR:/usr/bin:/bin:/usr/sbin:/sbin"
    D="$SANDBOX/work/§Demo"; G="$D/Garten"
    mk() { mkdir -p "$(dirname "$1")"; printf '%s' "$2" > "$1"; }
-   mk "$D/.aios/config.yaml" $'aios: 0.3.0\n'
+   mk "$D/.aios/config.yaml" $'aios: 0.6.0\n'
    mkdir -p "$D/@/@!Assistant" "$G/@/@!Assistant" "$D/Wiese/@"
    cp -R "$SRC/tests/hub/aibex-aios/assistant-gaertner/0.3.0/assistants/gaertner" "$G/@/@!Assistant/gaertner"
    cp -R "$SRC/tests/hub/aibex-aios/assistant-astronom/0.3.0/assistants/astronom" "$D/@/@!Assistant/astronom"
@@ -25,7 +25,7 @@
 #===============================================================================
 
    assert_eq "$(GUI "$G")" $'No assistant active.\nAIOS surface: `/aios-gui`' "no assignment: no assistant"
-   mk "$D/.aios/config.yaml" $'aios: 0.3.0\nassistant: astronom\n'
+   mk "$D/.aios/config.yaml" $'aios: 0.6.0\nassistant: astronom\n'
    assert_eq "$(GUI "$D/Wiese")" $'The assistant Astronom has no surface.\nAIOS surface: `/aios-gui`' "assistant without gui"
    mk "$G/.aios/config.yaml" $'assistant: gaertner\n'
    OUT="$(GUI "$G")"
@@ -153,7 +153,7 @@ plan = ui.Plan(); install.plan_alias(plan); plan.run(); print(len(plan.steps))" 
 
    "$SRC/tests/hub/build" "$SANDBOX/hubs" >/dev/null
    export AIOS_HUBS="aibex-aios=file://$SANDBOX/hubs/aibex-aios"
-   W="$SANDBOX/work/§Apps"; mkdir -p "$W/@" "$W/.aios"; printf 'aios: 0.4.0\n' > "$W/.aios/config.yaml"
+   W="$SANDBOX/work/§Apps"; mkdir -p "$W/@" "$W/.aios"; printf 'aios: 0.6.0\n' > "$W/.aios/config.yaml"
    assert_contains "$(at "$W" "$SRC/bin/aios" --gui --apps)" "No apps in this project." "--apps: none yet"
    at "$W" "$SRC/bin/aios" --fetch app-taschenrechner --yes >/dev/null
    assert_contains "$(at "$W" "$SRC/bin/aios" --gui --apps)" "- /taschenrechner-gui — app-taschenrechner 0.5.0" "--apps: the app with its surface"

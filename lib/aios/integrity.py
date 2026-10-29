@@ -127,6 +127,27 @@ def agents_hints(p):
     return hints
 
 
+def binding_hints(p):
+    """aios: or legacy: outside the vault root, and both together at the vault root (spec 05,
+    Integrität; V0.6, memos 16, 17)."""
+    from . import config
+    f = Path(p) / ".aios" / "config.yaml"
+    if not f.is_file():
+        return []
+    try:
+        data = config.read(f)
+    except (config.ConfigError, UnicodeDecodeError):
+        return []
+    keys = [k for k in config.ROOT_ONLY if k in data]
+    if not keys:
+        return []
+    if config.vault_root(p) != Path(os.path.realpath(p)):
+        return [f"{', '.join(k + ':' for k in keys)} in .aios/config.yaml ignored (only at the vault root)"]
+    if len(keys) == 2:
+        return ["aios: and legacy: together in .aios/config.yaml, aios: applies"]
+    return []
+
+
 def check(p, depth):
     r = Result(p, depth, gaps=project.check(p), repo=project.own_repo(p))
     if r.gaps:
@@ -135,6 +156,7 @@ def check(p, depth):
         r.changed, r.new = commit_state(p)
         r.hints += push_hints(p)
     r.hints += agents_hints(p)
+    r.hints += binding_hints(p)
     name = project.check_name(p)
     if not name.ok:
         r.hints.append("name violates the name rule (" + "; ".join(name.problems)

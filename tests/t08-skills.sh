@@ -8,19 +8,19 @@
    export PATH="$HOME/bin:/usr/bin:/bin:/usr/sbin:/sbin"
    export GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@t GIT_COMMITTER_NAME=t GIT_COMMITTER_EMAIL=t@t
    cp "$SRC/templates/forwarder" "$HOME/bin/aios"; chmod +x "$HOME/bin/aios"
-   for V in 0.1.0 0.2.0; do
+   for V in 0.6.0 0.7.0; do
       I="$AIOS_PREFIX/v$V"; mkdir -p "$I"
       cp -R "$SRC/bin" "$SRC/lib" "$SRC/skills" "$SRC/templates" "$I/"
       echo "$V" > "$I/VERSION"
       echo "v$V: $I" >> "$AIOS_PREFIX/installations.yaml"
    done
-   printf '\nNur in Version 0.2.0.\n' >> "$AIOS_PREFIX/v0.2.0/skills/aios/aios-init/SKILL.md"
+   printf '\nNur in Version 0.7.0.\n' >> "$AIOS_PREFIX/v0.7.0/skills/aios/aios-init/SKILL.md"
 
    D="$SANDBOX/work/§Demo"
    mk() { mkdir -p "$(dirname "$1")"; printf '%s' "$2" > "$1"; }
    skill() { mk "$1/SKILL.md" "$(printf -- '---\nname: %s\ndescription: d\n%s---\n\n# %s\n' "$2" "${3:+version: $3
 }" "$2")"; }
-   mk "$D/.aios/config.yaml" $'aios: 0.1.0\n'
+   mk "$D/.aios/config.yaml" $'aios: 0.6.0\n'
    mk "$D/@/@Rule/stil.md" $'# Stil\nklar\n'
    mk "$D/@/@@Buch/kapitel.md" $'# Kapitel\n'
    skill "$D/@/@!Skill/memo" memo 6.0.0
@@ -29,8 +29,8 @@
    mk "$D/@/@!Assistant/obstgaertner/ASSISTANT.md" $'---\nname: obstgaertner\nversion: 0.1.0\n---\n'
    skill "$D/@/@!Assistant/obstgaertner/@!Skill/apfel" apfel 0.1.0
    mk "$D/Garten/@/garten.md" $'# Garten\n'
-   mk "$D/Garten/.aios/config.yaml" $'aios: 0.2.0\n'
-   mkdir -p "$D/Wiese" "$D/Garten/Beet" "$SANDBOX/work/§Alt/Feld" "$SANDBOX/outside"
+   mk "$D/Garten/.aios/config.yaml" $'aios: 0.7.0\n'
+   mkdir -p "$SANDBOX/work/§Alt/.aios" "$D/Wiese" "$D/Garten/Beet" "$SANDBOX/work/§Alt/Feld" "$SANDBOX/outside"; printf 'legacy: ai-brain\n' > "$SANDBOX/work/§Alt/.aios/config.yaml"
    at() { (cd "$1" && shift && "$@" 2>&1); }
 
 #===============================================================================
@@ -40,8 +40,8 @@
    assert_eq "$(at "$D" aios --skill aios-init)" "$(python3 -c "
 import sys; t=open(sys.argv[1],encoding='utf-8').read(); e=t.find('\n---',3); print(t[t.find('\n',e+4)+1:].lstrip('\n'),end='')" "$SRC/skills/aios/aios-init/SKILL.md")" "--skill: body without frontmatter"
    case "$(at "$D" aios --skill aios-init)" in *"name: aios-init"*|*"allowed-tools"*) fail "--skill: no frontmatter" ;; *) ok ;; esac
-   case "$(at "$D" aios --skill aios-init)" in *"Nur in Version 0.2.0"*) fail "--skill in §Demo: version 0.1.0" ;; *) ok ;; esac
-   assert_contains "$(at "$D/Garten" aios --skill aios-init)" "Nur in Version 0.2.0" "--skill in Garten: version 0.2.0"
+   case "$(at "$D" aios --skill aios-init)" in *"Nur in Version 0.7.0"*) fail "--skill in §Demo: version 0.6.0" ;; *) ok ;; esac
+   assert_contains "$(at "$D/Garten" aios --skill aios-init)" "Nur in Version 0.7.0" "--skill in Garten: version 0.7.0"
    for S in aios-context aios-init aios-register aios-status aios-deploy aios-assistant aios-integrity aios-memo aios-gui aios-fetch aios-package aios-distribution; do
       assert_contains "$(at "$D" aios --skill "$S")" "Ein AIOS-Skill von AIbex AIOS" "--skill $S"
    done
@@ -99,12 +99,12 @@ Note: blueprints and registered skills differ — /aios-register" "--list: exact
    assert_contains "$("$SRC/bin/aios" --context --list "$D/Wiese")" "Wiese (not initialized, chain up to §Demo)" "--list: not initialized"
    assert_eq "$("$SRC/bin/aios" --context --list "$SANDBOX/work/§Alt")" "Legacy mode (ai-brain, no aios: in the chain) — see /masterspace." "--list: legacy"
    assert_eq "$("$SRC/bin/aios" --context --list "$SANDBOX/outside")" "No vault — no master context." "--list: outside a vault"
-   printf 'aios: 0.1.0\nassistant: obstgaertner\n' > "$D/.aios/config.yaml"
+   printf 'aios: 0.6.0\nassistant: obstgaertner\n' > "$D/.aios/config.yaml"
    assert_contains "$("$SRC/bin/aios" --context --list "$D")" "Assistant                  obstgaertner 0.1.0 (assigned in §Demo)" "--list: own assignment"
    assert_contains "$("$SRC/bin/aios" --context --list "$D/Garten")" "Assistant                  obstgaertner 0.1.0 (inherit, assigned in §Demo)" "--list: inherited assignment"
-   printf 'aios: 0.1.0\nassistant: astronom\n' > "$D/.aios/config.yaml"
+   printf 'aios: 0.6.0\nassistant: astronom\n' > "$D/.aios/config.yaml"
    assert_contains "$("$SRC/bin/aios" --context --list "$D")" "Assistant                  astronom (not found) (assigned in §Demo)" "--list: assistant not found"
-   printf 'aios: 0.1.0\n' > "$D/.aios/config.yaml"
+   printf 'aios: 0.6.0\n' > "$D/.aios/config.yaml"
 
 #===============================================================================
 # aios --skill --session: the id replaces <session-id>; wrapper: id as a line of text (version-neutral)
@@ -135,7 +135,7 @@ for n in ('aios-assistant', 'aios-context', 'aios-init'):
 # --plan and --yes on writing commands (for skills)
 #===============================================================================
 
-   OUT="$("$SRC/bin/aios" --activate v0.1.0 "$D/Garten/Beet" --plan 2>&1)"; RC=$?
+   OUT="$("$SRC/bin/aios" --activate v0.6.0 "$D/Garten/Beet" --plan 2>&1)"; RC=$?
    assert_contains "$OUT" "/aios-init" "--plan: checks still apply"
    OUT="$("$SRC/bin/aios" --register "$D" --plan 2>&1)"; RC=$?
    assert_eq "$RC" "0" "--plan: exit 0"

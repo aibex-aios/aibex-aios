@@ -117,9 +117,8 @@ class Context:
 
     @property
     def mode(self):
-        if self.vault is None:
-            return "none"
-        return "aios" if self.cfg.aios else "legacy"
+        """none, legacy, alt or aios after the kind of the vault (spec 02, Arten von Vaults)."""
+        return self.cfg.kind
 
     @property
     def project(self):
@@ -486,11 +485,12 @@ def main(argv):
         from .skills import listing
         print("\n".join(listing(ctx)))
         return 0
-    if ctx.mode == "none":
+    if ctx.mode in ("none", "alt"):
+        mode = "none" if ctx.mode == "none" else f"alt-{ctx.cfg.aios}"
         if cmd == "--id":
-            print(f"id=- files=0 cwd={ctx.cwd} mode=none")
+            print(f"id=- files=0 cwd={ctx.cwd} mode={mode}")
         else:
-            print("aios --context: not in a vault, no master context", file=sys.stderr)
+            print("aios --context: not in an AIBOS workspace, no master context", file=sys.stderr)
         return 0
     if ctx.mode == "legacy":
         return legacy(cmd, cwd)
@@ -557,7 +557,7 @@ def assignment_cmd(args):
             print(f"assistant={marker['assistant']} from=session")
             return 0
     cfg = config.load(cwd)
-    name, source = cfg.assignment if cfg.vault and cfg.aios else ("none", None)
+    name, source = cfg.assignment if cfg.kind == "aios" else ("none", None)
     print(f"assistant={name} from={source or '-'}")
     return 0
 
@@ -566,7 +566,7 @@ def hook(cmd):
     given, raw = hook_input()
     cwd = given or paths.cwd()
     ctx = Context(cwd)
-    if ctx.mode == "none":
+    if ctx.mode in ("none", "alt"):                 # outside an A/W nothing (spec 02)
         return 0
     if ctx.mode == "legacy":
         return legacy(cmd, cwd, raw)

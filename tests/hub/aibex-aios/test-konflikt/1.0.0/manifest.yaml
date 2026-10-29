@@ -3,7 +3,7 @@ version: 1.0.0
 type: skill
 description: Testpaket, verlangt skill-memo >=7
 requires:
-  aios: ">=0.4,<0.5"
+  aios: ">=0.4,<0.7"
 depends:
   skill-memo: ">=7"
 contents:

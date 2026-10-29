@@ -82,7 +82,10 @@ packages:
    assert_file "$V/.aios/lock.yaml"
    assert_eq "$(cat "$G/.aios/config.yaml")" $'packages:\n  skill-memo: "~=6.0"' "project below changed over"
    assert_eq "$(ls "$G/@/@!Package")" "skill-memo" "project below: its own package (S9)"
+   assert_contains "$(at "$G" "$SRC/bin/aios" --context --assistants 2>&1)" "assistants need" "binding below 0.6: no assistants from AIOS 0.6 (alt)"
+   sed -i.bak 's/^aios: 0.4.0$/aios: 0.6.0/' "$V/.aios/config.yaml"
    assert_contains "$(at "$G" "$SRC/bin/aios" --context --assistants)" "Gärtner 0.2.1" "assistant from the package"
+   mv "$V/.aios/config.yaml.bak" "$V/.aios/config.yaml"
    assert_contains "$(A "$V" --activate v0.4.0 "$V" </dev/null)" "nothing to do" "second activation: nothing to do (I8)"
 
 #===============================================================================
@@ -110,9 +113,9 @@ packages:
    assert_contains "$(cat "$V4/.aios/lock.yaml")" "version: 6.0.1" "v0.4: lock.yaml on 6.0.1"
    assert_contains "$(A "$V4" --activate v0.5.0 "$V4" </dev/null)" "nothing to do" "v0.4: second activation: nothing to do"
    V5="$SANDBOX/work/§Fuenf"; mkdir -p "$V5/@"; mk "$V5/.aios/config.yaml" $'aios: 0.4.0\n'
-   A "$V5" --fetch 'test-assistent==0.1.0' --yes >/dev/null
+   A "$V5" --fetch 'test-alt==0.1.0' --yes >/dev/null
    OUT="$(A "$V5" --activate v0.5.0 "$V5" --yes)"; RC=$?
    assert_eq "$RC" "1" "v0.4 without a fitting version: exit 1"
-   assert_contains "$OUT" "$V5: test-assistent has no version that runs with AIOS 0.5.0 (requires.aios); remove it with aios --fetch --remove test-assistent --to $V5" "v0.4: conflict named"
+   assert_contains "$OUT" "$V5: test-alt has no version that runs with AIOS 0.5.0 (requires.aios); remove it with aios --fetch --remove test-alt --to $V5" "v0.4: conflict named"
    assert_eq "$(sed -n 1p "$V5/.aios/config.yaml")" "aios: 0.4.0" "v0.4: conflict changes nothing"
    unset AIOS_HUBS

@@ -3,7 +3,7 @@ version: 1.0.0
 type: distribution
 description: "Testdistribution mit Kernel und einem Skill, der ein Arbeitspferd nutzt"
 requires:
-  aios: ">=0.5,<0.6"
-kernel: "==0.5.0"
+  aios: ">=0.5,<0.7"
+kernel: "==0.6.0"
 depends:
   skill-test-nutzer: "==0.1.0"

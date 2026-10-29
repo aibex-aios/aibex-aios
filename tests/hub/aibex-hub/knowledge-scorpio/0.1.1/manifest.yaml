@@ -3,7 +3,7 @@ version: 0.1.1
 type: knowledge
 description: Die 20 hellsten Sterne des Sternbilds Skorpion mit Helligkeit, Radius, Entfernung, Temperatur und Art
 requires:
-  aios: ">=0.4,<0.6"
+  aios: ">=0.4,<0.7"
 contents:
   knowledge: true
 license: CC-BY-4.0

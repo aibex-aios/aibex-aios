@@ -18,7 +18,8 @@ KEY = re.compile(r"^([A-Za-z_][\w-]*):(?:\s+(.*?))?\s*$")
 SUBKEY = re.compile(r"^([A-Za-z0-9_][\w./-]*):(?:\s+(.*?))?\s*$")   # skills: name or assistant/name
 VERSION = re.compile(r"^v?(\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)$")
 LEVELS = {                                          # key -> levels where it is allowed
-    "aios": ("vault", "project"),
+    "aios": ("vault",),                            # binding only at the vault root (spec 04; V0.6, memo 14)
+    "legacy": ("vault",),                          # marker of the legacy mode (spec 02; V0.6, memo 17)
     "skills": ("vault", "project"),
     "assistants": ("vault", "project"),
     "assistant": ("vault", "project"),             # assignment of the assistant (spec 03)
@@ -30,6 +31,14 @@ LEVELS = {                                          # key -> levels where it is 
 INLINE_LIMIT = 9000
 ASSISTANT_NAME = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 RESERVED = ("none", "inherit")                     # values of assistant:, never names of assistants
+ROOT_ONLY = ("aios", "legacy")                     # keys that count only at the vault root (I14)
+AIBOS = (0, 6)                                     # a binding from 0.6 (also 0.6.0-dev) makes an A/W
+
+
+def is_aibos(version):
+    """True if the binding version is AIBOS, i.e. MAJOR.MINOR >= 0.6 (V0.6, memo 42)."""
+    m = re.match(r"^(\d+)\.(\d+)\.", str(version or ""))
+    return bool(m) and (int(m.group(1)), int(m.group(2))) >= AIBOS
 
 
 class ConfigError(Exception):
@@ -237,8 +246,23 @@ class Config:
 
     @property
     def aios(self):
-        """Version that activates the directory (without v), None = legacy mode."""
+        """Version the vault root binds to (without v), None = no binding."""
         return self.values.get("aios")
+
+    @property
+    def legacy(self):
+        """True if the vault root carries the marker legacy: ai-brain."""
+        return self.values.get("legacy") == "ai-brain"
+
+    @property
+    def kind(self):
+        """Kind of the vault (spec 02, Arten von Vaults): aios (A/W), alt (binding below 0.6),
+        legacy (marker legacy: ai-brain) or none (vault without binding, outside a vault)."""
+        if self.vault is None:
+            return "none"
+        if self.aios:
+            return "aios" if is_aibos(self.aios) else "alt"
+        return "legacy" if self.legacy else "none"
 
     @property
     def hosts(self):
@@ -260,8 +284,16 @@ class Config:
                 self.warnings.append(f"{file}: unknown key {key} ignored")
                 continue
             if level not in LEVELS[key]:
-                self.warnings.append(f"{file}: {key} is not allowed here, ignored")
+                if key in ROOT_ONLY and level == "project":
+                    self.warnings.append(f"{file}: {key}: is only allowed at the vault root, ignored")
+                else:
+                    self.warnings.append(f"{file}: {key} is not allowed here, ignored")
                 continue
+            if key == "legacy":
+                if str(val or "") != "ai-brain":
+                    self.warnings.append(f"{file}: legacy: {val} is not ai-brain, ignored")
+                    continue
+                val = "ai-brain"
             if key == "packages":
                 if not isinstance(val, dict):
                     self.warnings.append(f"{file}: packages must map names to ranges, ignored")
@@ -329,6 +361,8 @@ def load(path="."):
             cfg.take(f, "home", read(f))
         except (ConfigError, UnicodeDecodeError) as e:
             cfg.warnings.append(f"{e}; file ignored")
+    if cfg.aios and cfg.values.get("legacy"):
+        cfg.warnings.append(f"{cfg.source['aios']}: aios: and legacy: together, aios: applies")
     return cfg
 
 
@@ -341,7 +375,10 @@ def describe(cfg):
     if os.environ.get("AIOS_HOME"):
         lines.append(f"AIOS_HOME {os.environ['AIOS_HOME']} (chooses the version)")
     lines.append(f"aios      {cfg.aios} ({where(cfg.source.get('aios'))})" if cfg.aios
-                 else "aios      - (not activated: legacy mode)")
+                 else "aios      - (no binding)")
+    if cfg.legacy:
+        lines.append(f"legacy    ai-brain ({cfg.source['legacy']})")
+    lines.append(f"kind      {cfg.kind}")
     for name in sorted(cfg.skills):
         lines.append(f"skill     {name} {cfg.skills[name]} ({cfg.skill_source[name]})")
     for name in sorted(cfg.assistants):

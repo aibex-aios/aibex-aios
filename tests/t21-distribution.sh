@@ -4,7 +4,7 @@
 # overriding only with only:, --from, failures, removal; v0.5.1 step 2: without PyYAML (B7)
 
 #===============================================================================
-# setup: python3 with PyYAML, fake stup, no sudo, no pip for the kernel, sandbox clone with v0.5.0
+# setup: python3 with PyYAML, fake stup, no sudo, no pip for the kernel, sandbox clone with v0.6.0
 #===============================================================================
 
    PYDIR=""
@@ -24,7 +24,7 @@
       mkdir -p "$S/$(dirname "$F")"; cp -p "$SRC/$F" "$S/$F"
    done
    git -C "$S" init -q; git -C "$S" add -A
-   git -C "$S" -c user.name=t -c user.email=t@t commit -q -m v0.5.0; git -C "$S" tag v0.5.0
+   git -C "$S" -c user.name=t -c user.email=t@t commit -q -m v0.6.0; git -C "$S" tag v0.6.0
    S="$(cd "$S" && pwd -P)"
    W="$AIOS_PREFIX/workers/worker-test/v0.1.1"
    I() { local v="$1"; shift; (cd "$v" && "$S/bin/aios" --install "$@" 2>&1); }
@@ -35,17 +35,17 @@
 #===============================================================================
 
    OUT="$(I "$V" 'distribution-demo==1.0.0' --plan)"
-   assert_contains "$OUT" "=> install distribution-demo 1.0.0 into $V (kernel 0.5.0)" "plan: title"
+   assert_contains "$OUT" "=> install distribution-demo 1.0.0 into $V (kernel 0.6.0)" "plan: title"
    assert_contains "$OUT" "(machine part: kernel and workhorses)" "plan: machine part"
-   assert_contains "$OUT" "install AIOS v0.5.0 from $S -> $AIOS_PREFIX/v0.5.0 (read-only)" "plan: kernel from the clone"
+   assert_contains "$OUT" "install AIOS v0.6.0 from $S -> $AIOS_PREFIX/v0.6.0 (read-only)" "plan: kernel from the clone"
    assert_contains "$OUT" "setup      worker-test 0.1.1 -> $W" "plan: workhorse of a package of the distribution"
    assert_contains "$OUT" "(vault part: $V)" "plan: vault part"
-   assert_contains "$OUT" "create $V/.aios/config.yaml with aios: 0.5.0" "plan: binding of the vault root"
+   assert_contains "$OUT" "create $V/.aios/config.yaml with aios: 0.6.0" "plan: binding of the vault root"
    assert_contains "$OUT" "new        distribution-demo 1.0.0" "plan: the distribution"
    assert_contains "$OUT" "new        skill-test-nutzer 0.1.0" "plan: its package"
    [ "$(printf '%s\n' "$OUT" | grep -n 'machine part' | cut -d: -f1)" -lt "$(printf '%s\n' "$OUT" | grep -n 'vault part' | cut -d: -f1)" ] \
       && ok || fail "plan: machine part before the vault part"
-   [ ! -e "$AIOS_PREFIX/v0.5.0" ] && [ ! -e "$V/.aios" ] && [ ! -e "$W" ] && ok || fail "plan: nothing written"
+   [ ! -e "$AIOS_PREFIX/v0.6.0" ] && [ ! -e "$V/.aios" ] && [ ! -e "$W" ] && ok || fail "plan: nothing written"
    OUT="$(AIOS_PREFIX="$SANDBOX/opt-neu" I "$V" 'distribution-demo==1.0.0' --plan)"     # v0.5.1, B7
    assert_contains "$OUT" "create $SANDBOX/opt-neu" "plan without AIOS_PREFIX: created first"
    assert_contains "$OUT" "setup      worker-test 0.1.1 -> $SANDBOX/opt-neu/workers/worker-test/v0.1.1" "plan without AIOS_PREFIX: workhorses go there"
@@ -57,10 +57,10 @@
 
    OUT="$(I "$V" 'distribution-demo==1.0.0' --yes)"; RC=$?
    assert_eq "$RC" "0" "install: exit 0"
-   assert_dir "$AIOS_PREFIX/v0.5.0"
+   assert_dir "$AIOS_PREFIX/v0.6.0"
    assert_exec "$W/bin/aios-test-tool"
    C="$(cat "$V/.aios/config.yaml")"
-   assert_contains "$C" "aios: 0.5.0" "vault root bound to the kernel"
+   assert_contains "$C" "aios: 0.6.0" "vault root bound to the kernel"
    assert_contains "$C" 'distribution-demo: "==1.0.0"' "packages: the distribution with its exact version"
    assert_contains "$(cat "$V/.aios/lock.yaml")" "required_by: [distribution-demo]" "lock.yaml: package required by the distribution"
    assert_file "$V/.claude/skills/nutzer/SKILL.md"                  # vault root of the session, bound in the same plan
@@ -96,7 +96,7 @@
 
    V2="$SANDBOX/work/§Kaputt"; mkdir -p "$V2"
    OUT="$(I "$V2" distribution-kaputt --yes)"; RC=$?
-   assert_eq "$RC:$(grep -c 'no tag v0.5.9' <<< "$OUT")" "1:1" "kernel without tag: aborted"
+   assert_eq "$RC:$(grep -c 'no tag v0.6.9' <<< "$OUT")" "1:1" "kernel without tag: aborted"
    [ ! -e "$V2/.aios" ] && ok || fail "kernel without tag: vault untouched"
    chmod -R u+w "$W"; rm -rf "$W"
    OUT="$(AIOS_TEST_FAIL=1 I "$V2" distribution-demo --yes)"; RC=$?
@@ -104,13 +104,13 @@
    [ ! -e "$V2/.aios" ] && [ ! -e "$V2/@" ] && ok || fail "machine part fails: vault untouched"
    V3="$SANDBOX/work/§Alt"; mkdir -p "$V3/@" "$V3/.aios"; printf 'aios: 0.4.0\n' > "$V3/.aios/config.yaml"
    OUT="$(I "$V3" distribution-demo --plan)"
-   assert_contains "$OUT" "aios: 0.5.0 in $V3/.aios/config.yaml (was 0.4.0)" "vault on 0.4: changeover in the same plan"
+   assert_contains "$OUT" "aios: 0.6.0 in $V3/.aios/config.yaml (was 0.4.0)" "vault on 0.4: changeover in the same plan"
    R="$SANDBOX/dist-repo"; cp -R "$SRC/tests/hub/aibex-aios/distribution-zwei/1.0.0" "$R"
    git -C "$R" init -q; git -C "$R" add -A; git -C "$R" -c user.name=t -c user.email=t@t commit -q -m 1.0.0; git -C "$R" tag v1.0.0
    OUT="$(I "$V3" distribution-zwei --from "$R" --yes)"; RC=$?
    assert_eq "$RC" "0" "--from: distribution from a local repo"
    assert_contains "$(cat "$V3/.aios/config.yaml")" "from: $R" "--from: noted in packages:"
-   assert_contains "$(cat "$V3/.aios/config.yaml")" "aios: 0.5.0" "--from: vault changed over to 0.5.0"
+   assert_contains "$(cat "$V3/.aios/config.yaml")" "aios: 0.6.0" "--from: vault changed over to 0.6.0"
 
 #===============================================================================
 # v0.5.1 step 2 (B7): clone with a python3 without PyYAML - kernel first, then the installation
@@ -125,14 +125,14 @@
    NI() { local v="$1"; shift; (cd "$v" && PATH="$NY:$PATH" AIOS_PREFIX="$SANDBOX/opt-b7" AIOS_PIP="$SANDBOX/fake/pip-yaml" "$S/bin/aios" --install "$@" 2>&1); }
    V4="$SANDBOX/work/§Frisch"; mkdir -p "$V4"
    OUT="$(NI "$V4" 'distribution-demo==1.0.0' --plan)"
-   assert_contains "$OUT" "=> AIbex AIOS v0.5.0 first (kernel: of distribution-demo 1.0.0; PyYAML is missing in" "B7 plan: kernel first, from kernel:"
-   assert_contains "$OUT" "install AIOS v0.5.0 from $S -> $SANDBOX/opt-b7/v0.5.0 (read-only)" "B7 plan: kernel from the clone"
-   assert_contains "$OUT" "then: aios --install distribution-demo==1.0.0 with AIOS v0.5.0 (plan of the distribution)" "B7 plan: second plan announced"
+   assert_contains "$OUT" "=> AIbex AIOS v0.6.0 first (kernel: of distribution-demo 1.0.0; PyYAML is missing in" "B7 plan: kernel first, from kernel:"
+   assert_contains "$OUT" "install AIOS v0.6.0 from $S -> $SANDBOX/opt-b7/v0.6.0 (read-only)" "B7 plan: kernel from the clone"
+   assert_contains "$OUT" "then: aios --install distribution-demo==1.0.0 with AIOS v0.6.0 (plan of the distribution)" "B7 plan: second plan announced"
    assert_not_contains "$OUT" "ModuleNotFoundError" "B7 plan: no PyYAML needed"
-   [ ! -e "$SANDBOX/opt-b7/v0.5.0" ] && [ ! -e "$V4/.aios" ] && ok || fail "B7 plan: nothing written"
+   [ ! -e "$SANDBOX/opt-b7/v0.6.0" ] && [ ! -e "$V4/.aios" ] && ok || fail "B7 plan: nothing written"
    OUT="$(NI "$V4" 'distribution-demo==1.0.0' --yes)"; RC=$?
    assert_eq "$RC" "0" "B7 --yes: exit 0"
-   assert_dir "$SANDBOX/opt-b7/v0.5.0"
+   assert_dir "$SANDBOX/opt-b7/v0.6.0"
    assert_exec "$SANDBOX/opt-b7/workers/worker-test/v0.1.1/bin/aios-test-tool"
    assert_contains "$(cat "$V4/.aios/config.yaml")" 'distribution-demo: "==1.0.0"' "B7 --yes: distribution installed by the new installation"
    OUT="$(NI "$V4" 'distribution-demo==1.0.0' --plan)"
@@ -146,5 +146,5 @@
    (cd "$V" && "$S/bin/aios" --fetch --remove distribution-demo --yes >/dev/null 2>&1)
    C="$(cat "$V/.aios/config.yaml")"
    assert_not_contains "$C" "distribution-demo" "remove: distribution gone from packages:"
-   assert_contains "$C" "aios: 0.5.0" "remove: the binding stays"
+   assert_contains "$C" "aios: 0.6.0" "remove: the binding stays"
    unset AIOS_HUBS AIOS_PIP_FIND_LINKS AIOS_PIP AIOS_SUDO AIOS_STUP_URL

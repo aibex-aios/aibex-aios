@@ -3,7 +3,7 @@ version: 0.1.0
 type: skill
 description: Testpaket Skill, der das Arbeitspferd worker-test nutzt
 requires:
-  aios: ">=0.5,<0.6"
+  aios: ">=0.5,<0.7"
 depends:
   worker-test: "~=0.1.0"
 contents:

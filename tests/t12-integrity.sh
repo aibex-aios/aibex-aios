@@ -108,3 +108,15 @@
    assert_not_contains "$OUT" "fremd" ".agents: copies without marker are not touched or named"
    assert_contains "$OUT" "Result: 1 of 1 project integer" ".agents: only a note, the project stays integer"
    [ -e "$N/.agents/skills/memo/.aios-deploy" ] && ok || fail ".agents: nothing removed"
+
+#===============================================================================
+# bindings: aios: or legacy: outside the vault root, both at the vault root (V0.6, memos 16, 17)
+#===============================================================================
+
+   mk "$N/.aios/config.yaml" $'aios: 0.6.0\nlegacy: ai-brain\n'
+   OUT="$(A --integrity "$N")"
+   assert_contains "$OUT" "- N-Frei: aios:, legacy: in .aios/config.yaml ignored (only at the vault root)" "binding in a project: named"
+   rm "$N/.aios/config.yaml"
+   mkdir -p "$D/.aios"; cp "$D/.aios/config.yaml" "$SANDBOX/root.yaml" 2>/dev/null; printf 'aios: 0.6.0\nlegacy: ai-brain\n' > "$D/.aios/config.yaml"
+   assert_contains "$(A --integrity "$D")" "aios: and legacy: together in .aios/config.yaml, aios: applies" "vault root: aios: and legacy: together"
+   if [ -e "$SANDBOX/root.yaml" ]; then mv "$SANDBOX/root.yaml" "$D/.aios/config.yaml"; fi

@@ -3,6 +3,6 @@ version: 6.0.1
 type: skill
 description: Memo-Stil für Projekte in AIOS-Vaults (Memos und Specs, neutrale Fassung)
 requires:
-  aios: ">=0.4,<0.6"
+  aios: ">=0.4,<0.7"
 contents:
   skills: [memo]

@@ -74,7 +74,8 @@
    printf 'aios: 0.2.0\nhosts:\n  - codex\n  - claude-code\ninline_limit: 5000\n' > "$HOME/.aios/config.yaml"
    printf 'aios: 0.9.0\nskills:\n  outside: 9.9.9\n' > "$W/.aios/config.yaml"
    C="$D/Garten/Beet/Reihe"
-   assert_eq "$(CFG "$C" 'c.aios, str(c.source["aios"])')" "('0.2.0', '$D/Garten/.aios/config.yaml')" "aios: nearest entry"
+   assert_eq "$(CFG "$C" 'c.aios, str(c.source["aios"])')" "('0.1.0', '$D/.aios/config.yaml')" "aios: only from the vault root (I14)"
+   assert_contains "$(CFG "$C" '"|".join(c.warnings)')" "Garten/.aios/config.yaml: aios: is only allowed at the vault root, ignored" "warning: aios in a project (I14)"
    assert_eq "$(CFG "$C" 'sorted(c.skills.items())')" "[('astro', '1.0.0'), ('memo', '6.1.0')]" "skills merged per name, nothing from above the vault"
    assert_eq "$(CFG "$C" 'str(c.skill_source["astro"])')" "$D/.aios/config.yaml" "skill origin"
    assert_eq "$(CFG "$C" 'c.hosts')" "['claude-code']" "hosts: vault beats home"
@@ -87,9 +88,10 @@
    assert_eq "$(at "$SANDBOX/outside" aios --context --id)" "id=- files=0 cwd=$SANDBOX/outside mode=none" "forwarder outside a vault: mode=none"
 
    OUT="$(A --config "$C")"
-   assert_contains "$OUT" "aios      0.2.0 ($D/Garten/.aios/config.yaml)" "--config: aios with origin"
+   assert_contains "$OUT" "aios      0.1.0 ($D/.aios/config.yaml)" "--config: aios with origin"
+   assert_contains "$OUT" "kind      alt" "--config: kind of the vault"
    assert_contains "$OUT" "skill     astro 1.0.0 ($D/.aios/config.yaml)" "--config: skills with origin"
-   assert_contains "$(A --config "$SANDBOX/outside")" "not activated: legacy mode" "--config: legacy"
+   assert_contains "$(A --config "$SANDBOX/outside")" "aios      - (no binding)" "--config: no binding outside a vault"
 
 #===============================================================================
 # parser: subset of YAML, errors are reported with the line

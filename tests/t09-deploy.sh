@@ -16,7 +16,7 @@
    export AIOS_HUBS="aibex-aios=file://$SANDBOX/hubs/aibex-aios"
    D="$SANDBOX/work/§Demo"; G="$D/G-Garten"
    mk() { mkdir -p "$(dirname "$1")"; printf '%s' "$2" > "$1"; }
-   mk "$D/.aios/config.yaml" $'aios: 0.4.0\n'
+   mk "$D/.aios/config.yaml" $'aios: 0.6.0\n'
    mkdir -p "$D/@" "$G/@"
    at() { (cd "$1" && shift && "$@" 2>&1); }
    A() { local d="$1"; shift; at "$d" "$SRC/bin/aios" "$@"; }

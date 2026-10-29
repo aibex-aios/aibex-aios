@@ -10,7 +10,7 @@
    mk() { mkdir -p "$(dirname "$1")"; printf '%s' "$2" > "$1"; }
    skill() { mk "$1/SKILL.md" "$(printf -- '---\nname: %s\ndescription: test\n%s---\n\n# %s\n%s\n' "$2" "${3:+version: $3
 }" "$2" "${4:-}")"; }
-   mk "$D/.aios/config.yaml" $'aios: 0.1.0\n'
+   mk "$D/.aios/config.yaml" $'aios: 0.6.0\n'
    skill "$D/@/@!Skill/memo"        memo 6.0.0
    skill "$D/@/@!Skill/shared"      shared 0.1.0 "shared v1"
    skill "$D/@/@!Skill/noversion"   noversion
@@ -27,7 +27,7 @@
    git -C "$G" init -q
    mkdir -p "$G/Neu"
    mk "$SANDBOX/work/§Alt/@/@!Skill/x/SKILL.md" $'---\nname: x\n---\n'
-   mkdir -p "$SANDBOX/work/§Alt/P/@"
+   mkdir -p "$SANDBOX/work/§Alt/P/@" "$SANDBOX/work/§Alt/.aios"; printf 'legacy: ai-brain\n' > "$SANDBOX/work/§Alt/.aios/config.yaml"
 
    SY() { (cd "$1" && shift && "$SRC/bin/aios" --context --sync "$@" 2>&1); }
    K="$G/.claude/skills"
