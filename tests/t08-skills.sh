@@ -78,7 +78,7 @@ print(install.wrapper('aios-context', m['description'], m.get('allowed-tools', '
    rm -rf "$D/.claude/skills/notiz"
    OUT="$("$SRC/bin/aios" --context --list "$D")"
    ID="$("$SRC/bin/aios" --context --id "$D" | sed 's/^id=\([^ ]*\).*/\1/')"
-   CH="$("$SRC/bin/aios" --context "$D" | python3 -c 'import sys; print(f"{len(sys.stdin.read()):,}".replace(",", "."))')"
+   CH="$("$SRC/bin/aios" --context "$D" | python3 -c 'import sys; print(f"{len(sys.stdin.read()):,}")')"
    assert_eq "$OUT" "Master context id $ID, AIOS $(cat "$SRC/VERSION") — §Demo
 
 Chain                      §Demo

@@ -131,7 +131,8 @@ class Context:
 
     @property
     def id(self):
-        """K5: cwd, paths and contents of the loaded files, paths of the available files."""
+        """K5: cwd, paths and contents of the loaded files, paths of the available files and,
+        in an A/W, the version of the kernel for the block of the kernel skills."""
         h = hashlib.sha256()
         h.update(f"cwd {self.cwd}\n".encode())
         for p, text in zip(self.loaded, self.texts):
@@ -140,6 +141,8 @@ class Context:
             h.update(b"\n")
         for p in self.available:
             h.update(f"available {p}\n".encode())
+        if self.mode == "aios":
+            h.update(f"kernel-skills {version()}\n".encode())
         return h.hexdigest()[:8]
 
     def render(self):
@@ -154,8 +157,29 @@ class Context:
             out.append("<aios-available>\n")
             out += [f"- {p} — {t}\n" for p, t in zip(self.available, self.titles)]
             out.append("</aios-available>\n")
+        if self.mode == "aios":
+            out.append(kernel_skills_block())
         out.append(f'</aios-context id="{ident}">\n')
         return "".join(out)
+
+
+def kernel_skills():
+    """Names of the kernel skills of the running kernel (skills/aios/<name>/SKILL.md), sorted."""
+    base = Path(__file__).resolve().parents[2] / "skills" / "aios"
+    return sorted(d.name for d in base.iterdir() if (d / "SKILL.md").is_file()) if base.is_dir() else []
+
+
+def kernel_skills_block():
+    """Block <aios-kernel-skills> of the master context: name and call per kernel skill; the
+    descriptions come with the registered wrappers (spec 02, Block der Kernel-Skills; V0.6, memo 46)."""
+    fwd = paths.forwarder()
+    lines = ["<aios-kernel-skills>\n",
+             "Kernel skills of AIBOS (descriptions in the registered skills). A skill is triggered by\n",
+             "/<name> or by a matching request of the user; load its instructions with the call (Bash)\n",
+             "and follow them.\n"]
+    lines += [f"- {n} — {fwd} --skill {n}\n" for n in kernel_skills()]
+    lines.append("</aios-kernel-skills>\n")
+    return "".join(lines)
 
 
 # ---------------------------------------------------------------------------

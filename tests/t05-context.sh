@@ -38,6 +38,13 @@
 
    OUT="$(CTX "$D/Garten" --context; echo x)"; OUT="${OUT%x}"
    ID="$(IDOF "$D/Garten")"
+   KS="<aios-kernel-skills>
+Kernel skills of AIBOS (descriptions in the registered skills). A skill is triggered by
+/<name> or by a matching request of the user; load its instructions with the call (Bash)
+and follow them.
+$(for N in $(ls "$SRC/skills/aios"); do printf -- '- %s — %s --skill %s\n' "$N" "$HOME/.aios/bin/aios" "$N"; done)
+</aios-kernel-skills>
+"
    EXP="<aios-context id=\"$ID\" files=\"6\" cwd=\"$D/Garten\" version=\"$VER\">
 <aios-file class=\"load\" src=\"$M/@Rule/stil.md\">
 # Stil
@@ -65,7 +72,7 @@ Apfel
 - $M/@Wissen/@@Kapitel1/@Teil/teil.md — teil
 - $M/@Wissen/@@Kapitel1/kapitel.md — Kapitel 1: Grundlagen
 </aios-available>
-</aios-context id=\"$ID\">
+$KS</aios-context id=\"$ID\">
 "
    assert_eq "$OUT" "$EXP" "--context: exact output"
    [[ "$ID" =~ ^[0-9a-f]{8}$ ]] && ok || fail "id: 8 hex characters ($ID)"
@@ -143,6 +150,19 @@ Apfel
    chmod +x "$SANDBOX/fake/ai-brain"
    assert_eq "$(CTX "$L" --id)" "id=feed0001 files=1 cwd=$L mode=legacy" "legacy --id: ai-brain plus mode=legacy"
    assert_eq "$(CTX "$L" --load)" "ai-brain --load" "legacy --load: ai-brain"
+
+#===============================================================================
+# block of the kernel skills (spec 02, Block der Kernel-Skills; V0.6, memos 23, 46)
+#===============================================================================
+
+   assert_eq "$(CTX "$D/Garten" --context | grep -c -- "--skill aios-")" "$(ls "$SRC/skills/aios" | wc -l | tr -d ' ')" "block: one line per kernel skill"
+   assert_eq "$(ls "$SRC/skills/aios" | wc -l | tr -d ' ')" "12" "block: 12 kernel skills"
+   ID1="$(IDOF "$D/Garten")"
+   ID2="$(PYTHONPATH="$SRC/lib" python3 -c "
+from aios import context
+context.version = lambda: '9.9.9'
+print(context.Context('$D/Garten').id)")"
+   [ "$ID1" != "$ID2" ] && ok || fail "id: changes with the version of the kernel (K5)"
 
 #===============================================================================
 # kinds of vaults (spec 02, Arten von Vaults; V0.6, memos 14, 17, 42)
