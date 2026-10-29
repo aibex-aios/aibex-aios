@@ -1,9 +1,9 @@
 ---
 title: "Skills und Assistenten"
-date: 2026-10-25
+date: 2026-10-29
 author: iHux
-status: Spec
-tags: [spec, aios, v0.5, skills, assistenten]
+status: Entwurf
+tags: [spec, aios, v0.6, skills, assistenten]
 number: 03
 related:
   - "Spec 01 AIbex AIOS v0.6 — Überblick"
@@ -17,18 +17,19 @@ related:
   - "Memos 14–17 Assistent, Versionen, Demo-Assistenten (AA-AIbex-AIOS, @Memo/V0.2)"
   - "Memos 01–07, 09–11, 13, 18–20, 25, 26 (AA-AIbex-AIOS, @Memo/V0.3)"
   - "Memos 05, 07, 12, 17, 34, 35 (AA-AIbex-AIOS, @Memo/V0.5)"
+  - "Memos 12, 23, 25–30 (AA-AIbex-AIOS, @Memo/V0.6)"
 ---
 
 # Skills und Assistenten
 
-Diese Spec regelt die Arten von Skills, ihre Versionen, das Ausführungsmodell, das Registrieren, die Assistenten mit ihrer Zuordnung zum Projekt, die Oberflächen sowie die AIOS-Skills `/aios-package`, `/aios-fetch`, `/aios-deploy`, `/aios-distribution`, `/aios-register`, `/aios-assistant`, `/aios-gui`, `/aios-memo` und den Alias `/gui`. Der Skill `/aios-context` und die Hooks stehen in Spec 02, `/aios-init`, `/aios-integrity` und `/aios-status` in Spec 05, Dateistrukturen, Formate und das CLI `aios` in Spec 04, Pakete, Hubs, Holen, Ausrollen und Distributionen in Spec 06, Arbeitspferde in Spec 07.
+Diese Spec regelt die Arten von Skills, ihre Versionen, das Ausführungsmodell, das Registrieren, die Assistenten mit ihrer Zuordnung zum Projekt, die Oberflächen, die Kernel-Skills im Vault sowie die Kernel-Skills `/aios-package`, `/aios-fetch`, `/aios-deploy`, `/aios-distribution`, `/aios-register`, `/aios-assistant`, `/aios-gui`, `/aios-memo` und den Alias `/gui`. Der Skill `/aios-context` und die Hooks stehen in Spec 02, `/aios-init`, `/aios-integrity` und `/aios-status` in Spec 05, Dateistrukturen, Formate und das CLI `aios` in Spec 04, Pakete, Hubs, Holen, Ausrollen und Distributionen in Spec 06, Arbeitspferde in Spec 07.
 
 ## Arten von Skills
 
 | Art | Quelle | registriert in | Verwaltung |
 |---|---|---|---|
-| **AIOS-Skill** | `/opt/aios/v<version>/skills/aios/` | global `~/.claude/skills/aios-*/` (versionsneutral, Spec 04) | `aios --install` |
-| **Alias** | in `aios` eingebaut | global `~/.claude/skills/gui/` (versionsneutral, Spec 04) | `aios --install` |
+| **Kernel-Skill** | `<installation>/skills/aios/<name>/` des laufenden Kernels (Spec 04) | im A/W als dünne Hülle in `<vault-root>/.claude/skills/aios-*/` und `<projekt>/.claude/skills/aios-*/` (*Kernel-Skills im Vault*); dazu im Block des Master-Kontexts (Spec 02) | Registrierung (siehe unten) |
+| **Alias** | in `aios` eingebaut | im A/W als Hülle in `<vault-root>/.claude/skills/gui/` und `<projekt>/.claude/skills/gui/` | Registrierung (siehe unten) |
 | **Projekt-Skill** | `@!Skill/<name>/` oder `@!Package/<paket>/skills/<name>/` eines Masterspace der Kette | `<Projekt>/.claude/skills/<name>/` | Registrierung (siehe unten) |
 | **Assistenten-Skill** | `@!Assistant/<assistant>/@!Skill/<name>/` oder `@!Skill/<name>/` der Kette, genannt in `skills:` oder `gui:` der `ASSISTANT.md` | nicht registriert; der Kontext des Assistenten enthält ihn | Assistent (siehe unten) |
 
@@ -41,7 +42,9 @@ Innerhalb der Projekt- und Assistenten-Skills wird unterschieden:
 | Version | Pflicht | Pflicht; ein neuer lokaler Skill beginnt mit `0.1.0` |
 | Änderungen | nur über eine neue Version des Pakets; direkte Änderungen meldet `/aios-fetch` | frei |
 
-**Reservierte Namen:** Namen mit dem Präfix `aios-` sind AIOS-Skills vorbehalten, der Name `gui` dem Alias. Ein Blueprint `@!Skill/aios-…/` oder `@!Skill/gui/` in einer Kette wird nicht registriert; `/aios-context` und `/aios-register` melden ihn. `none` und `inherit` sind als Namen von Assistenten reserviert; ein Assistent mit einem dieser Namen wird nicht aufgelöst und gemeldet.
+Bis v0.5 lagen Kernel-Skills (damals *AIOS-Skills*) und der Alias global in `~/.claude/skills/`. Ab v0.6 registriert AIBOS keinen Skill global (Spec 01, I3); die globalen Hüllen entfernt der Umstieg (Spec 04).
+
+**Reservierte Namen:** Namen mit dem Präfix `aios-` sind Kernel-Skills vorbehalten, der Name `gui` dem Alias. Ein Blueprint `@!Skill/aios-…/` oder `@!Skill/gui/` in einer Kette wird nicht registriert; `/aios-context` und `/aios-register` melden ihn. `none` und `inherit` sind als Namen von Assistenten reserviert; ein Assistent mit einem dieser Namen wird nicht aufgelöst und gemeldet.
 
 ## Format eines Skills
 
@@ -66,6 +69,33 @@ description: >
 
 Ein Blueprint ohne gültige `version` gilt wie ein Blueprint mit falschem `name`: Er wird nicht registriert und nicht als Assistenten-Skill geladen, sondern gemeldet (Registrieren, Assistenten).
 
+## Kernel-Skills im Vault
+
+Die Kernel-Skills (12 Skills `aios-*`) erreichen die KI im A/W auf zwei Wegen (V0.6, Memos 23, 26–30):
+
+| Weg | trägt | wo |
+|---|---|---|
+| **registrierte Hülle** | `/<name>` in jedem Host, auch in der interaktiven CLI, die einen unbekannten Slash-Befehl selbst ablehnt (V0.6, Memo 27) | wo sie registriert ist: Vault-Root und Projekte; Claude Code sucht Skills vom `cwd` aufwärts bis zur Wurzel des Git-Repos, die Hülle an der Vault-Root gilt also für die Vault-Root und für Ordner ohne eigenes Repo |
+| **Block im Master-Kontext** (Spec 02) | Auslösung über einen passenden Satz; `/<name>` in Hosts, die einen unbekannten Slash-Befehl an die KI weiterreichen (Desktop-App, `claude -p`) | im ganzen A/W |
+
+**Hülle:** Beim Registrieren schreibt AIBOS je Kernel-Skill eine Hülle mit dem absoluten Pfad des Weiterleiters, z. B.:
+
+```markdown
+---
+name: aios-init
+description: "<Feld description des Kernel-Skills, ungekürzt>"
+allowed-tools: Bash(/Users/…/.aios/bin/aios --skill aios-init)
+---
+
+!`/Users/…/.aios/bin/aios --skill aios-init`
+```
+
+`allowed-tools` nennt nur den eigenen Aufruf: Claude Code prüft einen Befehl in `` !`…` `` beim Laden gegen die Regeln, ohne `PreToolUse`, und bricht ohne Freigabe den Aufruf ab (V0.6, Memo 29). Alle weiteren Befehle des Skills gibt im A/W der Hook `PreToolUse` frei (Spec 02, *Freigabe*). Die Hülle hat keine `version`; ihre Version ist die des Kernels und steht in `.aios/registry` (Spec 04). Ob der Host `~` in `allowed-tools` auflöst, ist offen (Spec 01, O5); deshalb steht der absolute Pfad.
+
+**Ortsprüfung:** `aios --skill <name>` gibt den Rumpf nur aus, wenn `cwd` in einem A/W liegt. Sonst schreibt es `Kein AIBOS-Workspace: <cwd>` auf stderr und endet mit Exit-Code 1 (V0.6, Memo 23).
+
+**Vorrang:** Gibt es einen Skill gleichen Namens global in `~/.claude/skills/`, gewinnt beim Host der globale (persönlich vor Projekt). Darum entfernt der Umstieg die globalen Hüllen früherer Versionen, sobald kein Vault mehr an 0.5 gebunden ist (Spec 04, *Legacy und Umstieg*).
+
 ## Versionen
 
 | Aspekt | Regel |
@@ -82,7 +112,7 @@ Ein Skill hat keinen eigenen Steuerprozess (V0.5, Memo 12). Claude Code erkennt 
 | Wer | tut was |
 |---|---|
 | Modell | liest die Anleitung, schreibt jeden Befehl als Aufruf des Bash-Werkzeugs, wertet Ausgabe und Exit-Code aus, entscheidet über den nächsten Schritt |
-| Claude Code | führt den Befehl auf dem Rechner aus: eigener Prozess je Aufruf, Benutzerkonto und Profil des Users, Ordner der Session; vorher greift der Berechtigungsmodus der Session |
+| Claude Code | führt den Befehl auf dem Rechner aus: eigener Prozess je Aufruf, Benutzerkonto und Profil des Users, Ordner der Session; vorher greift der Berechtigungsmodus der Session. Im A/W gibt der Hook `PreToolUse` einzelne Befehle des Weiterleiters `aios` ohne Rückfrage frei (Spec 02, *Freigabe*); alle anderen Befehle fragen wie gewohnt |
 | Skripte eines Skills | Werkzeugkästen mit Unterbefehlen, nur mit der Standardbibliothek von Python, aufgerufen über `python3` |
 | Arbeitspferde | externe Programme, aufgerufen über ihren Weiterleiter `~/.aios/bin/<programm>`, nie über den `PATH` des Users (Spec 07) |
 
@@ -100,7 +130,7 @@ Skills und Assistenten kommen als **Pakete** in ein Projekt: Ein Paket wird vom 
 - Innerhalb eines Masterspace gewinnt der lokale Blueprint vor dem Element aus einem Paket; über Masterspaces hinweg gewinnt der nächstgelegene (Spec 06, *Vorrang*).
 - Lokale Blueprints in `@!Skill/` und `@!Assistant/` schreibt nur der User; AIOS schreibt sie nicht (Spec 01, I2).
 
-**Skills** (AIOS-Skills des Kernels, damit es kein Henne-Ei-Problem gibt; V0.4, Memos 23, 25):
+**Skills** (Kernel-Skills, damit es kein Henne-Ei-Problem gibt; V0.4, Memos 23, 25):
 
 | Skill | Rolle | Auslöser | ruft auf |
 |---|---|---|---|
@@ -110,7 +140,7 @@ Skills und Assistenten kommen als **Pakete** in ein Projekt: Ein Paket wird vom 
 
 `/aios-package` versteht unscharfe Namen („installiere mir den Rechner"): Es sucht mit `aios --library` in Namen und Beschreibungen der Pakete der Hub-Liste und fragt bei mehreren Treffern nach. Einen vollen Paketnamen `<hub>/<paket>` gibt es unverändert weiter. Meldet `aios --fetch`, dass ein Name in mehreren Hubs liegt, fragt es, welcher gemeint ist. Es fragt nach dem Ziel und schlägt das Root-Projekt vor. Wie jeder schreibende Skill holt es den Plan mit `--plan`, fragt im Chat und ruft erst nach Ja mit `--yes` auf (Spec 01, I7). Nach dem Holen sagt es, dass neue Skills ab dem nächsten Chat verfügbar sind, und nennt bei einer App ihre Oberfläche (*Oberflächen*).
 
-**Pakete der Grundausstattung in v0.5** (neue Versionen mit `requires.aios: ">=0.4,<0.6"`; V0.5, Memo 41):
+**Pakete der Grundausstattung** (Stand v0.5 mit `requires.aios: ">=0.4,<0.6"`; V0.5, Memo 41; für v0.6 brauchen sie neue Versionen, deren `requires.aios` 0.6 einschließt):
 
 | Paket | Hub | Typ | Version | Inhalt |
 |---|---|---|---|---|
@@ -127,7 +157,7 @@ Pakete holt nur der User; `aios --install` bietet es nicht an.
 
 ## Distributionen — `/aios-distribution`
 
-AIOS-Skill zum Zusammenstellen einer Distribution (Spec 06, *Distributionen*; V0.5, Memos 34, 35). Auslöser: „/aios-distribution", „Distribution zusammenstellen", „Distribution anlegen".
+Kernel-Skill zum Zusammenstellen einer Distribution (Spec 06, *Distributionen*; V0.5, Memos 34, 35). Auslöser: „/aios-distribution", „Distribution zusammenstellen", „Distribution anlegen".
 
 | # | Schritt | Ergebnis |
 |---|---|---|
@@ -139,14 +169,15 @@ AIOS-Skill zum Zusammenstellen einer Distribution (Spec 06, *Distributionen*; V0
 | 6 | Probe vorschlagen | `aios --install distribution-<name> --from <repo> <leerer Vault>`; den leeren Vault legt der Skill auf Wunsch in einem Test- oder Scratchpad-Ordner an, nie im Vault des Users |
 | 7 | melden | Ort, Inhalt, nächster Schritt: lokal taggen, veröffentlichen |
 
-Der Skill veröffentlicht nicht; das bleibt dem User bzw. Anja (`anja-veroeffentlichen`), jeder Schritt nach außen mit eigener Rückfrage. Die Hülle erlaubt `Bash(aios --library *)`, `Bash(aios --install * --plan)` und das Anlegen des Repos nach Plan und Rückfrage.
+Der Skill veröffentlicht nicht; das bleibt dem User bzw. Anja (`anja-veroeffentlichen`), jeder Schritt nach außen mit eigener Rückfrage. `aios --library` und `aios --install … --plan` gibt im A/W der Hook `PreToolUse` frei (Spec 02, *Freigabe*); das Anlegen des Repos mit `git` fragt der Host nach Plan und Rückfrage wie gewohnt.
 
 ## Registrieren — `/aios-register`
 
-Registrieren macht die geltenden Projekt-Skills **für Claude Code aufrufbar**.
+Registrieren macht die Kernel-Skills, den Alias `gui` und die geltenden Projekt-Skills **für Claude Code aufrufbar**.
 
-**Algorithmus** (für das Projekt der Session; registriert wird nur, wenn `cwd` ein initialisiertes Projekt mit `@/` in einem aktivierten Vault ist, sonst nichts):
+**Algorithmus** (für das Projekt der Session; registriert wird nur, wenn `cwd` ein initialisiertes Projekt mit `@/` in einem A/W ist, sonst nichts):
 
+0. Die Hüllen der Kernel-Skills des laufenden Kernels und die Hülle des Alias `gui` (*Kernel-Skills im Vault*, *`/gui`*) gehören zur Sollmenge jedes Projekts und der Vault-Root. Sie werden wie Skills aus der Kette verglichen (Schritte 2–4), mit `source: kernel` und der Version des Kernels in `.aios/registry` (Spec 04). Ist das Projekt nicht die Vault-Root, prüft die Registrierung zusätzlich die Hüllen an der Vault-Root.
 1. Alle `<D>/@/@!Skill/<name>/` und die ausgerollten `<D>/@/@!Package/<paket>/skills/<name>/` (Spec 06) der Master-Space-Kette sammeln (private Skills eines Assistenten in `@!Assistant/…/@!Skill/` bzw. `…/assistants/…/@!Skill/` gehören nicht dazu). Bei gleichem Namen gewinnt der nächstgelegene Masterspace, darin der lokale Blueprint vor dem Paket (Spec 06). Übersprungen und gemeldet werden reservierte Namen (`aios-*`, `gui`), ungültige Namen, Ordner ohne `SKILL.md`, Skills, deren `name` nicht dem Verzeichnisnamen entspricht, und Skills ohne gültige `version`.
 2. Mit `<Projekt>/.claude/skills/` und `<Projekt>/.aios/registry` vergleichen.
 3. **neu**: kopieren; **geändert** (anderer Inhalt oder andere Quelle des Blueprints, oder die Kopie in `.claude/skills/` wurde verändert): ersetzen; **weggefallen** (in der Registry, aber nicht mehr in der Kette oder nicht mehr gültig): entfernen. Skills in `.claude/skills/`, die nicht in der Registry stehen, bleiben unberührt und werden gemeldet, wenn ein Blueprint denselben Namen hat.
@@ -154,15 +185,17 @@ Registrieren macht die geltenden Projekt-Skills **für Claude Code aufrufbar**.
 
 | Aufruf | Rückfrage | Anlass |
 |---|---|---|
-| SessionStart-Hook (`aios --context --sync --yes`) | nein | jeder Session-Start in einem aktivierten Vault |
+| SessionStart-Hook (`aios --context --sync --yes`) | nein | jeder Session-Start in einem A/W |
 | `aios --init` | mit dem Plan von `aios --init` | Initialisieren und Ergänzen eines Projekts (Spec 05) |
+| `aios --activate v0.6.<n> <vault-root>` | mit dem Plan von `aios --activate` | Bindung eines Vaults: Hüllen an der Vault-Root und in allen Projekten des Vaults (Spec 04) |
+| `aios --fetch`, `aios --deploy`, `aios --install <distribution> <vault>` | mit dem jeweiligen Plan | nach dem Holen bzw. Ausrollen; bei `aios --install` immer im Ziel-Vault, unabhängig vom Arbeitsverzeichnis (Spec 06) |
 | `/aios-register`, `aios --register [<pfad>]`, `aios --context --sync` | ja, mit Vorschau | manueller Anstoß, z. B. nach `/aios-fetch`; der Skill holt mit `--plan` die Vorschau, fragt im Chat und führt nach Ja `--yes` aus |
 
 **Wirksamkeit:** Claude Code übernimmt Skills, die nach dem Start einer Session angelegt werden, nicht zuverlässig in diese Session (V0.1, Memo 16). Die Registrierung beim Session-Start stellt deshalb den Stand für den **nächsten** Chat her. Ändert sie etwas, meldet der Hook `AIOS-SKILLS: <Änderungen> — effective from the next chat` (z. B. `AIOS-SKILLS: new memo; changed shared — effective from the next chat`); übersprungene Blueprints meldet er als `AIOS-WARNING`, z. B. `AIOS-WARNING: skill ohne-version has no version, not registered`. Weil die Kopie im Projekt selbst liegt, ist ein Skill aus einem Masterspace oberhalb auch dann verfügbar, wenn das Projekt ein eigenes Git-Repo ist (V0.1, Memo 27). `/aios-register`, `/aios-package`, `/aios-fetch`, `/aios-deploy` und `/aios-init` sagen nach dem Registrieren: „Der Skill ist ab dem nächsten Chat verfügbar (oder nach `/reload-skills`)." Ob `/reload-skills` das zuverlässig leistet, ist offen (Spec 01, O1).
 
 ## Assistenten
 
-Ein Assistent ist eine Rolle, die AIOS dem KI-Assistenten des Hosts gibt: wer spricht, was er weiß, welche Skills und welche Oberfläche er hat. **Abbildung auf Claude Code (v0.5):** Der Assistent ist dem Projekt zugeordnet; die Hooks laden ihn als Kontext in jeden Chat des Projekts (Spec 02, *Assistent der Session*). Die Agentenfunktion von Claude Code (`.claude/agents/`, Subagenten) wird nicht verwendet.
+Ein Assistent ist eine Rolle, die AIOS dem KI-Assistenten des Hosts gibt: wer spricht, was er weiß, welche Skills und welche Oberfläche er hat. **Abbildung auf Claude Code (v0.6):** Der Assistent ist dem Projekt zugeordnet; die Hooks laden ihn als Kontext in jeden Chat des Projekts (Spec 02, *Assistent der Session*). Die Agentenfunktion von Claude Code (`.claude/agents/`, Subagenten) wird nicht verwendet.
 
 ### Aufbau
 
@@ -351,9 +384,9 @@ Die Oberfläche erscheint, wenn `/aios-gui` oder `/gui` aufgerufen wird; sie ist
 
 ### `/gui`
 
-`/gui` ist ein **Alias**: eine feste, versionsneutrale Hülle in `~/.claude/skills/gui/` (Spec 04). Es gibt nur diesen einen Alias (V0.3, Memo 25). Der Rumpf entsteht beim Aufruf mit `aios --gui --session ${CLAUDE_SESSION_ID}`:
+`/gui` ist ein **Alias**: eine Hülle, die wie die Kernel-Skills im A/W an der Vault-Root und in jedem Projekt registriert wird (*Kernel-Skills im Vault*), mit `allowed-tools: Bash(<weiterleiter> --gui --session *)`. Es gibt nur diesen einen Alias (V0.3, Memo 25). Er gehört zum Assistenten: Er zeigt dessen Oberfläche und steht nicht im Block der Kernel-Skills; ohne Assistenten verweist er auf `/aios-gui` (V0.6, Memo 12). Der Rumpf entsteht beim Aufruf mit `aios --gui --session ${CLAUDE_SESSION_ID}`:
 
-1. Assistent bestimmen: der Assistent der Session aus dem Merker (Spec 02); ohne Merker die Zuordnung des Projekts.
+1. Assistent bestimmen: der Assistent der Session aus dem Merker, wenn das `cwd` gleich dem im Merker ist (Spec 02); sonst die Zuordnung des Projekts.
 2. Hat er ein `gui:`, gibt `aios --gui` den Rumpf des Oberflächen-Skills aus, erweitert um die Anweisung, die Oberfläche nach *Darstellung* zu zeigen.
 3. Ist kein Assistent aktiv oder nennt er kein `gui:`: „The assistant <title> has no surface." bzw. „No assistant active.", jeweils mit „AIOS surface: `/aios-gui`".
 
@@ -365,7 +398,7 @@ Die Oberfläche einer App ist der Skill, den `contents.gui` ihres Pakets nennt (
 
 ### `/aios-gui`
 
-AIOS-Skill mit der Oberfläche von AIOS selbst. Ihre Beschreibung liegt im AIOS-Skill (`skills/aios/aios-gui/gui.yaml`) und hat diese Kacheln:
+Kernel-Skill mit der Oberfläche von AIOS selbst. Ihre Beschreibung liegt im Kernel-Skill (`skills/aios/aios-gui/gui.yaml`) und hat diese Kacheln:
 
 | Kachel | sendet |
 |---|---|
@@ -381,12 +414,12 @@ AIOS-Skill mit der Oberfläche von AIOS selbst. Ihre Beschreibung liegt im AIOS-
 
 ## Memo-Stil — `/aios-memo`
 
-AIOS-Skill, damit in jedem Projekt eines aktivierten Vaults ein wohldefinierter Memo-Stil verfügbar ist, ohne dass ein Memo-Skill ausgerollt werden muss (V0.3, Memo 18–20). Vergleich: Unter Linux gibt es immer `nano`, auch ohne einen anderen Editor.
+Kernel-Skill, damit in jedem Projekt eines A/W ein wohldefinierter Memo-Stil verfügbar ist, ohne dass ein Memo-Skill ausgerollt werden muss (V0.3, Memo 18–20). Vergleich: Unter Linux gibt es immer `nano`, auch ohne einen anderen Editor.
 
 | Aspekt | Regel |
 |---|---|
 | Inhalt | der Rumpf von `memo==6.0.0` (Nummer, Dateiname, Header-Block, Struktur, Formatierung, Obsidian-LaTeX); er wird nicht an spätere Versionen von `memo` angeglichen |
-| Version | wie bei allen AIOS-Skills: versionsneutrale Hülle, Rumpf aus der für das Projekt gültigen AIOS-Version |
+| Version | wie bei allen Kernel-Skills: registrierte Hülle, Rumpf aus der für den Vault gültigen AIOS-Version |
 | `@Memo/` | legt der Skill an, wenn er das erste Memo eines Projekts schreibt und der Ordner fehlt; `aios --init` legt ihn nicht an (Spec 05) |
 | Vorrang | Ist im Projekt ein Skill `memo` registriert (`memo` in `.aios/registry`), gibt `aios --skill aios-memo` statt des Rumpfs nur aus: „Use `/memo` — the skill `memo` is registered in this project." Zusätzlich sagt die Beschreibung von `aios-memo`: „Nur verwenden, wenn kein Skill `memo` verfügbar ist." |
 | Regeln, die auf `memo` verweisen | gelten ersatzweise mit `aios-memo`, wenn `memo` nicht ausgerollt oder nicht registriert ist |
