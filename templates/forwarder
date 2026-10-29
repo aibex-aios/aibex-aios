@@ -1,5 +1,5 @@
 #!/bin/bash
-# forwarder: ~/bin/aios, choose the AIOS version and call it (spec 04)
+# forwarder: ~/.aios/bin/aios, choose the AIOS version and call it (spec 04)
 
    if [ "$*" == "---help" ]; then
       echo "   usage: aios <args>      # forward <args> to aios of the chosen version"
@@ -7,10 +7,10 @@
       echo "          aios ---version  # print version of this forwarder"
       echo "          aios ---help     # this help"
       echo '   order: AIOS_HOME, aios --activate v<version> (that version), aios: in'
-      echo '          .aios/config.yaml up to the vault root, otherwise aios --context: ai-brain,'
-      echo '          everything else: highest installed version; aios --install distribution-*:'
-      echo '          always the highest installed version, at least 0.5; aios --context with a'
-      echo '          version below 0.5: its aios-context'
+      echo '          .aios/config.yaml of the vault root, otherwise aios --context: ai-brain with'
+      echo '          legacy: ai-brain there, else nothing; everything else: highest installed'
+      echo '          version; aios --install distribution-*: always the highest installed'
+      echo '          version, at least 0.5; aios --context with a version below 0.5: its aios-context'
       echo '   see also: aios, ai-brain'
       exit 1
    fi
@@ -20,7 +20,7 @@
 #===============================================================================
 
    if [ "$*" == "---version" ]; then
-      echo "0.3.1"; exit 0
+      echo "0.4.0"; exit 0
    fi
 
 #===============================================================================
@@ -87,20 +87,27 @@
    }
 
    activation() {                                   # print "<version>|<config>" or nothing
-      local D ROOT LINE
+      local ROOT LINE F                             # only the vault root binds (spec 04, I14)
       ROOT="$(vault_root)" || return 1              # outside a vault: never activated
-      D="$(pwd -P)"
-      while :; do
-         if [ "$D" != "$(cd "$HOME" 2>/dev/null && pwd -P)" ] && [ -f "$D/.aios/config.yaml" ]; then
-            LINE="$(grep -E -m1 '^aios:' "$D/.aios/config.yaml")"
-            if [[ "$LINE" =~ ^aios:[[:space:]]*[\"\']?v?([0-9][^\"\'[:space:]#]*) ]]; then
-               echo "${BASH_REMATCH[1]}|$D/.aios/config.yaml"; return 0
-            fi
-         fi
-         [ "$D" == "$ROOT" ] && break
-         D="$(dirname "$D")"
-      done
+      F="$ROOT/.aios/config.yaml"
+      [ "$ROOT" != "$(cd "$HOME" 2>/dev/null && pwd -P)" ] && [ -f "$F" ] || return 1
+      LINE="$(grep -E -m1 '^aios:' "$F")"
+      if [[ "$LINE" =~ ^aios:[[:space:]]*[\"\']?v?([0-9][^\"\'[:space:]#]*) ]]; then
+         echo "${BASH_REMATCH[1]}|$F"; return 0
+      fi
       return 1
+   }
+
+   marked() {                                       # legacy: ai-brain at the vault root (spec 02)
+      local ROOT F
+      ROOT="$(vault_root)" || return 1
+      F="$ROOT/.aios/config.yaml"
+      [ -f "$F" ] && grep -Eq '^legacy:[[:space:]]*["'"'"']?ai-brain["'"'"']?[[:space:]]*(#.*)?$' "$F"
+   }
+
+   log() {                                          # errors outside an A/W only into the log (spec 02)
+      mkdir -p "$HOME/.aios/log" 2>/dev/null && \
+         echo "$(date '+%Y-%m-%dT%H:%M:%S') forwarder cwd=$(pwd -P) $*" >> "$HOME/.aios/log/context.log"
    }
 
    choose() {                                       # set KIND, TARGET, WHY (ARG1, ARG2: the first arguments)
@@ -130,8 +137,12 @@
          fi
          KIND=missing; TARGET="v${A%%|*}"; return 0
       fi
-      if [ "$ARG1" == "--context" ]; then           # only the group --context falls back (V0.5, memo 03)
-         KIND=legacy; TARGET="$(command -v ai-brain)"; WHY="not activated (legacy mode)"
+      if [ "$ARG1" == "--context" ]; then           # only the group --context calls ai-brain (V0.5, memo 03)
+         if marked; then
+            KIND=legacy; TARGET="$(command -v ai-brain)"; WHY="legacy: ai-brain at the vault root"
+         else
+            KIND=quiet; WHY="no binding: vault without aios: or outside a vault"
+         fi
          return 0
       fi
       if E="$(highest)"; then
@@ -155,7 +166,7 @@
       fi
       if [ -n "$P" ]; then
          cd "$P" || exit 1
-         choose; [ "$KIND" == "legacy" ] && { [ "$P" == "$2" ] && set -- --context || set -- --context "$2"; }
+         choose; case "$KIND" in legacy|quiet) [ "$P" == "$2" ] && set -- --context || set -- --context "$2";; esac
       fi
    fi
 
@@ -185,16 +196,20 @@
          fi
          exec "$TARGET" "$@"
          ;;
+      quiet)                                        # outside an A/W: nothing (spec 02, I12)
+         [ "$2" == "--id" ] && echo "id=- files=0 cwd=$PWD mode=none"
+         [ "$2" == "--list" ] && echo "No AIBOS workspace — no master context."
+         exit 0
+         ;;
       legacy)
          shift                                      # ai-brain takes the arguments after --context
          [ "$*" == "" ] && set -- --context         # aios --context = master context
+         [ "$*" == "--permit" ] && exit 0           # no permission from ai-brain (spec 02)
          if [ "$*" == "--list" ]; then              # spec 02: listing of /aios-context
-            if vault_root >/dev/null; then echo "Legacy mode (ai-brain, no aios: in the chain) — see /masterspace."
-            else echo "No vault — no master context."; fi
+            echo "Legacy mode (ai-brain, legacy: ai-brain at the vault root) — see /masterspace."
             exit 0
          fi
          if [ "$*" == "--id" ]; then                # spec 02: --id names the mode
-            if ! vault_root >/dev/null; then echo "id=- files=0 cwd=$PWD mode=none"; exit 0; fi
             OUT=""; [ -n "$TARGET" ] && OUT="$("$TARGET" --id 2>/dev/null)"
             case "$OUT" in
                id=*) echo "$OUT mode=legacy" ;;
@@ -211,6 +226,11 @@
          exit 1
          ;;
       missing)
+         if [ "$1" == "--context" ]; then           # hooks: never output, only the log (spec 04)
+            log "AIOS $TARGET is not installed ($WHY)"
+            [ "$2" == "--id" ] && echo "id=- files=0 cwd=$PWD mode=none"
+            exit 0
+         fi
          echo "*** aios: AIOS $TARGET is not installed ($WHY)" >&2
          echo "    run: aios --install $TARGET" >&2
          exit 1

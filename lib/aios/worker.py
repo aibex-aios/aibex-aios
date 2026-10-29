@@ -31,12 +31,12 @@ PLANNED = None                                      # AIOS_PREFIX a plan creates
 
 
 def root():
-    """AIOS_PREFIX (/opt/aios) if it is a writable folder, else ~/.aios (spec 07, Installation);
-    PLANNED if the plan of a distribution creates AIOS_PREFIX first (V0.5, memo 71: B7)."""
+    """~/.aios (spec 07, Installation); AIOS_PREFIX (/opt/aios) only if its workers.yaml already
+    exists and is writable (V0.6, F35); PLANNED if a plan sets the place first (V0.5, memo 71: B7)."""
     if PLANNED is not None:
         return PLANNED
     prefix = paths.prefix()
-    if prefix.is_dir() and os.access(prefix, os.W_OK):
+    if (prefix / "workers.yaml").is_file() and os.access(prefix, os.W_OK):
         return prefix
     return paths.user_dir()
 

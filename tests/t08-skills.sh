@@ -41,7 +41,7 @@
 import sys; t=open(sys.argv[1],encoding='utf-8').read(); e=t.find('\n---',3); print(t[t.find('\n',e+4)+1:].lstrip('\n'),end='')" "$SRC/skills/aios/aios-init/SKILL.md")" "--skill: body without frontmatter"
    case "$(at "$D" aios --skill aios-init)" in *"name: aios-init"*|*"allowed-tools"*) fail "--skill: no frontmatter" ;; *) ok ;; esac
    case "$(at "$D" aios --skill aios-init)" in *"Nur in Version 0.7.0"*) fail "--skill in §Demo: version 0.6.0" ;; *) ok ;; esac
-   assert_contains "$(at "$D/Garten" aios --skill aios-init)" "Nur in Version 0.7.0" "--skill in Garten: version 0.7.0"
+   assert_not_contains "$(at "$D/Garten" aios --skill aios-init)" "Nur in Version 0.7.0" "--skill in Garten: the vault root decides (I14)"
    for S in aios-context aios-init aios-register aios-status aios-deploy aios-assistant aios-integrity aios-memo aios-gui aios-fetch aios-package aios-distribution; do
       assert_contains "$(at "$D" aios --skill "$S")" "Ein AIOS-Skill von AIbex AIOS" "--skill $S"
    done

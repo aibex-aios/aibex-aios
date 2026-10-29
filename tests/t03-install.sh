@@ -52,7 +52,8 @@ EOF
    G commit -q -am v0.2.0; G tag v0.2.0; G tag v0.3.0-rc1
    S="$(cd "$S" && pwd -P)"
 
-   P="$AIOS_PREFIX"
+   P="$AIOS_PREFIX"                                 # /opt/aios: --prepare (legacy) and --system
+   U="$HOME/.aios/versions"                         # standard place of installations (V0.6, F26)
    ro() { [ -e "$1" ] && [ ! -w "$1" ]; }
 
 #===============================================================================
@@ -90,7 +91,8 @@ EOF
    OUT="$(AIOS_PREPARE_PATH="$SANDBOX/kit-none" "$S/bin/aios" --install v0.2.0 </dev/null 2>&1)"; RC=$?
    assert_eq "$RC" "1" "install without the basic kit: exit 1"
    assert_contains "$OUT" "the basic kit is missing" "install without the basic kit: aborted"
-   [ ! -e "$P/v0.2.0" ] && ok || fail "install without the basic kit: nothing installed"
+   [ ! -e "$U/v0.2.0" ] && ok || fail "install without the basic kit: nothing installed"
+   assert_contains "$OUT" "install it, then run aios --install again" "install without the basic kit: no hint to aios --prepare"
    mkdir -p "$SANDBOX/kit-old"; ln -s "$(command -v git)" "$SANDBOX/kit-old/git"        # v0.5.1, B11
    printf '#!/bin/bash\necho "3 10"\n' > "$SANDBOX/kit-old/python3"; chmod +x "$SANDBOX/kit-old/python3"
    OUT="$(AIOS_PREPARE_PATH="$SANDBOX/kit-old" "$S/bin/aios" --prepare </dev/null 2>&1)"; RC=$?
@@ -107,7 +109,7 @@ EOF
    assert_contains "$OUT" "install v0.2.0 from $S" "highest release tag, rc ignored"
    assert_contains "$OUT" "replaces the prototype" "plan: prototype"
    assert_contains "$OUT" "remove the ai-brain hooks" "plan: hooks"
-   [ ! -e "$P/v0.2.0" ] && cmp -s "$SET" "$SANDBOX/settings.orig" && ok || fail "install cancelled: nothing written"
+   [ ! -e "$U/v0.2.0" ] && cmp -s "$SET" "$SANDBOX/settings.orig" && ok || fail "install cancelled: nothing written"
 
    OUT="$(echo y | "$S/bin/aios" --install 2>&1)"; RC=$?
    assert_eq "$RC" "0" "install v0.2.0: exit 0"
@@ -116,7 +118,7 @@ EOF
 # --install: installation directory (spec 04, Abbildung)
 #===============================================================================
 
-   I="$P/v0.2.0"
+   I="$U/v0.2.0"
    assert_eq "$(cat "$I/VERSION")" "0.2.0" "VERSION of the tag"
    [ ! -e "$I/bin/aios-context" ] && ok || fail "no bin/aios-context in the installation"
    for F in bin/aios lib/aios/install.py templates/forwarder templates/gitignore \
@@ -130,13 +132,14 @@ EOF
    assert_exec "$I/python/bin/python"
    [ ! -e "$I/tests" ] && [ ! -e "$I/dev" ] && [ ! -e "$I/CLAUDE.md" ] && [ ! -e "$I/.git" ] && ok || fail "only the mapped parts are installed"
    ro "$I" && ro "$I/bin/aios" && ro "$I/lib/aios" && ok || fail "installation is read-only"
-   assert_eq "$(cat "$P/installations.yaml")" "v0.2.0: $I" "installations.yaml"
+   assert_eq "$(cat "$HOME/.aios/installations.yaml")" "v0.2.0: $I" "installations.yaml under ~/.aios"
+   [ ! -e "$P/v0.2.0" ] && ok || fail "nothing under /opt/aios without --system"
 
 #===============================================================================
 # --install: user setup
 #===============================================================================
 
-   assert_contains "$(cat "$HOME/bin/aios")" "# forwarder: ~/bin/aios" "prototype replaced by the forwarder"
+   assert_contains "$(cat "$HOME/bin/aios")" "# forwarder: ~/.aios/bin/aios" "prototype replaced by the forwarder"
    [ ! -e "$HOME/bin/aios-context" ] && ok || fail "no forwarder ~/bin/aios-context"
    [ ! -e "$HOME/etc/aios" ] && ok || fail "~/etc/aios of the prototype removed"
    assert_eq "$(cat "$HOME/.aios/config.yaml")" "hosts: [claude-code]" "~/.aios/config.yaml"
@@ -162,7 +165,7 @@ EOF
    cp "$SET" "$SANDBOX/settings.1"; cp "$HOME/.aios/hooks-backup.json" "$SANDBOX/backup.1"
    OUT="$(cd "$SANDBOX" && echo y | aios --install v0.1.0 2>&1)"; RC=$?
    assert_eq "$RC" "0" "install v0.1.0 via forwarder (clone from ~/.aios/repo)"
-   assert_eq "$(sed -n 's/^version: //p' "$P/v0.1.0/manifest.yaml")" "0.1.0" "v0.1.0: manifest.yaml with the version of the tag"
+   assert_eq "$(sed -n 's/^version: //p' "$U/v0.1.0/manifest.yaml")" "0.1.0" "v0.1.0: manifest.yaml with the version of the tag"
    cmp -s "$SET" "$SANDBOX/settings.1" && cmp -s "$HOME/.aios/hooks-backup.json" "$SANDBOX/backup.1" && ok || fail "second install: hooks and backup unchanged"
    assert_eq "$(cd "$SANDBOX" && aios --install v0.1.0 </dev/null 2>&1)" "=> AIbex AIOS v0.1.0: nothing to do" "installed version: nothing to do, no question"
    assert_eq "$(cd "$SANDBOX" && aios --version)" "0.2.0" "forwarder still calls the highest version"
@@ -172,11 +175,11 @@ EOF
 #===============================================================================
 
    OUT="$(cd "$SANDBOX" && echo n | aios --remove-version v0.1.0 2>&1)"
-   assert_dir "$P/v0.1.0"
+   assert_dir "$U/v0.1.0"
    OUT="$(cd "$SANDBOX" && echo y | aios --remove-version v0.1.0 2>&1)"; RC=$?
    assert_eq "$RC" "0" "remove-version: exit 0"
-   [ ! -e "$P/v0.1.0" ] && ok || fail "v0.1.0 removed"
-   assert_eq "$(cat "$P/installations.yaml")" "v0.2.0: $I" "entry removed"
+   [ ! -e "$U/v0.1.0" ] && ok || fail "v0.1.0 removed"
+   assert_eq "$(cat "$HOME/.aios/installations.yaml")" "v0.2.0: $I" "entry removed"
 
    printf 'v0.3.0-dev: "%s"\n' "$S" > "$HOME/.aios/installations.yaml"
    OUT="$(cd "$SANDBOX" && echo y | aios --remove-version v0.3.0-dev 2>&1)"
@@ -201,28 +204,24 @@ EOF
    assert_eq "$("$S/bin/aios" --uninstall </dev/null 2>&1)" "=> nothing to uninstall" "uninstall again: nothing to do"
 
 #===============================================================================
-# without sudo: /opt/aios not writable -> ~/.aios/versions
+# --system: /opt/aios only on request, with sudo (spec 04, Installationen; V0.6, F26)
 #===============================================================================
 
    mkdir -p "$SANDBOX/ro"; chmod a-w "$SANDBOX/ro"
-   OUT="$(echo y | AIOS_PREFIX="$SANDBOX/ro/opt/aios" "$S/bin/aios" --install v0.1.0 2>&1)"; RC=$?
-   assert_eq "$RC" "0" "install without sudo: exit 0"
-   assert_contains "$OUT" "no sudo: installations go to $HOME/.aios/versions" "plan names the fallback"
-   assert_file "$HOME/.aios/versions/v0.1.0/VERSION"
-   assert_eq "$(cat "$HOME/.aios/installations.yaml")" "v0.1.0: $HOME/.aios/versions/v0.1.0" "entry in ~/.aios/installations.yaml"
-   assert_eq "$(cd "$SANDBOX" && AIOS_PREFIX="$SANDBOX/ro/opt/aios" "$HOME/bin/aios" ---which | sed 's/.*kind=//; s/ .*//')" "aios" "forwarder finds the fallback installation"
+   OUT="$(echo y | AIOS_SUDO="$SANDBOX/fake/no-sudo" AIOS_PREFIX="$SANDBOX/ro/opt/aios" "$S/bin/aios" --install v0.1.0 --system 2>&1)"; RC=$?
+   assert_eq "$RC" "1" "--system without sudo: exit 1"
+   assert_contains "$OUT" "--system needs sudo" "--system without sudo: message"
+   [ ! -e "$SANDBOX/ro/opt/aios" ] && ok || fail "--system without sudo: nothing written"
 
-#===============================================================================
-# with sudo: the plan says so and sudo creates /opt/aios
-#===============================================================================
-
-   cat > "$SANDBOX/fake/fake-sudo" <<EOF
-#!/bin/bash
-chmod u+w "$SANDBOX/ro"; "\$@"; RC=\$?; chmod a-w "$SANDBOX/ro"; exit \$RC
-EOF
+   printf '#!/bin/bash\nchmod u+w "%s"; "$@"; RC=$?; chmod a-w "%s"; exit $RC\n' "$SANDBOX/ro" "$SANDBOX/ro" > "$SANDBOX/fake/fake-sudo"
    chmod +x "$SANDBOX/fake/fake-sudo"
+   OUT="$(echo y | AIOS_SUDO="$SANDBOX/fake/fake-sudo" AIOS_PREFIX="$SANDBOX/ro/sys/aios" "$S/bin/aios" --install v0.1.0 --system 2>&1)"; RC=$?
+   assert_eq "$RC" "0" "--system with sudo: exit 0"
+   assert_contains "$OUT" "sudo may ask for your password" "--system: plan warns about the password"
+   assert_file "$SANDBOX/ro/sys/aios/v0.1.0/VERSION"
+   assert_eq "$(cat "$SANDBOX/ro/sys/aios/installations.yaml")" "v0.1.0: $SANDBOX/ro/sys/aios/v0.1.0" "--system: entry in the installations.yaml of /opt/aios"
    OUT="$(echo y | AIOS_SUDO="$SANDBOX/fake/fake-sudo" AIOS_PREFIX="$SANDBOX/ro/sudo/aios" "$S/bin/aios" --prepare 2>&1)"
-   assert_contains "$OUT" "sudo may ask for your password" "plan warns about the password"
+   assert_contains "$OUT" "sudo may ask for your password" "--prepare (legacy): plan warns about the password"
    assert_dir "$SANDBOX/ro/sudo/aios"
 
 #===============================================================================

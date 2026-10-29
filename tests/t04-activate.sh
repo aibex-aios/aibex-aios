@@ -63,7 +63,7 @@
    assert_eq "$(grep -c '^aios:' "$D/Garten/.aios/config.yaml")" "1" "only one aios: line"
    assert_eq "$(head -1 "$D/Garten/.aios/config.yaml")" "aios: 0.1.0" "aios: replaced in place"
    echo y | A --activate v0.2.0 "$D/Garten" >/dev/null
-   assert_eq "$(at "$D/Garten/Beet/Reihe" aios --context --id)" "0.2.0 --context --id" "forwarder: nearest activation wins"
+   assert_eq "$(at "$D/Garten/Beet/Reihe" aios --context --id)" "0.1.0 --context --id" "forwarder: only the vault root binds (I14)"
 
 #===============================================================================
 # configuration chain: per key the nearest entry, skills per name
@@ -125,4 +125,4 @@
    [ ! -e "$D/.aios" ] && ok || fail "empty config and .aios/ removed"
    assert_contains "$OUT" "legacy mode" "vault in legacy mode"
    assert_contains "$(A --deactivate "$D" </dev/null)" "nothing to do" "deactivate again: nothing to do"
-   assert_eq "$(at "$D/Garten" aios --context --id)" "id=- files=0 cwd=$D/Garten mode=legacy" "forwarder: legacy (no ai-brain here)"
+   assert_eq "$(at "$D/Garten" aios --context --id)" "id=- files=0 cwd=$D/Garten mode=none" "forwarder: vault without binding, mode=none"

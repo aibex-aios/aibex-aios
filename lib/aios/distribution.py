@@ -88,15 +88,11 @@ def kernel_steps(version, stages):
     repo = install.find_repo()
     tag = install.choose_version(repo, tag)
     p = Plan()
-    root, entries = install.plan_prepare(p)
-    prefix = paths.prefix()
-    if root == prefix and not (prefix.is_dir() and os.access(prefix, os.W_OK)):
-        from . import worker
-        worker.PLANNED = prefix                     # the workhorses follow the kernel (B7)
     missing = install.basic_kit()
     if missing:
         raise Abort("the basic kit is missing (" + "; ".join(install.kit_lines(missing))
-                    + "); run aios --prepare")
+                    + "); install it, then run aios --install again")
+    root, entries = install.plan_root(p)           # ~/.aios/versions (spec 04; V0.6, F26)
     stage = install.extract(repo, tag)
     stages.append(stage)
     p.add(f"install AIOS {tag} from {repo} -> {root / tag} (read-only)",

@@ -167,3 +167,14 @@
    assert_eq "$(A "$G" --run hallo Welt)" "hallo Welt" "run a command of a package in the chain"
    assert_contains "$(A "$D" --deploy test-befehl --only nichts --yes)" "test-befehl has no element nichts" "only existing elements"
    unset AIOS_HUBS AIOS_PIP_FIND_LINKS
+
+#===============================================================================
+# v0.6 step 2: place of the workhorses (spec 04, Installationen; spec 07; V0.6, F35)
+#===============================================================================
+
+   WR() { PYTHONPATH="$SRC/lib" python3 -c "from aios import worker; print(worker.root())"; }
+   mkdir -p "$AIOS_PREFIX"; rm -f "$AIOS_PREFIX/workers.yaml"
+   assert_eq "$(WR)" "$HOME/.aios" "workhorses: ~/.aios without workers.yaml under /opt/aios"
+   printf '# written by AIOS (worker setup), do not edit\nschema: 1\n' > "$AIOS_PREFIX/workers.yaml"
+   assert_eq "$(WR)" "$AIOS_PREFIX" "workhorses: /opt/aios when its workers.yaml exists"
+   rm -f "$AIOS_PREFIX/workers.yaml"

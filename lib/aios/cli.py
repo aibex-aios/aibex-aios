@@ -5,7 +5,7 @@ import sys
 
 from . import activate, aiosinit, assign, contribute, deploy, fetch, gui, hub, install, integrity, paths, registry, resolver, skills, ui, worker, workspace
 
-USAGE = ("usage: aios --prepare [--dev] | --install [v<version>] | --install distribution-<name> [<vault>] | --versions | --remove-version v<version>"
+USAGE = ("usage: aios --prepare [--dev] | --install [v<version>] [--system] | --install distribution-<name> [<vault>] | --versions | --remove-version v<version>"
          " | --uninstall | --activate v<version> [<path>] | --deactivate [<path>] | --config [<path>]"
          " | --register [<path>] | --init [<path>] [--assistant <value>] [--name <name>] [--accept-name]"
          " | --integrity [<path>] | --assistant <name|none|inherit> [--to <project>] [--session <id>]"
@@ -58,6 +58,9 @@ def main(argv):
             from . import distribution
             if distribution.is_spec(args[0]):
                 return distribution.command(args)
+        if cmd == "--install" and "--system" in args and len(args) <= 2:
+            rest = [a for a in args if a != "--system"]
+            return install.install(rest[0] if rest else None, system=True)
         if cmd == "--install" and len(args) <= 1:
             return install.install(args[0] if args else None)
         if cmd == "--versions" and not args:

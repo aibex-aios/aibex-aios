@@ -25,7 +25,12 @@ from . import paths
 from .ui import Abort, Plan, confirm, say, warn  # noqa: F401 - Abort is part of the API
 
 
-FORWARDER_MARK = "# forwarder: ~/bin/aios"            # also in the forwarder of v0.4 (~/bin/aios-context)
+FORWARDER_MARKS = ("# forwarder: ~/bin/aios",          # up to 0.3.1, also ~/bin/aios-context of v0.4
+                   "# forwarder: ~/.aios/bin/aios")    # from 0.4.0 (V0.6)
+
+
+def is_forwarder(text):
+    return any(m in text for m in FORWARDER_MARKS)
 PROTOTYPE_MARK = 'ETC="$HOME/etc/aios"'
 WRAPPER_MARK = "!`aios --skill "
 ALIAS_MARK = "!`aios --gui "
@@ -190,8 +195,15 @@ def existing_parent(path):
     return p
 
 
-def plan_root(plan):
-    """Where installations go: (root, installations.yaml), with the steps to set it up."""
+def plan_root(plan, system=False, prepare=False):
+    """Where installations go: (root, installations.yaml), with the steps to set it up.
+    Standard is ~/.aios/versions; /opt/aios only with --system (spec 04, Installationen; V0.6, F26).
+    prepare: aios --prepare, legacy of v0.5, sets up /opt/aios with the fallback of v0.5."""
+    if not system and not prepare:
+        root = paths.user_versions()
+        if not root.is_dir():
+            plan.add(f"create {root}", lambda: root.mkdir(parents=True))
+        return root, user_entries()
     prefix = paths.prefix()
     if prefix.is_dir() and os.access(prefix, os.W_OK):
         return prefix, system_entries()
@@ -207,16 +219,19 @@ def plan_root(plan):
         plan.add(f"create {prefix} for {user}: sudo mkdir -p {prefix} && sudo chown {user} {prefix}"
                  f" (sudo may ask for your password)", setup)
         return prefix, system_entries()
-    fallback = paths.user_versions()
-    if not fallback.is_dir():
-        plan.add(f"no sudo: installations go to {fallback} instead of {prefix}",
-                 lambda: fallback.mkdir(parents=True))
-    return fallback, user_entries()
+    if prepare:                                     # aios --prepare (legacy of v0.5): fall back
+        fallback = paths.user_versions()
+        if not fallback.is_dir():
+            plan.add(f"no sudo: installations go to {fallback} instead of {prefix}",
+                     lambda: fallback.mkdir(parents=True))
+        return fallback, user_entries()
+    raise Abort(f"--system needs sudo to set up {prefix}; without --system AIOS installs into "
+                f"{paths.user_versions()}")
 
 
 def plan_prepare(plan):
     home = paths.home()
-    root = plan_root(plan)
+    root = plan_root(plan, prepare=True)
     for d in ("bin", "etc", "tmp", "git"):
         if not (home / d).is_dir():
             plan.add(f"create ~/{d}", lambda d=d: (home / d).mkdir(parents=True))
@@ -454,7 +469,7 @@ def plan_forwarders(plan, src):
             old = target.read_text(encoding="utf-8", errors="replace")
             if PROTOTYPE_MARK in old:
                 what = f"forwarder ~/bin/{tool} {new}, replaces the prototype"
-            elif FORWARDER_MARK in old:
+            elif is_forwarder(old):
                 if semver_key(new) > semver_key(forwarder_version(old)):
                     what = f"forwarder ~/bin/{tool}: update {forwarder_version(old)} -> {new}"
             else:
@@ -467,7 +482,7 @@ def plan_forwarders(plan, src):
             plan.add(what, put)
     for tool in OLD_TOOLS:
         target = bindir / tool
-        if target.is_file() and FORWARDER_MARK in target.read_text(encoding="utf-8", errors="replace"):
+        if target.is_file() and is_forwarder(target.read_text(encoding="utf-8", errors="replace")):
             plan.add(f"remove the forwarder ~/bin/{tool} (replaced by aios --context)", target.unlink)
     etc = paths.home() / "etc" / "aios"
     if etc.is_dir():
@@ -676,15 +691,15 @@ def older_vaults(tag):
     return lines
 
 
-def install(version):
+def install(version, system=False):
     repo = find_repo()
     tag = choose_version(repo, version)
-    plan = Plan()
-    root, entries = plan_prepare(plan)
     missing = basic_kit()
-    if missing:
+    if missing:                                     # checked by aios --install itself (V0.6, memo 07)
         raise Abort("the basic kit is missing (" + "; ".join(kit_lines(missing))
-                    + "); run aios --prepare")
+                    + "); install it, then run aios --install again")
+    plan = Plan()
+    root, entries = plan_root(plan, system=system)
     known = installations()
     stage = None
     try:
@@ -778,7 +793,7 @@ def uninstall():
     plan = Plan()
     for tool in TOOLS + OLD_TOOLS:
         target = paths.bin_dir() / tool
-        if target.is_file() and FORWARDER_MARK in target.read_text(encoding="utf-8", errors="replace"):
+        if target.is_file() and is_forwarder(target.read_text(encoding="utf-8", errors="replace")):
             plan.add(f"remove the forwarder ~/bin/{tool}", target.unlink)
     skills = paths.claude_dir() / "skills"
     if skills.is_dir():
