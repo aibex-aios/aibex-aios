@@ -1,9 +1,9 @@
 ---
 title: "Arbeitspferde"
-date: 2026-10-25
+date: 2026-10-29
 author: iHux
-status: Spec
-tags: [spec, aios, v0.5, arbeitspferde]
+status: Entwurf
+tags: [spec, aios, v0.6, arbeitspferde]
 number: 07
 related:
   - "Spec 01 AIbex AIOS v0.6 — Überblick"
@@ -38,7 +38,7 @@ Typische Merkmale, die nicht entscheiden, ob etwas ein Arbeitspferd ist:
 | K6 | für Elemente gebaut | Skills rufen es über den Weiterleiter auf; es hat keine Oberfläche im Chat; der User darf es auch direkt aufrufen |
 | K7 | Programm und Daten getrennt | das Programm liegt auf dem Rechner, Daten unter `@Data/` des Pakets, das sie erzeugt (Spec 06, *Daten*) |
 
-**Spielarten:** Ein **Werkzeug** läuft nur während eines Aufrufs (`yt-dlp`, `deno`). Ein **Dienst** läuft dauerhaft (Datenbank, Server); Dienste sind in v0.5 nicht umgesetzt (*Grenzen*).
+**Spielarten:** Ein **Werkzeug** läuft nur während eines Aufrufs (`yt-dlp`, `deno`). Ein **Dienst** läuft dauerhaft (Datenbank, Server); Dienste sind in v0.6 nicht umgesetzt (*Grenzen*).
 
 **Abgrenzung:** Ein Befehl (`commands/`, Spec 06) liegt im Paket und braucht kein setup (verletzt K2, K3). Eine Voraussetzung von AIOS (`python3`, `git`, Spec 04) gehört dem Kernel. Ein Skript eines Skills liegt im Paket und läuft sofort (Spec 03, *Ausführungsmodell*).
 
@@ -86,10 +86,12 @@ Jede Version eines Arbeitspferds wird **einmal je Rechner** installiert. Version
 
 | Ort | Inhalt |
 |---|---|
-| `/opt/aios/workers/<paket>/v<version>/` | Installation einer Version; nach setup schreibgeschützt |
-| `/opt/aios/workers.yaml` | Verzeichnis der Installationen (Format Spec 04) |
-| `~/.aios/workers/<paket>/v<version>/`, `~/.aios/workers.yaml` | Ersatzorte, wenn `/opt/aios` nicht eingerichtet werden kann (wie `~/.aios/versions/`, Spec 04). Legt der Plan einer Distribution `/opt/aios` erst an, gilt schon im Plan `/opt/aios` (V0.5, Memo 71, B7) |
+| `~/.aios/workers/<paket>/v<version>/` | Installation einer Version (Standard); nach setup schreibgeschützt |
+| `~/.aios/workers.yaml` | Verzeichnis der Installationen (Format Spec 04) |
+| `/opt/aios/workers/<paket>/v<version>/`, `/opt/aios/workers.yaml` | wenn `/opt/aios/workers.yaml` schon besteht (aus früheren Versionen oder nach `aios --install --system`, Spec 04, *Installationen*); gesucht wird dort zuerst |
 | `~/.aios/bin/<programm>` | Weiterleiter |
+
+Arbeitspferde gibt der Hook `PreToolUse` nicht frei; ihre Aufrufe fragt der Host wie gewohnt (Spec 02, *Freigabe*).
 
 Der Ordner heißt nach dem Paket, nicht nach dem Programm (V0.5, Memo 18, F1).
 
@@ -177,7 +179,7 @@ Weitere Unterbefehle gibt es nicht; setup und remove laufen sonst nur beim Laden
 
 - **Dienste** (`start`, `stop`, Ports) sind nicht umgesetzt (V0.5, Memo 15).
 - **`kind: binary`** (z. B. `ffmpeg`) ist nicht umgesetzt (V0.5, Memo 21).
-- `/opt/aios` gehört einem Benutzer (Spec 04); mehrere User auf einem Rechner sind nicht geregelt.
+- Die Installationen gehören einem Benutzer (Spec 04); mehrere User auf einem Rechner sind nicht geregelt.
 
 ## Invarianten der Arbeitspferde
 

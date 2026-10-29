@@ -1,9 +1,9 @@
 ---
 title: "Pakete und Workspaces"
-date: 2026-10-25
+date: 2026-10-29
 author: iHux
-status: Spec
-tags: [spec, aios, v0.5, pakete, workspaces]
+status: Entwurf
+tags: [spec, aios, v0.6, pakete, workspaces]
 number: 06
 related:
   - "Spec 01 AIbex AIOS v0.6 — Überblick"
@@ -217,12 +217,12 @@ Zyklen in `depends` sind erlaubt, solange die Bereiche erfüllbar sind. Ein Pake
 
 1. `packages:` in `<ziel>/.aios/config.yaml` mit dem neuen Eintrag lesen. `packages:` der Projekte darüber wird nicht berücksichtigt.
 2. Auflösen (*Resolver*).
-3. Pakete in den Cache holen: `git clone --depth 1 --branch v<version> <repo>` nach `~/.aios/packages/<hub>/<name>/<version>/`, Commit-SHA merken. Ein vorhandener Cache-Eintrag wird wiederverwendet, wenn sein Commit zu `lock.yaml` passt.
-4. Vorschau: je Paket `new`, `upgrade X → Y`, `remove`, `unchanged` mit Hub; Dateien, die sich in `@!Package/<name>/` ändern; direkt geänderte Kopien; je Arbeitspferd, das auf dem Rechner fehlt, das setup mit seinem Inhalt (Spec 07, *Abläufe*); Versionen von Arbeitspferden, die entfernt werden; Änderungen an `config.yaml` und `lock.yaml`.
+3. Pakete in den Cache holen: `git clone --depth 1 --branch v<version> <repo>` nach `~/.aios/packages/<hub>/<name>/<version>/`, Commit-SHA merken. Ein vorhandener Cache-Eintrag wird wiederverwendet, wenn sein Commit zu `lock.yaml` passt. Bei `--from` liegt der Cache nach Quelle getrennt; ein Eintrag wird nur wiederverwendet, wenn der Commit des Tags in dieser Quelle zu ihm passt, sonst wird neu geholt (V0.6, Memo 03, K1).
+4. Vorschau: je Paket `new`, `upgrade X → Y`, `remove`, `unchanged` mit Hub; Dateien, die sich in `@!Package/<name>/` ändern; direkt geänderte Kopien; je Arbeitspferd, das auf dem Rechner fehlt, das setup mit seinem Inhalt (Spec 07, *Abläufe*); Versionen von Arbeitspferden, die entfernt werden; Änderungen an `config.yaml` und `lock.yaml`; offene Dateien des Ziels (`git status --porcelain`), die der Plan ändert, mit dem Hinweis, dass `aios --fetch` sie nicht committet (V0.6, Memo 02).
 5. Nach Ja: Sicherung anlegen (unten); je Paket den Inhalt ohne `.git` nach `<ziel>/@/@!Package/<name>/` spiegeln (nur dieser Ordner), die Marke schreiben, `packages:` und `lock.yaml` schreiben.
 6. Arbeitspferde einrichten (setup, Spec 07), Abhängigkeiten zuerst; nicht mehr genutzte Versionen entfernen.
 7. Ausrollen: Ein neu geholtes Paket wirkt mit **allen** Elementen, solange `packages:` keine Auswahl `only` nennt (V0.4, Memo 24, H2).
-8. Projekt-Skills im Projekt der Session registrieren (Spec 03), **erst nach erfolgreichem setup** (V0.5, Memo 17).
+8. Hüllen der Kernel-Skills und Projekt-Skills registrieren (Spec 03), im Projekt der Session bzw. bei `--to` und bei `aios --install <distribution> <vault>` im Ziel, unabhängig vom Arbeitsverzeichnis (V0.6, Memo 03, K2), **erst nach erfolgreichem setup** (V0.5, Memo 17).
 9. Sicherung löschen.
 
 **Alles oder nichts** (Spec 01, I11): Scheitert ein Schritt ab 5, stellt AIOS die Dateien aus der Sicherung wieder her und meldet den Schritt; der Vault steht wie vor dem Plan, registriert wird nichts. Die **Sicherung** liegt während des Plans unter `<ziel>/.aios/backup/` und enthält genau, was der Plan ändert: `.aios/config.yaml`, `.aios/lock.yaml`, die betroffenen Ordner in `@/@!Package/` und die Registrierung (`.claude/skills/`, `.aios/registry`) des Projekts der Session. Bleibt sie nach einem Abbruch liegen (z. B. Absturz), meldet `aios --fetch` sie und bietet die Wiederherstellung an (V0.5, Memos 28, 29). Das Repo des Projekts muss dafür nicht sauber sein.
@@ -294,7 +294,7 @@ depends:
 | Übersteuern | nur mit `only` (*Ausrollen*); eine andere Version eines Pakets der Distribution, z. B. durch einen eigenen Eintrag in `packages:`, ist ein Konflikt im Plan |
 | `--from` | nimmt die Distribution aus einem lokalen Repo, eine getaggte Version wie `aios --fetch --from` (auch ein lokaler, nicht gepushter Tag; V0.5, Memo 56); ihre Pakete kommen weiter aus den Hubs |
 
-Zusammengestellt werden Distributionen mit dem AIOS-Skill `/aios-distribution` (Spec 03).
+Zusammengestellt werden Distributionen mit dem Kernel-Skill `/aios-distribution` (Spec 03).
 
 ## Konfiguration und Lock
 
@@ -368,7 +368,7 @@ Ein **Workspace** ist ein AIOS-Projekt, das in `.aios/workspace.yaml` Repos mit 
 
 Ein **Projekt des Workspace** ist ein Repo an seinem Pfad. Mit `@/` ist es zugleich ein AIOS-Projekt. Ohne `@/` ist es ein **Fremd-Repo**, z. B. ein Paket-Repo oder das Code-Repo: kein Container, nicht Teil des Master-Kontexts, und `aios --integrity` prüft es nur über `workspace.yaml` (V0.4, Memo 18, L2). Projekte des Workspace müssen keine Pakete sein.
 
-`aios --workspace` arbeitet nur in einem mit AIOS aktivierten Vault (Spec 01, I4).
+`aios --workspace` arbeitet nur in einem A/W (Spec 01, I4).
 
 ### `.aios/workspace.yaml`
 
@@ -409,7 +409,7 @@ Die Datei wird mit PyYAML gelesen und vom User gepflegt.
 | `aios --workspace freeze [<pfad>]` | Commit-SHA jedes Projekts in `lock.yaml` des Wurzelprojekts schreiben (Abschnitt `workspace`) |
 | `aios --workspace status [<pfad>]` | je Projekt: vorhanden, Zweig, Revision enthalten, voraus/hinter dem Remote, offene Änderungen |
 
-**Init:** Das geklonte Wurzelprojekt wird wie ein Projekt des Workspace behandelt: Ziel ist `<ordner>` im Ordner der Session, in einem aktivierten Vault (I4); liegt darüber ein Repo, trägt AIOS `/<ordner>/` in dessen `.gitignore` ein und committet nur diese Zeile (I9). Gibt es `<ordner>` schon, bricht `init` ab; für einen bestehenden Workspace gilt `update` (V0.4, Memo 57).
+**Init:** Das geklonte Wurzelprojekt wird wie ein Projekt des Workspace behandelt: Ziel ist `<ordner>` im Ordner der Session, in einem A/W (I4); liegt darüber ein Repo, trägt AIOS `/<ordner>/` in dessen `.gitignore` ein und committet nur diese Zeile (I9). Gibt es `<ordner>` schon, bricht `init` ab; für einen bestehenden Workspace gilt `update` (V0.4, Memo 57).
 
 `<pfad>` ist das Wurzelprojekt oder ein Ordner darunter; AIOS sucht die nächste `workspace.yaml` aufwärts. Ohne `--group` gelten alle Projekte; mit `--group` nur Projekte dieser Gruppen und Projekte ohne Gruppe.
 

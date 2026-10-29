@@ -1,9 +1,9 @@
 ---
 title: "Projekte"
-date: 2026-10-25
+date: 2026-10-29
 author: iHux
-status: Spec
-tags: [spec, aios, v0.5, projekte]
+status: Entwurf
+tags: [spec, aios, v0.6, projekte]
 number: 05
 related:
   - "Spec 01 AIbex AIOS v0.6 — Überblick"
@@ -58,7 +58,7 @@ Macht einen Ordner zum Projekt oder ergänzt ein bestehendes Projekt um die fehl
 
 | Option | Bedeutung |
 |---|---|
-| `<pfad>` | der Ordner; Standard `cwd`. Er muss in einem aktivierten Vault liegen (I4); er muss noch nicht existieren |
+| `<pfad>` | der Ordner; Standard `cwd`. Er muss in einem A/W liegen (I4); er muss noch nicht existieren |
 | `--assistant <wert>` | schreibt `assistant: <wert>` in `<pfad>/.aios/config.yaml` (Spec 03); `inherit` wird nicht geschrieben |
 | `--name <name>` | legt den Ordner unter diesem Namen an bzw. benennt einen bestehenden Ordner um (Wahl (1) des Namensdialogs) |
 | `--accept-name` | fährt trotz Verstoß gegen die Namensregel fort (Wahl (2)) |
@@ -73,7 +73,7 @@ Macht einen Ordner zum Projekt oder ergänzt ein bestehendes Projekt um die fehl
 | 4 | Repo | `git init` mit dem Branch `main`, falls das Projekt kein eigenes Repo hat (S2); fehlende Zeilen der `.gitignore`-Vorlage ergänzen, vorhandene Zeilen bleiben (S3) |
 | 5 | Repo darüber | falls es ein Repo darüber gibt und S4 nicht erfüllt ist: `/<relativer pfad>/` in dessen `.gitignore` eintragen, versionierte Dateien des Projekts mit `git rm -r --cached` aus der Versionierung nehmen (die Dateien bleiben liegen, die alte Historie bleibt dort) und nur diese Änderungen dort committen: „AIOS: <relativer pfad> als eigenes Projekt ausgeschlossen" (V0.3, Memo 23, 24). Die so herausgenommenen Dateien committet Schritt 8 im neuen Repo, damit sie versioniert bleiben (A14) |
 | 6 | Zuordnung | mit `--assistant` den Schlüssel `assistant:` schreiben |
-| 7 | Registrieren | Projekt-Skills registrieren (wie `aios --context --sync --yes`; V0.3, Memo 21) |
+| 7 | Registrieren | Hüllen der Kernel-Skills und des Alias sowie Projekt-Skills registrieren (wie `aios --context --sync --yes`, Spec 03; V0.3, Memo 21; V0.6, Memo 30) |
 | 8 | Commit | im Projekt nur die Dateien committen, die AIOS angelegt oder geändert hat (`.gitignore`, `@/.gitkeep`, `.aios/config.yaml`), dazu die Dateien, die Schritt 5 aus dem Repo darüber übernommen hat (A14): bei einem neuen Repo „AIOS: Projekt initialisiert", sonst „AIOS: Projekt ergänzt". Ist nach dem Stagen nichts geändert (`git diff --cached --quiet`), entfällt der Commit ohne Meldung (A16). Scheitert ein Commit (z. B. ohne Git-Identität), nur eine Warnung |
 | 9 | Abschluss | Hinweis, dass Master-Kontext und Skills für das Projekt ab dem nächsten Chat vollständig gelten |
 
@@ -114,6 +114,8 @@ Ein Projekt ist **integer**, wenn Init und Commit erfüllt sind. **Hinweise** (`
 - **Push-Stand:** Hat ein Repo einen Upstream, nennt der Bericht Commits, die noch nicht gepusht sind (voraus), und Commits, die lokal fehlen (hinter). Grundlage ist der lokale Stand ohne `git fetch`, also ohne Netz. Ein Repo ohne Remote ist zulässig.
 - **Namensregel:** ein Verstoß nach *Namensregel*.
 - **Kopien in `.agents/`:** Liegen in `<Projekt>/.agents/skills/<name>/` Kopien mit Marke `.aios-deploy`, deren Version nicht dem registrierten oder geholten Stand entspricht oder deren Skill es in der Kette nicht mehr gibt, nennt der Bericht sie als veraltet. AIOS ändert und entfernt sie nicht (V0.5, Memos 10, 24, Option C).
+- **Bindung im Projekt:** Ein `aios:` oder `legacy:` in der `.aios/config.yaml` eines Projekts (nicht der Vault-Root) nennt der Bericht als übergangen (Spec 04, *Formate*; V0.6, Memo 16, F4).
+- **Bindung und Markierung zugleich:** Stehen `aios:` und `legacy:` in der `.aios/config.yaml` der Vault-Root, nennt der Bericht, dass `aios:` gilt (V0.6, Memo 17, F7).
 
 Registrierte Skills, geholte Pakete und Blueprints gehören nicht zur Integrität; den Abgleich macht `aios --fetch` (Spec 06).
 
