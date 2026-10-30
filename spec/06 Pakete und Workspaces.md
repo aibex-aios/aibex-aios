@@ -112,7 +112,7 @@ Fehlende Teile einer Version zählen als `0` (`0.4` = `0.4.0`). Vorabversionen e
 
 **Version des Kernels:** Für `requires.aios` zählt die AIOS-Version **ohne Vorabkennung**: `0.4.0-dev` und `0.4.0-rc1` gelten als `0.4.0` (V0.4, Memo 18, L1). So lassen sich Pakete auch mit Entwicklungsständen und Release-Kandidaten holen.
 
-**Standardbereich:** Wird ein Paket ohne Bereich geholt, gilt ab Version 1.0 `~=X.Y` der höchsten Version (`memo` 6.0.0 → `~=6.0`), darunter `~=0.Y.Z` (`app-taschenrechner` 0.1.0 → `~=0.1.0`, also `>=0.1.0,<0.2.0`). Vor 1.0 bleibt ein Paket damit in seiner Minor-Version, weil dort jede Minor-Version brechen darf (V0.4, Memo 19, L5).
+**Standardbereich:** Wird ein Paket ohne Bereich geholt, gilt ab Version 1.0 `~=X.Y` der höchsten Version, die zur Bindung passt (`requires.aios`; V0.6, Memo 50, B1; `memo` 6.0.0 → `~=6.0`), darunter `~=0.Y.Z` (`app-taschenrechner` 0.1.0 → `~=0.1.0`, also `>=0.1.0,<0.2.0`). Vor 1.0 bleibt ein Paket damit in seiner Minor-Version, weil dort jede Minor-Version brechen darf (V0.4, Memo 19, L5).
 
 ## Hubs
 
@@ -217,8 +217,8 @@ Zyklen in `depends` sind erlaubt, solange die Bereiche erfüllbar sind. Ein Pake
 
 1. `packages:` in `<ziel>/.aios/config.yaml` mit dem neuen Eintrag lesen. `packages:` der Projekte darüber wird nicht berücksichtigt.
 2. Auflösen (*Resolver*).
-3. Pakete in den Cache holen: `git clone --depth 1 --branch v<version> <repo>` nach `~/.aios/packages/<hub>/<name>/<version>/`, Commit-SHA merken. Ein vorhandener Cache-Eintrag wird wiederverwendet, wenn sein Commit zu `lock.yaml` passt. Bei `--from` liegt der Cache nach Quelle getrennt; ein Eintrag wird nur wiederverwendet, wenn der Commit des Tags in dieser Quelle zu ihm passt, sonst wird neu geholt (V0.6, Memo 03, K1).
-4. Vorschau: je Paket `new`, `upgrade X → Y`, `remove`, `unchanged` mit Hub; Dateien, die sich in `@!Package/<name>/` ändern; direkt geänderte Kopien; je Arbeitspferd, das auf dem Rechner fehlt, das setup mit seinem Inhalt (Spec 07, *Abläufe*); Versionen von Arbeitspferden, die entfernt werden; Änderungen an `config.yaml` und `lock.yaml`; offene Dateien des Ziels (`git status --porcelain`), die der Plan ändert, mit dem Hinweis, dass `aios --fetch` sie nicht committet (V0.6, Memo 02).
+3. Pakete in den Cache holen: `git clone --depth 1 --branch v<version> <repo>` nach `~/.aios/packages/<hub>/<name>/<version>/`, Commit-SHA merken. Ein vorhandener Cache-Eintrag wird wiederverwendet, wenn sein Commit zu `lock.yaml` passt. Bei `--from` liegt der Cache nach Quelle getrennt, unter `~/.aios/packages/_from/<12 Zeichen SHA-256 der Quelle>/<paket>/<version>/`; ein Eintrag wird nur wiederverwendet, wenn der Commit des Tags in dieser Quelle zu ihm passt, sonst wird neu geholt (V0.6, Memos 03, 50: K1).
+4. Vorschau: je Paket `new`, `upgrade X → Y`, `remove`, `unchanged`, `other commit` (gleiche Version aus einer anderen Quelle oder mit verschobenem Tag; V0.6, Memo 50, F62) mit Hub; Dateien, die sich in `@!Package/<name>/` ändern; direkt geänderte Kopien; je Arbeitspferd, das auf dem Rechner fehlt, das setup mit seinem Inhalt (Spec 07, *Abläufe*); Versionen von Arbeitspferden, die entfernt werden; Änderungen an `config.yaml` und `lock.yaml`; offene Dateien des Ziels (`git status --porcelain`), die der Plan ändert, mit dem Hinweis, dass `aios --fetch` sie nicht committet (V0.6, Memo 02).
 5. Nach Ja: Sicherung anlegen (unten); je Paket den Inhalt ohne `.git` nach `<ziel>/@/@!Package/<name>/` spiegeln (nur dieser Ordner), die Marke schreiben, `packages:` und `lock.yaml` schreiben.
 6. Arbeitspferde einrichten (setup, Spec 07), Abhängigkeiten zuerst; nicht mehr genutzte Versionen entfernen.
 7. Ausrollen: Ein neu geholtes Paket wirkt mit **allen** Elementen, solange `packages:` keine Auswahl `only` nennt (V0.4, Memo 24, H2).

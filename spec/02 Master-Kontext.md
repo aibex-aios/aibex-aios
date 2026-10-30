@@ -126,18 +126,19 @@ Ein handgeschriebenes Inhaltsverzeichnis mit der Spalte „Lesen, wenn …" kann
 
 ### Block der Kernel-Skills
 
-Im A/W enthält der Master-Kontext nach dem Inhaltsverzeichnis des verfügbaren Wissens den Block `<aios-kernel-skills>`. Er steht innerhalb der Marken mit der id, wird also mit dem Master-Kontext geladen, nach einer Compaction neu ausgegeben und von `AIOS-CONTEXT-CHECK` mit geprüft (V0.6, Memos 23, 25). Er führt jeden Kernel-Skill des laufenden Kernels (Spec 03, *Arten von Skills*) mit Name, Feld `description` aus seinem Frontmatter (ungekürzt) und Aufruf auf, sortiert nach Namen:
+Im A/W enthält der Master-Kontext nach dem Inhaltsverzeichnis des verfügbaren Wissens den Block `<aios-kernel-skills>`. Er steht innerhalb der Marken mit der id, wird also mit dem Master-Kontext geladen, nach einer Compaction neu ausgegeben und von `AIOS-CONTEXT-CHECK` mit geprüft (V0.6, Memos 23, 25). Er führt jeden Kernel-Skill des laufenden Kernels (Spec 03, *Arten von Skills*) mit Name und Aufruf auf, sortiert nach Namen, ohne Beschreibung (V0.6, Memo 46):
 
 ```
 <aios-kernel-skills>
-Kernel skills of AIBOS. A skill is triggered by /<name> or by a matching request
-of the user. Then load its instructions with the call given (Bash) and follow them.
-- aios-init — <description> Call: /Users/…/.aios/bin/aios --skill aios-init
+Kernel skills of AIBOS (descriptions in the registered skills). A skill is triggered by
+/<name> or by a matching request of the user; load its instructions with the call (Bash)
+and follow them.
+- aios-init — /Users/…/.aios/bin/aios --skill aios-init
 - …
 </aios-kernel-skills>
 ```
 
-Der Aufruf nennt den absoluten Pfad des Weiterleiters (Spec 04). Der Block nennt keine `allowed-tools`; die Befehle gibt der Hook `PreToolUse` frei (*Hooks*). Er steht neben den registrierten Hüllen (Spec 03): Sie tragen `/<name>` in jedem Host, der Block die Auslösung über einen Satz und die Ordner, in denen die Registrierung fehlt.
+Der Aufruf nennt den absoluten Pfad des Weiterleiters (Spec 04). Der Block nennt keine `allowed-tools`; die Befehle gibt der Hook `PreToolUse` frei (*Hooks*). Er steht neben den registrierten Hüllen (Spec 03): Sie tragen `/<name>` in jedem Host und die Beschreibungen, an denen die Auslösung über einen Satz hängt; der Block nennt Namen und Aufruf auch dort, wo die Registrierung fehlt. Mit 12 Kernel-Skills hat er etwa 1000 Zeichen (gemessen 997 mit `/Users/hux`).
 
 ## CLI `aios --context`
 
@@ -255,7 +256,7 @@ Arbeitskopien unter `.claude/worktrees/` schließt die `.gitignore`-Vorlage aus 
 | **UserPromptSubmit** | `aios --context --advise` | außerhalb eines A/W: nichts. Legacy-Vault: Verhalten von `ai-brain --advise`. Im A/W, für das `cwd` dieses Prompts: `AIOS-CONTEXT-CHECK: expected id=<id>` mit der Anweisung, bei fehlenden Marken „Lade Master-Kontext" zu sagen, `aios --context --load "<cwd>"` auszuführen, alle Part-Dateien vollständig zu lesen und „Master-Kontext geladen (id <id>)" zu melden. Ist der Assistent der Session für dieses `cwd` nicht `none` (unten), zusätzlich `AIOS-ASSISTANT-CHECK`. Fehlen auf dem Rechner Arbeitspferde aus `lock.yaml` der Kette, zusätzlich `AIOS-WORKERS: missing <paket> <version>, … — run aios --fetch` (Spec 07; V0.5, Memo 29) |
 | **PreToolUse** (Matcher `Bash`) | `aios --context --permit` | außerhalb eines A/W, in einem Legacy-Vault und einem Vault mit Altbindung: nichts. Im A/W: Freigabe nach *Freigabe* (unten) |
 
-Die Hooks erzeugen außer der Registrierung, dem Merker der Session und dem Log keine Dateien und fragen nie nach. Alle nehmen `cwd` aus dem Hook-JSON auf stdin, ohne JSON das Arbeitsverzeichnis des Prozesses; im Legacy-Modus erhält `ai-brain` dasselbe JSON. Das `cwd` gilt je Aufruf: Wechselt die Session ihr Arbeitsverzeichnis, richten sich die nächsten Aufrufe nach dem neuen (Spec 01, Grundregel 10; V0.6, Memo 31). Warnungen der Konfigurationskette gibt `--session` im A/W als Zeilen `AIOS-WARNING: …` aus. Scheitert ein Hook im A/W, gibt er eine Zeile `AIOS-WARNING: aios --context --session failed: …` aus und endet mit Exit 0: Ein Hook bricht nie die Session ab. Außerhalb eines A/W gibt er auch bei einem Fehler nichts aus und schreibt den Fehler als eine Zeile `<zeitpunkt> <hook> cwd=<cwd> <fehler>` nach `~/.aios/log/context.log` (V0.6, Memos 12, 15); `--permit` schreibt seine Fehler immer dorthin, im A/W wie außerhalb.
+Die Hooks erzeugen außer der Registrierung, dem Merker der Session und dem Log keine Dateien und fragen nie nach. Alle nehmen `cwd` aus dem Hook-JSON auf stdin, ohne JSON das Arbeitsverzeichnis des Prozesses; im Legacy-Modus erhält `ai-brain` dasselbe JSON. Das `cwd` gilt je Aufruf: Wechselt die Session ihr Arbeitsverzeichnis, richten sich die nächsten Aufrufe nach dem neuen (Spec 01, Grundregel 10; V0.6, Memo 31). Warnungen der Konfigurationskette gibt `--session` im A/W als Zeilen `AIOS-WARNING: …` aus. Ein scheiternder Hook schreibt den Fehler immer als eine Zeile `<zeitpunkt> <hook> cwd=<cwd> <fehler>` nach `~/.aios/log/context.log` und endet mit Exit 0: Ein Hook bricht nie die Session ab. Im A/W gibt er zusätzlich eine Zeile `AIOS-WARNING: aios --context --session failed: …` aus, außerhalb nichts (V0.6, Memos 12, 15, 45); `--permit` gibt nie eine Warnung aus.
 
 ### Freigabe
 
@@ -266,9 +267,9 @@ Die Hooks erzeugen außer der Registrierung, dem Merker der Session und dem Log 
 | E1 | `cwd` liegt in einem A/W. |
 | E2 | Der Befehl beginnt mit dem absoluten Pfad eines Weiterleiters des Kernels (`~/.aios/bin/aios` oder `/opt/aios/bin/aios`, ausgeschrieben), gefolgt von einem Leerzeichen oder dem Ende. Arbeitspferde unter `~/.aios/bin/` und alle anderen Befehle gibt es nicht frei. |
 | E3 | Der Befehl ist ein einzelner Befehl: Er enthält keines der Zeichen bzw. keine der Folgen `;`, `&`, `|`, `` ` ``, `$(`, `>`, `<`, Zeilenumbruch. |
-| E4 | Keine `deny`- oder `ask`-Regel für `Bash` aus `~/.claude/settings.json`, aus `.claude/settings.json` und `.claude/settings.local.json` im `cwd` und aus den Managed Settings (soweit lesbar) trifft den Befehl. |
+| E4 | Keine `deny`- oder `ask`-Regel aus `~/.claude/settings.json`, aus `.claude/settings.json` und `.claude/settings.local.json` im `cwd` und aus den Managed Settings (macOS `/Library/Application Support/ClaudeCode/managed-settings.json`, Linux `/etc/claude-code/managed-settings.json`) trifft den Befehl. Ausgewertet werden `Bash`, `Bash(<befehl>)`, `Bash(<präfix>:*)` und `Bash(<muster mit *>)`; ein Muster anderer Form zählt als Treffer. Eine unlesbare Einstellungsdatei gibt nichts frei (V0.6, Memo 47). |
 
-Sonst gibt der Hook nichts aus, und der Host fragt wie gewohnt. Ein Fehler gibt nie frei. Claude Code lässt `deny`- und `ask`-Regeln einem `allow` aus `PreToolUse` ohnehin vorgehen (V0.6, Memo 22); E4 bleibt als zweite Sicherung für Hosts, die das anders handhaben. Befehle in `` !`…` `` eines Skills laufen nicht durch `PreToolUse`; sie gibt das `allowed-tools` der Hülle frei (Spec 03; V0.6, Memo 29).
+Sonst gibt der Hook nichts aus, und der Host fragt wie gewohnt; ebenso für ein anderes Werkzeug als `Bash` im Hook-JSON. Ein Fehler gibt nie frei. Regeln, die den Weiterleiter mit `~` schreiben, trifft E4 nicht; Claude Code achtet sie selbst (V0.6, Memo 47, F55). Claude Code lässt `deny`- und `ask`-Regeln einem `allow` aus `PreToolUse` ohnehin vorgehen (V0.6, Memo 22); E4 bleibt als zweite Sicherung für Hosts, die das anders handhaben. Befehle in `` !`…` `` eines Skills laufen nicht durch `PreToolUse`; sie gibt das `allowed-tools` der Hülle frei (Spec 03; V0.6, Memo 29).
 
 ### Assistent der Session
 
@@ -282,7 +283,7 @@ Sonst gibt der Hook nichts aus, und der Host fragt wie gewohnt. Ein Fehler gibt 
 | `compact` | nach einer Compaction | der Assistent aus dem Merker der Session |
 
 - **Merker:** `~/.aios/sessions/<session_id>.yaml` mit `cwd`, `assistant` (Name oder `none`) und `used` (Zeitpunkt der letzten Verwendung). Der Hook schreibt ihn bei `startup` und `clear` neu und aktualisiert `used` bei jedem Aufruf; `aios --assistant` schreibt ihn beim Wechsel (Spec 03). Fehlt der Merker bei `resume` oder `compact` (z. B. Session aus der Zeit vor v0.3), gilt die Zuordnung des Projekts und der Merker wird angelegt.
-- **Nur am gespeicherten `cwd`:** Der Merker gilt nur, solange das `cwd` des Aufrufs gleich dem `cwd` im Merker ist. Bei einem anderen `cwd` gilt die Zuordnung des Projekts dieses `cwd` (Spec 03), und der Merker bleibt unverändert; kehrt die Session zurück, gilt er wieder. Ein Assistent wandert also nicht mit, wenn die Session ihr Arbeitsverzeichnis wechselt (Spec 01, Grundregel 10; V0.6, Memo 33).
+- **Nur im eigenen Projekt:** Der Merker gilt nur, solange das `cwd` des Aufrufs im Projekt liegt, in dem er geschrieben wurde (V0.6, Memo 45). In einem anderen Projekt gilt dessen Zuordnung (Spec 03), und der Merker bleibt unverändert; kehrt die Session zurück, gilt er wieder. Ein Assistent wandert also nicht mit, wenn die Session ihr Arbeitsverzeichnis wechselt (Spec 01, Grundregel 10; V0.6, Memo 33).
 - **Definition:** Geladen wird der Name aus dem Merker mit seiner aktuellen Definition aus der Kette. Ist der Name nicht auflösbar, gibt der Hook `AIOS-WARNING: assistant <name> not found, continuing without assistant` aus, und die Session läuft ohne Assistent.
 - **Aufräumen:** Merker, deren `used` mehr als 30 Tage zurückliegt, entfernt der Hook bei `startup`.
 - Der Merker ist lokal, weil Sessions lokal sind, und gilt nur für diese Session. Er ist keine persönliche Zuordnung (Spec 01, Grundregel 8).

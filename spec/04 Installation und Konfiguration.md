@@ -336,6 +336,7 @@ Alle festen Orte lassen sich über Umgebungsvariablen umlenken, damit Tests in e
 | `AIOS_PIP` | Befehl, der `python/requirements.txt` in die venv installiert; gesetzt wird die venv ohne `pip` angelegt | `<venv>/bin/python -m pip install -q -r` |
 | `AIOS_TEST_FAIL` | `<n>` lässt den n-ten Schritt eines Plans scheitern, `<n>:crash` beendet den Prozess dort ohne Aufräumen (Tests der Sicherung, Spec 06; V0.5, Memo 51) | — |
 | `AIOS_PREPARE_PATH` | `PATH` für die Prüfung der Grund- und Entwicklerausstattung in `aios --prepare` und `aios --install` (V0.5, Memo 49) | `PATH` |
+| `AIOS_MANAGED_SETTINGS` | Managed Settings für `aios --context --permit` (Spec 02, *Freigabe*), statt der Standardorte | — |
 | `AIOS_PIP_FIND_LINKS` | Ordner mit Wheels für das setup von Arbeitspferden: `pip` läuft dann mit `--no-index --find-links <ordner>`, nie ohne `--no-index` (Spec 07) | — |
 
 Tests rufen damit nie das echte `sudo` auf und greifen nie auf das Netzwerk zu.
@@ -344,7 +345,7 @@ Weiterleiter und `aios` verwenden ausschließlich diese Variablen, nie fest verd
 
 ## Weiterleiter
 
-`~/.aios/bin/aios` enthält keine Logik außer der Wahl der Version; `aios --install` legt es aus `templates/forwarder` an. Ein `~/bin/aios` früherer Versionen bleibt als Altbestand stehen und wählt die Version nach seinen eigenen Regeln; Hooks und Hüllen rufen ab v0.6 nur `~/.aios/bin/aios` auf (V0.6, Memo 07). Den Weiterleiter `~/bin/aios-context` gibt es ab v0.5 nicht mehr; `aios --install` entfernt ihn (V0.5, Memo 04). Die Weiterleiter der Arbeitspferde unter `~/.aios/bin/` regelt Spec 07.
+`~/.aios/bin/aios` enthält keine Logik außer der Wahl der Version; `aios --install` legt es aus `templates/forwarder` an. Ein `~/bin/aios` früherer Versionen bleibt als Altbestand stehen und wählt die Version nach seinen eigenen Regeln; Hooks und Hüllen rufen ab v0.6 nur `~/.aios/bin/aios` auf (V0.6, Memo 07). Einen Weiterleiter `~/bin/aios-context` (v0.4) und `~/etc/aios/` (Prototyp) entfernt `aios --install` ab v0.6 nicht mehr; der Plan nennt sie als Altbestand (V0.6, Memo 49, F59). `aios --install` erkennt einen Weiterleiter an beiden Kopfzeilen (`# forwarder: ~/bin/aios` bis 0.3.1, `# forwarder: ~/.aios/bin/aios` ab 0.4.0). Bei `aios --context --permit` und einer Version unter 0.6 endet der Weiterleiter still mit Exit 0, ohne den alten Kernel aufzurufen (V0.6, Memo 47). Die Weiterleiter der Arbeitspferde unter `~/.aios/bin/` regelt Spec 07.
 
 1. Ist `AIOS_HOME` gesetzt: `$AIOS_HOME/bin/aios` aufrufen.
 2. `aios --activate v<version> …`: Ist diese Version installiert, wird sie aufgerufen, unabhängig davon, an welche Version `cwd` gebunden ist; so aktiviert immer die genannte Version (V0.3, Memo 54, A1). Ist sie nicht installiert, gilt die übliche Wahl, und die gewählte Version meldet die fehlende Installation.
@@ -425,11 +426,11 @@ Aufgerufen aus einem Klon des Repos `aibex-aios` (`./bin/aios --install …`) od
 
 1. **Version bestimmen:** angegeben oder der höchste Tag `v<MAJOR.MINOR.PATCH>` im Repo (Vorabversionen wie `v0.3.0-rc1` nur, wenn angegeben); vorher `git fetch --tags`, sofern der Klon einen Remote hat.
 2. **Grundausstattung prüfen:** fehlt sie, meldet `aios --install`, was fehlt und wie es zu installieren ist (z. B. auf macOS `brew install python`), und bricht ab, ohne etwas zu schreiben (V0.6, Memo 07).
-3. **Plan zeigen und fragen**; mit `--system` steht im Plan, dass `sudo` nach einem Passwort fragen kann. Beim ersten Install von v0.6 enthält der Plan den Umstieg (*Legacy und Umstieg*), mit den dort genannten eigenen Fragen.
+3. **Plan zeigen und fragen**; mit `--system` steht im Plan, dass `sudo` nach einem Passwort fragen kann; ohne `sudo` bricht `--system` ab, mit Hinweis auf den Standardort (V0.6, Memo 44, F49). Schritte mit eigener Frage nennt der Plan als Zeile „(then with its own question: …)"; gefragt wird nach dem Ja zum Plan (F60). Beim ersten Install von v0.6 enthält der Plan den Umstieg (*Legacy und Umstieg*), mit den dort genannten eigenen Fragen.
 4. **Installieren**, falls `v<version>` noch nicht installiert ist: Stand des Tags mit `git archive` nach `~/.aios/versions/v<version>/` (mit `--system`: `/opt/aios/v<version>/`) übertragen (Abbildung siehe *Repo*), venv in `python/` anlegen und `pyyaml` installieren, `python -m compileall`, Dateien schreibschützen, Eintrag in `installations.yaml` desselben Orts.
 5. **Benutzer einrichten**, was fehlt: Weiterleiter nach `~/.aios/bin/aios`; ein vorhandener wird nur durch einen neueren ersetzt. Nichts in `~/bin`; ein `~/bin/aios` früherer Versionen nennt der Plan als Altbestand und lässt es stehen. `~/.aios/config.yaml` mit `hosts: [claude-code]`, die drei Hooks mit absolutem Pfad eintragen bzw. an ihrer Stelle ersetzen (*Hooks in `~/.claude/settings.json`*) und `ai-brain`-Hooks sichern, `~/.aios/repo` merken.
 6. **Keine globalen Hüllen:** `aios --install` schreibt nichts nach `~/.claude/skills/`; die Hüllen der Kernel-Skills entstehen mit der Registrierung im Vault (Spec 03). Pakete holt der User mit `aios --fetch` bzw. `/aios-package` (Spec 06).
-7. **Bekannte Vaults** nennt der Plan mit ihrer Art (Spec 02, *Arten von Vaults*): Vaults mit Altbindung mit dem Befehl `aios --activate v0.6.<n> <vault>`; bekannt sind die Vaults aus den Merkern der Sessions (`cwd`), aus `~/.aios/repo` und aus `lock.yaml`-Einträgen in `workers.yaml`.
+7. **Bekannte Vaults** nennt der Plan mit ihrer Art (Spec 02, *Arten von Vaults*): Vaults mit Altbindung mit dem Befehl `aios --activate v0.6.<n> <vault>`; bekannt sind die Vaults aus den Merkern der Sessions (`cwd`), aus `~/.aios/repo` und aus den Projekten in `workers.yaml`; nur bekannte Vaults zählen (V0.6, Memo 49, F61). Für die Markierung `legacy: ai-brain` bietet der Plan bekannte Vaults ohne Bindung und die `§`-Ordner daneben im selben Elternordner an.
 
 Das Übertragen geschieht in ein temporäres Verzeichnis neben dem Ziel, das erst am Ende umbenannt wird; ein Abbruch hinterlässt keine halbe Installation.
 

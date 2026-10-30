@@ -76,7 +76,7 @@ Die Kernel-Skills (12 Skills `aios-*`) erreichen die KI im A/W auf zwei Wegen (V
 | Weg | trägt | wo |
 |---|---|---|
 | **registrierte Hülle** | `/<name>` in jedem Host, auch in der interaktiven CLI, die einen unbekannten Slash-Befehl selbst ablehnt (V0.6, Memo 27) | wo sie registriert ist: Vault-Root und Projekte; Claude Code sucht Skills vom `cwd` aufwärts bis zur Wurzel des Git-Repos, die Hülle an der Vault-Root gilt also für die Vault-Root und für Ordner ohne eigenes Repo |
-| **Block im Master-Kontext** (Spec 02) | Auslösung über einen passenden Satz; `/<name>` in Hosts, die einen unbekannten Slash-Befehl an die KI weiterreichen (Desktop-App, `claude -p`) | im ganzen A/W |
+| **Block im Master-Kontext** (Spec 02) | Name und Aufruf jedes Kernel-Skills; `/<name>` in Hosts, die einen unbekannten Slash-Befehl an die KI weiterreichen (Desktop-App, `claude -p`). Die Auslösung über einen Satz stützt sich auf die Beschreibungen der registrierten Hüllen (V0.6, Memo 46) | im ganzen A/W |
 
 **Hülle:** Beim Registrieren schreibt AIBOS je Kernel-Skill eine Hülle mit dem absoluten Pfad des Weiterleiters, z. B.:
 
