@@ -127,3 +127,44 @@
    F "$S" knowledge-orion --yes >/dev/null
    [ -d "$S/@/@!Package/knowledge-orion" ] && [ ! -e "$S/.aios/backup" ] && ok || fail "success: package there, backup removed"
    unset AIOS_HUBS AIOS_GITHUB
+
+#===============================================================================
+# v0.6 step 8: B1, cache of --from per source and commit (K1), registration in the target (K2),
+# open files named (memo 02) (spec 06, Holen; V0.6, memos 02, 03, 42, 50)
+#===============================================================================
+
+   export AIOS_HUBS="$("$SRC/tests/hub/build" "$SANDBOX/hubs8")"
+   V4="$SANDBOX/work/§Vier"; mkdir -p "$V4/@" "$V4/.aios"; printf 'aios: 0.4.0\n' > "$V4/.aios/config.yaml"
+   OUT="$(F "$V4" test-b1 --yes)"; RC=$?
+   assert_eq "$RC" "0" "B1: fetch works although the highest version needs 0.6"
+   assert_contains "$(cat "$V4/.aios/config.yaml")" 'test-b1: "~=0.1.0"' "B1: range from the highest fitting version"
+
+   E="$SANDBOX/work/§Acht"; P="$E/P-Projekt"; mkdir -p "$E/@" "$E/.aios" "$P/@"
+   printf 'aios: 0.6.0\n' > "$E/.aios/config.yaml"
+   git -C "$E" init -q; git -C "$E" add -A; git -C "$E" -c user.name=t -c user.email=t@t commit -qm init
+   for N in 1 2; do
+      R="$SANDBOX/src$N"; mkdir -p "$R/skills/eins"
+      printf 'name: skill-eins\nversion: 0.1.0\ntype: skill\ndescription: Quelle %s\nrequires:\n  aios: ">=0.6,<0.7"\ncontents:\n  skills: [eins]\n' "$N" > "$R/manifest.yaml"
+      printf -- '---\nname: eins\nversion: 0.1.0\ndescription: d\n---\n\n# Quelle %s\n' "$N" > "$R/skills/eins/SKILL.md"
+      git -C "$R" init -q; git -C "$R" add -A; git -C "$R" -c user.name=t -c user.email=t@t commit -qm 0.1.0; git -C "$R" tag v0.1.0
+   done
+   F "$E" skill-eins --from "$SANDBOX/src1" --yes >/dev/null
+   F "$E" skill-eins --from "$SANDBOX/src2" --yes >/dev/null
+   assert_contains "$(cat "$E/@/@!Package/skill-eins/skills/eins/SKILL.md")" "# Quelle 2" "K1: the second source, not the cache of the first"
+   assert_contains "$(cat "$E/.aios/lock.yaml")" "commit: $(git -C "$SANDBOX/src2" rev-parse HEAD)" "K1: lock.yaml names the commit of the second source"
+   assert_eq "$(ls -d "$HOME"/.aios/packages/_from/*/skill-eins | wc -l | tr -d ' ')" "2" "K1: one cache per source"
+   printf '\n# neu\n' >> "$SANDBOX/src2/skills/eins/SKILL.md"
+   git -C "$SANDBOX/src2" -c user.name=t -c user.email=t@t commit -qam neu; git -C "$SANDBOX/src2" tag -f v0.1.0 >/dev/null
+   rm -rf "$E/@/@!Package/skill-eins"
+   F "$E" --yes >/dev/null
+   assert_contains "$(cat "$E/@/@!Package/skill-eins/skills/eins/SKILL.md")" "# neu" "K1: tag moved in the source: fetched anew"
+
+   OUT="$(at "$SANDBOX" "$SRC/bin/aios" --fetch knowledge-orion --to "$P" --yes)"
+   assert_dir "$P/.claude/skills/aios-init"
+   [ ! -e "$SANDBOX/.claude" ] && ok || fail "K2: nothing registered in the folder of the session"
+
+   printf 'aios: 0.6.0\n# offen\n' > "$E/.aios/config.yaml"
+   OUT="$(F "$E" knowledge-orion --plan)"
+   assert_contains "$OUT" "note: open changes in $E: .aios/config.yaml" "memo 02: open file of the target named"
+   assert_contains "$OUT" "aios --fetch commits nothing" "memo 02: not committed"
+   unset AIOS_HUBS

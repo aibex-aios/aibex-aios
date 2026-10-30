@@ -248,13 +248,15 @@ class Fetch:
             where = p.repo or p.hub
             if mark is None and dst.is_dir():
                 raise Abort(f"{dst} exists and has no {MARKER}; move it away first")
-            if mark and mark.get("version") == str(p.version) and not changed:
+            commit = self.source.commit(name, p.hub, str(p.version))
+            if mark and mark.get("version") == str(p.version) and not changed \
+                    and mark.get("commit", commit) == commit:   # another source or a moved tag (K1)
                 lines.append(f"unchanged  {name} {p.version} ({where})")
                 continue
             why = ("new" if mark is None and was is None else "missing" if mark is None else
                    f"{direction(mark.get('version'), p.version)} {mark.get('version')} -> {p.version}"
                    if mark.get("version") != str(p.version)
-                   else "changed directly, restored")
+                   else "changed directly, restored" if changed else "other commit")
             src = self.source.fetch(name, p.hub, str(p.version))
             fields = {"name": name, "version": p.version, "hub": "-" if p.repo else p.hub,
                       "repo": p.repo or self.source.repo(name, p.hub),
@@ -306,12 +308,12 @@ class Fetch:
             for line in lines:
                 say(f"   {line}")
             return 0
-        deploy.register_session(plan, later=bool(first) and Path(paths.cwd()).resolve() == self.project.resolve())
+        deploy.register_session(plan, later=bool(first), target=self.project)   # the target (K2)
         plan.steps += users.steps + list(notes)
-        session = Path(paths.cwd())
+        plan.steps += [(line, None) for line in open_files(self.project, moved)]
         bk = backup.Backup(self.project)
         copied = [config_file(self.project), lock_file(self.project),
-                  session / ".aios" / "registry", session / ".claude" / "skills",
+                  self.project / ".aios" / "registry", self.project / ".claude" / "skills",
                   worker.state_file(), *installs]
         plan.steps.insert(0, (f"back up what the plan changes -> {backup.folder(self.project)}",
                               lambda: bk.start(copied, moved)))
@@ -429,6 +431,20 @@ def parse_spec(spec):
     return hub_name, name, r
 
 
+def open_files(project, dirs=()):
+    """Open changes of the target that the plan changes (V0.6, memo 02): only named."""
+    from . import project as proj
+    p = Path(project)
+    rel = [".aios/config.yaml", ".aios/lock.yaml"] + [os.path.relpath(d, p) for d in dirs]
+    out = proj.git(p, "status", "--porcelain", "--", *rel).stdout if proj.own_repo(p) or \
+        proj.git(p, "rev-parse", "--git-dir").returncode == 0 else ""
+    files = [line[3:] for line in out.splitlines() if line.strip()]
+    if not files:
+        return []
+    return [f"note: open changes in {p}: {', '.join(files)}; the plan changes them, "
+            f"aios --fetch commits nothing"]
+
+
 def add(spec, hub_name=None, repo=None, to=None):
     """aios --fetch [<hub>/]<package>[<range>] [--hub <hub>] [--from <repo>] [--to <project>]."""
     named, name, rng = parse_spec(spec)
@@ -447,10 +463,12 @@ def add(spec, hub_name=None, repo=None, to=None):
             key = resolver.FROM + repo if repo else hub_name
             r = resolver.Resolver(f.source, [h.name for h in f.hubs], f.kernel)
             key = r.locate(name, key)
-            releases = [v for v in r.versions(name, key) if not v.pre]
+            releases = sorted((v for v in r.versions(name, key) if not v.pre), reverse=True)
             if not releases:
                 raise Abort(f"{name} has no released version")
-            rng = semver.default_range(max(releases))
+            fitting = [v for v in releases                 # B1: the highest fitting version (V0.6, memo 42)
+                       if semver.kernel_fits(f.source.manifest(name, key, str(v)).requires, f.kernel)]
+            rng = semver.default_range(fitting[0] if fitting else releases[0])
         rng_text = str(rng)
         new = {"range": rng_text}
         if hub_name:

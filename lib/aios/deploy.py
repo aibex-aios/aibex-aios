@@ -75,10 +75,11 @@ def target_project(to):
     return p
 
 
-def register_session(plan, later=False):
-    """Step 5 of the deploy: register the project skills of the session (spec 03). later=True: the
-    session's folder becomes a project only in this plan (vault root bound by a distribution)."""
-    cwd = paths.cwd()
+def register_session(plan, later=False, target=None):
+    """Step 5 of the deploy: register the skills of the target, default the project of the session
+    (spec 03; V0.6, memo 03, K2). later=True: the target becomes a bound project only in this plan
+    (vault root bound by a distribution)."""
+    cwd = str(target) if target else paths.cwd()
 
     def run():
         ctx, s = registry.sync_for(cwd)
@@ -87,7 +88,7 @@ def register_session(plan, later=False):
             say(f"   registered in {cwd}: {s.summary()}")
     ctx, s = registry.sync_for(cwd)
     if s is not None or later:
-        plan.add(f"register the project skills of {cwd}", run)
+        plan.add(f"register the skills of {cwd}", run)
 
 
 

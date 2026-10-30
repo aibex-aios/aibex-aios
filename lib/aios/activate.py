@@ -64,6 +64,9 @@ def plan_activation(tag, p, plan, installed=True):
         plan.add(what, lambda: config.set_aios(file, m.group(1)))
     if file.is_file() and "legacy" in config.read(file):
         plan.add(f"remove legacy: from {file} (aios: applies)", lambda: config.drop_key(file, "legacy"))
+    from .fetch import open_files                  # V0.6, memo 02: only named
+    for line in open_files(p):
+        plan.add(line.replace("aios --fetch commits nothing", "aios --activate does not commit them"))
     if steps and steps.changes:
         steps.commit(extra=[".aios/config.yaml"])
     plan.steps += later.steps                       # changeover from v0.3 after the activation (spec 06)

@@ -8,6 +8,7 @@ the resolver: versions from git ls-remote, manifests from the cache ~/.aios/pack
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import re
@@ -112,14 +113,30 @@ class GitSource:
         return self.tags[repo]
 
     def folder(self, name, hub, version):
-        key = "_from" if hub.startswith(FROM) else hub
+        """Cache of a version; with --from per source (V0.6, memo 03, K1; memo 50)."""
+        if hub.startswith(FROM):
+            key = Path("_from") / hashlib.sha256(hub[len(FROM):].encode()).hexdigest()[:12]
+        else:
+            key = Path(hub)
         return paths.user_dir() / "packages" / key / name / version
 
+    def tag_commit(self, name, hub, version):
+        """Commit of the tag v<version> in the source (peeled), or None."""
+        r = git("ls-remote", self.repo(name, hub), f"refs/tags/v{version}", f"refs/tags/v{version}^{{}}")
+        found = dict(reversed(line.split("\t")) for line in r.stdout.splitlines() if "\t" in line)
+        return found.get(f"refs/tags/v{version}^{{}}") or found.get(f"refs/tags/v{version}")
+
     def fetch(self, name, hub, version):
-        """The version in the cache (git clone --depth 1 --branch v<version>); its folder."""
+        """The version in the cache (git clone --depth 1 --branch v<version>); its folder. With
+        --from the cache is fetched anew when the tag in the source points elsewhere (K1)."""
         d = self.folder(name, hub, version)
         if (d / ".git").is_dir():
-            return d
+            if not hub.startswith(FROM):
+                return d
+            head = git("rev-parse", "HEAD", cwd=d).stdout.strip()
+            if head and head == self.tag_commit(name, hub, version):
+                return d
+            shutil.rmtree(d, ignore_errors=True)
         d.parent.mkdir(parents=True, exist_ok=True)
         tmp = d.parent / (version + ".tmp")
         shutil.rmtree(tmp, ignore_errors=True)

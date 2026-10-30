@@ -1,0 +1,8 @@
+name: test-b1
+version: 0.1.0
+type: skill
+description: Testpaket, dessen hoechste Version nur zu AIOS 0.6 passt (B1)
+requires:
+  aios: ">=0.4,<0.7"
+contents:
+  skills: [bee]
