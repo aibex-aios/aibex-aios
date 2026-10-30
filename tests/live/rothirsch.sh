@@ -1,13 +1,13 @@
 #!/bin/bash
-# rothirsch.sh: live test of the distribution Rothirsch 1.0 in a sandbox (V0.5, step 13): kernel 0.5.0
-# from a sandbox clone, local hub aibex-local of the package repos, real PyPI; no call of YouTube
+# rothirsch.sh: live test of the distribution Rothirsch 1.0 in a sandbox (V0.5, step 13; V0.6, step 11): kernel
+# 0.5.0 from the tag of this repo, installed by this kernel; local hub aibex-local of the package repos, real PyPI
 
    if [ "$*" == "-?" ] || [ "$*" == "--help" ]; then
       echo '   usage: tests/live/rothirsch.sh [<repos>]  # install distribution-rothirsch from a local hub of the'
       echo '                                           # tagged package repos in <repos> (default ~/git/AIbex)'
       echo '          tests/live/rothirsch.sh --version  # print version'
       echo '   not part of tests/run: needs network access to PyPI, takes about two minutes;'
-      echo '   the test versions distribution-rothirsch 1.0.1 and worker-yt-dlp 0.1.1 exist only in the'
+      echo '   the test versions distribution-rothirsch 1.0.1 and worker-yt-dlp 0.1.9 exist only in the'
       echo '   clones of the sandbox hub, never in the package repos (S5)'
       echo '   see also: tests/live/workers.sh, aios --install distribution-<name>'
       exit 1
@@ -18,7 +18,7 @@
 #===============================================================================
 
    if [ "$*" == "--version" ]; then
-      echo "0.1.0"; exit 0
+      echo "0.2.0"; exit 0
    fi
 
 #===============================================================================
@@ -38,12 +38,6 @@
       has() { case "$1" in *"$2"*) return 0;; esac; return 1; }
       line() { printf '%s\n' "$1" | grep -n -m1 -F "$2" | cut -d: -f1; }
       G() { git -c user.name=live -c user.email=live@test "$@"; }
-
-      S="$SB/kernel"                                # sandbox clone of the kernel with the tag v0.5.0
-      (cd "$REPO" && git -c core.quotePath=false ls-files -co --exclude-standard) | while IFS= read -r F; do
-         mkdir -p "$S/$(dirname "$F")"; cp -p "$REPO/$F" "$S/$F"
-      done
-      G -C "$S" init -q && G -C "$S" add -A && G -C "$S" commit -q -m v0.5.0 && G -C "$S" tag v0.5.0 || exit 1
 
       H="$SB/aibex-local"; mkdir -p "$H/aios-index"   # local hub of the tagged package repos (S4)
       printf 'schema: 1\npackages:\n' > "$H/aios-index/index.yaml"
@@ -65,18 +59,18 @@
       [ -n "$PYDIR" ] || { echo "*** needs a python3 with PyYAML, venv and ensurepip" >&2; exit 1; }
       export PATH="$HOME/bin:$PYDIR:/usr/bin:/bin:/usr/sbin:/sbin"
       V="$SB/§Probe-Rothirsch"; mkdir -p "$V"
-      I() { (cd "$V" && "$S/bin/aios" --install "$@" 2>&1); }
-      WK="$AIOS_PREFIX/workers"; BIN="$HOME/.aios/bin"
+      I() { (cd "$V" && "$REPO/bin/aios" --install "$@" 2>&1); }   # the kernel of 0.6 installs, the tag v0.5.0 is the kernel
+      WK="$HOME/.aios/workers"; BIN="$HOME/.aios/bin"   # no /opt/aios/workers.yaml: workers per user (V0.6, F27)
 
       OUT="$(I distribution-rothirsch==1.0.0 --plan)"
       check "plan: install distribution-rothirsch 1.0.0 (kernel 0.5.0)" has "$OUT" "=> install distribution-rothirsch 1.0.0 into $V (kernel 0.5.0)"
-      check "plan: kernel from the clone" has "$OUT" "install AIOS v0.5.0 from $S"
-      check "plan: setup worker-deno" has "$OUT" "setup      worker-deno 0.1.0 -> $WK/worker-deno/v0.1.0"
-      check "plan: setup worker-yt-dlp" has "$OUT" "setup      worker-yt-dlp 0.1.0 -> $WK/worker-yt-dlp/v0.1.0"
+      check "plan: kernel from the tag of this repo" has "$OUT" "install AIOS v0.5.0 from $REPO"
+      check "plan: setup worker-deno" has "$OUT" "setup      worker-deno 0.1.1 -> $WK/worker-deno/v0.1.1"
+      check "plan: setup worker-yt-dlp" has "$OUT" "setup      worker-yt-dlp 0.1.1 -> $WK/worker-yt-dlp/v0.1.1"
       check "plan: worker-deno before worker-yt-dlp" [ "$(line "$OUT" "setup      worker-deno")" -lt "$(line "$OUT" "setup      worker-yt-dlp")" ]
       check "plan: machine part before the vault part" [ "$(line "$OUT" "machine part")" -lt "$(line "$OUT" "vault part")" ]
       check "plan: binding of the vault root" has "$OUT" "create $V/.aios/config.yaml with aios: 0.5.0"
-      for P in "skill-video-analyse 0.2.0" "assistant-anja 0.2.0" "skill-5-8-zusammenfassung 1.2.1" "skill-memo 6.0.1"; do
+      for P in "skill-video-analyse 0.2.0" "assistant-anja 0.2.0" "skill-5-8-zusammenfassung 1.2.2" "skill-memo 6.0.2"; do
          check "plan: new $P" has "$OUT" "new        $P"
       done
 
@@ -85,25 +79,27 @@
       check "install: exit 0" [ "$RC" == "0" ]
       check "vault bound to 0.5.0" has "$(cat "$V/.aios/config.yaml")" "aios: 0.5.0"
       check "packages: the distribution" has "$(cat "$V/.aios/config.yaml")" 'distribution-rothirsch: "==1.0.0"'
-      check "skill video-analyse registered" [ -f "$V/.claude/skills/video-analyse/SKILL.md" ]
+      check "no registration by the kernel of 0.6 in a vault bound to 0.5" [ ! -e "$V/.claude/skills/video-analyse" ]
+      (cd "$V" && "$BIN/aios" --context --session </dev/null >/dev/null 2>&1)   # first chat: the forwarder runs 0.5.0
+      check "skill video-analyse registered by the first session (kernel 0.5.0)" [ -f "$V/.claude/skills/video-analyse/SKILL.md" ]
       check "yt-dlp over its forwarder in the vault" [ "$(cd "$V" && "$BIN/yt-dlp" --version 2>&1)" == "2026.10.21" ]
       check "yt-dlp finds deno" has "$(cd "$V" && "$BIN/yt-dlp" -v 2>&1)" "JS runtimes: deno-2.9.8"
 
       W1="$H/worker-yt-dlp"                         # test versions only in the clones (S5), released after 1.0.0
-      sed -i.bak 's/^version: 0.1.0$/version: 0.1.1/' "$W1/manifest.yaml" && rm "$W1/manifest.yaml.bak"
-      G -C "$W1" commit -q -am "worker-yt-dlp 0.1.1 (test version)" && G -C "$W1" tag v0.1.1
+      sed -i.bak 's/^version: .*$/version: 0.1.9/' "$W1/manifest.yaml" && rm "$W1/manifest.yaml.bak"
+      G -C "$W1" commit -q -am "worker-yt-dlp 0.1.9 (test version)" && G -C "$W1" tag v0.1.9
       D1="$H/distribution-rothirsch"
       sed -i.bak -e 's/^version: 1.0.0$/version: 1.0.1/' "$D1/manifest.yaml" && rm "$D1/manifest.yaml.bak"
-      printf '  worker-yt-dlp: "==0.1.1"\n' >> "$D1/manifest.yaml"
+      printf '  worker-yt-dlp: "==0.1.9"\n' >> "$D1/manifest.yaml"
       G -C "$D1" commit -q -am "distribution-rothirsch 1.0.1 (test version)" && G -C "$D1" tag v1.0.1
 
       OUT="$(echo y | I distribution-rothirsch)"; RC=$?
       [ "$RC" == "0" ] || printf '%s\n' "$OUT"
       check "upgrade: 1.0.0 -> 1.0.1" has "$OUT" "=> upgrade distribution-rothirsch 1.0.0 -> 1.0.1 into $V"
-      check "upgrade: setup worker-yt-dlp 0.1.1" has "$OUT" "setup      worker-yt-dlp 0.1.1 -> $WK/worker-yt-dlp/v0.1.1"
-      check "upgrade: old version removed" has "$OUT" "remove     worker-yt-dlp 0.1.0 -> $WK/worker-yt-dlp/v0.1.0 (no project uses it)"
-      check "upgrade: forwarder takes 0.1.1" has "$(cd "$V" && "$BIN/yt-dlp" ---which)" "package=worker-yt-dlp version=0.1.1"
-      check "upgrade: 0.1.0 gone" [ ! -e "$WK/worker-yt-dlp/v0.1.0" ]
+      check "upgrade: setup worker-yt-dlp 0.1.9" has "$OUT" "setup      worker-yt-dlp 0.1.9 -> $WK/worker-yt-dlp/v0.1.9"
+      check "upgrade: old version removed" has "$OUT" "remove     worker-yt-dlp 0.1.1 -> $WK/worker-yt-dlp/v0.1.1 (no project uses it)"
+      check "upgrade: forwarder takes 0.1.9" has "$(cd "$V" && "$BIN/yt-dlp" ---which)" "package=worker-yt-dlp version=0.1.9"
+      check "upgrade: 0.1.1 gone" [ ! -e "$WK/worker-yt-dlp/v0.1.1" ]
 
       echo "=> $PASS passed, $FAIL failed (sandbox $SB)"
       [ "$FAIL" == "0" ] || exit 1

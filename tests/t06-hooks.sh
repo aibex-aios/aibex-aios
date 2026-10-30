@@ -190,7 +190,7 @@ assistant: gaertner" "startup: marker written"
    assert_contains "$OUT" "AIOS-ASSISTANT-CHECK: expected assistant=gaertner version=0.1.0.
  Verify that BOTH markers <aios-assistant name=\"gaertner\" and
  </aios-assistant name=\"gaertner\"> are present in your context. If not: run
- \`$HOME/.aios/bin/aios --context --assistant gaertner --load\` via Bash in \"$D/Garten\", read every
+ \`$HOME/.aios/bin/aios --context --assistant gaertner --load \"$D/Garten\"\` via Bash, read every
  listed part file completely, and continue in this role." "advise: assistant check after the context check"
    case "$OUT" in AIOS-CONTEXT-CHECK*) ok ;; *) fail "advise: context check first" ;; esac
    OUT="$(SH --session s1 clear "$D/Garten")"

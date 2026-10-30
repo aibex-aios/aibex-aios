@@ -409,7 +409,7 @@ def assistant_check_message(ctx, name, ver):
     return (f"AIOS-ASSISTANT-CHECK: expected assistant={name} version={ver}.\n"
             f" Verify that BOTH markers <aios-assistant name=\"{name}\" and\n"
             f" </aios-assistant name=\"{name}\"> are present in your context. If not: run\n"
-            f" `{paths.forwarder()} --context --assistant {name} --load` via Bash in \"{ctx.cwd}\", read every\n"
+            f" `{paths.forwarder()} --context --assistant {name} --load \"{ctx.cwd}\"` via Bash, read every\n"
             f" listed part file completely, and continue in this role.")
 
 
@@ -495,7 +495,7 @@ def legacy(cmd, cwd, stdin=""):
 
 
 USAGE = ("usage: aios --context [<path>] | --session | --advise | --permit | --load [<path>] | --id [<path>]"
-         " | --list [<path>] | --sync [--yes|--plan] | --assistant <name> [--load] | --assistants"
+         " | --list [<path>] | --sync [--yes|--plan] | --assistant <name> [--load [<path>]] | --assistants"
          " | --assignment [<path>] [--session <id>]")
 
 
@@ -510,7 +510,7 @@ def main(argv):
             ui.MODE = "plan"
         return registry.register(paths.cwd(), yes=argv[1:] == ["--yes"])
     if cmd == "--assistants" and len(argv) == 1 or cmd == "--assistant" and (
-            len(argv) == 2 or len(argv) == 3 and argv[2] == "--load"):
+            len(argv) == 2 or len(argv) in (3, 4) and argv[2] == "--load"):
         return assistant_cmd(argv)
     if cmd == "--assignment":
         return assignment_cmd(argv[1:])
@@ -555,17 +555,22 @@ def main(argv):
 
 
 def assistant_cmd(argv):
-    """--assistant <name>: context of an assistant; --assistants: assistants of the chain (spec 03)."""
+    """--assistant <name>: context of an assistant; --assistants: assistants of the chain (spec 03);
+    --assistant <name> --load [<path>]: part files, for <path> like the hook names it (V0.6, B6)."""
     from . import assistant
     from .ui import Abort
-    ctx = Context(paths.cwd())
+    cwd = os.path.abspath(argv[3]) if len(argv) == 4 else paths.cwd()
+    if not os.path.isdir(cwd):
+        print(f"aios --context: {cwd} is not a directory", file=sys.stderr)
+        return 1
+    ctx = Context(cwd)
     if ctx.mode != "aios":
         print("aios --context: assistants need a vault activated with AIOS (aios --activate)", file=sys.stderr)
         return 1
     try:
         if argv[0] == "--assistants":
             print("\n".join(assistant.available_lines(*assistant.assistants(ctx))))
-        elif argv[2:] == ["--load"]:
+        elif argv[2:3] == ["--load"]:
             name, _ = assistant.resolve(ctx, argv[1])
             ver, parts = assistant.load_parts(ctx, name)
             print(assistant.load_message(name, ver, parts))

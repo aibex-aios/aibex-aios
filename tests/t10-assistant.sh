@@ -248,4 +248,6 @@ assistant: astronom" "marker: header, cwd, assistant"
    assert_eq "$(cat "$P1")" "$(AC "$G" --assistant astronom)" "--load: part = --assistant output"
    assert_contains "$OUT" 'The assistant is loaded once </aios-assistant name="astronom"> (end of the last part) has been read.' "--load: end marker"
    assert_contains "$(AC "$G" --assistant nobody --load)" "no assistant named 'nobody'" "--load: unknown name"
+   assert_eq "$(AC "$D" --assistant astronom --load "$G")" "$OUT" "--load <path>: like in <path> (V0.6, B6)"
+   assert_contains "$(AC "$G" --assistant astronom --load "$G/nope")" "is not a directory" "--load <path>: no directory"
    assert_exit 1 "$SRC/bin/aios" --context --assistant astronom --nope

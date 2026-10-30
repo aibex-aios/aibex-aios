@@ -30,9 +30,11 @@ def forwarders():
 
 
 def is_forwarder_call(command):
-    """E2: the command starts with the absolute path of a forwarder, then a blank or the end."""
+    """E2: the command starts with the absolute path of a forwarder, bare or in quotes (V0.6, B5),
+    then a blank or the end."""
     c = command.strip()
-    return any(c == f or c.startswith(f + " ") for f in forwarders())
+    return any(c == p or c.startswith(p + " ")
+               for f in forwarders() for p in (f, f'"{f}"', f"'{f}'"))
 
 
 def single(command):

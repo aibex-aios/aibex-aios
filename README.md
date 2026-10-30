@@ -234,7 +234,7 @@ The tutorials (German) walk through a demo vault:
 | `aios --library`, `--hubs`, `--fetch`, `--deploy` | packages: search, hub list, fetch, deployed elements |
 | `aios --worker [<package> setup]`, `--run`, `--contribute`, `--workspace` | workhorses (state, repair), commands of packages, contributions, workspaces |
 | `aios --assistant <name\|none\|inherit> [--to <project>]`, `--gui [--html] [--aios] [--apps]` | assignment of the assistant, surfaces |
-| `aios --context [<path>]`, `--load`, `--id`, `--list`, `--assistant <name> [--load]`, `--assistants`, `--assignment` | master context and assistants |
+| `aios --context [<path>]`, `--load`, `--id`, `--list`, `--assistant <name> [--load [<path>]]`, `--assistants`, `--assignment` | master context and assistants |
 
 `aios --help` lists all options. Every writing command shows a plan first;
 `--plan` only shows it, `--yes` skips the question and prints only the result.
@@ -268,6 +268,8 @@ installed to `~/.aios/versions/v<version>/doc/spec/` (with `--system`:
   tests/live/hooks.sh        # real headless Claude sessions (cost tokens)
   tests/live/skills.sh
   tests/live/assistants.sh
+  tests/live/permit.sh       # PreToolUse hook: release in an AIBOS workspace, deny and ask rules
+  tests/live/outside.sh      # a session outside an AIBOS workspace
   tests/live/workers.sh      # worker-deno, worker-yt-dlp against the real PyPI
   tests/live/rothirsch.sh    # distribution Rothirsch in a sandbox (PyPI)
   dev/doc-outputs.sh         # outputs of README and tutorials from a sandbox of the package repos

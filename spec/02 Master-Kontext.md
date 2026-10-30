@@ -1,6 +1,6 @@
 ---
 title: "Master-Kontext"
-date: 2026-10-29
+date: 2026-10-30
 author: iHux
 status: Spec
 tags: [spec, aios, v0.6, master-kontext]
@@ -154,7 +154,7 @@ Der Aufruf nennt den absoluten Pfad des Weiterleiters (Spec 04). Der Block nennt
 | `aios --context --id [<pfad>]` | gibt `id=<id> files=<n> cwd=<cwd> mode=<aios-0.6.0 | alt-0.5.1 | legacy | none>` aus; `aios-<version>` ist die Version des laufenden Programms, `alt-<version>` die Version einer Altbindung (*Arten von Vaults*) |
 | `aios --context --list [<pfad>]` | Aufstellung für `/aios-context` (siehe dort) |
 | `aios --context --sync [--yes\|--plan]` | Registrierung der Projekt-Skills (Spec 03, *Registrieren*), mit Vorschau; mit `--yes` ohne Rückfrage |
-| `aios --context --assistant <name> [--load]` | gibt den Kontext eines Assistenten aus (Spec 03, *Assistenten*); mit `--load` als Part-Dateien unter `~/.aios/cache/a-<name>-<id>/` wie bei `--load` |
+| `aios --context --assistant <name> [--load [<pfad>]]` | gibt den Kontext eines Assistenten aus (Spec 03, *Assistenten*); mit `--load` als Part-Dateien unter `~/.aios/cache/a-<name>-<id>/` wie bei `--load`, für `<pfad>` statt des Arbeitsverzeichnisses |
 | `aios --context --assistants` | Assistenten der Kette mit Titel, Version und Beschreibung |
 | `aios --context --assignment [<pfad>] [--session <id>]` | wirksamer Assistent: `assistant=<name\|none> from=<pfad der config.yaml\|->`; mit `--session` der Assistent der Session aus dem Merker, sonst die Zuordnung des Projekts (Spec 03) |
 
@@ -265,7 +265,7 @@ Die Hooks erzeugen außer der Registrierung, dem Merker der Session und dem Log 
 | # | Bedingung |
 |---|---|
 | E1 | `cwd` liegt in einem A/W. |
-| E2 | Der Befehl beginnt mit dem absoluten Pfad eines Weiterleiters des Kernels (`~/.aios/bin/aios` oder `/opt/aios/bin/aios`, ausgeschrieben), gefolgt von einem Leerzeichen oder dem Ende. Arbeitspferde unter `~/.aios/bin/` und alle anderen Befehle gibt es nicht frei. |
+| E2 | Der Befehl beginnt mit dem absoluten Pfad eines Weiterleiters des Kernels (`~/.aios/bin/aios` oder `/opt/aios/bin/aios`, ausgeschrieben), auch in einfachen oder doppelten Anführungszeichen um genau diesen Pfad, gefolgt von einem Leerzeichen oder dem Ende. Arbeitspferde unter `~/.aios/bin/` und alle anderen Befehle gibt es nicht frei. |
 | E3 | Der Befehl ist ein einzelner Befehl: Er enthält keines der Zeichen bzw. keine der Folgen `;`, `&`, `|`, `` ` ``, `$(`, `>`, `<`, Zeilenumbruch. |
 | E4 | Keine `deny`- oder `ask`-Regel aus `~/.claude/settings.json`, aus `.claude/settings.json` und `.claude/settings.local.json` im `cwd` und aus den Managed Settings (macOS `/Library/Application Support/ClaudeCode/managed-settings.json`, Linux `/etc/claude-code/managed-settings.json`) trifft den Befehl. Ausgewertet werden `Bash`, `Bash(<befehl>)`, `Bash(<präfix>:*)` und `Bash(<muster mit *>)`; ein Muster anderer Form zählt als Treffer. Eine unlesbare Einstellungsdatei gibt nichts frei (V0.6, Memo 47). |
 
@@ -327,11 +327,11 @@ AIOS-CONTEXT-CHECK: expected id=<id> (files=<n>, cwd=<cwd>).
 AIOS-ASSISTANT-CHECK: expected assistant=<name> version=<version>.
  Verify that BOTH markers <aios-assistant name="<name>" and
  </aios-assistant name="<name>"> are present in your context. If not: run
- `aios --context --assistant <name> --load` via Bash in "<cwd>", read every
+ `aios --context --assistant <name> --load "<cwd>"` via Bash, read every
  listed part file completely, and continue in this role.
 ```
 
-Die Anweisungen nennen den Pfad ausdrücklich, damit die id nicht davon abhängt, in welchem Verzeichnis das Bash-Werkzeug gerade steht. Die Zeichenzahl für `inline_limit` zählt Zeichen, nicht Bytes und gilt für Master-Kontext und Assistent getrennt.
+Die Anweisungen nennen den Pfad ausdrücklich als Argument, damit die id nicht davon abhängt, in welchem Verzeichnis das Bash-Werkzeug gerade steht, und damit der Aufruf ein einziger Befehl ohne `cd` bleibt, den der PreToolUse-Hook freigibt (E3). Die Zeichenzahl für `inline_limit` zählt Zeichen, nicht Bytes und gilt für Master-Kontext und Assistent getrennt.
 
 ## Legacy-Modus
 

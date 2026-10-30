@@ -1,5 +1,6 @@
 #!/bin/bash
-# assistants.sh: live test of the assignment of assistants (/aios-assistant, hooks, resume) with Gärtner and Astronom (costs tokens)
+# assistants.sh: live test of the assignment of assistants (/aios-assistant, hooks, resume) with Gärtner and Astronom
+# (V0.6 step 11: wrappers registered in the vault, PreToolUse releases the forwarder; costs tokens)
 
    if [ "$*" == "-?" ] || [ "$*" == "--help" ]; then
       echo '   usage: tests/live/assistants.sh [<model>]   # headless sessions A1-A6, default model haiku'
@@ -15,7 +16,7 @@
 #===============================================================================
 
    if [ "$*" == "--version" ]; then
-      echo "0.3.0"; exit 0
+      echo "0.4.0"; exit 0
    fi
 
 #===============================================================================
@@ -24,52 +25,27 @@
 
    if [ "$2" == "" ]; then
       MODEL="${1:-haiku}"
-      REPO="$(cd "$(dirname "$0")/../.." && pwd)"
+      . "$(dirname "$0")/lib.sh"
       LIB="$REPO/tests/hub/aibex-aios"
-      T="${TMPDIR:-/tmp}"; SB="$(cd "$(mktemp -d "${T%/}/aios-live.XXXXXX")" && pwd -P)" || exit 1
       V="$SB/§Live"; G="$V/Garten"; O="$G/@/@!Assistant/gaertner"; A="$V/@/@!Assistant/astronom"
       mkdir -p "$SB/bin" "$SB/home" "$V/.aios" "$V/@/@Rule" "$G/@/@!Assistant" "$V/@/@!Assistant"
-      printf 'aios: 0.5.0\n' > "$V/.aios/config.yaml"
+      printf 'aios: 0.6.0\n' > "$V/.aios/config.yaml"
       printf '# Stil\nAntworte auf Deutsch.\n' > "$V/@/@Rule/stil.md"
       cp -R "$LIB/assistant-gaertner/0.3.0/assistants/gaertner" "$O"   # demo assistants (packages, spec 03)
       cp -R "$LIB/assistant-astronom/0.3.0/assistants/astronom" "$A"
       SORTE="Sternreinette $RANDOM"
       printf '\n## Sandkasten\n\n| Sorte | Genussreife |\n|---|---|\n| %s | nur am 29. Februar eines Schaltjahres |\n' "$SORTE" >> "$O/@Wissen/@@Sortenkunde/sortenkunde.md"
       printf '# Garten\n' > "$G/@/garten.md"
-      printf '.DS_Store\n.claude/skills/\n.aios/registry\n' > "$G/.gitignore"; git -C "$G" init -q   # Garten complete (S1-S4): no PROJECT-INCOMPLETE
-      for TOOL in aios; do
-         printf '#!/bin/bash\nHOME="%s/home" exec "%s/bin/%s" "$@"\n' "$SB" "$REPO" "$TOOL" > "$SB/bin/$TOOL"; chmod +x "$SB/bin/$TOOL"
-      done
-      PYTHONPATH="$REPO/lib" python3 -c '
-import sys
-from pathlib import Path
-from aios import install
-f = Path(sys.argv[1]) / "skills/aios/aios-assistant/SKILL.md"
-m = install.frontmatter(f)
-d = Path(sys.argv[2]) / ".claude/skills/aios-assistant"; d.mkdir(parents=True)
-(d / "SKILL.md").write_text(install.wrapper("aios-assistant", m["description"], m.get("allowed-tools", ""), session=True))
-g = Path(sys.argv[2]) / ".claude/skills/gui"; g.mkdir(parents=True)
-(g / "SKILL.md").write_text(install.ALIAS)' "$REPO" "$G"
-      HOOKS="{\"hooks\":{\"SessionStart\":[{\"hooks\":[{\"type\":\"command\",\"command\":\"$SB/bin/aios --context --session\"}]}],\"UserPromptSubmit\":[{\"hooks\":[{\"type\":\"command\",\"command\":\"$SB/bin/aios --context --advise\"}]}]}}"
-      TOOLS=("Skill" "Read" "Bash(aios --skill *)" "Bash(aios --assistant *)" "Bash(aios --gui *)" "Bash(aios --context *)")
+      printf '.DS_Store\n.claude/skills/\n.claude/worktrees/\n.agents/\n.aios/registry\n.aios/backup/\n' > "$G/.gitignore"; git -C "$G" init -q   # Garten complete (S1-S4): no PROJECT-INCOMPLETE
+      (cd "$G" && "$FWD" --register --yes >/dev/null 2>&1)   # aios-assistant and gui as wrappers of the kernel (V0.6, F18)
+      HOOKS="$(hooks)"
+      TOOLS=("Skill" "Read")                        # the forwarder: PreToolUse (V0.6, F11)
       ask() {                                       # ask <prompt> [<claude options>]: new chat with the AIOS hooks
          local P="$1"; shift
          (cd "$G" && PATH="$SB/bin:$PATH" claude -p "$P" --model "$MODEL" --settings "$HOOKS" \
             --setting-sources project --add-dir "$SB" --allowedTools "${TOOLS[@]}" "$@" </dev/null 2>&1)
       }
       assign() { (cd "$G" && PATH="$SB/bin:$PATH" aios --assistant "$1" --yes >/dev/null 2>&1); }   # no tokens
-      PASS=0; FAIL=0
-      check() {                                     # check <name> <answer> <expected> [<expected> …]
-         local N="$1" ANS="$2" E; shift 2
-         for E in "$@"; do
-            case "$ANS" in *"$E"*) ;; *) FAIL=$((FAIL+1)); printf '\033[31mFAIL\033[0m %s: [%s] missing\n%s\n' "$N" "$E" "$ANS"; return;; esac
-         done
-         PASS=$((PASS+1)); printf '\033[32mok\033[0m   %s\n' "$N"
-      }
-      refuse() {                                    # refuse <name> <answer> <forbidden>
-         case "$2" in *"$3"*) FAIL=$((FAIL+1)); printf '\033[31mFAIL\033[0m %s: [%s] must not appear\n%s\n' "$1" "$3" "$2";;
-                      *) PASS=$((PASS+1)); printf '\033[32mok\033[0m   %s\n' "$1";; esac
-      }
       echo "=> live assistant test with model $MODEL in $SB"
 
       ANS="$(ask "/aios-assistant Gärtner: Rechentest — und dann in der Rolle: Was ist ¬Apfel * Birne? Nenne nur das Ergebnis.")"
@@ -105,10 +81,7 @@ g = Path(sys.argv[2]) / ".claude/skills/gui"; g.mkdir(parents=True)
       check "A6 --none: assignment none" "$(cat "$G/.aios/config.yaml")" "assistant: none"
       check "A6 --none: no assistant" "$ANS" "ein"
 
-      echo "=> $PASS passed, $FAIL failed"
-      rm -rf "$SB"
-      [ "$FAIL" == "0" ] || exit 1
-      exit 0
+      finish
    fi
 
 #===============================================================================
