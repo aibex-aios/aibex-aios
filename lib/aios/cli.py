@@ -6,7 +6,7 @@ import sys
 from . import activate, aiosinit, assign, contribute, deploy, fetch, gui, hub, install, integrity, paths, registry, resolver, skills, ui, worker, workspace
 
 USAGE = ("usage: aios --prepare [--dev] | --install [v<version>] [--system] | --install distribution-<name> [<vault>] | --versions | --remove-version v<version>"
-         " | --uninstall | --activate v<version> [<path>] | --deactivate [<path>] | --config [<path>]"
+         " | --uninstall | --activate v<version> [<vault-root>] | --deactivate [<vault-root>] | --config [<path>]"
          " | --register [<path>] | --init [<path>] [--assistant <value>] [--name <name>] [--accept-name]"
          " | --integrity [<path>] | --assistant <name|none|inherit> [--to <project>] [--session <id>]"
          " | --gui [--session <id>] [--html] [--aios] [--apps] [--skill <surface>]"

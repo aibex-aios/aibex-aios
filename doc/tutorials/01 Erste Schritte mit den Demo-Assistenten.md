@@ -2,20 +2,38 @@
 
 Dieses Tutorial führt in etwa 20 Minuten durch einen kleinen Vault mit zwei Projekten und den beiden Demo-Assistenten von AIbex AIOS: dem **Gärtner**, der nur mit Äpfeln und Birnen rechnet, und dem **Astronomen**, der nur mit Sonne und Mond rechnet. Am Ende weißt du, wie ein Chat sein Wissen bekommt, wie Assistenten als Pakete geholt und einem Projekt zugeordnet werden, warum ein Assistent nur in seinem Teil des Vaults sichtbar ist und wie du seine Oberfläche öffnest.
 
-Voraussetzung: AIOS v0.5 ist installiert (`aios --install v0.5.1`, siehe README) und Claude Code läuft als Desktop-App oder CLI.
+Voraussetzung: AIBOS v0.6 ist installiert (`aios --install v0.6.0`, siehe README) und Claude Code läuft als Desktop-App oder CLI. Die Beispiele schreiben `aios`; steht `~/.aios/bin` nicht in deinem `PATH`, rufe `~/.aios/bin/aios` auf.
 
 Starte jeden Chat direkt im Ordner des Projekts. Legt die Desktop-App für den Chat eine Arbeitskopie an (`.claude/worktrees/<name>/` auf einem eigenen Branch), landen die Ergebnisse auf diesem Branch und erscheinen erst nach dem Übernehmen (Merge) im Ordner. AIOS erkennt das beim Start: Claude sagt es dir vor der ersten Arbeit und bietet danach das Übernehmen an.
 
 ## 1. Vault anlegen und aktivieren
 
-Ein Vault ist ein Verzeichnis, dessen Name mit `§` beginnt. Lege ihn an und binde ihn an AIOS:
+Ein Vault ist ein Verzeichnis, dessen Name mit `§` beginnt. Lege ihn an und binde ihn an AIBOS; damit wird er ein **AIBOS-Workspace** (A/W):
 
 ```bash
 mkdir -p ~/tmp/§Demo
-aios --activate v0.5.1 ~/tmp/§Demo
+aios --activate v0.6.0 ~/tmp/§Demo
 ```
 
-`aios --activate` zeigt einen Plan und fragt nach. Danach gibt es `§Demo/.aios/config.yaml` mit `aios: 0.5.1`, den **Root-Masterspace** `§Demo/@/` und ein Git-Repo mit einem ersten Commit: Die Vault-Root ist das Root-Projekt.
+```
+=> activate AIOS v0.6.0 for ~/tmp/§Demo
+=> ~/tmp/§Demo runs with AIOS 0.6.0 (~/tmp/§Demo/.aios/config.yaml)
+   the master context and the skill registration apply from the next chat
+```
+
+`aios --activate` zeigt einen Plan und fragt nach. Danach gibt es `§Demo/.aios/config.yaml` mit `aios: 0.6.0`, den **Root-Masterspace** `§Demo/@/` und ein Git-Repo mit einem ersten Commit: Die Vault-Root ist das Root-Projekt. Gebunden wird nur an der Vault-Root; ein `aios:` in einem Projekt übergeht AIBOS mit einer Warnung.
+
+Die Aktivierung registriert auch die **Kernel-Skills** (`/aios-init`, `/aios-context`, …) und `/gui` als dünne Hüllen in `.claude/skills/` der Vault-Root und jedes Projekts; der Master-Kontext jedes Chats im Vault nennt sie im Block `<aios-kernel-skills>`. Außerhalb eines A/W gibt es sie nicht, und ein Aufruf von Hand sagt nur:
+
+```bash
+cd ~/tmp && aios --skill aios-status
+```
+
+```
+Kein AIBOS-Workspace: ~/tmp
+```
+
+Außerhalb eines A/W verhält sich Claude, als wäre AIBOS nicht installiert.
 
 Lege eine Regel an, die jeder Chat im Vault laden soll:
 
@@ -44,7 +62,24 @@ Ein Chat sieht immer die **Master-Space-Kette**: die Masterspaces von der Vault-
 /aios-context
 ```
 
-Die Aufstellung zeigt die Kette `§Demo → G-Garten`, die Zeile *Assistant* `none (no assignment)` und `stil.md` als geladene Datei.
+Die Aufstellung zeigt die Kette `§Demo → G-Garten`, die Zeile *Assistant* `none (no assignment)` und `stil.md` als geladene Datei:
+
+```
+Master context id ab6e7ddf, AIOS 0.6.0 — G-Garten
+
+Chain                      §Demo → G-Garten
+Assistant                  none (no assignment)
+
+Master context (loaded)    1 file, 2,179 characters
+  §Demo/@/@Rule/stil.md
+Available knowledge        0 files
+Hidden                     Blueprints: 0 skills, 1 assistant, 0 prompts
+  Assistants   gaertner 0.3.1 (§Demo, package assistant-gaertner)
+Packages                   1 package
+  assistant-gaertner 0.3.1 (aibex-aios, §Demo) — assistants gaertner
+```
+
+(Die Aufstellung oben stammt aus einem Vault, in dem der Gärtner schon geholt ist, Abschnitt 4; die id hängt vom Pfad ab.)
 
 ## 3. Pakete im Hub
 
@@ -60,7 +95,7 @@ aibex-aios/assistant-astronom  assistant     Demo-Assistent Astronom, rechnet nu
 aibex-aios/assistant-gaertner  assistant     Demo-Assistent Gärtner, rechnet nur mit Äpfeln und Birnen, mit Oberfläche
 ```
 
-Der Name eines Pakets nennt seine Art: `assistant-…`, `skill-…`, `knowledge-…`, `app-…`, `worker-…`, `distribution-…`. Bis v0.4 hießen die Assistenten `assistent-…`; `aios --activate v0.5.1` stellt einen älteren Vault um. Ein Paket wird nicht automatisch verwendet; du **holst** es in ein Projekt. Mehr über Pakete und Hubs zeigt Tutorial *03 Pakete und Taschenrechner*.
+Der Name eines Pakets nennt seine Art: `assistant-…`, `skill-…`, `knowledge-…`, `app-…`, `worker-…`, `distribution-…`. Bis v0.4 hießen die Assistenten `assistent-…`; `aios --activate v0.6.0` stellt einen älteren Vault um. Ein Paket wird nicht automatisch verwendet; du **holst** es in ein Projekt. Mehr über Pakete und Hubs zeigt Tutorial *03 Pakete und Taschenrechner*.
 
 ## 4. Den Gärtner holen
 
@@ -80,10 +115,10 @@ aios --fetch assistant-gaertner --to ~/tmp/§Demo --plan
 => fetch assistant-gaertner into ~/tmp/§Demo
    plan:
       back up what the plan changes -> ~/tmp/§Demo/.aios/backup
-      new        assistant-gaertner 0.3.0 (aibex-aios) -> ~/tmp/§Demo/@/@!Package/assistant-gaertner
-      ~/tmp/§Demo/.aios/config.yaml: packages: assistant-gaertner: "~=0.3.0"
+      new        assistant-gaertner 0.3.1 (aibex-aios) -> ~/tmp/§Demo/@/@!Package/assistant-gaertner
+      ~/tmp/§Demo/.aios/config.yaml: packages: assistant-gaertner: "~=0.3.1"
       ~/tmp/§Demo/.aios/lock.yaml: 1 packages
-      register the project skills of ~/tmp/§Demo
+      register the skills of ~/tmp/§Demo
       remove the backup
    (plan only, nothing written)
 ```
@@ -93,7 +128,7 @@ Jeder Plan sichert zuerst, was er ändert, und entfernt die Sicherung erst nach 
 Ohne `--plan` fragt `aios` einmal nach und meldet dann:
 
 ```
-=> packages of ~/tmp/§Demo: assistant-gaertner 0.3.0
+=> packages of ~/tmp/§Demo: assistant-gaertner 0.3.1
    assign the assistant to a project of the chain with /aios-assistant Gärtner
    new skills are available from the next chat (or after /reload-skills)
 ```
@@ -101,12 +136,12 @@ Ohne `--plan` fragt `aios` einmal nach und meldet dann:
 Danach liegt das Paket in `§Demo/@/@!Package/assistant-gaertner/`, und `§Demo/.aios/config.yaml` enthält:
 
 ```yaml
-aios: 0.5.1
+aios: 0.6.0
 packages:
-  assistant-gaertner: "~=0.3.0"
+  assistant-gaertner: "~=0.3.1"
 ```
 
-`~=0.3.0` heißt: 0.3.0 oder eine neuere 0.3.x. Welche Version und welcher Commit genau geholt wurden, steht in `.aios/lock.yaml`; `aios --fetch` ohne Argument stellt diesen Stand wieder her, auch auf einem anderen Rechner.
+`~=0.3.1` heißt: 0.3.1 oder eine neuere 0.3.x. Welche Version und welcher Commit genau geholt wurden, steht in `.aios/lock.yaml`; `aios --fetch` ohne Argument stellt diesen Stand wieder her, auch auf einem anderen Rechner.
 
 Schau dir den Ordner `assistants/gaertner/` im Paket an: `ASSISTANT.md` mit Rollentext und Grenzen, die privaten Skills `@!Skill/apfel-birnen-algebra/` und `@!Skill/gaertner-gui/` (seine Oberfläche), das Wissen `@Wissen/` mit den Grundlagen (geladen) sowie Sortenkunde und Veredelung (verfügbar). Die Datei `.aios-deploy` merkt sich Version und Prüfsumme; änderst du das Paket direkt, meldet `aios --fetch` das beim nächsten Abgleich.
 
@@ -169,7 +204,7 @@ Willst du einen Assistenten nur ausprobieren, ohne die Zuordnung eines Projekts 
 
 | Begriff | im Tutorial |
 |---|---|
-| Vault, Aktivierung | `§Demo`, `aios --activate v0.5.1` |
+| Vault, A/W, Aktivierung | `§Demo`, `aios --activate v0.6.0`; außerhalb eines A/W kein AIBOS |
 | Projekt, Kette, Name | `G-Garten`, `S-Sternwarte`; ein Chat sieht von der Vault-Root bis zu seinem Projekt |
 | Klassen | `@Rule` geladen, `@@Sortenkunde` verfügbar, `@!Assistant` verborgen |
 | Paket, Hub, Holen | `aios --library assistant`, `/aios-fetch assistant-gaertner`, `packages:` und `lock.yaml` |
@@ -184,6 +219,6 @@ Willst du einen Assistenten nur ausprobieren, ohne die Zuordnung eines Projekts 
 - Tutorial *03 Pakete und Taschenrechner*: Hubs, Versionen, Ausrollen einzelner Elemente, die Demo-App und der Rückfluss.
 - Tutorial *04 Workspaces*: mehrere Repos als Projekte eines Wurzelprojekts.
 - Tutorial *05 Arbeitspferde und Distributionen*: Programme wie `yt-dlp` als Arbeitspferde und die Distribution Rothirsch.
-- Zum Aufräumen: `aios --deactivate ~/tmp/§Demo` schaltet AIOS für den Vault wieder aus; die Dateien bleiben.
+- Zum Aufräumen: `aios --deactivate ~/tmp/§Demo` löst die Bindung; der Vault ist dann ohne Wirkung, die Dateien bleiben.
 
-Die vollständigen Regeln stehen in der Spec, installiert unter `/opt/aios/v0.5.1/doc/spec/`.
+Die vollständigen Regeln stehen in der Spec, installiert unter `~/.aios/versions/v0.6.0/doc/spec/`.

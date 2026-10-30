@@ -16,7 +16,7 @@
 #===============================================================================
 
    if [ "$*" == "--version" ]; then
-      echo "0.1.0"; exit 0
+      echo "0.2.0"; exit 0
    fi
 
 #===============================================================================
@@ -29,11 +29,11 @@
       T="${TMPDIR:-/tmp}"; SB="$(cd "$(mktemp -d "${T%/}/aios-doc.XXXXXX")" && pwd -P)" || exit 1
       G() { git -c user.name=du -c user.email=du@example.org "$@"; }
 
-      S="$SB/kernel"                                # the kernel as v0.5.0 (sandbox clone with the tag)
+      S="$SB/kernel"                                # the kernel as v0.6.0 (sandbox clone with the tag)
       (cd "$REPO" && git -c core.quotePath=false ls-files -co --exclude-standard) | while IFS= read -r F; do
          mkdir -p "$S/$(dirname "$F")"; cp -p "$REPO/$F" "$S/$F"
       done
-      G -C "$S" init -q && G -C "$S" add -A && G -C "$S" commit -q -m v0.5.0 && G -C "$S" tag v0.5.0 || exit 1
+      G -C "$S" init -q && G -C "$S" add -A && G -C "$S" commit -q -m v0.6.0 && G -C "$S" tag v0.6.0 || exit 1
 
       mkdir -p "$SB/hubs/aibex-aios/aios-index" "$SB/hubs/aibex-hub"   # aibex-hub has no index
       printf 'schema: 1\npackages:\n' > "$SB/hubs/aibex-aios/aios-index/index.yaml"
@@ -53,8 +53,10 @@
       mkdir -p "$SB/home/bin" "$SB/home/.aios" "$SB/home/tmp"
       export HOME="$SB/home" AIOS_PREFIX="$SB/opt" AIOS_CLAUDE_DIR="$SB/home/.claude"
       export AIOS_GITHUB="file://$SB/hubs"                # the hubs are the GitHub organizations
-      printf 'v0.5.0: %s\n' "$S" > "$HOME/.aios/installations.yaml"
-      printf '#!/bin/bash\nexec "%s/bin/aios" "$@"\n' "$S" > "$HOME/bin/aios"; chmod +x "$HOME/bin/aios"
+      printf 'v0.6.0: %s\n' "$S" > "$HOME/.aios/installations.yaml"
+      mkdir -p "$HOME/.aios/bin"                    # forwarder of v0.6; aios in the PATH only for typing
+      cp "$S/templates/forwarder" "$HOME/.aios/bin/aios"; chmod +x "$HOME/.aios/bin/aios"
+      ln -s "$HOME/.aios/bin/aios" "$HOME/bin/aios"
       PYDIR=""                                      # never the real ~/bin in PATH: aios --install would
       for P in $(type -ap python3) /opt/homebrew/bin/python3 /usr/local/bin/python3 /usr/bin/python3; do
          [ -x "$P" ] && "$P" -c "import yaml, venv, ensurepip" 2>/dev/null && { PYDIR="$(dirname "$P")"; break; }
@@ -67,16 +69,16 @@
          local L="$1" D="$2"; shift 2
          echo "### $L"
          (cd "$D" && "$@" 2>&1) | sed -e "s|$SB/home|~|g" -e "s|file://$SB/hubs|https://github.com|g" \
-            -e "s|$SB/hubs|https://github.com|g" -e "s|$SB/opt|/opt/aios|g" -e "s|$S|/opt/aios/v0.5.0|g" \
-            -e "s|0\.5\.0-dev|0.5.0|g"
+            -e "s|$SB/hubs|https://github.com|g" -e "s|$SB/opt|/opt/aios|g" -e "s|$S|~/.aios/versions/v0.6.0|g" \
+            -e "s|0\.6\.0-dev|0.6.0|g"
          echo
       }
       V="$HOME/tmp/§Demo"; mkdir -p "$V"
 
       # tutorial 01
-      show "01 activate" "$V" aios --activate v0.5.0 "$V" --yes
+      show "01 activate" "$V" aios --activate v0.6.0 "$V" --yes
       mkdir -p "$V/@/@Rule"; printf '# Stil\nAntworte kurz und auf Deutsch.\n' > "$V/@/@Rule/stil.md"
-      for P in G-Garten S-Sternwarte; do mkdir -p "$V/$P"; aios --init "$V/$P" --yes >/dev/null 2>&1; done
+      for P in G-Garten S-Sternwarte; do mkdir -p "$V/$P"; (cd "$V" && aios --init "$V/$P" --yes >/dev/null 2>&1); done
       show "01 library assistant" "$V" aios --library assistant
       show "01 fetch gaertner plan" "$V" aios --fetch assistant-gaertner --to "$V" --plan
       show "01 fetch gaertner" "$V" aios --fetch assistant-gaertner --to "$V" --yes
@@ -94,7 +96,7 @@
       printf '# Notiz\n' > "$V/G-Garten/@/notiz.md"
       show "02 integrity" "$V" aios --integrity "$V"
       G -C "$V/G-Garten" add -A >/dev/null; G -C "$V/G-Garten" commit -qm notiz >/dev/null
-      aios --init "$V/S-Sternwarte" --yes >/dev/null 2>&1
+      (cd "$V" && aios --init "$V/S-Sternwarte" --yes >/dev/null 2>&1)
 
       # tutorial 03
       show "03 hubs" "$V" aios --hubs
@@ -115,12 +117,13 @@
       show "03 fetch 0.3.2 plan" "$V" aios --fetch app-taschenrechner==0.3.2 --plan
       show "03 deploy" "$V" aios --deploy
 
-      # tutorial 05 (a vault of its own)
+      # tutorial 05 stays on AIOS 0.5 until distributions with kernel 0.6 (v0.6.1; V0.6, memo 52)
+      if [ -n "$AIOS_DOC_05" ]; then
       V="$HOME/tmp/§Rothirsch"; mkdir -p "$V/P-Projekt"
       show "05 install rothirsch plan" "$V" aios --install distribution-rothirsch "$V" --plan
       show "05 install rothirsch" "$V" aios --install distribution-rothirsch "$V" --yes
       show "05 worker" "$V" aios --worker
-      aios --init "$V/P-Projekt" --yes >/dev/null 2>&1
+      (cd "$V" && aios --init "$V/P-Projekt" --yes >/dev/null 2>&1)
       show "05 which" "$V/P-Projekt" "$HOME/.aios/bin/yt-dlp" ---which
       show "05 version" "$V/P-Projekt" "$HOME/.aios/bin/yt-dlp" --version
       show "05 outside" "$HOME" "$HOME/.aios/bin/yt-dlp" --version
@@ -130,6 +133,12 @@
       show "05 reconcile plan" "$V" aios --fetch --plan
       show "05 reconcile" "$V" aios --fetch --yes
       show "05 remove plan" "$V" aios --fetch --remove distribution-rothirsch --plan
+      fi
+
+      # v0.6: outside an AIBOS workspace (README, tutorial 01)
+      show "06 outside skill" "$HOME/tmp" aios --skill aios-status
+      show "06 outside id" "$HOME/tmp" aios --context --id
+      show "06 wrappers" "$HOME/tmp/§Demo" ls .claude/skills
 
       # tutorial 04 (network: GitHub)
       V="$HOME/tmp/§Demo"; W="$V/W-Werkstatt"; mkdir -p "$W"

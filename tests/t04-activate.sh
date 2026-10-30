@@ -155,3 +155,11 @@
    assert_contains "$OUT" "to remove them run aios --activate v0.6.0 $V6 in a terminal" "0.6: --yes removes nothing, names the command"
    OUT="$(echo y | A --activate v0.6.0 "$V6")"
    [ ! -e "$OLDW/aios-init" ] && [ ! -e "$OLDW/gui" ] && [ -e "$OLDW/synced" ] && ok || fail "0.6: yes removes only the AIOS wrappers"
+
+#===============================================================================
+# v0.6 step 10 (B3): the vault reached through a symlink binds like its physical path (spec 02)
+#===============================================================================
+
+   ln -s "$V6" "$SANDBOX/link-sechs"
+   OUT="$(A --activate v0.6.0 "$SANDBOX/link-sechs" --plan)"
+   assert_not_contains "$OUT" "is not a vault root" "symlink to the vault root: no abort"

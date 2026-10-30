@@ -2,7 +2,7 @@
 
 Dieses Tutorial zeigt in etwa 15 Minuten, was zu einem Projekt gehört, wie AIOS beim Start eines Chats Lücken erkennt und wie `/aios-integrity` ein Projekt mit allen Unterprojekten prüft. Es baut auf dem Vault `~/tmp/§Demo` aus Tutorial 01 auf; ein frisch aktivierter Vault genügt aber auch.
 
-Voraussetzung: AIOS v0.5 ist installiert, der Vault ist mit `aios --activate v0.5.0 ~/tmp/§Demo` aktiviert.
+Voraussetzung: AIBOS v0.6 ist installiert, der Vault ist mit `aios --activate v0.6.0 ~/tmp/§Demo` ein AIBOS-Workspace (Tutorial 01).
 
 ## 1. Was zu einem Projekt gehört
 
@@ -65,19 +65,21 @@ printf '# Notiz\n' > ~/tmp/§Demo/G-Garten/@/notiz.md
 Der Bericht prüft die Vault-Root und alle Projekte darunter, beliebig tief und auch durch Ordner ohne `@/` hindurch:
 
 ```
-Integrity §Demo — 2026-10-25
+Integrity §Demo — 2026-10-30
 
 Project         Init             Commit
 §Demo           ok               ok
   G-Garten      ok               0 changed, 1 new
     GB-Beet     ok               ok
-  S-Sternwarte  missing: 1 part  1 changed, 0 new
+  S-Sternwarte  missing: 1 part  1 changed, 14 new
 
 Notes
 - S-Sternwarte: missing .gitignore lines: .DS_Store, .claude/skills/, .claude/worktrees/, .agents/, .aios/registry, .aios/backup/
 
 Result: 2 of 4 projects integer
 ```
+
+Die 14 neuen Dateien in `S-Sternwarte` sind der Build-Output in `.claude/skills/` (die Hüllen der Kernel-Skills, `/gui` und die Skills der Pakete) und `.aios/registry`: Ohne `.gitignore` sind sie nicht mehr ausgeschlossen. Ergänzt `aios --init` die Zeilen, verschwinden sie wieder aus dem Bericht.
 
 | Spalte | erfüllt, wenn |
 |---|---|
@@ -106,4 +108,4 @@ endet mit Exit 0, wenn alle Projekte integer sind, sonst mit Exit 1, und eignet 
 | Integrität | `/aios-integrity`: Init und Commit für alle Projekte, Hinweise zu Push und Namen |
 | Ergänzen | `aios --init` ergänzt nur, was fehlt, und committet nur die Dateien von AIOS |
 
-Die vollständigen Regeln stehen in Spec 05 *Projekte*, installiert unter `/opt/aios/v0.5.0/doc/spec/`.
+Die vollständigen Regeln stehen in Spec 05 *Projekte*, installiert unter `~/.aios/versions/v0.6.0/doc/spec/`.

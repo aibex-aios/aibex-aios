@@ -10,7 +10,7 @@ from .ui import Abort, Plan, confirm, extra, say
 
 
 def target(path):
-    p = Path(os.path.abspath(path or paths.cwd()))
+    p = Path(os.path.realpath(path or paths.cwd()))   # physical, like the vault root (spec 02)
     if not p.is_dir():
         raise Abort(f"{p} is not a directory")
     return p

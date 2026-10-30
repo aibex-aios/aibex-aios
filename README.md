@@ -6,7 +6,9 @@
 **AIbex AIOS is an operating system for the context of AI assistants.** It
 manages which knowledge a chat loads, reads on demand or does not see, and
 provides file system conventions, packages, assistants and skills for this
-purpose. Execution is left to a host (in v0.5: Claude Code).
+purpose. Execution is left to a host (in v0.6: Claude Code). From version 0.6.0
+on, its name is **AIBOS**; the technical names stay (command `aios`, folder
+`~/.aios`, key `aios:`).
 
 AIOS works on an Obsidian vault: every chat runs in a project directory and
 receives the knowledge that belongs to this project — no more, no less. An
@@ -23,9 +25,9 @@ come as **workhorses**: AIOS sets them up once per version on the machine. A
 macOS or Linux with `bash`, `git`, `python3` (3.11 or newer, with the modules
 `venv` and `pip`; on macOS e.g. `brew install python`, the `python3` of the system
 is too old) and [Claude Code](https://claude.com/claude-code) as the host
-(`aios --prepare` checks this basic kit). `gh` (GitHub CLI) is needed only to
-search hubs without an index and for `aios --contribute` (`aios --prepare --dev`).
-Setting up workhorses needs access to PyPI.
+(`aios --install` checks this basic kit itself and stops with a hint if something
+is missing). `gh` (GitHub CLI) is needed only to search hubs without an index and
+for `aios --contribute`. Setting up workhorses needs access to PyPI.
 
 
 ## Installation
@@ -33,29 +35,51 @@ Setting up workhorses needs access to PyPI.
 Copy this line into a terminal:
 
 ```sh
-R=~/git/AIbex/aibex-aios; ([ -d "$R/.git" ] || git clone https://github.com/aibex-aios/aibex-aios "$R") && "$R/bin/aios" --install v0.5.1
+R=~/git/AIbex/aibex-aios; ([ -d "$R/.git" ] || git clone https://github.com/aibex-aios/aibex-aios "$R") && "$R/bin/aios" --install v0.6.0
 ```
 
 It clones the repository to `~/git/AIbex/aibex-aios` unless a clone is already
-there (an existing clone is left as it is), then prepares the machine and
-installs. The installed files always come from the tag `v0.5.1`, not from the
-working tree of the clone; without a version, the highest release tag is
-installed.
+there (an existing clone is left as it is), checks the basic kit and installs.
+The installed files always come from the tag `v0.6.0`, not from the working
+tree of the clone; without a version, the highest release tag is installed.
 
 `aios --install` shows a plan and asks once before it writes anything. It
-installs the version read-only to `/opt/aios/v0.5.1/` (without `sudo`:
-`~/.aios/versions/`), puts the forwarder `aios` into
-`~/bin`, adds two hooks to `~/.claude/settings.json`, the AIOS skills and the
-alias `/gui` to `~/.claude/skills/`. Hooks of `ai-brain` are saved and restored by
-`aios --uninstall`.
+installs the kernel read-only to `~/.aios/versions/v0.6.0/` and puts the
+forwarder `aios` into `~/.aios/bin/aios`. It adds three hooks to
+`~/.claude/settings.json`, each with the absolute path of the forwarder:
+`SessionStart`, `UserPromptSubmit` and `PreToolUse` (matcher `Bash`; it allows
+single calls of the forwarder in an AIBOS workspace without a permission
+prompt, while `deny` and `ask` rules of the user still win). It writes nothing
+to `~/bin` and no skills to `~/.claude/skills/`. Hooks of `ai-brain` are saved
+and restored by `aios --uninstall`. Only `aios --install --system` installs to
+`/opt/aios/` instead (computer-wide, with `sudo`).
 
-Installing does not touch any vault. A vault runs with AIOS only after it has
-been **activated**; all other vaults keep working as before (legacy mode). A
-vault of v0.4 (or v0.3) is switched over with `aios --activate v0.5.1 <vault>`:
-the plan renames `assistent-gaertner` to `assistant-gaertner`, moves packages
-that require v0.4 to their highest version for v0.5 and, from v0.3, turns
-`skills:` and `assistants:` into packages. Since v0.5 there is no
-`aios-context` any more; its commands are `aios --context …`.
+The installer never edits shell start files, so `~/.aios/bin` is usually not in
+your `PATH`: call `~/.aios/bin/aios` in the terminal or add `~/.aios/bin` to
+your `PATH` yourself. The examples below write `aios` for short. Hooks and
+skills always call the forwarder with its absolute path.
+
+### Vaults and AIBOS workspaces
+
+A **vault** is a folder whose name starts with `§`. Installing does not touch
+any vault. A vault becomes an **AIBOS workspace** (A/W) when its root binds it
+to a version ≥ 0.6.0 with `aios:` in `<vault>/.aios/config.yaml`; `aios
+--activate` writes this binding. Only the vault root binds: an `aios:` in a
+project is ignored with a warning. Outside an A/W — in a vault without binding
+or outside any vault — Claude behaves as if AIBOS were not installed: the hooks
+print nothing, no kernel skill is registered there, and a kernel skill called
+by hand only says so (see *Quick start*). `legacy: ai-brain` at
+the vault root keeps a vault with `ai-brain`; a `§` folder without binding or
+marker is not affected at all.
+
+**Changeover from v0.5:** `aios --install v0.6.0` replaces the two AIOS hooks
+in place, adds `PreToolUse` and leaves `~/bin/aios` as it is. Vaults bound to
+0.5 keep running with v0.5 until you switch each one with
+`aios --activate v0.6.0 <vault>`. When no known vault is bound below 0.6 any
+more, this plan offers, with its own question, to remove the old global skill
+wrappers in `~/.claude/skills/`. `aios --activate v0.6.0` also switches vaults
+of v0.4 and v0.3 (packages renamed and moved to versions that allow 0.6, from
+v0.3 `skills:` and `assistants:` turned into packages).
 
 A **distribution** installs the kernel, its workhorses and its packages into a
 vault in one plan, e.g. Rothirsch with the video analysis and the assistant Anja:
@@ -64,12 +88,34 @@ vault in one plan, e.g. Rothirsch with the video analysis and the assistant Anja
 aios --install distribution-rothirsch ~/Vaults/§Rothirsch
 ```
 
+Rothirsch binds kernel 0.5; distributions with kernel 0.6 follow with v0.6.1.
+
 
 ## Quick start
 
 ```sh
   mkdir ~/Vaults/§Demo
-  aios --activate v0.5.1 ~/Vaults/§Demo      # writes §Demo/.aios/config.yaml, creates §Demo/@/ and a git repo
+  aios --activate v0.6.0 ~/Vaults/§Demo      # writes §Demo/.aios/config.yaml, creates §Demo/@/ and a git repo
+```
+
+```
+=> activate AIOS v0.6.0 for ~/Vaults/§Demo
+=> ~/Vaults/§Demo runs with AIOS 0.6.0 (~/Vaults/§Demo/.aios/config.yaml)
+   the master context and the skill registration apply from the next chat
+```
+
+The activation also registers the **kernel skills** (`aios-*`) and the alias
+`/gui` as thin wrappers in `.claude/skills/` of the vault root and of each
+project; the master context of every chat in the vault lists them in a short
+block `<aios-kernel-skills>` (name and call). Outside an A/W they do not
+work:
+
+```sh
+  cd ~/tmp && ~/.aios/bin/aios --skill aios-status
+```
+
+```
+Kein AIBOS-Workspace: ~/tmp
 ```
 
 Put knowledge into the **masterspace** `@/` of a project. The prefix of a
@@ -83,7 +129,7 @@ folder decides what a chat sees:
 
 A project is any folder with `@/` and its own git repo; the vault root is the
 root project. A chat in a project sees the masterspaces from the vault root down
-to the project. Open a chat in a new folder and AIOS offers to initialize it
+to the project. Open a chat in a new folder of an A/W and AIOS offers to initialize it
 (`/aios-init`); at the first start of a chat it checks the structure of the
 project and offers to complete it.
 
@@ -95,7 +141,7 @@ the start of the chat: Claude says so before the first work and offers the
 merge afterwards. This works only for worktrees inside the vault, as the desktop app
 creates them by default; a worktree outside the vault is not recognized.
 
-In a chat:
+In a chat in an A/W:
 
 | Skill | Purpose |
 |---|---|
@@ -174,16 +220,16 @@ The tutorials (German) walk through a demo vault:
 - [`02 Projekte und Integrität`](doc/tutorials/02%20Projekte%20und%20Integrit%C3%A4t.md) — subprojects, consistency check, `/aios-integrity`
 - [`03 Pakete und Taschenrechner`](doc/tutorials/03%20Pakete%20und%20Taschenrechner.md) — hubs, fetch, deploy, the calculator, contribute
 - [`04 Workspaces`](doc/tutorials/04%20Workspaces.md) — `workspace.yaml`, `init`, `update`, `freeze`, `status`
-- [`05 Arbeitspferde und Distributionen`](doc/tutorials/05%20Arbeitspferde%20und%20Distributionen.md) — Rothirsch, workhorses, forwarders, a second machine
+- [`05 Arbeitspferde und Distributionen`](doc/tutorials/05%20Arbeitspferde%20und%20Distributionen.md) — Rothirsch, workhorses, forwarders, a second machine (still shown with AIOS 0.5)
 
 
 ## Command line
 
 | Command | Purpose |
 |---|---|
-| `aios --prepare [--dev]`, `--install [v<version>]`, `--versions`, `--remove-version v<version>`, `--uninstall` | basic kit and installations |
+| `aios --install [v<version>] [--system]`, `--versions`, `--remove-version v<version>`, `--uninstall` | installations (`aios --prepare` is legacy and no longer used) |
 | `aios --install distribution-<name> [<vault>] [--from <repo>]` | install or upgrade a distribution: kernel, workhorses, packages |
-| `aios --activate v<version> [<path>]`, `--deactivate [<path>]`, `--config [<path>]` | bind a vault or project to a version, show the configuration |
+| `aios --activate v<version> [<vault-root>]`, `--deactivate [<vault-root>]`, `--config [<path>]` | bind a vault (only at its root) to a version, show the configuration |
 | `aios --init`, `--integrity`, `--register` | projects and their skills |
 | `aios --library`, `--hubs`, `--fetch`, `--deploy` | packages: search, hub list, fetch, deployed elements |
 | `aios --worker [<package> setup]`, `--run`, `--contribute`, `--workspace` | workhorses (state, repair), commands of packages, contributions, workspaces |
@@ -192,22 +238,23 @@ The tutorials (German) walk through a demo vault:
 
 `aios --help` lists all options. Every writing command shows a plan first;
 `--plan` only shows it, `--yes` skips the question and prints only the result.
-Several versions can be installed side by side; each vault or project chooses
-its version with `aios: <version>` in `.aios/config.yaml`.
+Several versions can be installed side by side; each vault chooses its version
+with `aios: <version>` in `.aios/config.yaml` of its root.
 
 
 ## Documentation
 
 The specification of each version is part of it: `spec/` in this repository,
-installed to `/opt/aios/v<version>/doc/spec/`; tutorials are installed from
-`doc/tutorials/` to `/opt/aios/v<version>/doc/tutorials/`.
+installed to `~/.aios/versions/v<version>/doc/spec/` (with `--system`:
+`/opt/aios/v<version>/doc/spec/`); tutorials are installed from
+`doc/tutorials/` to `doc/tutorials/` of the installation.
 
 | Spec | Content |
 |---|---|
 | `01 AIbex AIOS v0.6 — Überblick` | definition, terms, scope, pre-releases, invariants, acceptance test |
-| `02 Master-Kontext` | projects, chain, classes, `aios --context`, hooks, assistant of the session, consistency check |
+| `02 Master-Kontext` | projects, chain, kinds of vaults, classes, block of the kernel skills, `aios --context`, hooks and permit, assistant of the session, consistency check |
 | `03 Skills und Assistenten` | skills, versions, registry, assistants and their assignment, GUIs, `aios-package`, `aios-distribution`, `aios-memo` |
-| `04 Installation und Konfiguration` | files, formats, forwarders, the command `aios` |
+| `04 Installation und Konfiguration` | files, formats, forwarders, the command `aios`, changeover from v0.5 |
 | `05 Projekte` | project structure and naming, init, integrity, status |
 | `06 Pakete und Workspaces` | packages, manifest, versions, hubs, fetch, deploy, distributions, lock, workspaces, contribute, the calculator |
 | `07 Arbeitspferde` | workhorses (`worker-<name>`), installation per version, forwarders, setup and remove |
@@ -227,7 +274,7 @@ installed to `/opt/aios/v<version>/doc/spec/`; tutorials are installed from
 ```
 
 A clone can be used without installing: point `AIOS_HOME` to it, or add a
-line `v0.5.2-dev: ~/git/AIbex/aibex-aios` to `~/.aios/installations.yaml`.
+line `v0.6.0-dev: ~/git/AIbex/aibex-aios` to `~/.aios/installations.yaml`.
 `AIOS_HUBS` and `AIOS_GITHUB` redirect hubs for tests (spec 04).
 `CLAUDE.md` holds the rules for working on the repository, `STATUS.md` the
 state of the implementation.
@@ -235,13 +282,14 @@ state of the implementation.
 
 ## Status
 
-Version **0.5.1** (`STATUS.md`): workhorses and loading packages — programs
-like `yt-dlp` as packages of type `worker`, set up once per version on the
-machine and chosen by `lock.yaml` through forwarders in `~/.aios/bin/`; every
-plan of `aios --fetch` is all or nothing; distributions install a kernel with
-its packages (`aios --install distribution-<name>`, `/aios-distribution`);
-`aios --context` replaces `aios-context`; the assistant packages are named `assistant-*`.
-0.5.1 recognizes worktrees of the host, installs a distribution on a fresh machine
-without PyYAML and fixes findings of the acceptance of 0.5.0.
-Versions 0.1.0, 0.2.0, 0.3.1, 0.4.0 and 0.5.0 are released (tags `v0.1.0`, `v0.2.0`,
-`v0.3.1`, `v0.4.0`, `v0.5.0`). All versions below 1.0 are alpha and beta versions.
+Version **0.6.0** (`STATUS.md`) is the development state and not yet released:
+the boundary of AIBOS — AIBOS behaviour only in an AIBOS workspace (a vault
+bound to ≥ 0.6.0 at its root), silent hooks outside, kernel skills as wrappers
+in the vault instead of global ones, the hook `PreToolUse` for the commands of
+AIBOS, installations, the forwarder and logs only under `~/.aios` (`/opt/aios`
+only with `--system`), and the changeover from v0.5. The companion packages
+come in new patch versions that allow 0.6 (e.g. `skill-memo` 6.0.2,
+`assistant-gaertner` 0.3.1, `app-taschenrechner` 0.5.1).
+Versions 0.1.0, 0.2.0, 0.3.1, 0.4.0, 0.5.0 and 0.5.1 are released (tags `v0.1.0`,
+`v0.2.0`, `v0.3.1`, `v0.4.0`, `v0.5.0`, `v0.5.1`). All versions below 1.0 are
+alpha and beta versions.
