@@ -72,8 +72,11 @@ by hand only says so (see *Quick start*). `legacy: ai-brain` at
 the vault root keeps a vault with `ai-brain`; a `§` folder without binding or
 marker is not affected at all.
 
-**Changeover from v0.5:** `aios --install v0.6.0` replaces the two AIOS hooks
-in place, adds `PreToolUse` and leaves `~/bin/aios` as it is. Vaults bound to
+**Changeover from v0.5:** run the installer of the clone,
+`~/git/AIbex/aibex-aios/bin/aios --install v0.6.0` (as under *Install*); a
+typed `aios` would still reach the installer of v0.5 through `~/bin/aios`.
+It replaces the two AIOS hooks in place, adds `PreToolUse` and leaves
+`~/bin/aios` as it is. Vaults bound to
 0.5 keep running with v0.5 until you switch each one with
 `aios --activate v0.6.0 <vault>`. When no known vault is bound below 0.6 any
 more, this plan offers, with its own question, to remove the old global skill

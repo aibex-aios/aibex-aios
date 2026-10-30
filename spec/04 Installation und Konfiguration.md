@@ -1,6 +1,6 @@
 ---
 title: "Installation und Konfiguration"
-date: 2026-10-29
+date: 2026-10-30
 author: iHux
 status: Spec
 tags: [spec, aios, v0.6, installation, konfiguration]
@@ -544,7 +544,7 @@ Der Umstieg eines Rechners mit v0.5 läuft in vier Schritten, jeder mit Plan und
 
 | # | Schritt | Wirkung |
 |---|---|---|
-| 1 | `aios --install v0.6.<n>` | Kernel nach `~/.aios/versions/`, Weiterleiter `~/.aios/bin/aios`, AIOS-Hooks an ihrer Stelle mit absolutem Pfad, Hook `PreToolUse` neu; `~/bin/aios` und fremde Hooks bleiben. Für jeden bekannten `§`-Ordner ohne Bindung fragt der Plan, wenn `ai-brain` vorhanden ist, ob er mit `legacy: ai-brain` markiert werden soll (V0.6, Memo 17, F9); mit `--yes` wird nicht markiert, der Plan nennt dann die Zeile. Vaults mit Altbindung nennt er mit dem Befehl für Schritt 3; ihre globalen Hüllen bleiben |
+| 1 | `<klon>/bin/aios --install v0.6.<n>` aus dem Klon (README, *Install*); ein getipptes `aios` erreicht über `~/bin/aios` noch den Installer von v0.5 (V0.6, Memo 56, B7) | Kernel nach `~/.aios/versions/`, Weiterleiter `~/.aios/bin/aios`, AIOS-Hooks an ihrer Stelle mit absolutem Pfad, Hook `PreToolUse` neu; `~/bin/aios` und fremde Hooks bleiben. Für jeden bekannten `§`-Ordner ohne Bindung fragt der Plan, wenn `ai-brain` vorhanden ist, ob er mit `legacy: ai-brain` markiert werden soll (V0.6, Memo 17, F9); mit `--yes` wird nicht markiert, der Plan nennt dann die Zeile. Vaults mit Altbindung nennt er mit dem Befehl für Schritt 3; ihre globalen Hüllen bleiben |
 | 2 | Probe-Vault mit `aios: 0.6.<n>` (Spec 01, *Abnahmetest*; V0.6, Memo 16, F6) | 0.6 wird erprobt, ohne einen Vault mit Altbindung zu berühren |
 | 3 | `aios --activate v0.6.<n> <vault>` je Vault mit Altbindung | Bindung an 0.6, Registrierung der Hüllen im Vault |
 | 4 | im Plan von Schritt 3, sobald kein bekannter Vault mehr an 0.5 hängt | Angebot, die globalen Hüllen (12 `aios-*` und `gui`) zu entfernen; erst danach gilt Spec 01, Grundregel 6 auf dem Rechner |
