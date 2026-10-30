@@ -14,7 +14,7 @@
       echo '          aios --context [<path>]             # master context of cwd or <path> (spec 02)'
       echo '          aios --context --load|--id|--list [<path>] # part files, id, listing'
       echo '          aios --context --session|--advise|--permit # hooks (hook JSON on stdin)'
-      echo '          aios --context --assistant <name> [--load] | --assistants # assistants'
+      echo '          aios --context --assistant <name> [--load [<path>]] | --assistants # assistants'
       echo '          aios --context --assignment [<path>] [--session <id>] # assistant that applies'
       echo '          aios --context --sync [--yes|--plan] # register the wrappers and project skills'
       echo '          aios --register [<path>]            # register the wrappers and project skills (spec 03)'

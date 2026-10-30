@@ -272,6 +272,7 @@ installed to `~/.aios/versions/v<version>/doc/spec/` (with `--system`:
   tests/live/outside.sh      # a session outside an AIBOS workspace
   tests/live/workers.sh      # worker-deno, worker-yt-dlp against the real PyPI
   tests/live/rothirsch.sh    # distribution Rothirsch in a sandbox (PyPI)
+  tests/live/fresh.sh        # install in the smallest environment (fresh HOME, python3 without PyYAML)
   dev/doc-outputs.sh         # outputs of README and tutorials from a sandbox of the package repos
 ```
 
