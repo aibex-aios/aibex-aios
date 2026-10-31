@@ -1,6 +1,6 @@
 ---
 title: "Master-Kontext"
-date: 2026-10-30
+date: 2026-10-31
 author: iHux
 status: Spec
 tags: [spec, aios, v0.6, master-kontext]
@@ -148,7 +148,7 @@ Der Aufruf nennt den absoluten Pfad des Weiterleiters (Spec 04). Der Block nennt
 |---|---|
 | `aios --context --session` | SessionStart-Hook (liest Hook-JSON von stdin, nimmt dessen `cwd`, `session_id` und `source`), siehe *Hooks* |
 | `aios --context --advise` | UserPromptSubmit-Hook (liest Hook-JSON von stdin), siehe *Hooks* |
-| `aios --context --permit` | PreToolUse-Hook für Bash (liest Hook-JSON von stdin, nimmt `cwd` und `tool_input.command`), siehe *Freigabe* |
+| `aios --context --permit` | PreToolUse-Hook für Bash und das Skill-Werkzeug (liest Hook-JSON von stdin, nimmt `cwd`, `tool_name` und `tool_input.command` bzw. `tool_input.skill`), siehe *Freigabe* |
 | `aios --context [<pfad>]` | gibt den Master-Kontext von `cwd` bzw. `<pfad>` aus (Format siehe *Ausgabe*) |
 | `aios --context --load [<pfad>]` | schreibt den Master-Kontext in Part-Dateien unter `~/.aios/cache/<id>/` (je höchstens 40.000 Zeichen, geschnitten an Zeilenenden) und gibt die Liste aus; einmal je id, Cache-Einträge älter als 7 Tage werden entfernt |
 | `aios --context --id [<pfad>]` | gibt `id=<id> files=<n> cwd=<cwd> mode=<aios-0.6.0 | alt-0.5.1 | legacy | none>` aus; `aios-<version>` ist die Version des laufenden Programms, `alt-<version>` die Version einer Altbindung (*Arten von Vaults*) |
@@ -254,7 +254,7 @@ Arbeitskopien unter `.claude/worktrees/` schließt die `.gitignore`-Vorlage aus 
 |---|---|---|
 | **SessionStart** (Start, Resume, Clear, nach Compaction) | `aios --context --session` | 1. außerhalb eines A/W: nichts. 2. Legacy-Vault: Verhalten von `ai-brain --session`. 3. im A/W: Registrierung der Kernel-Skills und Projekt-Skills ohne Rückfrage (`--sync --yes`), bei Änderungen eine Zeile `AIOS-SKILLS: … — effective from the next chat` (Spec 03). 4. in einer Arbeitskopie: `AIOS-WORKTREE` (*Arbeitskopie*). 5. bei nicht initialisiertem Projekt: `PROJECT-UNINITIALIZED`; sonst bei `source` `startup` und nicht in einer Arbeitskopie die Konsistenzprüfung, bei Lücken `PROJECT-INCOMPLETE`. 6. Master-Kontext mit dem Block der Kernel-Skills inline, wenn er höchstens `inline_limit` Zeichen hat (Standard 9000), sonst `AIOS-CONTEXT-MANDATORY` mit der Liste der Part-Dateien. 7. Assistent der Session bestimmen und den Merker schreiben (unten); ist es nicht `none`, seinen Kontext ausgeben, inline mit `AIOS-ASSISTANT` oder bei mehr als `inline_limit` Zeichen `AIOS-ASSISTANT-MANDATORY` mit Part-Dateien |
 | **UserPromptSubmit** | `aios --context --advise` | außerhalb eines A/W: nichts. Legacy-Vault: Verhalten von `ai-brain --advise`. Im A/W, für das `cwd` dieses Prompts: `AIOS-CONTEXT-CHECK: expected id=<id>` mit der Anweisung, bei fehlenden Marken „Lade Master-Kontext" zu sagen, `aios --context --load "<cwd>"` auszuführen, alle Part-Dateien vollständig zu lesen und „Master-Kontext geladen (id <id>)" zu melden. Ist der Assistent der Session für dieses `cwd` nicht `none` (unten), zusätzlich `AIOS-ASSISTANT-CHECK`. Fehlen auf dem Rechner Arbeitspferde aus `lock.yaml` der Kette, zusätzlich `AIOS-WORKERS: missing <paket> <version>, … — run aios --fetch` (Spec 07; V0.5, Memo 29) |
-| **PreToolUse** (Matcher `Bash`) | `aios --context --permit` | außerhalb eines A/W, in einem Legacy-Vault und einem Vault mit Altbindung: nichts. Im A/W: Freigabe nach *Freigabe* (unten) |
+| **PreToolUse** (Matcher `Bash|Skill`) | `aios --context --permit` | außerhalb eines A/W, in einem Legacy-Vault und einem Vault mit Altbindung: nichts. Im A/W: Freigabe nach *Freigabe* (unten) |
 
 Die Hooks erzeugen außer der Registrierung, dem Merker der Session und dem Log keine Dateien und fragen nie nach. Alle nehmen `cwd` aus dem Hook-JSON auf stdin, ohne JSON das Arbeitsverzeichnis des Prozesses; im Legacy-Modus erhält `ai-brain` dasselbe JSON. Das `cwd` gilt je Aufruf: Wechselt die Session ihr Arbeitsverzeichnis, richten sich die nächsten Aufrufe nach dem neuen (Spec 01, Grundregel 10; V0.6, Memo 31). Warnungen der Konfigurationskette gibt `--session` im A/W als Zeilen `AIOS-WARNING: …` aus. Ein scheiternder Hook schreibt den Fehler immer als eine Zeile `<zeitpunkt> <hook> cwd=<cwd> <fehler>` nach `~/.aios/log/context.log` und endet mit Exit 0: Ein Hook bricht nie die Session ab. Im A/W gibt er zusätzlich eine Zeile `AIOS-WARNING: aios --context --session failed: …` aus, außerhalb nichts (V0.6, Memos 12, 15, 45); `--permit` gibt nie eine Warnung aus.
 
@@ -269,7 +269,15 @@ Die Hooks erzeugen außer der Registrierung, dem Merker der Session und dem Log 
 | E3 | Der Befehl ist ein einzelner Befehl: Er enthält keines der Zeichen bzw. keine der Folgen `;`, `&`, `|`, `` ` ``, `$(`, `>`, `<`, Zeilenumbruch. |
 | E4 | Keine `deny`- oder `ask`-Regel aus `~/.claude/settings.json`, aus `.claude/settings.json` und `.claude/settings.local.json` im `cwd` und aus den Managed Settings (macOS `/Library/Application Support/ClaudeCode/managed-settings.json`, Linux `/etc/claude-code/managed-settings.json`) trifft den Befehl. Ausgewertet werden `Bash`, `Bash(<befehl>)`, `Bash(<präfix>:*)` und `Bash(<muster mit *>)`; ein Muster anderer Form zählt als Treffer. Eine unlesbare Einstellungsdatei gibt nichts frei (V0.6, Memo 47). |
 
-Sonst gibt der Hook nichts aus, und der Host fragt wie gewohnt; ebenso für ein anderes Werkzeug als `Bash` im Hook-JSON. Ein Fehler gibt nie frei. Regeln, die den Weiterleiter mit `~` schreiben, trifft E4 nicht; Claude Code achtet sie selbst (V0.6, Memo 47, F55). Claude Code lässt `deny`- und `ask`-Regeln einem `allow` aus `PreToolUse` ohnehin vorgehen (V0.6, Memo 22); E4 bleibt als zweite Sicherung für Hosts, die das anders handhaben. Befehle in `` !`…` `` eines Skills laufen nicht durch `PreToolUse`; sie gibt das `allowed-tools` der Hülle frei (Spec 03; V0.6, Memo 29).
+Für das **Skill-Werkzeug** gibt der Hook `permissionDecision: "allow"` aus, wenn alle Bedingungen gelten (V0.6, Memo 65, B10):
+
+| # | Bedingung |
+|---|---|
+| S1 | `cwd` liegt in einem A/W. |
+| S2 | `tool_input.skill` ist ein Kernel-Skill dieses Kernels oder der Alias `gui` und als Hülle des Kernels registriert (`source: "kernel"` in `.aios/registry` des `cwd` oder eines Ordners darüber). Andere Skills gibt er nicht frei. |
+| S3 | Keine `deny`- oder `ask`-Regel aus den Dateien von E4 trifft den Skill. Ausgewertet werden `Skill`, `Skill(<name>)`, `Skill(<präfix>:*)` und `Skill(<muster mit *>)`; ein Muster anderer Form zählt als Treffer. |
+
+Sonst gibt der Hook nichts aus, und der Host fragt wie gewohnt; ebenso für ein anderes Werkzeug als `Bash` oder `Skill` im Hook-JSON. Ein Fehler gibt nie frei. Regeln, die den Weiterleiter mit `~` schreiben, trifft E4 nicht; Claude Code achtet sie selbst (V0.6, Memo 47, F55). Claude Code lässt `deny`- und `ask`-Regeln einem `allow` aus `PreToolUse` ohnehin vorgehen (V0.6, Memo 22); E4 bleibt als zweite Sicherung für Hosts, die das anders handhaben. Befehle in `` !`…` `` eines Skills laufen nicht durch `PreToolUse`; sie gibt das `allowed-tools` der Hülle frei (Spec 03; V0.6, Memo 29).
 
 ### Assistent der Session
 

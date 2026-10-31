@@ -1,4 +1,6 @@
 # t14-packages.sh: step 2 of the plan v0.4 (V0.4, memo 18) - versions and ranges, manifest.yaml,
+
+   case "$SANDBOX" in */aios-test.*) ;; *) echo "*** run via tests/run, never directly (it would touch the real HOME)" >&2; exit 1;; esac
 # resolver (spec 06)
 
 #===============================================================================

@@ -1,4 +1,6 @@
 # t17-worker.sh: workhorses (spec 07) - installation per version, workers.yaml, forwarders in
+
+   case "$SANDBOX" in */aios-test.*) ;; *) echo "*** run via tests/run, never directly (it would touch the real HOME)" >&2; exit 1;; esac
 # ~/.aios/bin, aios --worker (state, repair), kind python and script (step 6); loading with setup in
 # the plan, dependencies, upgrade, reconcile, removal of unused versions, conflict, AIOS-WORKERS
 # (step 7); commands (aios --run, spec 06); workers: of v0.4 rejected

@@ -1,5 +1,7 @@
 # t08-skills.sh: step 8 of the plan (memo 18) - aios --skill, wrappers, --list, aios --init, --plan/--yes
 
+   case "$SANDBOX" in */aios-test.*) ;; *) echo "*** run via tests/run, never directly (it would touch the real HOME)" >&2; exit 1;; esac
+
 #===============================================================================
 # setup: two installations (copies of the clone) with different skill bodies, forwarder
 #===============================================================================

@@ -1,4 +1,6 @@
 # t15-hub.sh: step 3 of the plan v0.4 (V0.4, memos 18, 35) - test hubs, hub list, aios --hubs,
+
+   case "$SANDBOX" in */aios-test.*) ;; *) echo "*** run via tests/run, never directly (it would touch the real HOME)" >&2; exit 1;; esac
 # aios --library, the git source of the resolver (spec 04, 06)
 
 #===============================================================================

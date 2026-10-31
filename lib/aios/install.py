@@ -38,7 +38,8 @@ ALIAS = ('---\nname: gui\ndescription: "Zeigt die Oberfläche des aktiven Assist
          'Auslöser: /gui, „Oberfläche“, „Menü“."\nallowed-tools: Bash(aios --gui *), Bash(aios --context *)\n'
          '---\n\n!`aios --gui --session ${CLAUDE_SESSION_ID}`\n')
 AIOS_HOOKS = {"SessionStart": "aios --context --session", "UserPromptSubmit": "aios --context --advise",
-              "PreToolUse": "aios --context --permit"}       # PreToolUse with the matcher Bash (V0.6)
+              "PreToolUse": "aios --context --permit"}       # PreToolUse with PERMIT_MATCHER (V0.6)
+PERMIT_MATCHER = "Bash|Skill"                          # commands of the forwarder, kernel skills (V0.6, memo 65, B10)
 OLD_AIOS_HOOKS = {"SessionStart": "aios-context --session", "UserPromptSubmit": "aios-context --advise"}  # v0.3, v0.4
 LEGACY_HOOKS = {"SessionStart": "ai-brain --session", "UserPromptSubmit": "ai-brain --advise"}
 RELEASE = re.compile(r"^v(\d+)\.(\d+)\.(\d+)$")
@@ -532,8 +533,11 @@ def merge_hooks(settings):
                     if h.get("command") != full:     # in place, with the absolute path (F10)
                         h["command"] = full
                         added.append(f"{full} (in place of {cmd})")
+                    if event == "PreToolUse" and g.get("matcher") != PERMIT_MATCHER:
+                        added.append(f"matcher {PERMIT_MATCHER} for {full} (in place of {g.get('matcher')})")
+                        g["matcher"] = PERMIT_MATCHER
         if not found:
-            group = {"matcher": "Bash"} if event == "PreToolUse" else {}
+            group = {"matcher": PERMIT_MATCHER} if event == "PreToolUse" else {}
             group["hooks"] = [{"type": "command", "command": full}]
             groups.insert(0, group)
             added.append(full)

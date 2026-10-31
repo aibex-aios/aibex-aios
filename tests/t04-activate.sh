@@ -1,5 +1,7 @@
 # t04-activate.sh: step 4 of the plan (memo 18) - aios --activate/--deactivate/--config, configuration chain
 
+   case "$SANDBOX" in */aios-test.*) ;; *) echo "*** run via tests/run, never directly (it would touch the real HOME)" >&2; exit 1;; esac
+
 #===============================================================================
 # setup: two fake installations, forwarders, a vault with projects and a container
 #===============================================================================

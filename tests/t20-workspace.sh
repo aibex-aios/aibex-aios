@@ -1,4 +1,6 @@
 # t20-workspace.sh: step 11 of the plan v0.4 (V0.4, memos 18, 57) - aios --workspace: init, update,
+
+   case "$SANDBOX" in */aios-test.*) ;; *) echo "*** run via tests/run, never directly (it would touch the real HOME)" >&2; exit 1;; esac
 # freeze, status, groups, branch ws/<revision>, fast-forward only, foreign repos (spec 06, Workspaces;
 # spec 05, F2)
 

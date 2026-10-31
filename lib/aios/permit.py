@@ -1,8 +1,9 @@
-"""aios --context --permit: PreToolUse hook for Bash (spec 02, Freigabe; V0.6, memos 20-23, 47).
+"""aios --context --permit: PreToolUse hook for Bash and Skill (spec 02, Freigabe; V0.6, memos 20-23, 47, 65).
 
 Standard library only. In an A/W a single command of the forwarder is allowed without a question
-(E1-E3), unless a deny or ask rule of the user matches it (E4). Otherwise, and on every error,
-the hook prints nothing and the host asks as usual.
+(E1-E3), unless a deny or ask rule of the user matches it (E4); so is the Skill tool for a registered
+wrapper of the kernel (S1-S3). Otherwise, and on every error, the hook prints nothing and the host
+asks as usual.
 """
 
 from __future__ import annotations
@@ -10,6 +11,7 @@ from __future__ import annotations
 import fnmatch
 import json
 import os
+import re
 import sys
 from pathlib import Path
 
@@ -92,14 +94,68 @@ def hits(rule, command):
     return fnmatch.fnmatchcase(c, pat)
 
 
+def kernel_skills():
+    """Names of the kernel skills of this kernel and the alias gui (S2)."""
+    d = Path(__file__).resolve().parents[2] / "skills" / "aios"
+    return {p.name for p in d.iterdir() if (p / "SKILL.md").is_file()} | {"gui"}
+
+
+def registered_kernel(cwd, name):
+    """S2: name is registered as a wrapper of the kernel in .aios/registry of cwd or a folder above."""
+    entry = re.compile(r"^  " + re.escape(name) + r':\n    source: "kernel"$', re.M)
+    d = Path(cwd)
+    for p in (d, *d.parents):
+        f = p / ".aios" / "registry"
+        if f.is_file() and entry.search(f.read_text(encoding="utf-8")):
+            return True
+    return False
+
+
+def hits_skill(rule, name):
+    """S3: Skill, Skill(<name>), Skill(<prefix>:*), Skill(<glob *>); another form counts as a hit."""
+    rule = rule.strip()
+    if rule == "Skill":
+        return True
+    if not rule.startswith("Skill(") or not rule.endswith(")"):
+        return False
+    pat = rule[len("Skill("):-1].strip()
+    if pat.endswith(":*"):
+        return name.startswith(pat[:-2])
+    if any(x in pat for x in "[]?"):
+        return True
+    return fnmatch.fnmatchcase(name, pat)
+
+
+def allow(reason):
+    return json.dumps({"hookSpecificOutput": {"hookEventName": "PreToolUse",
+                                              "permissionDecision": "allow",
+                                              "permissionDecisionReason": reason}})
+
+
+def skill_decision(cwd, name):
+    """Skill tool: a registered wrapper of the kernel in an A/W (S1-S3; V0.6, memo 65, B10)."""
+    if not isinstance(name, str) or name not in kernel_skills():                 # S2
+        return None
+    if not registered_kernel(cwd, name):
+        return None
+    if any(hits_skill(r, name) for r in rules(cwd)):                           # S3
+        return None
+    return allow("AIBOS: kernel skill in an AIBOS workspace")
+
+
 def decision(raw):
-    """The JSON line that allows the command, or None (E1-E4)."""
+    """The JSON line that allows the command or the skill, or None (E1-E4, S1-S3)."""
     d = json.loads(raw or "{}")
     if not isinstance(d, dict):
         return None
-    if d.get("tool_name") not in (None, "Bash"):
+    tool = d.get("tool_name")
+    if tool not in (None, "Bash", "Skill"):
         return None
     cwd = d.get("cwd") or paths.cwd()
+    if tool == "Skill":
+        if not os.path.isdir(cwd) or config.load(cwd).kind != "aios":       # S1
+            return None
+        return skill_decision(cwd, (d.get("tool_input") or {}).get("skill"))
     command = (d.get("tool_input") or {}).get("command") or ""
     if not os.path.isdir(cwd) or config.load(cwd).kind != "aios":           # E1
         return None
@@ -107,9 +163,7 @@ def decision(raw):
         return None
     if any(hits(r, command) for r in rules(cwd)):                          # E4
         return None
-    return json.dumps({"hookSpecificOutput": {"hookEventName": "PreToolUse",
-                                              "permissionDecision": "allow",
-                                              "permissionDecisionReason": "AIBOS: command of AIOS in an AIBOS workspace"}})
+    return allow("AIBOS: command of AIOS in an AIBOS workspace")
 
 
 def main():

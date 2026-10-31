@@ -1,4 +1,6 @@
 # t19-contribute.sh: step 10 of the plan v0.4 (V0.4, memos 18, 55) - aios --contribute: branch and
+
+   case "$SANDBOX" in */aios-test.*) ;; *) echo "*** run via tests/run, never directly (it would touch the real HOME)" >&2; exit 1;; esac
 # pull request in the repo of a package, fork without write access (spec 06, Rückfluss; P5)
 
 #===============================================================================

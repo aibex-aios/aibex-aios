@@ -8,7 +8,7 @@ allowed-tools: Bash(aios --assistant *), Bash(aios --context --assistant *), Bas
 
 Ein AIOS-Skill von AIbex AIOS (Spec 03, *Wechsel*). Jeder Aufruf ist eine **Zuordnung zum Projekt**: Er schreibt `assistant:` in `.aios/config.yaml` und gilt für alle neuen Chats im Projekt und in den Unterprojekten mit `inherit`. Eine Aktivierung nur für den laufenden Chat gibt es nicht; wer einen anderen Assistenten ausprobieren will, legt dafür ein Unterprojekt an.
 
-**Arbeitsverzeichnis:** Führe alle Befehle dieses Skills im Arbeitsverzeichnis der Session aus und wechsle nie mit `cd`; AIOS bestimmt das Projekt der Session aus dem aktuellen Verzeichnis. Andere Orte nur als ausdrücklichen Pfad angeben.
+**Arbeitsverzeichnis:** Führe alle Befehle dieses Skills im Arbeitsverzeichnis der Session aus und wechsle nie mit `cd`; AIOS bestimmt das Projekt der Session aus dem aktuellen Verzeichnis. Andere Orte nur als ausdrücklichen Pfad angeben. Rufe `aios …` immer als einzelnen Befehl auf, ohne `;`, `&&`, `|`, Umleitung oder vorangestelltes `cd`; nur so gibt AIBOS den Aufruf ohne Rückfrage frei.
 
 `<session-id>` steht im Folgenden für die Session-ID dieses Chats; sie steht in der Zeile *Session-ID dieses Chats* am Ende dieser Anweisung.
 

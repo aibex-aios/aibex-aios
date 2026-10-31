@@ -1,5 +1,7 @@
 # t11-project.sh: step 1 of the plan (V0.3, memo 32) - structure S1-S4 and name rule (spec 05)
 
+   case "$SANDBOX" in */aios-test.*) ;; *) echo "*** run via tests/run, never directly (it would touch the real HOME)" >&2; exit 1;; esac
+
 #===============================================================================
 # setup: vault §Demo as root project with repo, projects with and without gaps
 #===============================================================================

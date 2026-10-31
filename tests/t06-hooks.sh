@@ -1,5 +1,7 @@
 # t06-hooks.sh: step 6 of the plan (memo 18) - aios --context --session/--advise (spec 02, Hooks); v0.3 steps 3, 6
 
+   case "$SANDBOX" in */aios-test.*) ;; *) echo "*** run via tests/run, never directly (it would touch the real HOME)" >&2; exit 1;; esac
+
 #===============================================================================
 # setup: activated vault, project, not initialized folder, legacy vault, fake ai-brain
 #===============================================================================

@@ -1,5 +1,7 @@
 # t07-register.sh: step 7 of the plan (memo 18) - registration of project skills (spec 03, Registrieren)
 
+   case "$SANDBOX" in */aios-test.*) ;; *) echo "*** run via tests/run, never directly (it would touch the real HOME)" >&2; exit 1;; esac
+
 #===============================================================================
 # setup: vault with blueprints of every kind, project Garten as its own git repo
 #===============================================================================

@@ -1,4 +1,6 @@
-# t22-permit.sh: v0.6 step 5 - aios --context --permit, PreToolUse hook for Bash (spec 02, Freigabe; V0.6, memos 20-23, 47)
+# t22-permit.sh: v0.6 step 5 - aios --context --permit, PreToolUse hook for Bash and Skill (spec 02, Freigabe; V0.6, memos 20-23, 47, 65)
+
+   case "$SANDBOX" in */aios-test.*) ;; *) echo "*** run via tests/run, never directly (it would touch the real HOME)" >&2; exit 1;; esac
 
 #===============================================================================
 # setup: A/W, vault with binding below 0.6, vault without binding, settings of the user
@@ -66,6 +68,30 @@ echo x"; do
    mk "$AIOS_MANAGED_SETTINGS" '{"permissions": {"deny": ["Bash"]}}'
    assert_eq "$(PERMIT "$D/P" "$F --version")" "" "E4: managed settings"
    rm "$AIOS_MANAGED_SETTINGS"
+
+#===============================================================================
+# Skill tool: registered wrappers of the kernel in an A/W (S1-S3; V0.6, memo 65, B10)
+#===============================================================================
+
+   SJ() { python3 -c 'import json,sys; print(json.dumps({"session_id": "t", "hook_event_name": "PreToolUse", "tool_name": "Skill", "tool_input": {"skill": sys.argv[2]}, "cwd": sys.argv[1]}))' "$1" "$2"; }
+   SKILL() { SJ "$@" | (cd "$SANDBOX" && "$SRC/bin/aios" --context --permit); }
+   SALLOW='{"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "allow", "permissionDecisionReason": "AIBOS: kernel skill in an AIBOS workspace"}}'
+   E="$SANDBOX/work/§Leer"; mk "$E/.aios/config.yaml" $'aios: 0.6.0\n'; mk "$E/@/a.md" $'# A\n'
+   (cd "$D/P" && "$SRC/bin/aios" --register --yes >/dev/null 2>&1)
+   assert_eq "$(SKILL "$D/P" aios-status)" "$SALLOW" "Skill: registered kernel skill in the A/W"
+   assert_eq "$(SKILL "$D/P" gui)" "$SALLOW" "Skill: the alias gui"
+   assert_eq "$(SKILL "$D" aios-init)" "$SALLOW" "Skill: at the vault root"
+   assert_eq "$(SKILL "$D/P" memo)" "" "S2: not a kernel skill"
+   assert_eq "$(SKILL "$E" aios-status)" "" "S2: kernel skill not registered"
+   assert_eq "$(SKILL "$O" aios-status)" "" "S1: binding below 0.6"
+   assert_eq "$(SKILL "$N" aios-status)" "" "S1: vault without binding"
+   for RULE in '"Skill"' '"Skill(aios-status)"' '"Skill(aios-*)"' '"Skill(aios:*)"'; do
+      printf '{"permissions":{"ask":[%s]}}' "$RULE" > "$S"
+      assert_eq "$(SKILL "$D/P" aios-status)" "" "S3: rule $RULE"
+   done
+   printf '{"permissions":{"deny":["Skill(memo)","Bash(git *)"]}}' > "$S"
+   assert_eq "$(SKILL "$D/P" aios-status)" "$SALLOW" "S3: rules for other skills and tools do not hit"
+   rm "$S"
 
 #===============================================================================
 # errors never allow, they go to the log

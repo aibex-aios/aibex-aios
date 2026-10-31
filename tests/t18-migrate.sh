@@ -1,4 +1,6 @@
 # t18-migrate.sh: step 8 of the plan v0.4 (V0.4, memos 18, 47) - changeover from v0.3: skills: and
+
+   case "$SANDBOX" in */aios-test.*) ;; *) echo "*** run via tests/run, never directly (it would touch the real HOME)" >&2; exit 1;; esac
 # assistants: as packages, aios --activate v0.4.<n> offers the changeover (spec 06, Umstellung von v0.3);
 # v0.5 step 11: changeover from v0.4 with aios --activate v0.5.<n> (spec 06, Umstellung von v0.4)
 

@@ -1,5 +1,7 @@
 # t02-forwarder.sh: forwarder (spec 04); v0.5 step 1: aios --context; v0.6 step 2: forwarder 0.4.0 (vault root only, legacy: ai-brain)
 
+   case "$SANDBOX" in */aios-test.*) ;; *) echo "*** run via tests/run, never directly (it would touch the real HOME)" >&2; exit 1;; esac
+
 #===============================================================================
 # setup: forwarders in ~/bin, fake installations, fake ai-brain, PATH without real ~/bin
 #===============================================================================

@@ -1,6 +1,6 @@
 ---
 title: "Installation und Konfiguration"
-date: 2026-10-30
+date: 2026-10-31
 author: iHux
 status: Spec
 tags: [spec, aios, v0.6, installation, konfiguration]
@@ -272,7 +272,7 @@ used: 2026-10-03T14:05:00
   "hooks": {
     "SessionStart":     [ { "hooks": [ { "type": "command", "command": "/Users/…/.aios/bin/aios --context --session" } ] } ],
     "UserPromptSubmit": [ { "hooks": [ { "type": "command", "command": "/Users/…/.aios/bin/aios --context --advise" } ] } ],
-    "PreToolUse":       [ { "matcher": "Bash", "hooks": [ { "type": "command", "command": "/Users/…/.aios/bin/aios --context --permit" } ] } ]
+    "PreToolUse":       [ { "matcher": "Bash|Skill", "hooks": [ { "type": "command", "command": "/Users/…/.aios/bin/aios --context --permit" } ] } ]
   }
 }
 ```

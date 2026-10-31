@@ -47,9 +47,10 @@ tree of the clone; without a version, the highest release tag is installed.
 installs the kernel read-only to `~/.aios/versions/v0.6.0/` and puts the
 forwarder `aios` into `~/.aios/bin/aios`. It adds three hooks to
 `~/.claude/settings.json`, each with the absolute path of the forwarder:
-`SessionStart`, `UserPromptSubmit` and `PreToolUse` (matcher `Bash`; it allows
-single calls of the forwarder in an AIBOS workspace without a permission
-prompt, while `deny` and `ask` rules of the user still win). It writes nothing
+`SessionStart`, `UserPromptSubmit` and `PreToolUse` (matcher `Bash|Skill`; it
+allows single calls of the forwarder and the registered kernel skills in an
+AIBOS workspace without a permission prompt, while `deny` and `ask` rules of
+the user still win). It writes nothing
 to `~/bin` and no skills to `~/.claude/skills/`. Hooks of `ai-brain` are saved
 and restored by `aios --uninstall`. Only `aios --install --system` installs to
 `/opt/aios/` instead (computer-wide, with `sudo`).

@@ -1,5 +1,7 @@
 # t13-gui.sh: step 8 of the plan (V0.3, memo 32) - surfaces: gui.yaml, aios --gui, alias /gui, aios-gui (spec 03, 04)
 
+   case "$SANDBOX" in */aios-test.*) ;; *) echo "*** run via tests/run, never directly (it would touch the real HOME)" >&2; exit 1;; esac
+
 #===============================================================================
 # setup: a python with PyYAML (gui.yaml is read with PyYAML), vault with the demo Gärtner 0.2.0
 #===============================================================================

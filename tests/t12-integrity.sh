@@ -1,5 +1,7 @@
 # t12-integrity.sh: step 4 of the plan (V0.3, memo 32) - aios --integrity (spec 05, Integrität)
 
+   case "$SANDBOX" in */aios-test.*) ;; *) echo "*** run via tests/run, never directly (it would touch the real HOME)" >&2; exit 1;; esac
+
 #===============================================================================
 # setup: vault §Demo as root project, subprojects with and without gaps, a container
 #===============================================================================

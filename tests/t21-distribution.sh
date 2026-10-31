@@ -1,4 +1,6 @@
 # t21-distribution.sh: aios --install distribution-<name> (spec 06, Distributionen; spec 04) - v0.5
+
+   case "$SANDBOX" in */aios-test.*) ;; *) echo "*** run via tests/run, never directly (it would touch the real HOME)" >&2; exit 1;; esac
 # step 9: machine part (kernel from the clone, workhorses) before the vault part (binding with
 # changeover, fetching, registering), one per vault with kernel:, without kernel:, upgrade,
 # overriding only with only:, --from, failures, removal; v0.5.1 step 2: without PyYAML (B7)

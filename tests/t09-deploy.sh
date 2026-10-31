@@ -1,4 +1,6 @@
 # t09-deploy.sh: step 5 of the plan v0.4 (V0.4, memos 18, 39) - aios --deploy (deploy elements),
+
+   case "$SANDBOX" in */aios-test.*) ;; *) echo "*** run via tests/run, never directly (it would touch the real HOME)" >&2; exit 1;; esac
 # .aios/registry, elements of fetched packages in the chain: skills, assistants, knowledge (K6),
 # precedence (S6), not deployed elements (H3) (spec 02, 03, 06)
 

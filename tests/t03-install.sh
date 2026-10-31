@@ -1,5 +1,7 @@
 # t03-install.sh: step 3 of the plan (memo 18) - aios --prepare/--install/--versions/--remove-version/--uninstall
 
+   case "$SANDBOX" in */aios-test.*) ;; *) echo "*** run via tests/run, never directly (it would touch the real HOME)" >&2; exit 1;; esac
+
 #===============================================================================
 # setup: PATH without the real ~/bin, fake stup, no real sudo, no pip, no network
 #===============================================================================
@@ -149,7 +151,7 @@ EOF
    J() { python3 -c "import json,sys; d=json.load(open(sys.argv[1])); print($1)" "$2"; }
    CMDS='" ".join(h["command"] for e in ("SessionStart","UserPromptSubmit") for g in d.get("hooks",{}).get(e,[]) for h in g["hooks"])'
    assert_eq "$(J "$CMDS" "$SET")" "$F --context --session python3 \"/x/zeiterfassung.py\" export --quiet $F --context --advise" "hooks: AIOS in with the absolute path, ai-brain out, others kept"
-   assert_eq "$(J '" ".join(g.get("matcher","-")+":"+h["command"] for g in d["hooks"]["PreToolUse"] for h in g["hooks"])' "$SET")" "Bash:$F --context --permit" "hooks: PreToolUse with the matcher Bash"
+   assert_eq "$(J '" ".join(g.get("matcher","-")+":"+h["command"] for g in d["hooks"]["PreToolUse"] for h in g["hooks"])' "$SET")" "Bash|Skill:$F --context --permit" "hooks: PreToolUse with the matcher Bash|Skill"
    assert_eq "$(J 'd["model"]' "$SET")" "opus" "other settings kept"
    assert_eq "$(J "$CMDS" "$HOME/.aios/hooks-backup.json")" "ai-brain --session ai-brain --advise" "ai-brain hooks saved"
    [ ! -e "$AIOS_CLAUDE_DIR/skills" ] && ok || fail "install: no global wrappers (I3, V0.6)"

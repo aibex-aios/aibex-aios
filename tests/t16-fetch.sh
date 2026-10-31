@@ -1,4 +1,6 @@
 # t16-fetch.sh: step 4 of the plan v0.4 (V0.4, memos 18, 37) - aios --fetch: fetch, reconcile,
+
+   case "$SANDBOX" in */aios-test.*) ;; *) echo "*** run via tests/run, never directly (it would touch the real HOME)" >&2; exit 1;; esac
 # --upgrade, --remove, --hub, --from, offline from the cache (spec 06, Holen)
 
 #===============================================================================

@@ -8,7 +8,7 @@ allowed-tools: Bash(aios --library *), Bash(aios --install * --plan), Bash(aios 
 
 Ein AIOS-Skill von AIbex AIOS (Spec 03, *Distributionen*; Spec 06, *Distributionen*). Er legt ein Paket-Repo **lokal** an; veröffentlicht wird nicht (das macht der User oder die Assistentin Anja mit eigener Rückfrage je Schritt nach außen).
 
-**Arbeitsverzeichnis:** Führe alle Befehle im Arbeitsverzeichnis der Session aus und wechsle nie mit `cd`; Repos nur mit absoluten Pfaden und `git -C <repo>`.
+**Arbeitsverzeichnis:** Führe alle Befehle im Arbeitsverzeichnis der Session aus und wechsle nie mit `cd`; Repos nur mit absoluten Pfaden und `git -C <repo>`. Rufe `aios …` immer als einzelnen Befehl auf, ohne `;`, `&&`, `|`, Umleitung oder vorangestelltes `cd`; nur so gibt AIBOS den Aufruf ohne Rückfrage frei.
 
 ## Ablauf
 

@@ -8,7 +8,7 @@ allowed-tools: Bash(aios --fetch *), Bash(aios --deploy *), Bash(aios --library 
 
 Ein AIOS-Skill von AIbex AIOS (Spec 03, *Pakete*; Spec 06). Er versteht Wünsche in Umgangssprache und bedient sich der Hilfs-Skills `/aios-fetch` (holen, abgleichen, aktualisieren, entfernen) und `/aios-deploy` (Elemente ausrollen). *Installieren* heißt hier: ein Paket holen, bei einer Distribution (`distribution-<name>`) mit `aios --install distribution-<name>` installieren (unten); der Kernel allein wird mit `aios --install v<version>` installiert, nicht mit diesem Skill.
 
-**Arbeitsverzeichnis:** Führe alle Befehle dieses Skills im Arbeitsverzeichnis der Session aus und wechsle nie mit `cd`. Andere Orte nur als ausdrücklichen Pfad angeben.
+**Arbeitsverzeichnis:** Führe alle Befehle dieses Skills im Arbeitsverzeichnis der Session aus und wechsle nie mit `cd`. Andere Orte nur als ausdrücklichen Pfad angeben. Rufe `aios …` immer als einzelnen Befehl auf, ohne `;`, `&&`, `|`, Umleitung oder vorangestelltes `cd`; nur so gibt AIBOS den Aufruf ohne Rückfrage frei.
 
 ## Wunsch bestimmen
 

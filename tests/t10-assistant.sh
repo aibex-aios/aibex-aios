@@ -1,5 +1,7 @@
 # t10-assistant.sh: step 10 of the plan (memo 18) - aios --context --assistant/--assistants, resolution of prompt and skills; v0.3 step 5: assignment, aios --assistant, marker
 
+   case "$SANDBOX" in */aios-test.*) ;; *) echo "*** run via tests/run, never directly (it would touch the real HOME)" >&2; exit 1;; esac
+
 #===============================================================================
 # setup: Obstgärtner and Astronom in AIOS layout (after PC-Custom-AI), shared and private skills
 #===============================================================================

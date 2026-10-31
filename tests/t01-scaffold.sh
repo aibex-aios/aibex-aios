@@ -1,5 +1,7 @@
 # t01-scaffold.sh: step 1 of the plan (memo 18) - repo scaffold and sandbox
 
+   case "$SANDBOX" in */aios-test.*) ;; *) echo "*** run via tests/run, never directly (it would touch the real HOME)" >&2; exit 1;; esac
+
 #===============================================================================
 # sandbox isolates HOME, AIOS_PREFIX and AIOS_CLAUDE_DIR
 #===============================================================================

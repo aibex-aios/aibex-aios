@@ -8,7 +8,7 @@ allowed-tools: Bash(aios --fetch *), Bash(aios --library *), Bash(aios --worker 
 
 Ein AIOS-Skill von AIbex AIOS (Spec 06, *Holen*). Aufruf: `/aios-fetch [<hub>/]<paket>[<bereich>] [--hub <hub>] [--from <repo>] [--to <projekt>]`, `/aios-fetch` ohne Paket zum Abgleich, `/aios-fetch --upgrade [<paket>]`, `/aios-fetch --remove <paket>`. Für Anwender in Umgangssprache gibt es `/aios-package`.
 
-**Arbeitsverzeichnis:** Führe alle Befehle dieses Skills im Arbeitsverzeichnis der Session aus und wechsle nie mit `cd`; AIOS bestimmt das Projekt der Session aus dem aktuellen Verzeichnis. Andere Orte nur als ausdrücklichen Pfad angeben.
+**Arbeitsverzeichnis:** Führe alle Befehle dieses Skills im Arbeitsverzeichnis der Session aus und wechsle nie mit `cd`; AIOS bestimmt das Projekt der Session aus dem aktuellen Verzeichnis. Andere Orte nur als ausdrücklichen Pfad angeben. Rufe `aios …` immer als einzelnen Befehl auf, ohne `;`, `&&`, `|`, Umleitung oder vorangestelltes `cd`; nur so gibt AIBOS den Aufruf ohne Rückfrage frei.
 
 ## Ablauf
 
