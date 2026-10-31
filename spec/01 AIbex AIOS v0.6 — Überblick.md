@@ -187,7 +187,7 @@ Der Abnahmetest von v0.6.0 läuft auf dem Arbeitsrechner nach der Implementierun
 | 2 | dasselbe mit Ja; je `§`-Ordner ohne Bindung markieren oder nicht (auf dem Arbeitsrechner: keine Markierung, die Ordner werden an 0.6.0 gebunden, Schritte 4 und 17) | alles eingerichtet; `~/.claude/settings.json` enthält genau drei AIOS-Hooks |
 | 3 | neue Session in `AA-AIbex-AIOS` (`§AIOS`, Altbindung an 0.5.1) | wie unter 0.5.1: Master-Kontext, `/aios-status` über die globale Hülle |
 | 4 | `aios --activate v0.6.0 ~/vault/§iHux` (bisher `ai-brain`, ohne Bindung) mit Ja; neue Session in `§iHux` | Bindung `aios: 0.6.0`; Master-Kontext von AIBOS mit Block `<aios-kernel-skills>`, kein Kontext von `ai-brain` mehr |
-| 5 | neue Session in einem leeren Ordner außerhalb jedes Vaults; „Projekt initialisieren"; `~/.aios/bin/aios --skill aios-status` | keine Ausgabe von AIOS im Kontext, kein Angebot von AIOS; der Befehl liefert „Kein AIBOS-Workspace: `<cwd>`" mit Exit-Code 1 |
+| 5 | neue Session in einem leeren Ordner außerhalb jedes Vaults; `~/.aios/bin/aios --skill aios-status` | keine Ausgabe der Hooks von AIOS im Kontext; der Befehl liefert „Kein AIBOS-Workspace: `<cwd>`" mit Exit-Code 1. Ein Angebot über die globalen Hüllen von v0.5 ist bis Schritt 17 möglich und wird in Schritt 18 geprüft (V0.6, Memo 62, B9) |
 | 6 | `§Probe-AIBOS` anlegen; `aios --activate v0.6.0 ~/vault/§Probe-AIBOS/X --plan` | Abbruch mit Hinweis auf die Vault-Root |
 | 7 | `aios --activate v0.6.0 ~/vault/§Probe-AIBOS` mit Ja | Bindung `aios: 0.6.0`; 12 Kernel-Skills an der Vault-Root registriert, in `.aios/registry` mit `source` Kernel 0.6.0; kein Angebot zum Entfernen der globalen Hüllen, weil `§AIOS` noch an 0.5.1 gebunden ist |
 | 8 | neue Session an der Vault-Root; `/aios-init` in der interaktiven CLI und in der Desktop-App für `P-Probe` | Master-Kontext mit Block `<aios-kernel-skills>` (12 Einträge); `/aios-init` wird in beiden Hosts ausgeführt; `P-Probe` mit registrierten Kernel-Skills |
@@ -200,7 +200,7 @@ Der Abnahmetest von v0.6.0 läuft auf dem Arbeitsrechner nach der Implementierun
 | 15 | zwei Quellen derselben Version einer Testdistribution aus dem lokalen Hub mit `--from` nacheinander installieren; `aios --install <distribution> ~/vault/§Probe-AIBOS` aus einem anderen Arbeitsverzeichnis | `lock.yaml` nennt den Commit der zweiten Quelle; registriert wird im Ziel-Vault |
 | 16 | eine offene Änderung an `§Probe-AIBOS/.aios/config.yaml`; `aios --fetch <paket> --plan` | der Plan nennt die offene Datei |
 | 17 | `aios --activate v0.6.0 ~/vault/§AIOS --plan`, dann mit Ja; danach die übrigen bekannten Vaults mit Altbindung bzw. ohne Bindung ebenso | Bindung, Registrierung der Kernel-Skills im Vault und seinen Projekten, Pakete auf Versionen mit `<0.7`; bei der Aktivierung, nach der kein bekannter Vault mehr an 0.5 hängt, das Angebot, die globalen Hüllen (12 `aios-*` und `gui`) zu entfernen; fremde Ordner in `~/.claude/skills/` bleiben |
-| 18 | neue Session außerhalb jedes Vaults in der interaktiven CLI: `/aios-init` | „Unknown command"; Grundregel 6 gilt auf dem Rechner |
+| 18 | neue Session außerhalb jedes Vaults in der interaktiven CLI: `/aios-init`; neue Session dort: „Projekt initialisieren" | „Unknown command"; kein Angebot von AIOS; Grundregel 6 gilt auf dem Rechner |
 | 19 | `tests/run` | alle grün |
 | 20 | Veröffentlichen, jeder Schritt mit eigener Rückfrage: Tag `v0.6.0` im Kernel, gleichnamiger Tag im Konzept-Repo auf dem Abnahme-Memo | gepusht nach Freigabe |
 
