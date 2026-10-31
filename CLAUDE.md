@@ -52,7 +52,7 @@ Das Memo wird im Versionsordner der laufenden Version angelegt (`AA-AIbex-AIOS/@
 - **Die Spec ist verbindlich.** Weicht die Umsetzung von der Spec ab, wird zuerst die Spec korrigiert und die Entscheidung als Memo festgehalten.
 - **Bash für Weiterleiter und Bootstrap, Python für die Logik** (V0.1, Memo 18, E1). Bash-Skripte folgen der Bash-Konvention (unten).
 - **Keine fest verdrahteten Pfade:** immer `AIOS_PREFIX`, `HOME`, `AIOS_CLAUDE_DIR` (Spec 04, *Umlenkung für Tests*).
-- **Tests im Sandkasten:** `tests/run` vor jedem Commit; Tests verändern nie den echten Rechner.
+- **Tests im Sandkasten:** `tests/run` vor jedem Commit; Tests verändern nie den echten Rechner. Einzelne Testdateien nur mit `tests/run <präfix>` (z. B. `tests/run t22`), nie direkt mit `bash tests/tNN-….sh`: ohne Sandkasten liefen sie gegen das echte `HOME` (V0.6, Memo 66); jede Datei bricht dann ab.
 - **Ein Schritt, ein Commit:** jeder Schritt des Plans endet mit grünen Tests und einem Commit `Schritt N: …` (bei einem Patch `v<x.y.z> Schritt N: …`), danach Push. Im selben Commit wird der Schritt in `STATUS.md` abgehakt (☐ → ☑, Ergebnis nachgetragen).
 - **Das Arbeitsverzeichnis nicht wechseln:** `git -C <repo>` und absolute Pfade verwenden, damit der Masterspace der Session gültig bleibt.
 - **Der Arbeitsrechner wird erst im Abnahmeschritt umgestellt**; bis dahin bleiben er und die Vaults auf der letzten veröffentlichten Version (derzeit v0.5.1). Entwicklungsstände nur im Sandkasten und über `AIOS_HOME`.
