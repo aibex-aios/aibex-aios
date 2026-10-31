@@ -224,6 +224,8 @@ class Fetch:
                 return None
             if name in packages and not request(packages[name]).range.contains(m.version):
                 return None
+            if not semver.kernel_fits(m.requires, semver.Version.parse(self.kernel)):
+                return None                         # does not run with the binding (V0.6, memo 72, B15)
             picks[name] = resolver.Pick(name, m.version, key, m, e.get("requested"),
                                         list(e.get("required_by") or []))
         needed = {d for p in picks.values() for d in p.manifest.depends} | set(packages)

@@ -1,6 +1,6 @@
 ---
 title: "Pakete und Workspaces"
-date: 2026-10-29
+date: 2026-10-31
 author: iHux
 status: Spec
 tags: [spec, aios, v0.6, pakete, workspaces]
@@ -180,7 +180,7 @@ packages:
 
 Der Index dient nur der Suche: `aios --library [<suchwort>]` listet je Hub der Hub-Liste die Pakete aus `index.yaml`; ohne Index bei GitHub-Hubs die Repos mit dem Topic **`aios-package`** (über `gh`). Ein Hub ohne beides lässt sich nicht durchsuchen, nur mit bekanntem Namen holen. `aios --library <paket>` zeigt die Versionen eines Pakets (aus den Tags), `aios --library <hub>/<paket>` nur die aus diesem Hub, auch außerhalb der Hub-Liste. Den Index holt AIOS mit `git clone --depth 1` bzw. `git pull` nach `~/.aios/hub/<hub>/`.
 
-**Zugriff aufs Netz:** Nur `aios --fetch`, `aios --install`, `aios --library`, `aios --workspace` und `aios --contribute` greifen auf das Netz zu, und nur über `git` bzw. `gh` mit den Zugangsdaten des Users sowie über `pip` beim setup eines Arbeitspferds (Spec 07). Ohne Netz arbeitet `aios --fetch` ohne Argument mit dem Cache, wenn alle Versionen aus `lock.yaml` dort liegen.
+**Zugriff aufs Netz:** Nur `aios --fetch`, `aios --install`, `aios --library`, `aios --workspace` und `aios --contribute` greifen auf das Netz zu, und nur über `git` bzw. `gh` mit den Zugangsdaten des Users sowie über `pip` beim setup eines Arbeitspferds (Spec 07). Ohne Netz arbeitet `aios --fetch` ohne Argument mit dem Cache, wenn alle Versionen aus `lock.yaml` dort liegen, die Bereiche in `packages:` erfüllen und mit der gebundenen Version laufen (`requires.aios`). Passt eine gesperrte Version nicht zur Bindung, löst der Abgleich neu auf, auch wenn der Bereich gleich bleibt; das betrifft vor allem die Umstellung mit `aios --activate` (V0.6, Memo 72, B15).
 
 ## Resolver
 

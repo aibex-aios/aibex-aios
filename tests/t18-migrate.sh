@@ -114,6 +114,13 @@ packages:
    assert_eq "$(cat "$V4/@Data/assistant-gaertner/beete.txt")" "drei" "v0.4: data stay with the assistant"
    assert_contains "$(cat "$V4/.aios/lock.yaml")" "version: 6.0.1" "v0.4: lock.yaml on 6.0.1"
    assert_contains "$(A "$V4" --activate v0.5.0 "$V4" </dev/null)" "nothing to do" "v0.4: second activation: nothing to do"
+   V6="$SANDBOX/work/§Sechs"; mkdir -p "$V6/@"; mk "$V6/.aios/config.yaml" $'aios: 0.4.0\n'   # B15: same range
+   A "$V6" --fetch 'skill-memo==6.0.0' --yes >/dev/null
+   sed -i.bak 's/skill-memo: .*/skill-memo: "~=6.0"/' "$V6/.aios/config.yaml" && rm "$V6/.aios/config.yaml.bak"
+   assert_contains "$(A "$V6" --activate v0.5.0 "$V6" --plan)" "$V6: packages: skill-memo 6.0.0 -> skill-memo 6.0.1: \"~=6.0\" (requires.aios)" "B15: change with the same range planned"
+   A "$V6" --activate v0.5.0 "$V6" --yes >/dev/null
+   assert_contains "$(cat "$V6/.aios/lock.yaml")" "version: 6.0.1" "B15: lock.yaml on 6.0.1 although the range stayed (V0.6, memo 72)"
+   assert_contains "$(sed -n 's/^version: //p' "$V6/@/@!Package/skill-memo/manifest.yaml")" "6.0.1" "B15: the package itself on 6.0.1"
    V5="$SANDBOX/work/§Fuenf"; mkdir -p "$V5/@"; mk "$V5/.aios/config.yaml" $'aios: 0.4.0\n'
    A "$V5" --fetch 'test-alt==0.1.0' --yes >/dev/null
    OUT="$(A "$V5" --activate v0.5.0 "$V5" --yes)"; RC=$?
