@@ -1,8 +1,8 @@
 ---
 title: "Installation und Konfiguration"
-date: 2026-10-31
+date: 2026-11-01
 author: iHux
-status: Spec
+status: Entwurf
 tags: [spec, aios, v0.6, installation, konfiguration]
 number: 04
 related:
@@ -21,6 +21,7 @@ related:
   - "Memos 08–29 (AA-AIbex-AIOS, @Memo/V0.4)"
   - "Memos 03, 04, 20, 26–35 (AA-AIbex-AIOS, @Memo/V0.5)"
   - "Memos 02, 03, 06, 07, 12, 14–19, 21, 24, 28–30 (AA-AIbex-AIOS, @Memo/V0.6)"
+  - "Memos 79–84 (AA-AIbex-AIOS, @Memo/V0.6): v0.6.1"
 ---
 
 # Installation und Konfiguration
@@ -466,9 +467,9 @@ Ziel der Arbeitspferde ist der Ort nach *Installationen* (Spec 07); der Plan nen
 | Wirkung | `aios: <version>` in `<vault-root>/.aios/config.yaml` schreiben bzw. ersetzen; eine Markierung `legacy:` in derselben Datei wird dabei entfernt. `.aios/config.yaml` ist Teil des ersten Commits, sonst committet `aios --activate` nicht |
 | Registrierung | ab v0.6: die Hüllen der Kernel-Skills und des Alias an der Vault-Root und in allen Projekten des Vaults (Spec 03; V0.6, Memo 30, F18) |
 | Hüllen früherer Versionen | Hängt danach kein bekannter Vault mehr an einer Version unter 0.6 (*Installieren*, Schritt 7), bietet der Plan an, die globalen Hüllen in `~/.claude/skills/aios-*/` und `~/.claude/skills/gui/` zu entfernen, mit eigener Frage; fremde Ordner bleiben (V0.6, Memo 30, F19) |
-| Offene Dateien | Der Plan nennt offene Dateien des Vaults, die er ändert oder committet; er committet sie nicht selbst (V0.6, Memo 02) |
+| Offene Dateien | Der Plan nennt offene Dateien des Vaults, die er ändert oder committet, zusammengefasst je Paketordner wie Spec 06, *Holen*, Schritt 4; er committet sie nicht selbst (V0.6, Memos 02, 81) |
 | Version | mit oder ohne `v` angegeben, geschrieben ohne `v`; steht dieselbe Version schon in der Datei, fehlt nichts von der Struktur und ist die Registrierung aktuell: „nichts zu tun", keine Rückfrage |
-| Umstellung | von v0.3 bzw. v0.4 im selben Plan (Spec 06, *Umstellung von v0.3*, *Umstellung von v0.4*) |
+| Umstellung | Pakete, die mit der neuen Version nicht laufen, im selben Plan mit allen Unterschritten (Spec 06, *Paketwechsel bei der Aktivierung*); von v0.3 bzw. v0.4 ebenso (Spec 06, *Umstellung von v0.3*, *Umstellung von v0.4*) |
 | Hinweis | Master-Kontext und Registrierung gelten ab dem nächsten Chat |
 
 ### `aios --deactivate [<vault-root>]`

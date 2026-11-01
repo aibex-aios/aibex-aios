@@ -1,8 +1,8 @@
 ---
 title: "AIbex AIOS v0.6 — Überblick"
-date: 2026-10-30
+date: 2026-11-01
 author: iHux
-status: Spec
+status: Entwurf
 tags: [spec, aios, v0.6]
 number: 01
 related:
@@ -19,6 +19,7 @@ related:
   - "Memos 01–29 (AA-AIbex-AIOS, @Memo/V0.4)"
   - "Memos 01–41 (AA-AIbex-AIOS, @Memo/V0.5), Soll-Bild Memo 36, Skizze Memo 37"
   - "Memos 01–36 (AA-AIbex-AIOS, @Memo/V0.6), Soll-Bild Memo 34, Skizze Memo 35"
+  - "Memos 79–84 (AA-AIbex-AIOS, @Memo/V0.6), v0.6.1, Skizze Memo 84"
 ---
 
 # AIbex AIOS v0.6 — Überblick
@@ -58,7 +59,7 @@ Die Spec v0.6 besteht aus sieben Dokumenten, die sich nicht wiederholen:
 | **06 Pakete und Workspaces** | Paket-Manifest, Versionen und Bereiche, Hubs und Hub-Liste, Resolver, Paket laden (`aios --fetch`), ausrollen (`aios --deploy`), Distributionen, Lock, `@Data/`, Workspaces, Rückfluss, Demo-App Taschenrechner |
 | **07 Arbeitspferde** | Definition, Pakete `worker-<name>`, Installation je Version, Aktivierung über `lock.yaml`, Weiterleiter, Abläufe, `aios --worker`, Tests |
 
-Die Begründungen stehen in den Memos der Konzeptprojekte unter `§AIOS/A-AIOS/AA-AIbex-AIOS/`: `@Memo/V0.1/` für die Grundlage, `@Memo/V0.2/` (Memos 13–18) für die Änderungen in v0.2, `@Memo/V0.3/` (Memos 01–28) für die Änderungen in v0.3, `@Memo/V0.4/` (Memos 01–29) für die Änderungen in v0.4, `@Memo/V0.5/` (Memos 11–41, Soll-Bild Memo 36) für die Änderungen in v0.5, dort auch die Memos 70–86 für v0.5.1, `@Memo/V0.6/` (Memos 01–36, Soll-Bild Memo 34, Skizze Memo 35) für die Änderungen in v0.6. In den Memos 01–11 von V0.3 heißt der Assistent noch *Agent* (V0.3, Memo 13). Die Spec beschreibt nur den Soll-Stand. Sie wird im Repo `aibex-aios` unter `spec/` gepflegt und mit jeder Version nach `doc/spec/` ausgeliefert.
+Die Begründungen stehen in den Memos der Konzeptprojekte unter `§AIOS/A-AIOS/AA-AIbex-AIOS/`: `@Memo/V0.1/` für die Grundlage, `@Memo/V0.2/` (Memos 13–18) für die Änderungen in v0.2, `@Memo/V0.3/` (Memos 01–28) für die Änderungen in v0.3, `@Memo/V0.4/` (Memos 01–29) für die Änderungen in v0.4, `@Memo/V0.5/` (Memos 11–41, Soll-Bild Memo 36) für die Änderungen in v0.5, dort auch die Memos 70–86 für v0.5.1, `@Memo/V0.6/` (Memos 01–36, Soll-Bild Memo 34, Skizze Memo 35) für die Änderungen in v0.6, dort auch die Memos 79–84 (Bewertung Memo 79, Skizze Memo 84) für v0.6.1. In den Memos 01–11 von V0.3 heißt der Assistent noch *Agent* (V0.3, Memo 13). Die Spec beschreibt nur den Soll-Stand. Sie wird im Repo `aibex-aios` unter `spec/` gepflegt und mit jeder Version nach `doc/spec/` ausgeliefert.
 
 ## Begriffe
 
@@ -140,7 +141,7 @@ v0.6.0 baut auf v0.5.1 auf. Schwerpunkt ist die **Grenze von AIBOS**: AIBOS-Verh
 
 | in v0.6.0 | später |
 |---|---|
-| Begriffe AIBOS, Vault, A/W; Bindung nur an der Vault-Root; Altbindung und Legacy-Modus mit Markierung | Distributions-Installer mit Nutzungsvertrag und Dialog im Browser (v0.6.1) |
+| Begriffe AIBOS, Vault, A/W; Bindung nur an der Vault-Root; Altbindung und Legacy-Modus mit Markierung | Distributions-Installer mit Nutzungsvertrag und Dialog im Browser (eigenes Repo nach v0.6.1; V0.6, Memo 80) |
 | Grundregel 6 und I12: keine Ausgabe außerhalb eines A/W, Fehler nur im Log | Codex als Host |
 | Kernel-Skills als registrierte Hüllen im Vault und als Block im Master-Kontext; keine globalen Hüllen | Linux, Windows |
 | Hook `PreToolUse` für die Freigabe der Befehle von AIBOS im A/W | Python über `uv`, Beheben fehlender Infrastruktur |
@@ -148,7 +149,17 @@ v0.6.0 baut auf v0.5.1 auf. Schwerpunkt ist die **Grenze von AIBOS**: AIBOS-Verh
 | Zuordnung zur Session nur beim gespeicherten Arbeitsverzeichnis | Workflows (v0.7), Wissen mit Rohwissen und Fassung (v0.8) |
 | Umstieg von v0.5 in vier Schritten (Spec 04) | |
 | Cache von `--from` nach Quelle und Commit; `aios --install <distribution> <vault>` registriert im Ziel-Vault; Plan nennt offene Dateien des Ziels | |
-| Begleitpakete in neuen Patch-Versionen mit `requires.aios` bis `<0.7` (V0.6, Memo 38) | Distributionen mit Kernel 0.6 (mit dem Installer, v0.6.1) |
+| Begleitpakete in neuen Patch-Versionen mit `requires.aios` bis `<0.7` (V0.6, Memo 38) | |
+
+v0.6.1 ist ein Korrektur-Patch auf v0.6.0 (V0.6, Memos 79–84):
+
+| in v0.6.1 | Memos |
+|---|---|
+| Vor dem Entfernen einer Version eines Arbeitspferds zählen auch die Projekte der bekannten Vaults (Spec 07, *Nutzende Projekte*; B12) | Memos 71, 81 |
+| Plan von `aios --activate` mit allen Unterschritten des Paketwechsels unter `packages for AIOS <version>` (Spec 06, *Paketwechsel bei der Aktivierung*; B13) | Memos 71, 81 |
+| offene Dateien im Plan je Paketordner zusammengefasst (Spec 06, *Holen*; H3) | Memos 72, 81 |
+| Distributionen mit Kernel 0.6: `distribution-capricorn` 0.3.0 und `distribution-rothirsch` 1.1.0 mit `kernel: "==0.6.1"` (Spec 06, *Distributionen*) | Memos 82, 83 |
+| Release-Kandidat `v0.6.1-rc1` für die Abnahme (*Abnahmetest*) | Memos 77, 82 |
 
 ## Vorabversionen
 
@@ -179,30 +190,22 @@ AIBOS hält diese Regeln in jedem Befehl ein (für Pakete zusätzlich P1–P8, S
 
 ## Abnahmetest
 
-Der Abnahmetest von v0.6.0 läuft auf dem Arbeitsrechner nach der Implementierung, entlang des Umstiegs (Spec 04, *Legacy und Umstieg*; V0.6, Memo 35). Probe-Vault: `~/vault/§Probe-AIBOS`, Probe-Projekt darin `P-Probe`. Die Schritte zur Freigabe laufen als **frischer User**: `claude -p … --setting-sources project,local --settings <kopie>`, wobei `<kopie>` nur die Hook-Einträge aus `~/.claude/settings.json` enthält; `permissions.allow` des Arbeitsrechners bleibt unangetastet. Der Abnahmetest von v0.5 steht in dieser Spec im Tag `v0.5.1`.
+Der Abnahmetest von v0.6.1 läuft auf dem Arbeitsrechner nach der Implementierung, auf dem Release-Kandidaten `v0.6.1-rc1` (V0.6, Memos 82, 84). Probe-Vault: `~/vault/§Probe-AIBOS` mit dem Probe-Projekt `P-Probe`, für Capricorn ein neuer Vault `~/vault/§Probe-Capricorn`. An den Kandidaten gebunden werden nur diese Vaults; die übrigen bleiben bis Schritt 10 auf 0.6.0 (F48). Die Abnahmetests von v0.6.0 und v0.5 stehen in dieser Spec in den Tags `v0.6.0` bzw. `v0.5.1`.
 
 | # | Schritt | erwartet |
 |---|---|---|
-| 1 | `~/git/AIbex/aibex-aios/bin/aios --install v0.6.0 --plan` (aus dem Klon, Spec 04, *Umstieg auf v0.6*) | Plan: Kernel nach `~/.aios/versions/v0.6.0/`, Weiterleiter `~/.aios/bin/aios`, die zwei AIOS-Hooks an ihrer Stelle mit absolutem Pfad, Hook `PreToolUse` neu; `~/bin/aios` als Altbestand genannt, fremde Hooks unverändert; Frage zu `§`-Ordnern ohne Bindung, wenn `ai-brain` vorhanden ist; Vaults mit Altbindung gemeldet; nichts in `~/bin` |
-| 2 | dasselbe mit Ja; je `§`-Ordner ohne Bindung markieren oder nicht (auf dem Arbeitsrechner: keine Markierung, die Ordner werden an 0.6.0 gebunden, Schritte 4 und 17) | alles eingerichtet; `~/.claude/settings.json` enthält genau drei AIOS-Hooks |
-| 3 | neue Session in `AA-AIbex-AIOS` (`§AIOS`, Altbindung an 0.5.1) | wie unter 0.5.1: Master-Kontext, `/aios-status` über die globale Hülle |
-| 4 | `aios --activate v0.6.0 ~/vault/§iHux` (bisher `ai-brain`, ohne Bindung) mit Ja; neue Session in `§iHux` | Bindung `aios: 0.6.0`; Master-Kontext von AIBOS mit Block `<aios-kernel-skills>`, kein Kontext von `ai-brain` mehr |
-| 5 | neue Session in einem leeren Ordner außerhalb jedes Vaults; `~/.aios/bin/aios --skill aios-status` | keine Ausgabe der Hooks von AIOS im Kontext; der Befehl liefert „Kein AIBOS-Workspace: `<cwd>`" mit Exit-Code 1. Ein Angebot über die globalen Hüllen von v0.5 ist bis Schritt 17 möglich und wird in Schritt 18 geprüft (V0.6, Memo 62, B9) |
-| 6 | `§Probe-AIBOS` anlegen; `aios --activate v0.6.0 ~/vault/§Probe-AIBOS/X --plan` | Abbruch mit Hinweis auf die Vault-Root |
-| 7 | `aios --activate v0.6.0 ~/vault/§Probe-AIBOS` mit Ja | Bindung `aios: 0.6.0`; 12 Kernel-Skills an der Vault-Root registriert, in `.aios/registry` mit `source` Kernel 0.6.0; kein Angebot zum Entfernen der globalen Hüllen, weil `§AIOS` noch an 0.5.1 gebunden ist |
-| 8 | neue Session an der Vault-Root; `/aios-init` in der interaktiven CLI und in der Desktop-App für `P-Probe` | Master-Kontext mit Block `<aios-kernel-skills>` (12 Einträge); `/aios-init` wird in beiden Hosts ausgeführt; `P-Probe` mit registrierten Kernel-Skills |
-| 9 | frischer User in `P-Probe`: „Wo stehen wir?" und `/aios-status` | beide lösen `aios-status` aus; keine Rückfrage zur Erlaubnis |
-| 10 | frischer User in `P-Probe`: `~/.aios/bin/aios --version && echo x`; dann eine `deny`- und eine `ask`-Regel für `~/.aios/bin/aios --version` | Verkettung wird nicht freigegeben; `deny` und `ask` gehen der Freigabe vor |
-| 11 | frischer User außerhalb jedes Vaults: `~/.aios/bin/aios --version` | Rückfrage bzw. Ablehnung; keine Freigabe durch den Hook |
-| 12 | `aios:` in `P-Probe/.aios/config.yaml`; neue Session; `/aios-integrity`; danach `legacy: ai-brain` neben `aios:` an der Vault-Root | Warnung im Vault und Meldung von `/aios-integrity`; Warnung bei `aios:` und `legacy:` zusammen; Einträge danach entfernen |
-| 13 | Session in `P-Probe` mit `/aios-assistant Anja`; Wechsel des Arbeitsverzeichnisses an die Vault-Root; Frage nach Arbeitsverzeichnis und Assistent; zurück nach `P-Probe` | an der Vault-Root kein Assistent; zurück in `P-Probe` wieder Anja |
-| 14 | in einer Session an der Vault-Root `/compact` | Master-Kontext mit Block neu geladen; die Prüfung der id findet beide Marken |
-| 15 | zwei Quellen derselben Version einer Testdistribution aus dem lokalen Hub mit `--from` nacheinander installieren; `aios --install <distribution> ~/vault/§Probe-AIBOS` aus einem anderen Arbeitsverzeichnis | `lock.yaml` nennt den Commit der zweiten Quelle; registriert wird im Ziel-Vault |
-| 16 | eine offene Änderung an `§Probe-AIBOS/.aios/config.yaml`; `aios --fetch <paket> --plan` | der Plan nennt die offene Datei |
-| 17 | `aios --activate v0.6.0 ~/vault/§AIOS --plan`, dann mit Ja; danach die übrigen bekannten Vaults mit Altbindung bzw. ohne Bindung ebenso | Bindung, Registrierung der Kernel-Skills im Vault und seinen Projekten, Pakete auf Versionen mit `<0.7`; bei der Aktivierung, nach der kein bekannter Vault mehr an 0.5 hängt, das Angebot, die globalen Hüllen (12 `aios-*` und `gui`) zu entfernen; fremde Ordner in `~/.claude/skills/` bleiben |
-| 18 | neue Session außerhalb jedes Vaults in der interaktiven CLI: `/aios-init`; neue Session dort: „Projekt initialisieren" | „Unknown command"; kein Angebot von AIOS; Grundregel 6 gilt auf dem Rechner |
-| 19 | `tests/run` | alle grün |
-| 20 | Veröffentlichen, jeder Schritt mit eigener Rückfrage: Tag `v0.6.0` im Kernel, gleichnamiger Tag im Konzept-Repo auf dem Abnahme-Memo | gepusht nach Freigabe |
+| 1 | `~/git/AIbex/aibex-aios/bin/aios --install v0.6.1-rc1 --plan`, dann mit Ja | Kernel nach `~/.aios/versions/v0.6.1-rc1/`; Weiterleiter und Hooks unverändert; nichts in `~/bin` |
+| 2 | `aios --activate v0.6.1-rc1 ~/vault/§Probe-AIBOS` mit Ja | Bindung `aios: 0.6.1-rc1`; Hüllen in `.aios/registry` mit `source` Kernel `0.6.1-rc1`; Pakete unverändert, weil sie `<0.7` erfüllen |
+| 3 | neue Session in `P-Probe`: „Wo stehen wir?" | Master-Kontext mit Block `<aios-kernel-skills>`; `aios-status` läuft ohne Rückfrage zur Erlaubnis |
+| 4 | mehrere Dateien in `P-Probe/@/@!Package/assistant-anja/` ändern; `aios --fetch skill-memo --plan` in `P-Probe`; Änderungen danach verwerfen | der Plan nennt `@/@!Package/assistant-anja/ (N files)` in einer Zeile (H3) |
+| 5 | `tests/live/changeover.sh` | grün; im Protokoll der Plan der Aktivierung mit `packages for AIOS 0.6.1-rc1` und allen Unterschritten (B13); `worker-yt-dlp` 0.1.0 bleibt für den Vault, der nicht in `workers.yaml` stand, und ist danach dort nachgetragen (B12) |
+| 6 | `tests/live/rothirsch.sh` | grün mit `distribution-rothirsch` `1.1.0-rc1` und Kernel `0.6.1-rc1` |
+| 7 | `aios --install distribution-capricorn ~/vault/§Probe-Capricorn --from ~/git/AIbex/distribution-capricorn --plan` (Tag `v0.3.0-rc1`), dann mit Ja; neue Session dort | Plan mit Rechner- und Vaultteil, Bindung `0.6.1-rc1`; vier Pakete und ihre Abhängigkeiten; Arbeitspferde 0.1.1 vorhanden oder eingerichtet; Session mit Master-Kontext, Video-Analyse und Anja verfügbar |
+| 8 | `tests/run` und `tests/live/fresh.sh` | alle grün |
+| 9 | Tutorial 05 lesen | Ausgaben wie im Sandkasten erzeugt; Rothirsch 1.1.0 mit Kernel 0.6.1, kein Hinweis auf v0.5 mehr |
+| 10 | nach Freigabe: Tag `v0.6.1`, `aios --install v0.6.1`, `§Probe-AIBOS` und `§Probe-Capricorn` auf `v0.6.1` umbinden, `aios --remove-version v0.6.1-rc1`; mit eigener Frage die übrigen Vaults auf 0.6.1 | Bindung `0.6.1`; Kandidat entfernt; keine Hülle verweist auf `0.6.1-rc1` (F50, F53) |
+| 11 | Distributionen endgültig: Tags `v1.1.0` bzw. `v0.3.0` mit `kernel: "==0.6.1"`; Probe in `§Probe-Capricorn` mit `aios --install distribution-capricorn … --from …` | `lock.yaml` nennt die endgültigen Tags |
+| 12 | Veröffentlichen, jeder Schritt mit eigener Rückfrage: Tag `v0.6.1` im Kernel, gleichnamiger Tag im Konzept-Repo auf dem Abnahme-Memo; Distributionen im Hub, Probe gegen den Hub | gepusht nach Freigabe |
 
 ## Offen
 

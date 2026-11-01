@@ -1,8 +1,8 @@
 ---
 title: "Pakete und Workspaces"
-date: 2026-10-31
+date: 2026-11-01
 author: iHux
-status: Spec
+status: Entwurf
 tags: [spec, aios, v0.6, pakete, workspaces]
 number: 06
 related:
@@ -14,6 +14,7 @@ related:
   - "Spec 07 Arbeitspferde"
   - "Memos 01–29 (AA-AIbex-AIOS, @Memo/V0.4)"
   - "Memos 05, 07, 08, 11–37 (AA-AIbex-AIOS, @Memo/V0.5)"
+  - "Memos 79–84 (AA-AIbex-AIOS, @Memo/V0.6): v0.6.1"
 ---
 
 # Pakete und Workspaces
@@ -218,9 +219,9 @@ Zyklen in `depends` sind erlaubt, solange die Bereiche erfüllbar sind. Ein Pake
 1. `packages:` in `<ziel>/.aios/config.yaml` mit dem neuen Eintrag lesen. `packages:` der Projekte darüber wird nicht berücksichtigt.
 2. Auflösen (*Resolver*).
 3. Pakete in den Cache holen: `git clone --depth 1 --branch v<version> <repo>` nach `~/.aios/packages/<hub>/<name>/<version>/`, Commit-SHA merken. Ein vorhandener Cache-Eintrag wird wiederverwendet, wenn sein Commit zu `lock.yaml` passt. Bei `--from` liegt der Cache nach Quelle getrennt, unter `~/.aios/packages/_from/<12 Zeichen SHA-256 der Quelle>/<paket>/<version>/`; ein Eintrag wird nur wiederverwendet, wenn der Commit des Tags in dieser Quelle zu ihm passt, sonst wird neu geholt (V0.6, Memos 03, 50: K1).
-4. Vorschau: je Paket `new`, `upgrade X → Y`, `remove`, `unchanged`, `other commit` (gleiche Version aus einer anderen Quelle oder mit verschobenem Tag; V0.6, Memo 50, F62) mit Hub; Dateien, die sich in `@!Package/<name>/` ändern; direkt geänderte Kopien; je Arbeitspferd, das auf dem Rechner fehlt, das setup mit seinem Inhalt (Spec 07, *Abläufe*); Versionen von Arbeitspferden, die entfernt werden; Änderungen an `config.yaml` und `lock.yaml`; offene Dateien des Ziels (`git status --porcelain`), die der Plan ändert, mit dem Hinweis, dass `aios --fetch` sie nicht committet (V0.6, Memo 02).
+4. Vorschau: je Paket `new`, `upgrade X → Y`, `remove`, `unchanged`, `other commit` (gleiche Version aus einer anderen Quelle oder mit verschobenem Tag; V0.6, Memo 50, F62) mit Hub; Dateien, die sich in `@!Package/<name>/` ändern; direkt geänderte Kopien; je Arbeitspferd, das auf dem Rechner fehlt, das setup mit seinem Inhalt (Spec 07, *Abläufe*); Versionen von Arbeitspferden, die entfernt werden; Änderungen an `config.yaml` und `lock.yaml`; offene Dateien des Ziels (`git status --porcelain`), die der Plan ändert, mit dem Hinweis, dass `aios --fetch` sie nicht committet (V0.6, Memo 02). Offene Dateien unter `@/@!Package/<name>/` bzw. `@Data/<name>/` stehen zusammengefasst als ein Eintrag `@/@!Package/<name>/ (N files)`, andere einzeln (V0.6, Memo 81, H3).
 5. Nach Ja: Sicherung anlegen (unten); je Paket den Inhalt ohne `.git` nach `<ziel>/@/@!Package/<name>/` spiegeln (nur dieser Ordner), die Marke schreiben, `packages:` und `lock.yaml` schreiben.
-6. Arbeitspferde einrichten (setup, Spec 07), Abhängigkeiten zuerst; nicht mehr genutzte Versionen entfernen.
+6. Arbeitspferde einrichten (setup, Spec 07), Abhängigkeiten zuerst; nicht mehr genutzte Versionen entfernen (Spec 07, *Nutzende Projekte*).
 7. Ausrollen: Ein neu geholtes Paket wirkt mit **allen** Elementen, solange `packages:` keine Auswahl `only` nennt (V0.4, Memo 24, H2).
 8. Hüllen der Kernel-Skills und Projekt-Skills registrieren (Spec 03), im Projekt der Session bzw. bei `--to` und bei `aios --install <distribution> <vault>` im Ziel, unabhängig vom Arbeitsverzeichnis (V0.6, Memo 03, K2), **erst nach erfolgreichem setup** (V0.5, Memo 17).
 9. Sicherung löschen.
@@ -269,15 +270,15 @@ Eine Distribution stellt eine geprüfte Zusammenstellung zusammen: optional eine
 
 ```yaml
 name: distribution-rothirsch
-version: 1.0.0
+version: 1.1.0
 type: distribution
 description: Rothirsch — AIOS mit Video-Analyse und der Assistentin Anja
 requires:
-  aios: ">=0.5,<0.6"
-kernel: "==0.5.0"
+  aios: ">=0.6,<0.7"
+kernel: "==0.6.1"
 depends:
-  skill-video-analyse: "==0.2.0"
-  assistant-anja: "==0.2.0"
+  skill-video-analyse: "==0.2.1"
+  assistant-anja: "==0.2.1"
 ```
 
 | Regel | |
@@ -286,7 +287,7 @@ depends:
 | Kernel | `kernel:` ist optional; ohne `kernel:` ist die Distribution eine reine Sammlung von Paketen, und `requires.aios` aller Pakete muss zum gebundenen Kernel passen |
 | Abhängigkeiten | Abhängigkeiten der Pakete (z. B. `worker-yt-dlp` der Video-Analyse) stehen nicht in `depends`; der Resolver holt sie |
 | Installieren | `aios --install distribution-<name> [<vault>] [--from <repo>]` (Spec 04): erst der Rechner (Kernel, Arbeitspferde), dann der Vault (binden, holen, registrieren); ein Plan, ein Ja. Scheitert der Rechnerteil, bleibt der Vault unberührt; schon Installiertes bleibt liegen. Scheitert der Vaultteil, gilt die Sicherung (*Holen*) |
-| im Vault | die Distribution steht in `packages:` der Vault-Root (`distribution-rothirsch: "==1.0.0"`), ihre Pakete in `lock.yaml` mit `required_by: [distribution-rothirsch]` |
+| im Vault | die Distribution steht in `packages:` der Vault-Root (`distribution-rothirsch: "==1.1.0"`), ihre Pakete in `lock.yaml` mit `required_by: [distribution-rothirsch]` |
 | eine je Vault | höchstens eine Distribution mit `kernel:` je Vault; eine zweite ist ein Konflikt im Plan; Distributionen ohne `kernel:` dürfen daneben stehen |
 | anderer Kernel | ist der Vault an einen anderen Kernel gebunden, zeigt der Plan die Umstellung (`aios: 0.4.0 → 0.5.0`) samt der Umstellung des Vaults (*Umstellung*) und führt sie im selben Plan aus |
 | Aktualisieren | `aios --install distribution-<name>` erneut, ohne Version die höchste; der Plan zeigt `upgrade 1.0.0 → 1.1.0` mit Kernel, Arbeitspferden und Paketen |
@@ -294,7 +295,9 @@ depends:
 | Übersteuern | nur mit `only` (*Ausrollen*); eine andere Version eines Pakets der Distribution, z. B. durch einen eigenen Eintrag in `packages:`, ist ein Konflikt im Plan |
 | `--from` | nimmt die Distribution aus einem lokalen Repo, eine getaggte Version wie `aios --fetch --from` (auch ein lokaler, nicht gepushter Tag; V0.5, Memo 56); ihre Pakete kommen weiter aus den Hubs |
 
-Zusammengestellt werden Distributionen mit dem Kernel-Skill `/aios-distribution` (Spec 03).
+Zusammengestellt werden Distributionen mit dem Kernel-Skill `/aios-distribution` (Spec 03). Gepflegt werden die Distributionen des Hubs `aibex-aios` in eigenen Projekten des Vaults `§AIOS` (`D-Distribution/DC-Capricorn`, `D-Distribution/DR-Rothirsch`; V0.6, Memo 83).
+
+**Vorabversionen:** Ein Bereich mit `==` nimmt eine Vorabversion nur an, wenn er sie selbst nennt (*Versionen und Bereiche*). Für die Abnahme eines Release-Kandidaten des Kernels (z. B. `v0.6.1-rc1`) gibt es deshalb Testversionen der Distribution mit Vorabversion (`1.1.0-rc1` mit `kernel: "==0.6.1-rc1"`), nur lokal getaggt; die endgültige Version nennt den endgültigen Kernel (V0.6, Memo 82, F49).
 
 ## Konfiguration und Lock
 
@@ -338,6 +341,14 @@ workspace:
 ## Arbeitspferde
 
 Arbeitspferde sind Pakete vom Typ `worker` und stehen in Spec 07. Das Feld `workers:` aus v0.4 gibt es nicht mehr (*Umstellung von v0.4*).
+
+## Paketwechsel bei der Aktivierung
+
+`aios --activate v<version> <vault-root>` prüft für die Vault-Root und alle Projekte darunter, ob die geholten Pakete mit dem neuen Kernel laufen (`requires.aios`), und stellt sie im selben Plan und mit derselben Bestätigung um (V0.5, Memos 30, 35; V0.6, Memo 72, B15):
+
+- Läuft ein Paket nicht, setzt der Plan in `packages:` den Standardbereich der höchsten Version, die passt, und holt sie. Gibt es keine solche Version, bricht die Aktivierung ab, bevor etwas geschieht, und nennt jedes Paket mit dem Hinweis auf `aios --fetch --remove`.
+- Der Plan zeigt den Wechsel je Projekt unter der Überschrift `packages for AIOS <version>`, mit **allen Unterschritten** des Holens wie *Holen*, Schritt 4: je Paket `<paket> X -> Y (requires.aios)`, das setup jeder fehlenden Version eines Arbeitspferds, jede Version, die entfernt wird, mit ihrem Grund (Spec 07, *Nutzende Projekte*), und die offenen Dateien (V0.6, Memos 71, 81: B13; Spec 01, I7).
+- Die Überschrift `changeover from v0.4` gibt es nur noch für die Umbenennungen aus v0.4 (*Umstellung von v0.4*).
 
 ## Umstellung von v0.4
 

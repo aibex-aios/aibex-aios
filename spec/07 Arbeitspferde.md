@@ -1,8 +1,8 @@
 ---
 title: "Arbeitspferde"
-date: 2026-10-29
+date: 2026-11-01
 author: iHux
-status: Spec
+status: Entwurf
 tags: [spec, aios, v0.6, arbeitspferde]
 number: 07
 related:
@@ -11,6 +11,7 @@ related:
   - "Spec 04 Installation und Konfiguration"
   - "Spec 06 Pakete und Workspaces"
   - "Memos 11–37 (AA-AIbex-AIOS, @Memo/V0.5)"
+  - "Memos 79–84 (AA-AIbex-AIOS, @Memo/V0.6): v0.6.1"
 ---
 
 # Arbeitspferde
@@ -101,7 +102,7 @@ setup einer Version läuft immer in einem Plan mit Bestätigung (*Abläufe*). Es
 
 | # | `kind: python` | `kind: script` |
 |---|---|---|
-| 1 | Grundausstattung prüfen (Spec 04, `aios --prepare`); fehlt sie, kein setup (V0.5, Memo 31, F29) | ebenso |
+| 1 | Grundausstattung prüfen (Spec 04, *`aios --install [v<version>]`*); fehlt sie, kein setup (V0.5, Memo 31, F29) | ebenso |
 | 2 | `python3 -m venv v<version>.new` | `bash <setup>` mit `AIOS_WORKER_DIR=…/v<version>.new` |
 | 3 | `pip install --require-hashes --no-deps -r <requirements>`; ist `AIOS_PIP_FIND_LINKS` gesetzt, zusätzlich `--no-index --find-links <ordner>` (Spec 04) | — |
 | 4 | jedes Programm aus `programs` liegt ausführbar in `bin/` | ebenso |
@@ -116,7 +117,7 @@ Das venv wird mit dem `python3` gebaut, mit dem das venv der aktiven Kernel-Inst
 
 ### remove
 
-`remove` einer Version hebt den Schreibschutz auf, ruft bei `kind: script` das Skript `remove` und löscht `v<version>/`. Danach wird der Eintrag aus `workers.yaml` entfernt; ist es die letzte Version des Pakets, auch die Weiterleiter seiner Programme. Eine Version wird nur entfernt, wenn kein Projekt sie mehr nutzt (*Abläufe*).
+`remove` einer Version hebt den Schreibschutz auf, ruft bei `kind: script` das Skript `remove` und löscht `v<version>/`. Danach wird der Eintrag aus `workers.yaml` entfernt; ist es die letzte Version des Pakets, auch die Weiterleiter seiner Programme. Eine Version wird nur entfernt, wenn kein Projekt sie mehr nutzt (*Abläufe*, *Nutzende Projekte*); der Plan nennt dazu `removed: no known project uses it` (V0.6, Memo 81).
 
 ## Aktivierung und Weiterleiter
 
@@ -151,6 +152,8 @@ Nennen zwei Pakete in derselben Kette dasselbe Programm, meldet der Plan beim La
 
 **Nutzende Projekte:** `workers.yaml` führt je Version die Projekte, deren `lock.yaml` sie nennt. Ein Projekt, dessen Ordner nicht mehr existiert, zählt nicht und wird von `aios --worker` als verwaist gemeldet (V0.5, Memo 21, F5).
 
+Die Liste kann lückenhaft sein, etwa für Projekte, deren Pakete geholt wurden, bevor sie geführt wurde (V0.6, Memo 71, B12). Bevor AIOS eine Version entfernt, liest es deshalb zusätzlich die `lock.yaml` der Projekte aller bekannten Vaults (Spec 04, *`aios --install [v<version>]`*, Schritt 7). Nennt ein Projekt die Version, zählt es als Nutzer, die Version bleibt, und das Projekt wird in `workers.yaml` nachgetragen. Ein Vault, den AIOS nicht kennt, ist so nicht geschützt (V0.6, Memo 81, F45).
+
 ## `aios --worker`
 
 | CLI | Wirkung |
@@ -162,7 +165,7 @@ Weitere Unterbefehle gibt es nicht; setup und remove laufen sonst nur beim Laden
 
 ## Voraussetzungen und Plattformen
 
-- **Grundausstattung** (Spec 04, `aios --prepare`): `python3` ≥ 3.9 mit den Modulen `venv` und `pip`, `git`.
+- **Grundausstattung** (Spec 04, *`aios --install [v<version>]`*): `python3` ≥ 3.11 mit den Modulen `venv` und `pip`, `git`.
 - **Plattformen:** macOS und Linux (Spec 04). Für Wheels gelten die Grenzen ihrer Plattform, z. B. glibc ≥ 2.27 bei `deno` unter Linux (V0.5, Memo 33, P5).
 - `deno` ist keine Voraussetzung des Kernels, sondern das Arbeitspferd `worker-deno` (V0.5, Memo 31).
 
