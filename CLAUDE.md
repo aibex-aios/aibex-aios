@@ -8,9 +8,9 @@ Regeln für Sessions, die an AIbex AIOS arbeiten, ob sie im Repo laufen oder im 
 |---|---|
 | Spec (Soll-Stand, verbindlich) | `spec/` |
 | Memos (Begründungen, Verlauf) | Projekt `AA-AIbex-AIOS`, Versionsordner, siehe unten |
-| Implementierungsplan | v0.6: Memo 40 in V0.6, freigegeben in Memo 41 (Spec freigegeben in Memo 39); v0.5.1: Memo 74 in V0.5, freigegeben in Memo 75; v0.5: Memo 44 in V0.5, freigegeben in Memo 45; spätere Memos gehen ihm vor (v0.4: Memo 18 in V0.4, v0.3: Memo 32 in V0.3, v0.2: Memo 20 in V0.2, v0.1: Memo 18 in V0.1) |
+| Implementierungsplan | v0.6.1: Memo 87 in V0.6, freigegeben in Memo 88 (Spec freigegeben in Memo 86); v0.6: Memo 40 in V0.6, freigegeben in Memo 41 (Spec freigegeben in Memo 39); v0.5.1: Memo 74 in V0.5, freigegeben in Memo 75; v0.5: Memo 44 in V0.5, freigegeben in Memo 45; spätere Memos gehen ihm vor (v0.4: Memo 18 in V0.4, v0.3: Memo 32 in V0.3, v0.2: Memo 20 in V0.2, v0.1: Memo 18 in V0.1) |
 | Stand der Umsetzung | `STATUS.md` |
-| Code | `bin/` (Bash: `aios`; `aios --context` für Hooks und lesende Skills), `templates/forwarder` (Weiterleiter `~/bin/aios`), `lib/aios/` (Python) |
+| Code | `bin/` (Bash: `aios`; `aios --context` für Hooks und lesende Skills), `templates/forwarder` (Weiterleiter `~/.aios/bin/aios`), `lib/aios/` (Python) |
 | Skills | `skills/aios/<name>/SKILL.md` (AIOS-Skills); Pakete (Skills, Assistenten, Wissen, Arbeitspferde, Distributionen) in eigenen Paket-Repos unter `~/git/AIbex/<paket>/` |
 | Paket-Manifest des Kernels | `manifest.yaml` (`name: aios`, `type: kernel`), Version wie `VERSION` |
 | Tests | `tests/run` |
@@ -22,7 +22,7 @@ Memos und ToDos im Projekt `~/vault/§AIOS/A-AIOS/AA-AIbex-AIOS/` (Regeln `@/@Ru
 
 | Ordner | Inhalt |
 |---|---|
-| `@Memo/V0.6/` | **laufende Version v0.6** (AIBOS 0.6.0), Spec freigegeben: Memos 01–17 (Konzept), 18 (Bewertung), 19–33 (Konsolidierung mit Proben P1–P5), 34 (Soll-Bild), 35 (Skizze mit Abnahmetest), 36–38 (Spezifikation, Festlegungen F26–F41), 39 (Freigabe der Spec), 40, 41 (Implementierungsplan und Freigabe); der Installer kommt mit v0.6.1 (Memos 01, 04–08, 13) |
+| `@Memo/V0.6/` | **laufende Version v0.6.1** (Korrektur-Patch): Memos 79 (Bewertung), 80–83 (Konsolidierung), 84 (Skizze mit Abnahmetest), 85, 86 (Spec und Freigabe), 87, 88 (Implementierungsplan und Freigabe); der Installer kommt danach in einem eigenen Durchlauf mit eigenem Repo (Memos 01, 04–08, 13, 80). v0.6.0 (abgeschlossen, Tag `v0.6.0`, Abnahme Memo 74, Rückblick Memos 76, 77): Memos 01–17 (Konzept), 18 (Bewertung), 19–33 (Konsolidierung mit Proben P1–P5), 34 (Soll-Bild), 35 (Skizze mit Abnahmetest), 36–38 (Spezifikation, Festlegungen F26–F41), 39 (Freigabe der Spec), 40, 41 (Implementierungsplan und Freigabe) |
 | `@Memo/V0.5/` | v0.5.1 (abgeschlossen, Tag `v0.5.1`, Abnahme Memo 94, Veröffentlichung Memo 95, Rückblick Memos 96, 97): Memos 70–72 (Neuinstallation, Befunde B6–B8, Umfang), 73–75 (Entscheidungen, Plan, Freigabe), 76–93 (Umsetzung, Abnahme mit B9–B11); v0.5.0 (abgeschlossen, Tag `v0.5.0`, Abnahme Memo 68): Memos 01–12 (Wünsche), 13–40 (Konzept), 41–43 (Spec), 44–45 (Plan), 46–67 (Umsetzung und Abnahme) |
 | `@Memo/V0.4/`, `@ToDo/V0.4/` | v0.4 (abgeschlossen, Tag `v0.4.0`, Abnahme Memo 75) |
 | `@Memo/V0.3/` | v0.3 (abgeschlossen, Tag `v0.3.1`); in Memos 01–11 heißt der Assistent noch *Agent* (Memo 13) |
@@ -55,7 +55,7 @@ Das Memo wird im Versionsordner der laufenden Version angelegt (`AA-AIbex-AIOS/@
 - **Tests im Sandkasten:** `tests/run` vor jedem Commit; Tests verändern nie den echten Rechner. Einzelne Testdateien nur mit `tests/run <präfix>` (z. B. `tests/run t22`), nie direkt mit `bash tests/tNN-….sh`: ohne Sandkasten liefen sie gegen das echte `HOME` (V0.6, Memo 66); jede Datei bricht dann ab.
 - **Ein Schritt, ein Commit:** jeder Schritt des Plans endet mit grünen Tests und einem Commit `Schritt N: …` (bei einem Patch `v<x.y.z> Schritt N: …`), danach Push. Im selben Commit wird der Schritt in `STATUS.md` abgehakt (☐ → ☑, Ergebnis nachgetragen).
 - **Das Arbeitsverzeichnis nicht wechseln:** `git -C <repo>` und absolute Pfade verwenden, damit der Masterspace der Session gültig bleibt.
-- **Der Arbeitsrechner wird erst im Abnahmeschritt umgestellt**; bis dahin bleiben er und die Vaults auf der letzten veröffentlichten Version (derzeit v0.5.1). Entwicklungsstände nur im Sandkasten und über `AIOS_HOME`.
+- **Der Arbeitsrechner wird erst im Abnahmeschritt umgestellt**; bis dahin bleiben er und die Vaults auf der letzten veröffentlichten Version (derzeit v0.6.0). Entwicklungsstände nur im Sandkasten und über `AIOS_HOME`.
 - **Paket-Repos und Hubs:** Paket-Repos entstehen lokal unter `~/git/AIbex/<paket>/` und werden lokal getaggt; in die Hubs gepusht wird erst in der Abnahme (V0.5, Memos 30, 45). Tests holen Pakete nur aus Test-Hubs unter `file://` (`AIOS_HUBS`, `tests/hub/`) und Wheels nur aus `AIOS_PIP_FIND_LINKS`; kein Test erreicht das Netz außer `tests/live/`.
 - **Push:** nach jedem Schritt nur mit Rückfrage (V0.5, Memo 45, Q5). Ein gepushter Tag wird nie bewegt; eine neue Version entsteht auf `main` über dem letzten Tag (V0.5, Memo 75, U2).
 - **Fragepakete nach der Regel *Weiter*** (`AA-AIbex-AIOS/@/@Rule/Weiter.md`): vor jedem Schritt des Plans ein kurzes Fragepaket, bei einem Patch nur, wenn eine Entscheidung offen ist (V0.5, Memo 74).
