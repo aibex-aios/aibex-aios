@@ -179,6 +179,13 @@ def check(picks, source):
 # the command
 # ---------------------------------------------------------------------------
 
+class Built:
+    """A plan of aios --fetch before it is shown: steps, unchanged lines, backup, machine part."""
+
+    def __init__(self, plan, lines, backup_, machine):
+        self.plan, self.lines, self.backup, self.machine = plan, lines, backup_, machine
+
+
 class Fetch:
     def __init__(self, to=None, project=None):
         """project: the vault root of a distribution, which may not be bound yet (aios --install)."""
@@ -236,6 +243,40 @@ class Fetch:
         that run before the backup (aios --install distribution-*: kernel; the setups of the
         workhorses then go there too); first: steps after the backup, before fetching (binding);
         notes: lines without action at the end of the plan."""
+        built = self.build(picks, packages, machine, first, notes)
+        if built.plan is None:
+            say(f"=> the packages of {self.project} match lock.yaml, nothing to do")
+            for line in built.lines:
+                say(f"   {line}")
+            return 0
+        if ui.MODE != "yes":
+            say(title)
+            for line in built.lines:
+                say(f"   {line}")
+        self.run(built)
+        for line in done(picks):
+            say(line)
+        return 0
+
+    def run(self, built):
+        """Confirm and execute a built plan, all or nothing (spec 01, I11)."""
+        try:
+            ui.confirm(built.plan, "go on?", "cancelled")
+        except (ui.PlanOnly, SystemExit):
+            raise
+        except BaseException as e:                  # noqa: BLE001 - all or nothing (spec 01, I11)
+            if not built.backup.started:
+                if built.machine and not isinstance(e, (ui.Cancelled, Abort)):
+                    raise Abort(f"the machine part failed ({type(e).__name__}: {e}); the vault is "
+                                f"unchanged, what is installed stays")
+                raise
+            backup.restore(self.project)
+            raise Abort(f"the plan failed ({type(e).__name__}: {e}); "
+                        f"the state before the plan is restored")
+
+    def build(self, picks, packages, machine=None, first=None, notes=()):
+        """The plan for the new state without showing it (Built); Built.plan is None if nothing is
+        to do. aios --activate shows its steps as the substeps of the change of packages (B13)."""
         check(picks, self.source)
         plan = Plan()
         if first:
@@ -306,10 +347,7 @@ class Fetch:
         users = Plan()                              # a missing entry in workers.yaml alone is a plan (B8)
         self.worker_users(users, picks)
         if not plan and not machine and not users:
-            say(f"=> the packages of {self.project} match lock.yaml, nothing to do")
-            for line in lines:
-                say(f"   {line}")
-            return 0
+            return Built(None, lines, None, None)
         deploy.register_session(plan, later=bool(first), target=self.project)   # the target (K2)
         plan.steps += users.steps + list(notes)
         plan.steps += [(line, None) for line in open_files(self.project, moved)]
@@ -323,26 +361,7 @@ class Fetch:
         if machine:
             plan.steps[0:0] = ([("machine part: kernel and workhorses", None)] + machine.steps
                                + [(f"vault part: {self.project}", None)])
-        if ui.MODE != "yes":
-            say(title)
-            for line in lines:
-                say(f"   {line}")
-        try:
-            ui.confirm(plan, "go on?", "cancelled")
-        except (ui.PlanOnly, SystemExit):
-            raise
-        except BaseException as e:                  # noqa: BLE001 - all or nothing (spec 01, I11)
-            if not bk.started:
-                if machine and not isinstance(e, (ui.Cancelled, Abort)):
-                    raise Abort(f"the machine part failed ({type(e).__name__}: {e}); the vault is "
-                                f"unchanged, what is installed stays")
-                raise
-            backup.restore(self.project)
-            raise Abort(f"the plan failed ({type(e).__name__}: {e}); "
-                        f"the state before the plan is restored")
-        for line in done(picks):
-            say(line)
-        return 0
+        return Built(plan, lines, bk, machine)
 
 
     def workers(self, plan, picks, from_cache=False):

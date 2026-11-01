@@ -89,7 +89,25 @@ def write_state(data):
     f.write_text(yamlsub.dump(out, "written by AIOS (worker setup), do not edit"), encoding="utf-8")
 
 
+# A plan over several projects (aios --activate, B13) builds the fetch of each project as if the
+# projects before it were done: their versions are installed, their lock.yaml has the new versions.
+ASSUMED = {"installed": set(), "locks": {}}
+
+
+def assume(project, now):
+    """The fetch of project with the workhorse versions now is planned before the next one."""
+    ASSUMED["installed"] |= {(n, str(v)) for n, v in now.items()}
+    ASSUMED["locks"][str(project)] = dict(now)
+
+
+def forget():
+    ASSUMED["installed"].clear()
+    ASSUMED["locks"].clear()
+
+
 def installed(pkg, version):
+    if (pkg, str(version)) in ASSUMED["installed"]:
+        return True
     e = (read_state()["workers"].get(pkg) or {}).get(str(version))
     return e is not None and install_dir(pkg, version).is_dir()
 
@@ -300,6 +318,8 @@ def subset_entries(f, section):
 
 def locked_workers(project):
     """{package: version} of the worker packages (worker-<name>) in lock.yaml of project."""
+    if str(project) in ASSUMED["locks"]:
+        return dict(ASSUMED["locks"][str(project)])
     entries = subset_entries(Path(project) / ".aios" / "lock.yaml", "packages")
     return {n: e["version"] for n, e in entries.items() if n.startswith("worker-") and e.get("version")}
 

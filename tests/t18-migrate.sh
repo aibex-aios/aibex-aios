@@ -117,7 +117,13 @@ packages:
    V6="$SANDBOX/work/§Sechs"; mkdir -p "$V6/@"; mk "$V6/.aios/config.yaml" $'aios: 0.4.0\n'   # B15: same range
    A "$V6" --fetch 'skill-memo==6.0.0' --yes >/dev/null
    sed -i.bak 's/skill-memo: .*/skill-memo: "~=6.0"/' "$V6/.aios/config.yaml" && rm "$V6/.aios/config.yaml.bak"
-   assert_contains "$(A "$V6" --activate v0.5.0 "$V6" --plan)" "$V6: packages: skill-memo 6.0.0 -> skill-memo 6.0.1: \"~=6.0\" (requires.aios)" "B15: change with the same range planned"
+   OUT="$(A "$V6" --activate v0.5.0 "$V6" --plan)"
+   assert_contains "$OUT" "$V6: packages: skill-memo 6.0.0 -> skill-memo 6.0.1: \"~=6.0\" (requires.aios)" "B15: change with the same range planned"
+   assert_contains "$OUT" "packages for AIOS 0.5.0: $V6:" "B13: heading of the change of packages (V0.6, memo 81)"
+   assert_not_contains "$OUT" "changeover from v0.4" "B13: no heading of v0.4 without a renaming"
+   assert_contains "$OUT" "upgrade 6.0.0 -> 6.0.1 skill-memo 6.0.1 (aibex-aios) -> $V6/@/@!Package/skill-memo" "B13: substep: the package is fetched"
+   assert_contains "$OUT" "$V6/.aios/lock.yaml: 1 packages" "B13: substep: lock.yaml"
+   assert_contains "$OUT" "back up what the plan changes" "B13: substep: backup"
    A "$V6" --activate v0.5.0 "$V6" --yes >/dev/null
    assert_contains "$(cat "$V6/.aios/lock.yaml")" "version: 6.0.1" "B15: lock.yaml on 6.0.1 although the range stayed (V0.6, memo 72)"
    assert_contains "$(sed -n 's/^version: //p' "$V6/@/@!Package/skill-memo/manifest.yaml")" "6.0.1" "B15: the package itself on 6.0.1"

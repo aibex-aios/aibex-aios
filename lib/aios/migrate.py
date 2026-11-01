@@ -9,10 +9,11 @@ otherwise the highest version is taken and the change is named in the plan.
 
 from __future__ import annotations
 
+import re
 import shutil
 from pathlib import Path
 
-from . import config, deploy, hub, integrity, resolver, semver, ui
+from . import config, deploy, hub, integrity, resolver, semver, ui, worker
 from .install import make_writable
 from .ui import Abort, say, warn
 
@@ -168,7 +169,7 @@ class Change04:
 
     def __init__(self, project, source, hubs, kernel):
         from . import fetch
-        self.project = project
+        self.project, self.kernel, self.built = project, kernel, None
         self.entries, self.lines_, self.conflicts, self.data = {}, [], [], []
         r = resolver.Resolver(source, hubs, kernel)
         locked = locked_versions(project)
@@ -207,18 +208,43 @@ class Change04:
     def __bool__(self):
         return bool(self.entries)
 
-    def apply(self):
+    def renamed(self):
+        return any(new != name for name, (new, _) in self.entries.items())
+
+    def substeps(self):
+        """Build the fetch with the new packages: and the new kernel; its steps are the substeps
+        shown in the plan of the activation and executed by apply (spec 06, Paketwechsel bei der
+        Aktivierung; V0.6, memo 81: B13)."""
         from . import fetch
-        f = self.project / ".aios" / "config.yaml"
+        self.fetch = f = fetch.Fetch(project=self.project)
+        f.kernel = self.kernel                      # resolve and check against the new binding
+        packages = dict(f.packages)
         for name, (new, text) in self.entries.items():
-            if new != name:
-                config.drop_skill(f, name, "packages")
-            config.set_skill(f, new, text, "packages")
+            packages[new] = self.new_entry(packages.pop(name), text)
+        self.packages = packages
+        picks = f.from_lock({**f.legacy, **packages})
+        if picks is None:
+            picks = f.resolve(packages)
+        self.built = f.build(picks, packages)
+        worker.assume(self.project, {n: str(p.version) for n, p in picks.items() if p.manifest.type == "worker"})
+        if self.built.plan is None:
+            return []
+        return [text for text, _ in self.built.plan.steps]
+
+    @staticmethod
+    def new_entry(entry, text):
+        """The packages: entry for text (a quoted range or a one-line mapping) like entry."""
+        rng = re.search(r'"([^"]*)"', text).group(1)
+        return dict(entry, range=rng) if isinstance(entry, dict) else rng
+
+    def apply(self):
         for src, dst in self.data:
             src.rename(dst)
+        if self.built is None or self.built.plan is None:
+            return
         mode, ui.MODE = ui.MODE, "yes"              # confirmed with the plan of the activation
         try:
-            fetch.sync(str(self.project))
+            self.fetch.run(self.built)
         finally:
             ui.MODE = mode
 
@@ -241,6 +267,11 @@ def plan04(path, plan_, kernel):
     if conflicts:
         raise Abort("the changeover to AIOS " + kernel + " is not possible:\n   "
                     + "\n   ".join(conflicts) + "\n   nothing is changed")
-    for c in changes:
-        plan_.add("changeover from v0.4:\n         " + "\n         ".join(c.lines_), c.apply)
+    try:
+        for c in changes:
+            head = "changeover from v0.4" if c.renamed() else f"packages for AIOS {kernel}: {c.project}"
+            sub = ["   " + line for line in c.substeps()]
+            plan_.add(head + ":\n         " + "\n         ".join(c.lines_ + sub), c.apply)
+    finally:
+        worker.forget()
     return changes
