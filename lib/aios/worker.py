@@ -312,6 +312,27 @@ def users(pkg, version, data, but=None):
             if p != str(but) and locked_workers(p).get(pkg) == str(version)]
 
 
+def known_users(pkg, version, but=None):
+    """Projects of the known vaults whose lock.yaml names pkg version, without but; they count as
+    users even if workers.yaml misses them (spec 07, Nutzende Projekte; V0.6, memo 81: B12)."""
+    from . import install, integrity
+    found = []
+    for v in install.known_vaults():
+        for p, _ in integrity.projects(Path(v)):
+            if str(p) != str(but) and locked_workers(p).get(pkg) == str(version):
+                found.append(str(p))
+    return found
+
+
+def add_users(pkg, version, projects):
+    """workers.yaml: projects use pkg version (B12)."""
+    data = read_state()
+    e = (data["workers"].get(pkg) or {}).get(str(version))
+    if e is not None:
+        e["projects"] = sorted(set(e.get("projects") or []) | set(projects))
+        write_state(data)
+
+
 def order(picks):
     """Worker picks with the workhorses they depend on first (spec 07, setup)."""
     out, seen = [], set()

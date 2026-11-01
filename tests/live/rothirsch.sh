@@ -97,7 +97,7 @@
       [ "$RC" == "0" ] || printf '%s\n' "$OUT"
       check "upgrade: 1.0.0 -> 1.0.1" has "$OUT" "=> upgrade distribution-rothirsch 1.0.0 -> 1.0.1 into $V"
       check "upgrade: setup worker-yt-dlp 0.1.9" has "$OUT" "setup      worker-yt-dlp 0.1.9 -> $WK/worker-yt-dlp/v0.1.9"
-      check "upgrade: old version removed" has "$OUT" "remove     worker-yt-dlp 0.1.1 -> $WK/worker-yt-dlp/v0.1.1 (no project uses it)"
+      check "upgrade: old version removed" has "$OUT" "remove     worker-yt-dlp 0.1.1 -> $WK/worker-yt-dlp/v0.1.1 (removed: no known project uses it)"
       check "upgrade: forwarder takes 0.1.9" has "$(cd "$V" && "$BIN/yt-dlp" ---which)" "package=worker-yt-dlp version=0.1.9"
       check "upgrade: 0.1.1 gone" [ ! -e "$WK/worker-yt-dlp/v0.1.1" ]
 

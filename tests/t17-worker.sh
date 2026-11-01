@@ -115,7 +115,7 @@
 
    OUT="$(echo y | A "$D" --fetch 'worker-test~=0.1.0')"
    assert_not_contains "$OUT" "setup      worker-test" "upgrade: version already on the machine, no setup"
-   assert_contains "$OUT" "remove     worker-test 0.1.0 -> $I (no project uses it)" "upgrade: old version removed"
+   assert_contains "$OUT" "remove     worker-test 0.1.0 -> $I (removed: no known project uses it)" "upgrade: old version removed"
    [ ! -e "$I" ] && [ -d "$J" ] && ok || fail "upgrade: 0.1.0 gone, 0.1.1 stays"
    assert_contains "$(cat "$HOME/.aios/workers.yaml")" "projects: [\"$D\", \"$G\"]" "upgrade: both projects use 0.1.1"
    OUT="$(echo y | A "$G" --fetch --remove skill-test-nutzer)"
@@ -136,9 +136,27 @@
    assert_not_contains "$OUT" "no elements deployed" "O3: not 'no elements deployed'"
    rm -rf "$X"
    OUT="$(echo y | A "$D" --fetch --remove worker-test)"
-   assert_contains "$OUT" "remove     worker-test 0.1.1 -> $J (no project uses it)" "orphaned project does not count"
+   assert_contains "$OUT" "remove     worker-test 0.1.1 -> $J (removed: no known project uses it)" "orphaned project does not count"
    [ ! -e "$J" ] && [ ! -e "$T" ] && ok || fail "removal: installation and forwarder gone"
    [ ! -e "$(dirname "$J")" ] && ok || fail "removal: no empty folder of the package under workers/ (B5)"
+
+#===============================================================================
+# B12 (V0.6, memos 71, 81): a project of a known vault that workers.yaml misses still counts
+#===============================================================================
+
+   A "$D" --fetch 'worker-test==0.1.0' --yes >/dev/null
+   [ -d "$I" ] && ok || fail "B12: 0.1.0 set up again"
+   W="$SANDBOX/work/§Alt"; P="$W/P-Alt"; mkdir -p "$W/@" "$W/.aios" "$P/@" "$P/.aios" "$HOME/.aios/sessions"
+   printf 'aios: 0.5.1\n' > "$W/.aios/config.yaml"
+   printf '# written by AIOS (fetch, workspace), do not edit\nschema: 1\npackages:\n  worker-test:\n    version: 0.1.0\n' > "$P/.aios/lock.yaml"
+   printf 'cwd: "%s"\nassistant: none\nused: 2026-10-25T10:00:00\n' "$P" > "$HOME/.aios/sessions/b12.yaml"
+   assert_not_contains "$(cat "$HOME/.aios/workers.yaml")" "$P" "B12: §Alt not in workers.yaml"
+   OUT="$(echo y | A "$D" --fetch --remove worker-test)"
+   assert_contains "$OUT" "$HOME/.aios/workers.yaml: worker-test 0.1.0 stays, used by $P" "B12: plan keeps the version"
+   assert_not_contains "$OUT" "remove     worker-test 0.1.0" "B12: no removal"
+   [ -d "$I" ] && [ -x "$T" ] && ok || fail "B12: 0.1.0 and its forwarder still installed"
+   assert_contains "$(cat "$HOME/.aios/workers.yaml")" "projects: [\"$P\"]" "B12: project of §Alt noted in workers.yaml"
+   rm -f "$HOME/.aios/sessions/b12.yaml"; rm -rf "$W"                   # 0.1.0 stays, orphaned
 
 #===============================================================================
 # kind script: plan shows the script, failing setup restores everything (I11)

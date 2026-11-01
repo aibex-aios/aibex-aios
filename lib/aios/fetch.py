@@ -392,6 +392,11 @@ class Fetch:
                 continue
             if worker.users(name, ver, data, but=self.project):
                 continue
+            found = worker.known_users(name, ver, but=self.project)
+            if found:                               # missing in workers.yaml (B12)
+                plan.add(f"{worker.state_file()}: {name} {ver} stays, used by " + ", ".join(found),
+                         lambda n=name, v=ver, f=found: worker.add_users(n, v, f))
+                continue
             e = old.get(name) or {}
             key = resolver.FROM + e["from"] if e.get("from") else e.get("hub")
             d = self.source.folder(name, key, ver) if key else None
@@ -399,7 +404,7 @@ class Fetch:
                 m = package.load(d) if d and (d / "manifest.yaml").is_file() else None
             except package.ManifestError:
                 m = None
-            plan.add(f"remove     {name} {ver} -> {worker.install_dir(name, ver)} (no project uses it)",
+            plan.add(f"remove     {name} {ver} -> {worker.install_dir(name, ver)} (removed: no known project uses it)",
                      lambda n=name, v=ver, d=d, m=m: worker.remove(n, v, d, m))
 
 

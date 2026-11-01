@@ -7,7 +7,7 @@ v0.6.0 ist abgeschlossen (Tag `v0.6.0`, Abnahme in Memo 74 von `AA-AIbex-AIOS/@M
 | # | Schritt | Ergebnis | Spec | Stand |
 |---|---|---|---|---|
 | 0 | **Repo auf 0.6.1:** `VERSION`, `manifest.yaml`, `STATUS.md`, `CLAUDE.md` | Ausgangsprüfung 1314 Prüfungen grün; `VERSION` und `manifest.yaml` `0.6.1-dev`; `STATUS.md` neu für v0.6.1 (v0.6.0 im Tag); `CLAUDE.md` mit Plan und Freigabe, Arbeitsrechner auf 0.6.0, Weiterleiter `~/.aios/bin/aios`; 1314 Prüfungen grün | 01 | ☑ abgeschlossen |
-| 1 | **B12:** Nutzer einer Version gegen die bekannten Vaults | | 07 | ☐ |
+| 1 | **B12:** Nutzer einer Version gegen die bekannten Vaults | `worker.known_users`: Projekte der bekannten Vaults (`install.known_vaults`), deren `lock.yaml` die Version nennt; `worker.add_users` trägt sie in `workers.yaml` nach; `fetch.worker_users` behält eine solche Version mit der Zeile `<workers.yaml>: <paket> <version> stays, used by <projekte>`, sonst `remove … (removed: no known project uses it)` (Spec 07); Tests: t17 (+6: Vault mit Altbindung nur über den Merker der Session bekannt, Version und Weiterleiter bleiben, Projekt nachgetragen), Text in t17 und `tests/live/rothirsch.sh`; 1320 Prüfungen grün | 07 | ☑ abgeschlossen |
 | 2 | **B13:** Paketwechsel mit Unterschritten | | 04, 06 | ☐ |
 | 3 | **H3:** offene Dateien je Paketordner | | 06 | ☐ |
 | 4 | **Distributionen als Kandidaten:** Rothirsch `1.1.0-rc1`, Capricorn `0.3.0-rc1` | | 06 | ☐ |
