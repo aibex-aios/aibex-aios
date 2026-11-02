@@ -161,6 +161,10 @@ allowed-tools: Bash($FW --skill aios-init)
    assert_contains "$(SY "$G" --plan)" "changed  aios-init" "changed wrapper: written anew"
    SY "$G" --yes >/dev/null
    assert_contains "$(SY "$G" --plan)" "are up to date" "after the sync: up to date"
+   sed -i.bak "/^  aios-init:/,/digest/s/^    version: .*/    version: 0.0.9/" "$G/.aios/registry" && rm "$G/.aios/registry.bak"
+   assert_contains "$(SY "$G" --plan)" "changed  aios-init $(cat "$SRC/VERSION")  (kernel)" "B16: same wrapper of another kernel version: changed"
+   SY "$G" --yes >/dev/null
+   assert_contains "$(sed -n '/^  aios-init:/,/digest/p' "$G/.aios/registry")" "version: $(cat "$SRC/VERSION")" "B16: registry names the running kernel"
    mkdir -p "$G/.claude/skills/aios-fremd"
    rm -rf "$G/.claude/skills/aios-status"; mkdir -p "$G/.claude/skills/aios-status"; printf 'mine\n' > "$G/.claude/skills/aios-status/SKILL.md"
    assert_contains "$(SY "$G" --plan)" "changed  aios-status" "a wrapper in the registry is managed by AIOS"

@@ -1,7 +1,7 @@
 #!/bin/bash
 # changeover.sh: live test of the change of packages at the activation (v0.6.1, step 5; V0.6, memos 81, 84, 90):
 # vault A with two projects on worker-yt-dlp 0.1.0 (fits 0.5 only), vault B on 0.1.0 without an entry in
-# workers.yaml, known by the marker of a session; aios --activate of A on the candidate 0.6.1-rc1 shows the
+# workers.yaml, known by the marker of a session; aios --activate of A on the candidate (VERSION) shows the
 # fetch of each project (B13), sets up 0.1.1 once and keeps 0.1.0 for B (B12); real PyPI
 
    if [ "$*" == "-?" ] || [ "$*" == "--help" ]; then
@@ -18,7 +18,7 @@
 #===============================================================================
 
    if [ "$*" == "--version" ]; then
-      echo "0.1.0"; exit 0
+      echo "0.1.1"; exit 0
    fi
 
 #===============================================================================
@@ -41,13 +41,14 @@
       count() { printf '%s\n' "$1" | grep -c -F "$2"; }
       G() { git -c user.name=live -c user.email=live@test "$@"; }
 
-      K="0.6.1-rc1"; S="$SB/kernel"                 # sandbox clone with the working tree and the local tag (F59)
+      K="$(cat "$REPO/VERSION")"; S="$SB/kernel"    # sandbox clone with the working tree and the local tag (F59)
       G clone -q "$REPO" "$S" || exit 1
       (cd "$REPO" && git -c core.quotePath=false ls-files -co --exclude-standard) | while IFS= read -r F; do
          mkdir -p "$S/$(dirname "$F")"; cp -p "$REPO/$F" "$S/$F"
       done
       printf '%s\n' "$K" > "$S/VERSION"; sed -i.bak "s/^version: .*$/version: $K/" "$S/manifest.yaml" && rm "$S/manifest.yaml.bak"
-      G -C "$S" add -A && G -C "$S" commit -q -m "v$K" && G -C "$S" tag "v$K" || exit 1
+      G -C "$S" tag -d "v$K" >/dev/null 2>&1        # a tag of the repo moves onto the working tree, in the clone only
+      G -C "$S" add -A && { G -C "$S" diff --cached --quiet || G -C "$S" commit -q -m "v$K"; } && G -C "$S" tag "v$K" || exit 1
 
       H="$SB/aibex-local"; mkdir -p "$H/aios-index"   # local hub of the tagged package repos (S4)
       printf 'schema: 1\npackages:\n' > "$H/aios-index/index.yaml"

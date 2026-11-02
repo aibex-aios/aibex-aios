@@ -208,6 +208,7 @@ class Sync:
                 else:
                     self.new_k.append((name, text, dig))
             elif (entry.get("source") != "kernel" or entry.get("digest") != dig
+                  or entry.get("version") != kernel_version()   # same wrapper, other kernel (B16)
                   or not target.is_dir() or digest(target) != dig):
                 self.changed_k.append((name, text, dig))
         root = ctx.vault

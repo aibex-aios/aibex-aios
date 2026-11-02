@@ -1,14 +1,14 @@
 #!/bin/bash
 # rothirsch.sh: live test of the distribution Rothirsch 1.1 in a sandbox (V0.5, step 13; V0.6, step 11; v0.6.1,
-# step 5): candidate 1.1.0-rc1 with the kernel 0.6.1-rc1 from a sandbox clone of this repo with the local tag
-# (F59); local hub aibex-local of the package repos, real PyPI
+# step 5): the candidate of distribution-rothirsch with the kernel of VERSION from a sandbox clone of this
+# repo with the local tag (F59); local hub aibex-local of the package repos, real PyPI
 
    if [ "$*" == "-?" ] || [ "$*" == "--help" ]; then
       echo '   usage: tests/live/rothirsch.sh [<repos>]  # install distribution-rothirsch from a local hub of the'
       echo '                                           # tagged package repos in <repos> (default ~/git/AIbex)'
       echo '          tests/live/rothirsch.sh --version  # print version'
       echo '   not part of tests/run: needs network access to PyPI, takes about two minutes;'
-      echo '   the test versions distribution-rothirsch 1.1.0-rc2 and worker-yt-dlp 0.1.9 exist only in the'
+      echo '   the test versions distribution-rothirsch <candidate>-rc9 and worker-yt-dlp 0.1.9 exist only in the'
       echo '   clones of the sandbox hub, never in the package repos (S5)'
       echo '   see also: tests/live/workers.sh, aios --install distribution-<name>'
       exit 1
@@ -19,7 +19,7 @@
 #===============================================================================
 
    if [ "$*" == "--version" ]; then
-      echo "0.3.0"; exit 0
+      echo "0.3.1"; exit 0
    fi
 
 #===============================================================================
@@ -40,13 +40,16 @@
       line() { printf '%s\n' "$1" | grep -n -m1 -F "$2" | cut -d: -f1; }
       G() { git -c user.name=live -c user.email=live@test "$@"; }
 
-      K="0.6.1-rc1"; S="$SB/kernel"                 # sandbox clone with the working tree and the local tag (F59)
+      K="$(cat "$REPO/VERSION")"; S="$SB/kernel"    # sandbox clone with the working tree and the local tag (F59)
+      DV="$(sed -n 's/^version: //p' "$REPOS/distribution-rothirsch/manifest.yaml")"   # the candidate of the distribution
+      DT="${DV%-rc*}-rc9"                           # its test version for the upgrade, only in the sandbox hub
       G clone -q "$REPO" "$S" || exit 1
       (cd "$REPO" && git -c core.quotePath=false ls-files -co --exclude-standard) | while IFS= read -r F; do
          mkdir -p "$S/$(dirname "$F")"; cp -p "$REPO/$F" "$S/$F"
       done
       printf '%s\n' "$K" > "$S/VERSION"; sed -i.bak "s/^version: .*$/version: $K/" "$S/manifest.yaml" && rm "$S/manifest.yaml.bak"
-      G -C "$S" add -A && G -C "$S" commit -q -m "v$K" && G -C "$S" tag "v$K" || exit 1
+      G -C "$S" tag -d "v$K" >/dev/null 2>&1        # a tag of the repo moves onto the working tree, in the clone only
+      G -C "$S" add -A && { G -C "$S" diff --cached --quiet || G -C "$S" commit -q -m "v$K"; } && G -C "$S" tag "v$K" || exit 1
 
       H="$SB/aibex-local"; mkdir -p "$H/aios-index"   # local hub of the tagged package repos (S4)
       printf 'schema: 1\npackages:\n' > "$H/aios-index/index.yaml"
@@ -71,8 +74,8 @@
       I() { (cd "$V" && "$S/bin/aios" --install "$@" 2>&1); }      # the candidate installs itself from its clone
       WK="$HOME/.aios/workers"; BIN="$HOME/.aios/bin"   # no /opt/aios/workers.yaml: workers per user (V0.6, F27)
 
-      OUT="$(I distribution-rothirsch==1.1.0-rc1 --plan)"
-      check "plan: install distribution-rothirsch 1.1.0-rc1 (kernel $K)" has "$OUT" "=> install distribution-rothirsch 1.1.0-rc1 into $V (kernel $K)"
+      OUT="$(I distribution-rothirsch==$DV --plan)"
+      check "plan: install distribution-rothirsch $DV (kernel $K)" has "$OUT" "=> install distribution-rothirsch $DV into $V (kernel $K)"
       check "plan: kernel from the sandbox clone" has "$OUT" "install AIOS v$K from $S"
       check "plan: setup worker-deno" has "$OUT" "setup      worker-deno 0.1.1 -> $WK/worker-deno/v0.1.1"
       check "plan: setup worker-yt-dlp" has "$OUT" "setup      worker-yt-dlp 0.1.1 -> $WK/worker-yt-dlp/v0.1.1"
@@ -83,11 +86,11 @@
          check "plan: new $P" has "$OUT" "new        $P"
       done
 
-      OUT="$(I distribution-rothirsch==1.1.0-rc1 --yes)"; RC=$?
+      OUT="$(I distribution-rothirsch==$DV --yes)"; RC=$?
       [ "$RC" == "0" ] || printf '%s\n' "$OUT"
       check "install: exit 0" [ "$RC" == "0" ]
       check "vault bound to $K" has "$(cat "$V/.aios/config.yaml")" "aios: $K"
-      check "packages: the distribution" has "$(cat "$V/.aios/config.yaml")" 'distribution-rothirsch: "==1.1.0-rc1"'
+      check "packages: the distribution" has "$(cat "$V/.aios/config.yaml")" "distribution-rothirsch: \"==$DV\""
       check "kernel $K under ~/.aios/versions" [ -x "$HOME/.aios/versions/v$K/bin/aios" ]
       check "skill video-analyse registered by the installation (K2)" [ -f "$V/.claude/skills/video-analyse/SKILL.md" ]
       check "the forwarder runs $K in the vault" [ "$(cd "$V" && "$BIN/aios" --version 2>&1)" == "$K" ]
@@ -98,13 +101,13 @@
       sed -i.bak 's/^version: .*$/version: 0.1.9/' "$W1/manifest.yaml" && rm "$W1/manifest.yaml.bak"
       G -C "$W1" commit -q -am "worker-yt-dlp 0.1.9 (test version)" && G -C "$W1" tag v0.1.9
       D1="$H/distribution-rothirsch"
-      sed -i.bak -e 's/^version: 1.1.0-rc1$/version: 1.1.0-rc2/' "$D1/manifest.yaml" && rm "$D1/manifest.yaml.bak"
+      sed -i.bak -e "s/^version: $DV\$/version: $DT/" "$D1/manifest.yaml" && rm "$D1/manifest.yaml.bak"
       printf '  worker-yt-dlp: "==0.1.9"\n' >> "$D1/manifest.yaml"
-      G -C "$D1" commit -q -am "distribution-rothirsch 1.1.0-rc2 (test version)" && G -C "$D1" tag v1.1.0-rc2
+      G -C "$D1" commit -q -am "distribution-rothirsch $DT (test version)" && G -C "$D1" tag v$DT
 
-      OUT="$(echo y | I distribution-rothirsch==1.1.0-rc2)"; RC=$?
+      OUT="$(echo y | I distribution-rothirsch==$DT)"; RC=$?
       [ "$RC" == "0" ] || printf '%s\n' "$OUT"
-      check "upgrade: 1.1.0-rc1 -> 1.1.0-rc2" has "$OUT" "=> upgrade distribution-rothirsch 1.1.0-rc1 -> 1.1.0-rc2 into $V"
+      check "upgrade: $DV -> $DT" has "$OUT" "=> upgrade distribution-rothirsch $DV -> $DT into $V"
       check "upgrade: setup worker-yt-dlp 0.1.9" has "$OUT" "setup      worker-yt-dlp 0.1.9 -> $WK/worker-yt-dlp/v0.1.9"
       check "upgrade: old version removed" has "$OUT" "remove     worker-yt-dlp 0.1.1 -> $WK/worker-yt-dlp/v0.1.1 (removed: no known project uses it)"
       check "upgrade: forwarder takes 0.1.9" has "$(cd "$V" && "$BIN/yt-dlp" ---which)" "package=worker-yt-dlp version=0.1.9"

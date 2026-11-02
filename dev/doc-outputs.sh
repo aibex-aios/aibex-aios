@@ -122,7 +122,7 @@
       if [ -n "$AIOS_DOC_05" ]; then
       G -C "$S" tag v0.6.1 || exit 1
       D="$SB/hubs/aibex-aios/distribution-rothirsch"
-      sed -i.bak -e 's/^version: 1.1.0-rc1$/version: 1.1.0/' -e 's/^kernel: "==0.6.1-rc1"$/kernel: "==0.6.1"/' "$D/manifest.yaml" &&
+      sed -i.bak -e 's/^version: 1.1.0-rc[0-9]*$/version: 1.1.0/' -e 's/^kernel: "==0.6.1-rc[0-9]*"$/kernel: "==0.6.1"/' "$D/manifest.yaml" &&
          rm "$D/manifest.yaml.bak" && G -C "$D" commit -q -am "distribution-rothirsch 1.1.0" && G -C "$D" tag v1.1.0 || exit 1
       (cd "$HOME/tmp" && aios --install v0.6.1 --yes >/dev/null 2>&1) || exit 1    # prerequisite of the tutorial
       V="$HOME/tmp/§Rothirsch"; mkdir -p "$V/P-Projekt"

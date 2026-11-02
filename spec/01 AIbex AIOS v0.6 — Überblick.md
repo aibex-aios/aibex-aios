@@ -159,7 +159,7 @@ v0.6.1 ist ein Korrektur-Patch auf v0.6.0 (V0.6, Memos 79–84):
 | Plan von `aios --activate` mit allen Unterschritten des Paketwechsels unter `packages for AIOS <version>` (Spec 06, *Paketwechsel bei der Aktivierung*; B13) | Memos 71, 81 |
 | offene Dateien im Plan je Paketordner zusammengefasst (Spec 06, *Holen*; H3) | Memos 72, 81 |
 | Distributionen mit Kernel 0.6: `distribution-capricorn` 0.3.0 und `distribution-rothirsch` 1.1.0 mit `kernel: "==0.6.1"` (Spec 06, *Distributionen*) | Memos 82, 83 |
-| Release-Kandidat `v0.6.1-rc1` für die Abnahme (*Abnahmetest*) | Memos 77, 82 |
+| Release-Kandidaten `v0.6.1-rc<n>` für die Abnahme (*Abnahmetest*), bei einem Befund ein neuer | Memos 77, 82 |
 
 ## Vorabversionen
 
@@ -190,20 +190,20 @@ AIBOS hält diese Regeln in jedem Befehl ein (für Pakete zusätzlich P1–P8, S
 
 ## Abnahmetest
 
-Der Abnahmetest von v0.6.1 läuft auf dem Arbeitsrechner nach der Implementierung, auf dem Release-Kandidaten `v0.6.1-rc1` (V0.6, Memos 82, 84). Probe-Vault: `~/vault/§Probe-AIBOS` mit dem Probe-Projekt `P-Probe`, für Capricorn ein neuer Vault `~/vault/§Probe-Capricorn`. An den Kandidaten gebunden werden nur diese Vaults; die übrigen bleiben bis Schritt 10 auf 0.6.0 (F48). Die Abnahmetests von v0.6.0 und v0.5 stehen in dieser Spec in den Tags `v0.6.0` bzw. `v0.5.1`.
+Der Abnahmetest von v0.6.1 läuft auf dem Arbeitsrechner nach der Implementierung, auf dem letzten Release-Kandidaten `v0.6.1-rc<n>` (V0.6, Memos 82, 84; `rc2` nach Befund B16, Memo 96); die Distributionen haben Kandidaten mit derselben Nummer und `kernel: "==0.6.1-rc<n>"`. Probe-Vault: `~/vault/§Probe-AIBOS` mit dem Probe-Projekt `P-Probe`, für Capricorn ein neuer Vault `~/vault/§Probe-Capricorn`. An den Kandidaten gebunden werden nur diese Vaults; die übrigen bleiben bis Schritt 10 auf 0.6.0 (F48). Die Abnahmetests von v0.6.0 und v0.5 stehen in dieser Spec in den Tags `v0.6.0` bzw. `v0.5.1`.
 
 | # | Schritt | erwartet |
 |---|---|---|
-| 1 | `~/git/AIbex/aibex-aios/bin/aios --install v0.6.1-rc1 --plan`, dann mit Ja | Kernel nach `~/.aios/versions/v0.6.1-rc1/`; Weiterleiter und Hooks unverändert; nichts in `~/bin` |
-| 2 | `aios --activate v0.6.1-rc1 ~/vault/§Probe-AIBOS` mit Ja | Bindung `aios: 0.6.1-rc1`; Hüllen in `.aios/registry` mit `source` Kernel `0.6.1-rc1`; Pakete unverändert, weil sie `<0.7` erfüllen |
+| 1 | `~/git/AIbex/aibex-aios/bin/aios --install v0.6.1-rc<n> --plan`, dann mit Ja | Kernel nach `~/.aios/versions/v0.6.1-rc<n>/`; Weiterleiter und Hooks unverändert; nichts in `~/bin` |
+| 2 | `aios --activate v0.6.1-rc<n> ~/vault/§Probe-AIBOS` mit Ja | Bindung `aios: 0.6.1-rc<n>`; Hüllen in `.aios/registry` mit `source` Kernel `0.6.1-rc<n>`; Pakete unverändert, weil sie `<0.7` erfüllen |
 | 3 | neue Session in `P-Probe`: „Wo stehen wir?" | Master-Kontext mit Block `<aios-kernel-skills>`; `aios-status` läuft ohne Rückfrage zur Erlaubnis |
-| 4 | mehrere Dateien in `P-Probe/@/@!Package/assistant-anja/` ändern; `aios --fetch skill-memo --plan` in `P-Probe`; Änderungen danach verwerfen | der Plan nennt `@/@!Package/assistant-anja/ (N files)` in einer Zeile (H3) |
-| 5 | `tests/live/changeover.sh` | grün; im Protokoll der Plan der Aktivierung mit `packages for AIOS 0.6.1-rc1` und allen Unterschritten (B13); `worker-yt-dlp` 0.1.0 bleibt für den Vault, der nicht in `workers.yaml` stand, und ist danach dort nachgetragen (B12) |
-| 6 | `tests/live/rothirsch.sh` | grün mit `distribution-rothirsch` `1.1.0-rc1` und Kernel `0.6.1-rc1` |
-| 7 | `aios --install distribution-capricorn ~/vault/§Probe-Capricorn --from ~/git/AIbex/distribution-capricorn --plan` (Tag `v0.3.0-rc1`), dann mit Ja; neue Session dort | Plan mit Rechner- und Vaultteil, Bindung `0.6.1-rc1`; vier Pakete und ihre Abhängigkeiten; Arbeitspferde 0.1.1 vorhanden oder eingerichtet; Session mit Master-Kontext, Video-Analyse und Anja verfügbar |
+| 4 | offene Dateien in `P-Probe/@/@!Package/assistant-anja/`; `aios --fetch --remove assistant-anja --plan` in `P-Probe` (nur der Plan) | der Plan nennt `@/@!Package/assistant-anja/ (N files)` in einer Zeile (H3); ein Plan, der den Paketordner nicht ändert, nennt ihn nicht (Spec 06, *Holen*, Schritt 4) |
+| 5 | `tests/live/changeover.sh` | grün; im Protokoll der Plan der Aktivierung mit `packages for AIOS 0.6.1-rc<n>` und allen Unterschritten (B13); `worker-yt-dlp` 0.1.0 bleibt für den Vault, der nicht in `workers.yaml` stand, und ist danach dort nachgetragen (B12) |
+| 6 | `tests/live/rothirsch.sh` | grün mit `distribution-rothirsch` `1.1.0-rc<n>` und Kernel `0.6.1-rc<n>` |
+| 7 | `aios --install distribution-capricorn ~/vault/§Probe-Capricorn --from ~/git/AIbex/distribution-capricorn --plan` (Tag `v0.3.0-rc<n>`), dann mit Ja; neue Session dort | Plan mit Rechner- und Vaultteil, Bindung `0.6.1-rc<n>`; vier Pakete und ihre Abhängigkeiten; Arbeitspferde 0.1.1 vorhanden oder eingerichtet; Session mit Master-Kontext, Video-Analyse und Anja verfügbar |
 | 8 | `tests/run` und `tests/live/fresh.sh` | alle grün |
 | 9 | Tutorial 05 lesen | Ausgaben wie im Sandkasten erzeugt; Rothirsch 1.1.0 mit Kernel 0.6.1, kein Hinweis auf v0.5 mehr |
-| 10 | nach Freigabe: Tag `v0.6.1`, `aios --install v0.6.1`, `§Probe-AIBOS` und `§Probe-Capricorn` auf `v0.6.1` umbinden, `aios --remove-version v0.6.1-rc1`; mit eigener Frage die übrigen Vaults auf 0.6.1 | Bindung `0.6.1`; Kandidat entfernt; keine Hülle verweist auf `0.6.1-rc1` (F50, F53) |
+| 10 | nach Freigabe: Tag `v0.6.1`, `aios --install v0.6.1`, `§Probe-AIBOS` und `§Probe-Capricorn` auf `v0.6.1` umbinden, `aios --remove-version v0.6.1-rc<n>`; mit eigener Frage die übrigen Vaults auf 0.6.1 | Bindung `0.6.1`; Kandidat entfernt; keine Hülle verweist auf `0.6.1-rc<n>` (F50, F53) |
 | 11 | Distributionen endgültig: Tags `v1.1.0` bzw. `v0.3.0` mit `kernel: "==0.6.1"`; Probe in `§Probe-Capricorn` mit `aios --install distribution-capricorn … --from …` | `lock.yaml` nennt die endgültigen Tags |
 | 12 | Veröffentlichen, jeder Schritt mit eigener Rückfrage: Tag `v0.6.1` im Kernel, gleichnamiger Tag im Konzept-Repo auf dem Abnahme-Memo; Distributionen im Hub, Probe gegen den Hub | gepusht nach Freigabe |
 
