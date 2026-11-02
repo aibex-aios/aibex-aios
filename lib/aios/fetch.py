@@ -457,16 +457,32 @@ def parse_spec(spec):
     return hub_name, name, r
 
 
+PACKAGE_DIR = re.compile(r"(@/@!Package|@Data)/[^/]+/")
+
+
 def open_files(project, dirs=()):
-    """Open changes of the target that the plan changes (V0.6, memo 02): only named."""
+    """Open changes of the target that the plan changes (V0.6, memo 02): only named,
+    one entry per package folder (V0.6, memo 81, H3)."""
     from . import project as proj
     p = Path(project)
     rel = [".aios/config.yaml", ".aios/lock.yaml"] + [os.path.relpath(d, p) for d in dirs]
-    out = proj.git(p, "status", "--porcelain", "--", *rel).stdout if proj.own_repo(p) or \
-        proj.git(p, "rev-parse", "--git-dir").returncode == 0 else ""
-    files = [line[3:] for line in out.splitlines() if line.strip()]
+    out = proj.git(p, "-c", "core.quotePath=false", "status", "--porcelain", "-uall", "--", *rel).stdout \
+        if proj.own_repo(p) or proj.git(p, "rev-parse", "--git-dir").returncode == 0 else ""
+    files, counts = [], {}
+    for line in out.splitlines():
+        if not line.strip():
+            continue
+        f = line[3:].split(" -> ")[-1]
+        m = PACKAGE_DIR.match(f)
+        if m:
+            if m.group(0) not in counts:
+                files.append(m.group(0))
+            counts[m.group(0)] = counts.get(m.group(0), 0) + 1
+        else:
+            files.append(f)
     if not files:
         return []
+    files = [f"{f} ({counts[f]} file{'' if counts[f] == 1 else 's'})" if f in counts else f for f in files]
     return [f"note: open changes in {p}: {', '.join(files)}; the plan changes them, "
             f"aios --fetch commits nothing"]
 

@@ -169,4 +169,12 @@
    OUT="$(F "$E" knowledge-orion --plan)"
    assert_contains "$OUT" "note: open changes in $E: .aios/config.yaml" "memo 02: open file of the target named"
    assert_contains "$OUT" "aios --fetch commits nothing" "memo 02: not committed"
+
+   # H3: open files below a package folder as one entry (V0.6, memo 81)
+   git -C "$E" add -A; git -C "$E" -c user.name=t -c user.email=t@t commit -qm stand
+   printf '\n# lokal\n' >> "$E/@/@!Package/skill-eins/skills/eins/SKILL.md"
+   printf 'x\n' > "$E/@/@!Package/skill-eins/notiz.md"
+   OUT="$(F "$E" skill-eins --from "$SANDBOX/src1" --plan)"
+   assert_contains "$OUT" "note: open changes in $E: @/@!Package/skill-eins/ (2 files)" "H3: one entry per package folder"
+   assert_not_contains "$OUT" "SKILL.md," "H3: files of the folder not named one by one"
    unset AIOS_HUBS
