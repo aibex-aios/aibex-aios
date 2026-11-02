@@ -22,7 +22,7 @@ Memos und ToDos im Projekt `~/vault/§AIOS/A-AIOS/AA-AIbex-AIOS/` (Regeln `@/@Ru
 
 | Ordner | Inhalt |
 |---|---|
-| `@Memo/V0.6/` | **laufende Version v0.6.1** (Korrektur-Patch): Memos 79 (Bewertung), 80–83 (Konsolidierung), 84 (Skizze mit Abnahmetest), 85, 86 (Spec und Freigabe), 87, 88 (Implementierungsplan und Freigabe); der Installer kommt danach in einem eigenen Durchlauf mit eigenem Repo (Memos 01, 04–08, 13, 80). v0.6.0 (abgeschlossen, Tag `v0.6.0`, Abnahme Memo 74, Rückblick Memos 76, 77): Memos 01–17 (Konzept), 18 (Bewertung), 19–33 (Konsolidierung mit Proben P1–P5), 34 (Soll-Bild), 35 (Skizze mit Abnahmetest), 36–38 (Spezifikation, Festlegungen F26–F41), 39 (Freigabe der Spec), 40, 41 (Implementierungsplan und Freigabe) |
+| `@Memo/V0.6/` | v0.6.1 (abgeschlossen, Tag `v0.6.1`, Abnahme Memo 107, Veröffentlichung Memo 112, Rückblick Memos 113, 114; Wünsche für v0.6.2 in Memo 114): Memos 79 (Bewertung), 80–83 (Konsolidierung), 84 (Skizze mit Abnahmetest), 85, 86 (Spec und Freigabe), 87, 88 (Implementierungsplan und Freigabe); der Installer kommt danach in einem eigenen Durchlauf mit eigenem Repo (Memos 01, 04–08, 13, 80). v0.6.0 (abgeschlossen, Tag `v0.6.0`, Abnahme Memo 74, Rückblick Memos 76, 77): Memos 01–17 (Konzept), 18 (Bewertung), 19–33 (Konsolidierung mit Proben P1–P5), 34 (Soll-Bild), 35 (Skizze mit Abnahmetest), 36–38 (Spezifikation, Festlegungen F26–F41), 39 (Freigabe der Spec), 40, 41 (Implementierungsplan und Freigabe) |
 | `@Memo/V0.5/` | v0.5.1 (abgeschlossen, Tag `v0.5.1`, Abnahme Memo 94, Veröffentlichung Memo 95, Rückblick Memos 96, 97): Memos 70–72 (Neuinstallation, Befunde B6–B8, Umfang), 73–75 (Entscheidungen, Plan, Freigabe), 76–93 (Umsetzung, Abnahme mit B9–B11); v0.5.0 (abgeschlossen, Tag `v0.5.0`, Abnahme Memo 68): Memos 01–12 (Wünsche), 13–40 (Konzept), 41–43 (Spec), 44–45 (Plan), 46–67 (Umsetzung und Abnahme) |
 | `@Memo/V0.4/`, `@ToDo/V0.4/` | v0.4 (abgeschlossen, Tag `v0.4.0`, Abnahme Memo 75) |
 | `@Memo/V0.3/` | v0.3 (abgeschlossen, Tag `v0.3.1`); in Memos 01–11 heißt der Assistent noch *Agent* (Memo 13) |
@@ -42,7 +42,7 @@ Memos und ToDos im Projekt `~/vault/§AIOS/A-AIOS/AA-AIbex-AIOS/` (Regeln `@/@Ru
 Vorher den Skill `memo` vollständig lesen und befolgen (Nummerierung, Header-Block, bestehende Memos werden nie geändert):
 
 ```
-~/vault/§AIOS/@/@!Skill/memo/SKILL.md
+~/vault/§AIOS/@/@!Package/skill-memo/skills/memo/SKILL.md
 ```
 
 Das Memo wird im Versionsordner der laufenden Version angelegt (`AA-AIbex-AIOS/@Memo/V0.6/`, nächste Nummer dieses Ordners; der Skill kennt keine Unterordner, deshalb den Ordner ausdrücklich nennen) und im Konzept-Repo `AA-AIbex-AIOS` committet, die Spec-Änderung in diesem Repo.
