@@ -2,9 +2,7 @@
 
 Dieses Tutorial führt in etwa 20 Minuten durch **Arbeitspferde** und **Distributionen** von AIbex AIOS. Du installierst die Distribution **Rothirsch** mit der Video-Analyse und der Assistentin Anja, siehst, wie AIOS das Programm `yt-dlp` einrichtet, ohne dass du etwas installierst, und wie ein zweiter Rechner, ein Update und das Entfernen damit umgehen.
 
-> **Hinweis zu AIBOS v0.6:** Dieses Tutorial zeigt AIOS v0.5. Die Distribution Rothirsch bindet den Kernel 0.5; Distributionen mit dem Kernel 0.6 folgen mit v0.6.1. Arbeitspferde, Weiterleiter und `aios --worker` arbeiten in v0.6 gleich; neu ist nur der Ort: ohne vorhandene `/opt/aios/workers.yaml` liegen die Arbeitspferde unter `~/.aios/workers/`.
-
-Voraussetzung: AIOS v0.5 ist installiert (`aios --install v0.5.1`, siehe README) mit der Grundausstattung aus `aios --prepare` (`python3` ab 3.11 mit `venv` und `pip`, `git`; auf macOS z. B. `brew install python`). Für das Einrichten der Arbeitspferde braucht der Rechner Zugang zu PyPI.
+Voraussetzung: AIOS v0.6.1 ist installiert (`aios --install v0.6.1`, siehe README), mit der Grundausstattung, die `aios --install` prüft (`python3` ab 3.11 mit `venv` und `pip`, `git`; auf macOS z. B. `brew install python`). Fehlt der Kernel, installiert ihn die Distribution selbst. Für das Einrichten der Arbeitspferde braucht der Rechner Zugang zu PyPI.
 
 ## 1. Was ein Arbeitspferd ist
 
@@ -12,14 +10,14 @@ Ein **Arbeitspferd** ist ein Programm, das Skills aufrufen, das aber nicht im Pa
 
 | | Paket | Arbeitspferd |
 |---|---|---|
-| liegt | als Kopie im Projekt (`@/@!Package/`) | einmal je Version auf dem Rechner (`/opt/aios/workers/<paket>/v<version>/`, sonst `~/.aios/workers/`) |
+| liegt | als Kopie im Projekt (`@/@!Package/`) | einmal je Version auf dem Rechner (`~/.aios/workers/<paket>/v<version>/`) |
 | wird | geholt | beim Holen **eingerichtet** (setup), danach schreibgeschützt |
 | welche Version gilt | die des Projekts | die, die `lock.yaml` des nächsten Projekts sperrt |
 | aufgerufen über | Skill | Weiterleiter `~/.aios/bin/<programm>` |
 
 ## 2. Rothirsch installieren
 
-Eine **Distribution** stellt einen Kernel und Pakete in exakten Versionen zusammen. Rothirsch 1.0.0 bringt den Kernel 0.5.0, `skill-video-analyse` 0.2.0 und `assistant-anja` 0.2.0; ihre Abhängigkeiten holt der Resolver. Lege einen neuen Vault an und schau dir den Plan an:
+Eine **Distribution** stellt einen Kernel und Pakete in exakten Versionen zusammen. Rothirsch 1.1.0 bringt den Kernel 0.6.1, `skill-video-analyse` 0.2.1 und `assistant-anja` 0.2.1; ihre Abhängigkeiten holt der Resolver. Lege einen neuen Vault an und schau dir den Plan an:
 
 ```bash
 mkdir -p ~/tmp/§Rothirsch
@@ -27,15 +25,15 @@ aios --install distribution-rothirsch ~/tmp/§Rothirsch --plan
 ```
 
 ```
-=> install distribution-rothirsch 1.0.0 into ~/tmp/§Rothirsch (kernel 0.5.0)
+=> install distribution-rothirsch 1.1.0 into ~/tmp/§Rothirsch (kernel 0.6.1)
    plan:
       (machine part: kernel and workhorses)
-      (AIOS v0.5.0 is already installed in /opt/aios/v0.5.0)
-      setup      worker-deno 0.1.0 -> /opt/aios/workers/worker-deno/v0.1.0
+      (AIOS v0.6.1 is already installed in ~/.aios/versions/v0.6.1)
+      setup      worker-deno 0.1.1 -> ~/.aios/workers/worker-deno/v0.1.1
              python /opt/homebrew/opt/python@3.11/bin/python3.11, 1 packages from worker/requirements.lock:
              | deno==2.9.8
              check: deno --version
-      setup      worker-yt-dlp 0.1.0 -> /opt/aios/workers/worker-yt-dlp/v0.1.0
+      setup      worker-yt-dlp 0.1.1 -> ~/.aios/workers/worker-yt-dlp/v0.1.1
              python /opt/homebrew/opt/python@3.11/bin/python3.11, 11 packages from worker/requirements.lock:
              | brotli==1.2.1
              | certifi==2026.10.23
@@ -54,30 +52,30 @@ aios --install distribution-rothirsch ~/tmp/§Rothirsch --plan
       create @/ (with .gitkeep)
       git init (branch main)
       .gitignore: .DS_Store, .claude/skills/, .claude/worktrees/, .agents/, .aios/registry, .aios/backup/
-      create ~/tmp/§Rothirsch/.aios/config.yaml with aios: 0.5.0
+      create ~/tmp/§Rothirsch/.aios/config.yaml with aios: 0.6.1
       commit "AIOS: Projekt initialisiert" with the files AIOS wrote
-      new        assistant-anja 0.2.0 (aibex-aios) -> ~/tmp/§Rothirsch/@/@!Package/assistant-anja
-      new        distribution-rothirsch 1.0.0 (aibex-aios) -> ~/tmp/§Rothirsch/@/@!Package/distribution-rothirsch
-      new        skill-5-8-zusammenfassung 1.2.1 (aibex-aios) -> ~/tmp/§Rothirsch/@/@!Package/skill-5-8-zusammenfassung
-      new        skill-memo 6.0.1 (aibex-aios) -> ~/tmp/§Rothirsch/@/@!Package/skill-memo
-      new        skill-video-analyse 0.2.0 (aibex-aios) -> ~/tmp/§Rothirsch/@/@!Package/skill-video-analyse
-      new        worker-deno 0.1.0 (aibex-aios) -> ~/tmp/§Rothirsch/@/@!Package/worker-deno
-      new        worker-yt-dlp 0.1.0 (aibex-aios) -> ~/tmp/§Rothirsch/@/@!Package/worker-yt-dlp
-      ~/tmp/§Rothirsch/.aios/config.yaml: packages: distribution-rothirsch: "==1.0.0"
+      new        assistant-anja 0.2.1 (aibex-aios) -> ~/tmp/§Rothirsch/@/@!Package/assistant-anja
+      new        distribution-rothirsch 1.1.0 (aibex-aios) -> ~/tmp/§Rothirsch/@/@!Package/distribution-rothirsch
+      new        skill-5-8-zusammenfassung 1.2.2 (aibex-aios) -> ~/tmp/§Rothirsch/@/@!Package/skill-5-8-zusammenfassung
+      new        skill-memo 6.0.2 (aibex-aios) -> ~/tmp/§Rothirsch/@/@!Package/skill-memo
+      new        skill-video-analyse 0.2.1 (aibex-aios) -> ~/tmp/§Rothirsch/@/@!Package/skill-video-analyse
+      new        worker-deno 0.1.1 (aibex-aios) -> ~/tmp/§Rothirsch/@/@!Package/worker-deno
+      new        worker-yt-dlp 0.1.1 (aibex-aios) -> ~/tmp/§Rothirsch/@/@!Package/worker-yt-dlp
+      ~/tmp/§Rothirsch/.aios/config.yaml: packages: distribution-rothirsch: "==1.1.0"
       ~/tmp/§Rothirsch/.aios/lock.yaml: 7 packages
-      register the project skills of ~/tmp/§Rothirsch
-      /opt/aios/workers.yaml: ~/tmp/§Rothirsch uses worker-deno 0.1.0, worker-yt-dlp 0.1.0
+      register the skills of ~/tmp/§Rothirsch
+      ~/.aios/workers.yaml: ~/tmp/§Rothirsch uses worker-deno 0.1.1, worker-yt-dlp 0.1.1
       remove the backup
    (plan only, nothing written)
 ```
 
-Der Plan hat zwei Teile. Der **Rechnerteil** installiert den Kernel, falls er fehlt, und richtet die Arbeitspferde ein, `worker-deno` zuerst, weil `worker-yt-dlp` davon abhängt. Jedes Arbeitspferd nennt die Python-Pakete mit Version, die `pip` mit geprüften Hashes installiert, und den `check`, der danach laufen muss. Der **Vaultteil** bindet die Vault-Root an den Kernel (hier mit Anlegen des Root-Projekts), holt die Pakete und registriert die Skills, mit Sicherung wie bei jedem `aios --fetch`. Ein Plan, ein Ja. Scheitert der Rechnerteil, bleibt der Vault unberührt; was schon eingerichtet ist, bleibt liegen.
+Der Plan hat zwei Teile. Der **Rechnerteil** installiert den Kernel, falls er fehlt, und richtet die Arbeitspferde ein, `worker-deno` zuerst, weil `worker-yt-dlp` davon abhängt. Jedes Arbeitspferd nennt die Python-Pakete mit Version, die `pip` mit geprüften Hashes installiert, und den `check`, der danach laufen muss. Der **Vaultteil** bindet die Vault-Root an den Kernel (hier mit Anlegen des Root-Projekts), holt die Pakete und registriert die Skills, auch die des Kernels, mit Sicherung wie bei jedem `aios --fetch`. Ein Plan, ein Ja. Scheitert der Rechnerteil, bleibt der Vault unberührt; was schon eingerichtet ist, bleibt liegen.
 
 Ohne `--plan` fragt `aios` einmal und meldet nach den Ausgaben von `check`:
 
 ```
-   registered in ~/tmp/§Rothirsch: new 5-8-zusammenfassung, memo, video-analyse
-=> packages of ~/tmp/§Rothirsch: assistant-anja 0.2.0, distribution-rothirsch 1.0.0, skill-5-8-zusammenfassung 1.2.1, skill-memo 6.0.1, skill-video-analyse 0.2.0, worker-deno 0.1.0, worker-yt-dlp 0.1.0
+   registered in ~/tmp/§Rothirsch: new aios-assistant, aios-context, aios-deploy, aios-distribution, aios-fetch, aios-gui, aios-init, aios-integrity, aios-memo, aios-package, aios-register, aios-status, gui, 5-8-zusammenfassung, memo, video-analyse
+=> packages of ~/tmp/§Rothirsch: assistant-anja 0.2.1, distribution-rothirsch 1.1.0, skill-5-8-zusammenfassung 1.2.2, skill-memo 6.0.2, skill-video-analyse 0.2.1, worker-deno 0.1.1, worker-yt-dlp 0.1.1
    assign the assistant to a project of the chain with /aios-assistant Anja
    new skills are available from the next chat (or after /reload-skills)
 ```
@@ -85,9 +83,9 @@ Ohne `--plan` fragt `aios` einmal und meldet nach den Ausgaben von `check`:
 In `.aios/config.yaml` der Vault-Root steht nur die Distribution, mit ihrer exakten Version:
 
 ```yaml
-aios: 0.5.0
+aios: 0.6.1
 packages:
-  distribution-rothirsch: "==1.0.0"
+  distribution-rothirsch: "==1.1.0"
 ```
 
 Im Chat geht dasselbe mit „installiere distribution-rothirsch": `/aios-package` zeigt beide Teile des Plans und fragt eigens nach.
@@ -111,10 +109,10 @@ aios --worker
 ```
 
 ```
-=> workhorses (/opt/aios/workers.yaml)
-   worker-deno 0.1.0  /opt/aios/workers/worker-deno/v0.1.0  programs deno  check ok
+=> workhorses (~/.aios/workers.yaml)
+   worker-deno 0.1.1  ~/.aios/workers/worker-deno/v0.1.1  programs deno  check ok
       used by ~/tmp/§Rothirsch
-   worker-yt-dlp 0.1.0  /opt/aios/workers/worker-yt-dlp/v0.1.0  programs yt-dlp  check ok
+   worker-yt-dlp 0.1.1  ~/.aios/workers/worker-yt-dlp/v0.1.1  programs yt-dlp  check ok
       used by ~/tmp/§Rothirsch
 ```
 
@@ -127,7 +125,7 @@ cd ~/tmp/§Rothirsch/P-Projekt
 ```
 
 ```
-program=yt-dlp package=worker-yt-dlp version=0.1.0 target=/opt/aios/workers/worker-yt-dlp/v0.1.0/bin/yt-dlp why=worker-yt-dlp 0.1.0 in ~/tmp/§Rothirsch/.aios/lock.yaml
+program=yt-dlp package=worker-yt-dlp version=0.1.1 target=~/.aios/workers/worker-yt-dlp/v0.1.1/bin/yt-dlp why=worker-yt-dlp 0.1.1 in ~/tmp/§Rothirsch/.aios/lock.yaml
 2026.10.21
 ```
 
@@ -147,13 +145,13 @@ programs:
   yt-dlp: [worker-yt-dlp]
 workers:
   worker-deno:
-    0.1.0:
+    0.1.1:
       kind: python
       programs: [deno]
       check: ok
       projects: ["~/tmp/§Rothirsch"]
   worker-yt-dlp:
-    0.1.0:
+    0.1.1:
       kind: python
       programs: [yt-dlp]
       check: ok
@@ -167,7 +165,7 @@ Ein Weiterleiter richtet nie selbst etwas ein. Ist eine Installation beschädigt
 Klonst du den Vault auf einen anderen Rechner, fehlen dort die Arbeitspferde. Vor jeder Antwort im Chat weist AIOS darauf hin:
 
 ```
-AIOS-WORKERS: missing worker-yt-dlp 0.1.0 — run aios --fetch
+AIOS-WORKERS: missing worker-yt-dlp 0.1.1 — run ~/.aios/bin/aios --fetch
 ```
 
 `aios --fetch` ohne Argument gleicht ab und nimmt die fehlenden Arbeitspferde in den Plan:
@@ -178,16 +176,16 @@ aios --fetch --plan
 
 ```
 => reconcile the packages of ~/tmp/§Rothirsch with lock.yaml
-   unchanged  assistant-anja 0.2.0 (aibex-aios)
-   unchanged  distribution-rothirsch 1.0.0 (aibex-aios)
-   unchanged  skill-5-8-zusammenfassung 1.2.1 (aibex-aios)
-   unchanged  skill-memo 6.0.1 (aibex-aios)
-   unchanged  skill-video-analyse 0.2.0 (aibex-aios)
-   unchanged  worker-deno 0.1.0 (aibex-aios)
-   unchanged  worker-yt-dlp 0.1.0 (aibex-aios)
+   unchanged  assistant-anja 0.2.1 (aibex-aios)
+   unchanged  distribution-rothirsch 1.1.0 (aibex-aios)
+   unchanged  skill-5-8-zusammenfassung 1.2.2 (aibex-aios)
+   unchanged  skill-memo 6.0.2 (aibex-aios)
+   unchanged  skill-video-analyse 0.2.1 (aibex-aios)
+   unchanged  worker-deno 0.1.1 (aibex-aios)
+   unchanged  worker-yt-dlp 0.1.1 (aibex-aios)
    plan:
       back up what the plan changes -> ~/tmp/§Rothirsch/.aios/backup
-      setup      worker-yt-dlp 0.1.0 -> /opt/aios/workers/worker-yt-dlp/v0.1.0
+      setup      worker-yt-dlp 0.1.1 -> ~/.aios/workers/worker-yt-dlp/v0.1.1
              python /opt/homebrew/opt/python@3.11/bin/python3.11, 11 packages from worker/requirements.lock:
              | brotli==1.2.1
              | certifi==2026.10.23
@@ -201,14 +199,15 @@ aios --fetch --plan
              | yt-dlp==2026.10.21
              | yt-dlp-ejs==0.8.0
              check: yt-dlp --version
-      register the project skills of ~/tmp/§Rothirsch
+      register the skills of ~/tmp/§Rothirsch
+      (note: open changes in ~/tmp/§Rothirsch: .aios/config.yaml, .aios/lock.yaml; the plan changes them, aios --fetch commits nothing)
       remove the backup
    (plan only, nothing written)
 ```
 
 ## 6. Aktualisieren und entfernen
 
-Eine neue Version von Rothirsch installierst du mit demselben Befehl, ohne Version: `aios --install distribution-rothirsch` zeigt `upgrade 1.0.0 -> 1.1.0` mit allem, was sich am Kernel, an den Arbeitspferden und an den Paketen ändert. Eine Version eines Arbeitspferds, die kein Projekt mehr nutzt, entfernt derselbe Plan.
+Eine neue Version von Rothirsch installierst du mit demselben Befehl, ohne Version: `aios --install distribution-rothirsch` zeigt etwa `upgrade 1.1.0 -> 1.2.0` mit allem, was sich am Kernel, an den Arbeitspferden und an den Paketen ändert. Eine Version eines Arbeitspferds, die kein bekanntes Projekt mehr nutzt, entfernt derselbe Plan; nutzt sie ein Projekt eines anderen Vaults noch, bleibt sie mit dem Hinweis `stays, used by …`.
 
 Entfernen geht wie bei jedem Paket:
 
@@ -229,15 +228,16 @@ aios --fetch --remove distribution-rothirsch --plan
       remove     worker-yt-dlp -> ~/tmp/§Rothirsch/@/@!Package/worker-yt-dlp
       ~/tmp/§Rothirsch/.aios/config.yaml: packages: remove distribution-rothirsch
       ~/tmp/§Rothirsch/.aios/lock.yaml: 0 packages
-      register the project skills of ~/tmp/§Rothirsch
-      /opt/aios/workers.yaml: ~/tmp/§Rothirsch uses no workhorse
-      remove     worker-deno 0.1.0 -> /opt/aios/workers/worker-deno/v0.1.0 (no project uses it)
-      remove     worker-yt-dlp 0.1.0 -> /opt/aios/workers/worker-yt-dlp/v0.1.0 (no project uses it)
+      register the skills of ~/tmp/§Rothirsch
+      ~/.aios/workers.yaml: ~/tmp/§Rothirsch uses no workhorse
+      remove     worker-deno 0.1.1 -> ~/.aios/workers/worker-deno/v0.1.1 (removed: no known project uses it)
+      remove     worker-yt-dlp 0.1.1 -> ~/.aios/workers/worker-yt-dlp/v0.1.1 (removed: no known project uses it)
+      (note: open changes in ~/tmp/§Rothirsch: .aios/config.yaml, .aios/lock.yaml, @/@!Package/assistant-anja/ (28 files), @/@!Package/distribution-rothirsch/ (6 files), @/@!Package/skill-5-8-zusammenfassung/ (7 files), @/@!Package/skill-memo/ (4 files), @/@!Package/skill-video-analyse/ (8 files), @/@!Package/worker-deno/ (7 files), @/@!Package/worker-yt-dlp/ (7 files); the plan changes them, aios --fetch commits nothing)
       remove the backup
    (plan only, nothing written)
 ```
 
-Die Bindung an den Kernel bleibt; Daten in `@Data/` bleiben stehen.
+Die Bindung an den Kernel bleibt; Daten in `@Data/` bleiben stehen. Die Dateien eines Paketordners, die noch nicht committet sind, nennt der Plan zusammengefasst mit ihrer Zahl.
 
 ## 7. Was du gesehen hast
 
@@ -255,4 +255,4 @@ Die Bindung an den Kernel bleibt; Daten in `@Data/` bleiben stehen.
 - Ein eigenes Arbeitspferd oder eine eigene Distribution bauen: Die Assistentin **Anja** (`/aios-assistant Anja`) begleitet dich vom Konzept bis zur Veröffentlichung; eine Distribution aus einem erprobten Projekt stellt `/aios-distribution` zusammen.
 - Zum Aufräumen: `aios --fetch --remove distribution-rothirsch --to ~/tmp/§Rothirsch` und danach `aios --deactivate ~/tmp/§Rothirsch`.
 
-Die vollständigen Regeln stehen in Spec 07 *Arbeitspferde* und Spec 06 *Distributionen*, installiert unter `/opt/aios/v0.5.0/doc/spec/`.
+Die vollständigen Regeln stehen in Spec 07 *Arbeitspferde* und Spec 06 *Distributionen*, installiert unter `~/.aios/versions/v0.6.1/doc/spec/`.

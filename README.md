@@ -92,7 +92,7 @@ vault in one plan, e.g. Rothirsch with the video analysis and the assistant Anja
 aios --install distribution-rothirsch ~/Vaults/§Rothirsch
 ```
 
-Rothirsch binds kernel 0.5; distributions with kernel 0.6 follow with v0.6.1.
+Rothirsch 1.1.0 binds kernel 0.6.1.
 
 
 ## Quick start
@@ -204,7 +204,7 @@ if a step fails (all or nothing). The packages of the hub `aibex-aios`:
 | `skill-5-8-zusammenfassung` | skill | 5-8 summary of a document as a memo |
 | `skill-video-analyse` | skill | transcript and 5-8 summary of a YouTube video, with `worker-yt-dlp` |
 | `worker-yt-dlp`, `worker-deno` | worker | the programs `yt-dlp` and `deno`, set up from PyPI with hashes |
-| `distribution-rothirsch` | distribution | kernel 0.5.0 with the video analysis and Anja |
+| `distribution-rothirsch` | distribution | kernel 0.6.1 with the video analysis and Anja |
 
 The hub `aibex-hub` holds `knowledge-scorpio` (the brightest stars of
 Scorpius). Each demo assistant politely refuses the other one's calculations,
@@ -224,7 +224,7 @@ The tutorials (German) walk through a demo vault:
 - [`02 Projekte und Integrität`](doc/tutorials/02%20Projekte%20und%20Integrit%C3%A4t.md) — subprojects, consistency check, `/aios-integrity`
 - [`03 Pakete und Taschenrechner`](doc/tutorials/03%20Pakete%20und%20Taschenrechner.md) — hubs, fetch, deploy, the calculator, contribute
 - [`04 Workspaces`](doc/tutorials/04%20Workspaces.md) — `workspace.yaml`, `init`, `update`, `freeze`, `status`
-- [`05 Arbeitspferde und Distributionen`](doc/tutorials/05%20Arbeitspferde%20und%20Distributionen.md) — Rothirsch, workhorses, forwarders, a second machine (still shown with AIOS 0.5)
+- [`05 Arbeitspferde und Distributionen`](doc/tutorials/05%20Arbeitspferde%20und%20Distributionen.md) — Rothirsch, workhorses, forwarders, a second machine
 
 
 ## Command line
@@ -276,6 +276,7 @@ installed to `~/.aios/versions/v<version>/doc/spec/` (with `--system`:
   tests/live/outside.sh      # a session outside an AIBOS workspace
   tests/live/workers.sh      # worker-deno, worker-yt-dlp against the real PyPI
   tests/live/rothirsch.sh    # distribution Rothirsch in a sandbox (PyPI)
+  tests/live/changeover.sh   # activation of a vault of 0.5.1 with packages and workhorses (PyPI)
   tests/live/fresh.sh        # install in the smallest environment (fresh HOME, python3 without PyYAML)
   dev/doc-outputs.sh         # outputs of README and tutorials from a sandbox of the package repos
 ```

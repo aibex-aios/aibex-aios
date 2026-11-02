@@ -70,7 +70,7 @@
          echo "### $L"
          (cd "$D" && "$@" 2>&1) | sed -e "s|$SB/home|~|g" -e "s|file://$SB/hubs|https://github.com|g" \
             -e "s|$SB/hubs|https://github.com|g" -e "s|$SB/opt|/opt/aios|g" -e "s|$S|~/.aios/versions/v0.6.0|g" \
-            -e "s|0\.6\.0-dev|0.6.0|g"
+            -e "s|0\.6\.0-dev|0.6.0|g" -e "s|0\.6\.1-dev|0.6.1|g"
          echo
       }
       V="$HOME/tmp/§Demo"; mkdir -p "$V"
@@ -117,8 +117,14 @@
       show "03 fetch 0.3.2 plan" "$V" aios --fetch app-taschenrechner==0.3.2 --plan
       show "03 deploy" "$V" aios --deploy
 
-      # tutorial 05 stays on AIOS 0.5 until distributions with kernel 0.6 (v0.6.1; V0.6, memo 52)
+      # tutorial 05: Rothirsch 1.1.0 with the kernel 0.6.1, as after publishing (v0.6.1, step 5): the tag
+      # v0.6.1 in the sandbox clone, the release 1.1.0 from the candidate in the clone of the sandbox hub
       if [ -n "$AIOS_DOC_05" ]; then
+      G -C "$S" tag v0.6.1 || exit 1
+      D="$SB/hubs/aibex-aios/distribution-rothirsch"
+      sed -i.bak -e 's/^version: 1.1.0-rc1$/version: 1.1.0/' -e 's/^kernel: "==0.6.1-rc1"$/kernel: "==0.6.1"/' "$D/manifest.yaml" &&
+         rm "$D/manifest.yaml.bak" && G -C "$D" commit -q -am "distribution-rothirsch 1.1.0" && G -C "$D" tag v1.1.0 || exit 1
+      (cd "$HOME/tmp" && aios --install v0.6.1 --yes >/dev/null 2>&1) || exit 1    # prerequisite of the tutorial
       V="$HOME/tmp/§Rothirsch"; mkdir -p "$V/P-Projekt"
       show "05 install rothirsch plan" "$V" aios --install distribution-rothirsch "$V" --plan
       show "05 install rothirsch" "$V" aios --install distribution-rothirsch "$V" --yes
@@ -127,9 +133,9 @@
       show "05 which" "$V/P-Projekt" "$HOME/.aios/bin/yt-dlp" ---which
       show "05 version" "$V/P-Projekt" "$HOME/.aios/bin/yt-dlp" --version
       show "05 outside" "$HOME" "$HOME/.aios/bin/yt-dlp" --version
-      show "05 workers.yaml" "$V" cat "$AIOS_PREFIX/workers.yaml"
+      show "05 workers.yaml" "$V" cat "$HOME/.aios/workers.yaml"
       show "05 config" "$V" cat .aios/config.yaml
-      show "05 advise" "$V/P-Projekt" bash -c "chmod -R u+w '$AIOS_PREFIX/workers/worker-yt-dlp' && mv '$AIOS_PREFIX/workers/worker-yt-dlp' '$SB/gone' && aios --context --advise </dev/null | grep AIOS-WORKERS"
+      show "05 advise" "$V/P-Projekt" bash -c "chmod -R u+w '$HOME/.aios/workers/worker-yt-dlp' && mv '$HOME/.aios/workers/worker-yt-dlp' '$SB/gone' && aios --context --advise </dev/null | grep AIOS-WORKERS"
       show "05 reconcile plan" "$V" aios --fetch --plan
       show "05 reconcile" "$V" aios --fetch --yes
       show "05 remove plan" "$V" aios --fetch --remove distribution-rothirsch --plan
