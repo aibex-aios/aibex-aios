@@ -131,12 +131,15 @@ Im A/W enthält der Master-Kontext nach dem Inhaltsverzeichnis des verfügbaren 
 ```
 <aios-kernel-skills>
 Kernel skills of AIBOS (descriptions in the registered skills). A skill is triggered by
-/<name> or by a matching request of the user; load its instructions with the call (Bash)
+/<name> or by a matching request of the user; load its instructions with the call, run
+alone as one Bash command (no cd, no ; && | around it: AIBOS permits only the call alone),
 and follow them.
 - aios-init — /Users/…/.aios/bin/aios --skill aios-init
 - …
 </aios-kernel-skills>
 ```
+
+Der Hinweis, den Aufruf allein als einen Bash-Befehl auszuführen, folgt aus *Freigabe*, E3: Einen verketteten Aufruf (mit `cd`, `;`, `&&`, `|`) gibt AIBOS nicht frei, und der Host fragt (V0.6, Memo 98, B17).
 
 Der Aufruf nennt den absoluten Pfad des Weiterleiters (Spec 04). Der Block nennt keine `allowed-tools`; die Befehle gibt der Hook `PreToolUse` frei (*Hooks*). Er steht neben den registrierten Hüllen (Spec 03): Sie tragen `/<name>` in jedem Host und die Beschreibungen, an denen die Auslösung über einen Satz hängt; der Block nennt Namen und Aufruf auch dort, wo die Registrierung fehlt. Mit 12 Kernel-Skills hat er etwa 1000 Zeichen (gemessen 997 mit `/Users/hux`).
 

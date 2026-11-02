@@ -175,8 +175,9 @@ def kernel_skills_block():
     fwd = paths.forwarder()
     lines = ["<aios-kernel-skills>\n",
              "Kernel skills of AIBOS (descriptions in the registered skills). A skill is triggered by\n",
-             "/<name> or by a matching request of the user; load its instructions with the call (Bash)\n",
-             "and follow them.\n"]
+             "/<name> or by a matching request of the user; load its instructions with the call, run\n",
+             "alone as one Bash command (no cd, no ; && | around it: AIBOS permits only the call alone),\n",
+             "and follow them.\n"]   # B17: a chained call is not permitted (spec 02, Freigabe, E3)
     lines += [f"- {n} — {fwd} --skill {n}\n" for n in kernel_skills()]
     lines.append("</aios-kernel-skills>\n")
     return "".join(lines)

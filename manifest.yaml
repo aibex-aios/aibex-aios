@@ -2,7 +2,7 @@
 # aios --install installiert, nicht geholt; beim Installieren wird version
 # mit der Version des Tags überschrieben (Spec 04).
 name: aios
-version: 0.6.1-rc2
+version: 0.6.1-rc3
 type: kernel
 description: Kernel von AIbex AIOS mit CLI, Hooks und AIOS-Skills
 requires:

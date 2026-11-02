@@ -42,7 +42,8 @@
    ID="$(IDOF "$D/Garten")"
    KS="<aios-kernel-skills>
 Kernel skills of AIBOS (descriptions in the registered skills). A skill is triggered by
-/<name> or by a matching request of the user; load its instructions with the call (Bash)
+/<name> or by a matching request of the user; load its instructions with the call, run
+alone as one Bash command (no cd, no ; && | around it: AIBOS permits only the call alone),
 and follow them.
 $(for N in $(ls "$SRC/skills/aios"); do printf -- '- %s — %s --skill %s\n' "$N" "$HOME/.aios/bin/aios" "$N"; done)
 </aios-kernel-skills>
