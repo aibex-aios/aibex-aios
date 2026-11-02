@@ -273,7 +273,7 @@ used: 2026-10-03T14:05:00
   "hooks": {
     "SessionStart":     [ { "hooks": [ { "type": "command", "command": "/Users/…/.aios/bin/aios --context --session" } ] } ],
     "UserPromptSubmit": [ { "hooks": [ { "type": "command", "command": "/Users/…/.aios/bin/aios --context --advise" } ] } ],
-    "PreToolUse":       [ { "matcher": "Bash|Skill", "hooks": [ { "type": "command", "command": "/Users/…/.aios/bin/aios --context --permit" } ] } ]
+    "PreToolUse":       [ { "matcher": "Bash|Skill|Read", "hooks": [ { "type": "command", "command": "/Users/…/.aios/bin/aios --context --permit" } ] } ]
   }
 }
 ```

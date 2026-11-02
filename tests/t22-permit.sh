@@ -94,6 +94,34 @@ echo x"; do
    rm "$S"
 
 #===============================================================================
+# Read tool: part files of the master context under ~/.aios/cache (R1-R3; V0.6, memos 100, 101, B18)
+#===============================================================================
+
+   RJ() { python3 -c 'import json,sys; print(json.dumps({"session_id": "t", "hook_event_name": "PreToolUse", "tool_name": "Read", "tool_input": {"file_path": sys.argv[2]}, "cwd": sys.argv[1]}))' "$1" "$2"; }
+   READ() { RJ "$@" | (cd "$SANDBOX" && "$SRC/bin/aios" --context --permit); }
+   RALLOW='{"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "allow", "permissionDecisionReason": "AIBOS: part file of the master context"}}'
+   CA="$HOME/.aios/cache"; mk "$CA/a-anja-1234/part-1.md" $'# Teil\n'
+   assert_eq "$(READ "$D/P" "$CA/a-anja-1234/part-1.md")" "$RALLOW" "R1-R2: part file in the A/W allowed"
+   assert_eq "$(READ "$D/P" "$CA/a-anja-1234/../../config.yaml")" "" "R2: .. out of the cache"
+   assert_eq "$(READ "$D/P" "$CA")" "" "R2: the cache folder itself"
+   assert_eq "$(READ "$D/P" "a-anja-1234/part-1.md")" "" "R2: relative path"
+   assert_eq "$(READ "$D/P" "$HOME/.aios/workers.yaml")" "" "R2: another file of ~/.aios"
+   ln -s "$HOME/.aios" "$CA/link"
+   assert_eq "$(READ "$D/P" "$CA/link/workers.yaml")" "" "R2: symlink out of the cache"
+   rm "$CA/link"
+   assert_eq "$(READ "$O" "$CA/a-anja-1234/part-1.md")" "" "R1: binding below 0.6"
+   assert_eq "$(READ "$SANDBOX" "$CA/a-anja-1234/part-1.md")" "" "R1: outside a vault"
+   for R in "Read" "Read(~/.aios/**)" "Read(/$HOME/.aios/cache/*)" "Read(**)" "Read(~/.aios/cache/a-[a]nja*)"; do
+      printf '{"permissions": {"deny": ["%s"]}}' "$R" > "$S"
+      assert_eq "$(READ "$D/P" "$CA/a-anja-1234/part-1.md")" "" "R3: deny $R"
+   done
+   printf '{"permissions": {"ask": ["Read(~/.aios/cache/**)"]}}' > "$S"
+   assert_eq "$(READ "$D/P" "$CA/a-anja-1234/part-1.md")" "" "R3: ask rule"
+   printf '{"permissions": {"deny": ["Read(./.env)", "Read(~/.ssh/**)", "Bash"]}}' > "$S"
+   assert_eq "$(READ "$D/P" "$CA/a-anja-1234/part-1.md")" "$RALLOW" "R3: rules for other paths and tools do not count"
+   rm "$S"
+
+#===============================================================================
 # errors never allow, they go to the log
 #===============================================================================
 

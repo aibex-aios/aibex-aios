@@ -194,9 +194,9 @@ Der Abnahmetest von v0.6.1 läuft auf dem Arbeitsrechner nach der Implementierun
 
 | # | Schritt | erwartet |
 |---|---|---|
-| 1 | `~/git/AIbex/aibex-aios/bin/aios --install v0.6.1-rc<n> --plan`, dann mit Ja | Kernel nach `~/.aios/versions/v0.6.1-rc<n>/`; Weiterleiter und Hooks unverändert; nichts in `~/bin` |
+| 1 | `~/git/AIbex/aibex-aios/bin/aios --install v0.6.1-rc<n> --plan`, dann mit Ja | Kernel nach `~/.aios/versions/v0.6.1-rc<n>/`; Weiterleiter unverändert; Hooks unverändert bis auf den Matcher `Bash|Skill|Read` von PreToolUse (ab `rc4`, B18); nichts in `~/bin` |
 | 2 | `aios --activate v0.6.1-rc<n> ~/vault/§Probe-AIBOS` mit Ja | Bindung `aios: 0.6.1-rc<n>`; Hüllen in `.aios/registry` mit `source` Kernel `0.6.1-rc<n>`; Pakete unverändert, weil sie `<0.7` erfüllen |
-| 3 | neue Session in `P-Probe`: „Wo stehen wir?" | Master-Kontext mit Block `<aios-kernel-skills>`; `aios-status` läuft ohne Rückfrage zur Erlaubnis |
+| 3 | neue Session in `P-Probe` im Modus „Manuell" (nicht Auto): „Wo stehen wir?" | Master-Kontext mit Block `<aios-kernel-skills>`; Part-Dateien und `aios-status` ohne Rückfrage zur Erlaubnis, freigegeben vom Hook (B17, B18) |
 | 4 | offene Dateien in `P-Probe/@/@!Package/assistant-anja/`; `aios --fetch --remove assistant-anja --plan` in `P-Probe` (nur der Plan) | der Plan nennt `@/@!Package/assistant-anja/ (N files)` in einer Zeile (H3); ein Plan, der den Paketordner nicht ändert, nennt ihn nicht (Spec 06, *Holen*, Schritt 4) |
 | 5 | `tests/live/changeover.sh` | grün; im Protokoll der Plan der Aktivierung mit `packages for AIOS 0.6.1-rc<n>` und allen Unterschritten (B13); `worker-yt-dlp` 0.1.0 bleibt für den Vault, der nicht in `workers.yaml` stand, und ist danach dort nachgetragen (B12) |
 | 6 | `tests/live/rothirsch.sh` | grün mit `distribution-rothirsch` `1.1.0-rc<n>` und Kernel `0.6.1-rc<n>` |

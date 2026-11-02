@@ -1,9 +1,10 @@
-"""aios --context --permit: PreToolUse hook for Bash and Skill (spec 02, Freigabe; V0.6, memos 20-23, 47, 65).
+"""aios --context --permit: PreToolUse hook for Bash, Skill and Read (spec 02, Freigabe; V0.6, memos 20-23,
+47, 65, 101).
 
 Standard library only. In an A/W a single command of the forwarder is allowed without a question
 (E1-E3), unless a deny or ask rule of the user matches it (E4); so is the Skill tool for a registered
-wrapper of the kernel (S1-S3). Otherwise, and on every error, the hook prints nothing and the host
-asks as usual.
+wrapper of the kernel (S1-S3) and the Read tool for a part file under ~/.aios/cache (R1-R3). Otherwise,
+and on every error, the hook prints nothing and the host asks as usual.
 """
 
 from __future__ import annotations
@@ -126,6 +127,45 @@ def hits_skill(rule, name):
     return fnmatch.fnmatchcase(name, pat)
 
 
+def in_cache(file_path):
+    """R2: an absolute path that lies below ~/.aios/cache after resolving .. and symlinks."""
+    if not isinstance(file_path, str) or not os.path.isabs(file_path):
+        return False
+    cache = Path(os.path.realpath(paths.cache_dir()))
+    p = Path(os.path.realpath(file_path))
+    return p != cache and cache in p.parents
+
+
+def hits_read(rule, file_path):
+    """R3: Read, Read(~/<glob>), Read(//<glob>); a pattern with [ ] ? counts as a hit; other forms
+    are relative to a project or a settings file and cannot cover ~/.aios/cache."""
+    rule = rule.strip()
+    if rule == "Read":
+        return True
+    if not rule.startswith("Read(") or not rule.endswith(")"):
+        return False
+    pat = rule[len("Read("):-1].strip()
+    if pat in ("**", "*") or any(x in pat for x in "[]?"):
+        return True
+    if pat.startswith("~/"):
+        pat = str(paths.home()) + pat[1:]
+    elif pat.startswith("//"):
+        pat = pat[1:]
+    else:
+        return False
+    p = os.path.realpath(file_path)
+    return any(fnmatch.fnmatchcase(f, pat) for f in (file_path, p))
+
+
+def read_decision(cwd, file_path):
+    """Read tool: a part file of the master context or an assistant (R1-R3; V0.6, memos 100, 101, B18)."""
+    if not in_cache(file_path):                                                  # R2
+        return None
+    if any(hits_read(r, file_path) for r in rules(cwd)):                         # R3
+        return None
+    return allow("AIBOS: part file of the master context")
+
+
 def allow(reason):
     return json.dumps({"hookSpecificOutput": {"hookEventName": "PreToolUse",
                                               "permissionDecision": "allow",
@@ -144,14 +184,18 @@ def skill_decision(cwd, name):
 
 
 def decision(raw):
-    """The JSON line that allows the command or the skill, or None (E1-E4, S1-S3)."""
+    """The JSON line that allows the command, the skill or the read, or None (E1-E4, S1-S3, R1-R3)."""
     d = json.loads(raw or "{}")
     if not isinstance(d, dict):
         return None
     tool = d.get("tool_name")
-    if tool not in (None, "Bash", "Skill"):
+    if tool not in (None, "Bash", "Skill", "Read"):
         return None
     cwd = d.get("cwd") or paths.cwd()
+    if tool == "Read":
+        if not os.path.isdir(cwd) or config.load(cwd).kind != "aios":       # R1
+            return None
+        return read_decision(cwd, (d.get("tool_input") or {}).get("file_path"))
     if tool == "Skill":
         if not os.path.isdir(cwd) or config.load(cwd).kind != "aios":       # S1
             return None

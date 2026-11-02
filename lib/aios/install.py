@@ -39,7 +39,7 @@ ALIAS = ('---\nname: gui\ndescription: "Zeigt die Oberfläche des aktiven Assist
          '---\n\n!`aios --gui --session ${CLAUDE_SESSION_ID}`\n')
 AIOS_HOOKS = {"SessionStart": "aios --context --session", "UserPromptSubmit": "aios --context --advise",
               "PreToolUse": "aios --context --permit"}       # PreToolUse with PERMIT_MATCHER (V0.6)
-PERMIT_MATCHER = "Bash|Skill"                          # commands of the forwarder, kernel skills (V0.6, memo 65, B10)
+PERMIT_MATCHER = "Bash|Skill|Read"                     # forwarder, kernel skills (B10), part files (B18)
 OLD_AIOS_HOOKS = {"SessionStart": "aios-context --session", "UserPromptSubmit": "aios-context --advise"}  # v0.3, v0.4
 LEGACY_HOOKS = {"SessionStart": "ai-brain --session", "UserPromptSubmit": "ai-brain --advise"}
 RELEASE = re.compile(r"^v(\d+)\.(\d+)\.(\d+)$")

@@ -24,7 +24,7 @@ fwd, want = sys.argv[1], sys.argv[2:] or ["session", "advise", "permit"]
 h = {}
 if "session" in want: h["SessionStart"] = [{"hooks": [{"type": "command", "command": fwd + " --context --session"}]}]
 if "advise" in want: h["UserPromptSubmit"] = [{"hooks": [{"type": "command", "command": fwd + " --context --advise"}]}]
-if "permit" in want: h["PreToolUse"] = [{"matcher": "Bash|Skill", "hooks": [{"type": "command", "command": fwd + " --context --permit"}]}]
+if "permit" in want: h["PreToolUse"] = [{"matcher": "Bash|Skill|Read", "hooks": [{"type": "command", "command": fwd + " --context --permit"}]}]
 print(json.dumps({"hooks": h}))' "$FWD" "$@"
    }
 
