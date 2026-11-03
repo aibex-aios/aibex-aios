@@ -6,6 +6,7 @@
       echo '          aios --prepare [--dev]              # legacy of v0.5, no longer used'
       echo '          aios --install distribution-<name> [<vault>] [--from <repo>]  # kernel, workhorses, packages'
       echo '          aios --versions                     # installed versions and their locations'
+      echo '          aios --vaults                       # vaults AIOS finds, with binding and source'
       echo '          aios --remove-version v<version>    # remove an installed version'
       echo '          aios --uninstall                    # remove the forwarder, the hooks and old wrappers'
       echo '          aios --activate v<version> [<vault-root>] # bind a vault (only at its root) to a version'

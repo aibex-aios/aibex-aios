@@ -5,7 +5,7 @@ import sys
 
 from . import activate, aiosinit, assign, contribute, deploy, fetch, gui, hub, install, integrity, paths, registry, resolver, skills, ui, worker, workspace
 
-USAGE = ("usage: aios --prepare [--dev] | --install [v<version>] [--system] | --install distribution-<name> [<vault>] | --versions | --remove-version v<version>"
+USAGE = ("usage: aios --prepare [--dev] | --install [v<version>] [--system] | --install distribution-<name> [<vault>] | --versions | --vaults | --remove-version v<version>"
          " | --uninstall | --activate v<version> [<vault-root>] | --deactivate [<vault-root>] | --config [<path>]"
          " | --register [<path>] | --init [<path>] [--assistant <value>] [--name <name>] [--accept-name]"
          " | --integrity [<path>] | --assistant <name|none|inherit> [--to <project>] [--session <id>]"
@@ -65,6 +65,8 @@ def main(argv):
             return install.install(args[0] if args else None)
         if cmd == "--versions" and not args:
             return install.versions()
+        if cmd == "--vaults" and not args:
+            return install.vaults()
         if cmd == "--remove-version" and len(args) == 1:
             return install.remove_version(args[0])
         if cmd == "--uninstall" and not args:

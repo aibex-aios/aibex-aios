@@ -488,7 +488,7 @@ Listet die Vaults, die AIOS findet, nur lesend (V0.6, Memos 115, 120, H8). Gesuc
 | `repo` | Vault-Root von `~/.aios/repo`, falls der Klon in einem Vault liegt |
 | `workers` | Vault-Roots der Projekte in `workers.yaml` an beiden Orten (`~/.aios/`, `/opt/aios/`) |
 | `beside` | `§`-Ordner im selben Elternordner wie ein Vault aus den drei Quellen oben |
-| `inside` | `§`-Ordner in einem Vault aus den Quellen oben, gesucht bis zur nächsten Vault-Root darunter |
+| `inside` | `§`-Ordner in einem Vault aus den Quellen oben, bis zu drei Ebenen tief, ohne versteckte Ordner und nicht unter einem gefundenen `§`-Ordner (V0.6, Memo 128, F104) |
 | `above` | `§`-Ordner über einem Vault aus den Quellen oben, wie `§Obsidian` über `§Hugo` (V0.6, Memo 124, F97) |
 
 Je Vault eine Zeile mit Pfad, Art und Bindung nach Spec 02, *Arten von Vaults* (`aios 0.6.1`, `alt 0.5.1`, `legacy`, `none`), und den Quellen, die ihn gefunden haben; ein Pfad aus einer Quelle, den es nicht mehr gibt, steht als `missing`. Die Suche nutzen auch `aios --remove-version` (unten) und der Bestandslauf einer Abnahme. `aios --install` bleibt bei den bekannten Vaults (*Installieren*, Schritt 7).

@@ -702,6 +702,98 @@ def known_vaults():
     return sorted(v for v in found if v is not None)
 
 
+INSIDE_DEPTH = 3                                    # how deep --vaults looks into a vault (V0.6, memo 128: F104)
+SOURCES = ("session", "repo", "workers", "beside", "inside", "above")
+
+
+def source_vaults():
+    """{vault root: sources} from the markers of the sessions, ~/.aios/repo and workers.yaml,
+    including paths that no longer exist (spec 04, aios --vaults)."""
+    from . import config
+    found = {}
+
+    def add(path, source):
+        v = config.vault_root(path)
+        if v is not None:
+            found.setdefault(v, set()).add(source)
+    for f in sorted((paths.user_dir() / "sessions").glob("*.yaml")):
+        m = re.search(r'^cwd:\s*"?(.*?)"?\s*$', f.read_text(encoding="utf-8", errors="replace"), re.M)
+        if m and m.group(1):
+            add(m.group(1), "session")
+    repo = paths.user_dir() / "repo"
+    if repo.is_file() and repo.read_text(encoding="utf-8").strip():
+        add(repo.read_text(encoding="utf-8").strip(), "repo")
+    for f in (paths.user_dir() / "workers.yaml", paths.prefix() / "workers.yaml"):
+        if f.is_file():
+            for m in re.finditer(r'"(/[^"]+)"', f.read_text(encoding="utf-8", errors="replace")):
+                add(m.group(1), "workers")
+    return found
+
+
+def vault_dirs(d):
+    """Subdirectories of d without hidden ones; [] if d cannot be read."""
+    try:
+        return sorted(e for e in d.iterdir() if e.is_dir() and not e.name.startswith("."))
+    except OSError:
+        return []
+
+
+def inside_vaults(v):
+    """§-folders in the vault v, up to INSIDE_DEPTH levels, not below another §-folder."""
+    found, level = [], [v]
+    for _ in range(INSIDE_DEPTH):
+        below = []
+        for d in level:
+            for e in vault_dirs(d):
+                (found if e.name.startswith("§") else below).append(e)
+        level = below
+    return found
+
+
+def find_vaults():
+    """{vault root: sources} as aios --vaults finds them (spec 04): the known vaults
+    (session, repo, workers) and the §-folders beside, inside and above them (V0.6, memo 120)."""
+    found = source_vaults()
+    for v in [v for v in found if v.is_dir()]:
+        for d in vault_dirs(v.parent):
+            if d.name.startswith("§") and d != v:
+                found.setdefault(d, set()).add("beside")
+        for d in inside_vaults(v):
+            found.setdefault(d, set()).add("inside")
+        for d in v.parents:
+            if d.name.startswith("§"):
+                found.setdefault(d, set()).add("above")
+    return found
+
+
+def binding(v):
+    """Short binding of a vault root for aios --vaults: aios <version>, alt <version>, legacy,
+    none or missing (spec 02, Arten von Vaults; V0.6, memo 124: F98)."""
+    from . import config
+    if not v.is_dir():
+        return "missing"
+    cfg = config.load(v)
+    return f"{cfg.kind} {cfg.aios}" if cfg.kind in ("aios", "alt") else cfg.kind
+
+
+def vaults():
+    """aios --vaults: the vaults AIOS finds, with binding and sources; reads only."""
+    found = find_vaults()
+    if not found:
+        say("no vault found")
+        return 0
+    say(f"=> {len(found)} vaults")
+    for v in sorted(found, key=str):
+        sources = ", ".join(s for s in SOURCES if s in found[v])
+        say(f"   {binding(v):12} {v}  ({sources})")
+    return 0
+
+
+def bound_vaults(version):
+    """Vault roots from aios --vaults that are bound to version (without v)."""
+    return [v for v in sorted(find_vaults(), key=str) if binding(v) in (f"aios {version}", f"alt {version}")]
+
+
 def legacy_candidates():
     """§-folders without binding and without marker among the known vaults and their siblings,
     if ai-brain is installed (V0.6, memos 17, 49: F9)."""
@@ -859,7 +951,14 @@ def remove_version(version):
         elif path.is_dir():
             plan.add(f"{path} is not an installation directory, it is kept")
         plan.add(f"remove the entry {tag} from {file}", lambda file=file: drop_entry(file, tag))
-    say(f"=> remove AIbex AIOS {tag}; vaults bound to {tag[1:]} stop working until it is installed again")
+    bound = bound_vaults(tag[1:])                   # V0.6, memos 110, 120: H6
+    if bound:
+        say(f"=> remove AIbex AIOS {tag}; these vaults are bound to {tag[1:]} and stop working "
+            f"until it is installed again or they are bound to another version:")
+        for v in bound:
+            say(f"   {v}")
+    else:
+        say(f"=> remove AIbex AIOS {tag}; no vault found that is bound to {tag[1:]} (aios --vaults)")
     if not confirm(plan, "remove?", "removal cancelled"):
         return 1
     if not installations():

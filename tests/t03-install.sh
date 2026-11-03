@@ -176,6 +176,18 @@ EOF
 #===============================================================================
 
    OUT="$(cd "$SANDBOX" && echo n | "$F" --remove-version v0.1.0 2>&1)"
+   assert_contains "$OUT" "no vault found that is bound to 0.1.0" "remove-version: no bound vault (H6)"
+   mkdir -p "$SANDBOX/v/§Known/.aios" "$SANDBOX/v/§Beside/.aios" "$SANDBOX/v/§Other/.aios" "$HOME/.aios/sessions"
+   printf 'aios: 0.1.0\n' > "$SANDBOX/v/§Known/.aios/config.yaml"
+   printf 'aios: 0.1.0\n' > "$SANDBOX/v/§Beside/.aios/config.yaml"      # only found beside §Known
+   printf 'aios: 0.2.0\n' > "$SANDBOX/v/§Other/.aios/config.yaml"
+   printf 'cwd: "%s"\n' "$SANDBOX/v/§Known" > "$HOME/.aios/sessions/t03.yaml"
+   OUT="$(cd "$SANDBOX" && echo n | "$F" --remove-version v0.1.0 2>&1)"
+   assert_contains "$OUT" "these vaults are bound to 0.1.0" "remove-version: bound vaults named (H6)"
+   assert_contains "$OUT" "   $SANDBOX/v/§Known" "remove-version: known vault"
+   assert_contains "$OUT" "   $SANDBOX/v/§Beside" "remove-version: vault beside a known one"
+   assert_not_contains "$OUT" "§Other" "remove-version: vault bound to another version not named"
+   rm -rf "$SANDBOX/v" "$HOME/.aios/sessions/t03.yaml"
    assert_dir "$U/v0.1.0"
    OUT="$(cd "$SANDBOX" && echo y | "$F" --remove-version v0.1.0 2>&1)"; RC=$?
    assert_eq "$RC" "0" "remove-version: exit 0"
