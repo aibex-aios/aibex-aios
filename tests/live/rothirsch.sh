@@ -8,7 +8,8 @@
       echo '                                           # tagged package repos in <repos> (default ~/git/AIbex)'
       echo '          tests/live/rothirsch.sh --version  # print version'
       echo '   not part of tests/run: needs network access to PyPI, takes about two minutes;'
-      echo '   the test versions distribution-rothirsch <candidate>-rc9 and worker-yt-dlp 0.1.9 exist only in the'
+      echo '   the test versions distribution-rothirsch <candidate>-rc8 (if the release wants another kernel),'
+      echo '   <candidate>-rc9 and worker-yt-dlp 0.1.9 exist only in the'
       echo '   clones of the sandbox hub, never in the package repos (S5)'
       echo '   see also: tests/live/workers.sh, aios --install distribution-<name>'
       exit 1
@@ -19,7 +20,7 @@
 #===============================================================================
 
    if [ "$*" == "--version" ]; then
-      echo "0.3.1"; exit 0
+      echo "0.3.2"; exit 0
    fi
 
 #===============================================================================
@@ -59,6 +60,12 @@
          printf '  - name: %s\n    type: %s\n    description: %s\n' "$P" "${P%%-*}" "$P" >> "$H/aios-index/index.yaml"
       done
       G -C "$H/aios-index" init -q && G -C "$H/aios-index" add -A && G -C "$H/aios-index" commit -q -m index
+      D0="$H/distribution-rothirsch"; KV="$(sed -n 's/^kernel: *"==\(.*\)"/\1/p' "$D0/manifest.yaml")"
+      if [ "$KV" != "$K" ]; then                    # the release wants another kernel (v0.6.2: 1.1.0 stays, F92):
+         DV="${DV%-rc*}-rc8"                        # test version with the candidate, only in the sandbox hub (S5)
+         sed -i.bak -e "s/^version: .*$/version: $DV/" -e "s/^kernel: .*$/kernel: \"==$K\"/" "$D0/manifest.yaml" && rm "$D0/manifest.yaml.bak"
+         G -C "$D0" commit -q -am "distribution-rothirsch $DV (test version with kernel $K)" && G -C "$D0" tag "v$DV" || exit 1
+      fi
       mkdir -p "$SB/home/bin" "$SB/opt" "$SB/fake" "$SB/stup"
       printf '#!/bin/bash\n[ "$*" == "--version" ] && { echo "9.9"; exit 0; }\n[ "$*" == "--profile" ] && { echo "# profile" > "$BIN/profile.sh"; exit 0; }\nexit 1\n' > "$SB/stup/stup"
       export HOME="$SB/home" AIOS_PREFIX="$SB/opt" AIOS_CLAUDE_DIR="$SB/home/.claude"
