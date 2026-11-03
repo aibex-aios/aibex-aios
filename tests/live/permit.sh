@@ -3,7 +3,7 @@
 # V0.6, memos 20, 22; step 11): one call of the forwarder in an A/W runs without a rule, everything else does not
 
    if [ "$*" == "-?" ] || [ "$*" == "--help" ]; then
-      echo '   usage: tests/live/permit.sh [<model>]   # headless sessions R1-R6, default model haiku'
+      echo '   usage: tests/live/permit.sh [<model>]   # headless sessions R1-R8, default model haiku'
       echo '          tests/live/permit.sh --version   # print version'
       echo '   not part of tests/run: needs a logged-in claude CLI and uses tokens'
       echo '   see also: tests/t22-permit.sh, aios --context --permit'
@@ -15,7 +15,7 @@
 #===============================================================================
 
    if [ "$*" == "--version" ]; then
-      echo "0.1.0"; exit 0
+      echo "0.2.0"; exit 0
    fi
 
 #===============================================================================
@@ -43,6 +43,19 @@ print(r.get("result", ""))
 for d in r.get("permission_denials") or []:
     print("DENIED:", (d.get("tool_input") or {}).get("command", d.get("tool_name", "")))'
       }
+      read() {                                      # read <dir> <file>: first line and the denied reads
+         local P="Lies genau diese eine Datei mit dem Read-Tool, ohne andere Werkzeuge, und gib nur ihre erste Zeile wieder: $2"
+         (cd "$1" && claude -p "$P" --model "$MODEL" --settings "$HOOKS" --setting-sources project \
+            --output-format json </dev/null 2>/dev/null) | python3 -c '
+import json, sys
+try:
+    r = json.loads(sys.stdin.read())
+except ValueError:
+    print("no json"); sys.exit()
+print(r.get("result", ""))
+for d in r.get("permission_denials") or []:
+    print("DENIED:", d.get("tool_name", ""), (d.get("tool_input") or {}).get("file_path", ""))'
+      }
       rules() { mkdir -p "$G/.claude"; printf '%s\n' "$1" > "$G/.claude/settings.json"; }   # project settings (E4)
       echo "=> live permit test with model $MODEL in $SB"
 
@@ -69,6 +82,14 @@ for d in r.get("permission_denials") or []:
 
       A="$(ask "$ALT" "$FWD --context --id")"
       check "R6 vault bound to 0.5: no release (E1)" "$A" "DENIED: $FWD --context --id"
+
+      DOC="$REPO/doc/tutorials/01 Erste Schritte mit den Demo-Assistenten.md"   # doc/ of the installation v0.6.0
+      A="$(read "$G" "$DOC")"
+      check "R7 A/W: doc/ of the bound version readable without a rule (R2, H9)" "$A" "Erste Schritte mit den Demo-Assistenten"
+      refuse "R7 A/W: nothing denied" "$A" "DENIED:"
+
+      A="$(read "$ALT" "$DOC")"
+      check "R8 vault bound to 0.5: doc/ not released (R1)" "$A" "DENIED: Read $DOC"
 
       finish
    fi

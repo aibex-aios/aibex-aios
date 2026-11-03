@@ -122,6 +122,29 @@ echo x"; do
    rm "$S"
 
 #===============================================================================
+# Read tool: spec and tutorials of the bound version under <installation>/doc (R2; V0.6, memos 116, 120: H9)
+#===============================================================================
+
+   DALLOW='{"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "allow", "permissionDecisionReason": "AIBOS: documentation of the bound version of AIOS"}}'
+   I0="$SANDBOX/inst/v0.6.0"; I1="$SANDBOX/inst/v0.6.1"            # $D is bound to 0.6.0
+   mk "$I0/doc/spec/02 Master-Kontext.md" $'# 02\n'; mk "$I0/VERSION" $'0.6.0\n'
+   mk "$I1/doc/spec/02 Master-Kontext.md" $'# 02\n'
+   printf 'v0.6.0: "%s"\nv0.6.1: "%s"\n' "$I0" "$I1" > "$HOME/.aios/installations.yaml"
+   assert_eq "$(READ "$D/P" "$I0/doc/spec/02 Master-Kontext.md")" "$DALLOW" "H9: spec of the bound version allowed"
+   assert_eq "$(READ "$D/P" "$I1/doc/spec/02 Master-Kontext.md")" "" "H9: doc of another installed version"
+   assert_eq "$(READ "$D/P" "$I0/VERSION")" "" "H9: other files of the installation"
+   assert_eq "$(READ "$D/P" "$I0/doc/../VERSION")" "" "H9: .. out of doc"
+   assert_eq "$(READ "$D/P" "$I0/doc")" "" "H9: the doc folder itself"
+   ln -s "$HOME/.aios" "$I0/doc/link"
+   assert_eq "$(READ "$D/P" "$I0/doc/link/installations.yaml")" "" "H9: symlink out of doc"
+   rm "$I0/doc/link"
+   assert_eq "$(READ "$O" "$I0/doc/spec/02 Master-Kontext.md")" "" "H9: binding below 0.6 (R1)"
+   printf '{"permissions": {"deny": ["Read(//%s/**)"]}}' "${SANDBOX#/}/inst" > "$S"
+   assert_eq "$(READ "$D/P" "$I0/doc/spec/02 Master-Kontext.md")" "" "H9: deny rule (R3)"
+   rm "$S" "$HOME/.aios/installations.yaml"
+   assert_eq "$(READ "$D/P" "$I0/doc/spec/02 Master-Kontext.md")" "" "H9: bound version not installed"
+
+#===============================================================================
 # errors never allow, they go to the log
 #===============================================================================
 

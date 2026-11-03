@@ -3,7 +3,8 @@
 
 Standard library only. In an A/W a single command of the forwarder is allowed without a question
 (E1-E3), unless a deny or ask rule of the user matches it (E4); so is the Skill tool for a registered
-wrapper of the kernel (S1-S3) and the Read tool for a part file under ~/.aios/cache (R1-R3). Otherwise,
+wrapper of the kernel (S1-S3) and the Read tool for a part file under ~/.aios/cache or the doc/
+of the bound installation (R1-R3). Otherwise,
 and on every error, the hook prints nothing and the host asks as usual.
 """
 
@@ -127,18 +128,31 @@ def hits_skill(rule, name):
     return fnmatch.fnmatchcase(name, pat)
 
 
-def in_cache(file_path):
-    """R2: an absolute path that lies below ~/.aios/cache after resolving .. and symlinks."""
-    if not isinstance(file_path, str) or not os.path.isabs(file_path):
+def below(folder, file_path):
+    """An absolute path that lies below folder after resolving .. and symlinks (not folder itself)."""
+    if folder is None or not isinstance(file_path, str) or not os.path.isabs(file_path):
         return False
-    cache = Path(os.path.realpath(paths.cache_dir()))
+    top = Path(os.path.realpath(folder))
     p = Path(os.path.realpath(file_path))
-    return p != cache and cache in p.parents
+    return p != top and top in p.parents
+
+
+def in_cache(file_path):
+    """R2: below ~/.aios/cache."""
+    return below(paths.cache_dir(), file_path)
+
+
+def doc_dir(cwd):
+    """R2: <installation>/doc of the version the vault of cwd is bound to, from installations.yaml
+    (V0.6, memos 116, 120: H9); None if that version is not installed."""
+    from . import install
+    entry = install.installations().get(f"v{config.load(cwd).aios}")
+    return entry[0] / "doc" if entry else None
 
 
 def hits_read(rule, file_path):
     """R3: Read, Read(~/<glob>), Read(//<glob>); a pattern with [ ] ? counts as a hit; other forms
-    are relative to a project or a settings file and cannot cover ~/.aios/cache."""
+    are relative to a project or a settings file and cannot cover ~/.aios/cache or an installation."""
     rule = rule.strip()
     if rule == "Read":
         return True
@@ -158,12 +172,17 @@ def hits_read(rule, file_path):
 
 
 def read_decision(cwd, file_path):
-    """Read tool: a part file of the master context or an assistant (R1-R3; V0.6, memos 100, 101, B18)."""
-    if not in_cache(file_path):                                                  # R2
+    """Read tool: a part file of the master context or an assistant (R1-R3; V0.6, memos 100, 101, B18),
+    or the spec and tutorials of the bound version (H9)."""
+    if in_cache(file_path):                                                      # R2
+        reason = "AIBOS: part file of the master context"
+    elif below(doc_dir(cwd), file_path):
+        reason = "AIBOS: documentation of the bound version of AIOS"
+    else:
         return None
     if any(hits_read(r, file_path) for r in rules(cwd)):                         # R3
         return None
-    return allow("AIBOS: part file of the master context")
+    return allow(reason)
 
 
 def allow(reason):
