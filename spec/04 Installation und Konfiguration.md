@@ -471,7 +471,7 @@ Ziel der Arbeitspferde ist der Ort nach *Installationen* (Spec 07); der Plan nen
 | Offene Dateien | Der Plan nennt offene Dateien des Vaults, die er ändert oder committet, zusammengefasst je Paketordner wie Spec 06, *Holen*, Schritt 4; er committet sie nicht selbst (V0.6, Memos 02, 81) |
 | Version | mit oder ohne `v` angegeben, geschrieben ohne `v`; steht dieselbe Version schon in der Datei, fehlt nichts von der Struktur und ist die Registrierung aktuell: „nichts zu tun", keine Rückfrage |
 | Umstellung | Pakete, die mit der neuen Version nicht laufen, im selben Plan mit allen Unterschritten (Spec 06, *Paketwechsel bei der Aktivierung*); von v0.3 bzw. v0.4 ebenso (Spec 06, *Umstellung von v0.3*, *Umstellung von v0.4*) |
-| Distribution | Hält der Vault eine Distribution mit `kernel:`, das die neue Version nicht erfüllt, nennt der Plan sie als Hinweis: `note: distribution-<name> <version> wants kernel <bereich>; update it with aios --install distribution-<name>`. Umgebunden wird trotzdem; die Distribution wird nicht geändert (Spec 06, *Distributionen*; V0.6, Memos 108, 120, H5) |
+| Distribution | Hält der Vault eine Distribution mit `kernel:`, das die neue Version nicht erfüllt, nennt der Plan sie als Hinweis: `note: distribution-<name> <version> wants kernel <bereich>; update it with aios --install distribution-<name>`. Umgebunden wird trotzdem; die Distribution wird nicht geändert. Der Hinweis erscheint nur, wenn sich die Bindung ändert, und nicht im Plan von `aios --install distribution-<name>`, der den Kernel selbst bringt (Spec 06, *Distributionen*; V0.6, Memos 108, 120, 130: H5, F105) |
 | Hinweis | Master-Kontext und Registrierung gelten ab dem nächsten Chat |
 
 ### `aios --deactivate [<vault-root>]`
@@ -480,7 +480,7 @@ Entfernt den Schlüssel `aios` aus `<vault-root>/.aios/config.yaml`. Danach ist 
 
 ### `aios --vaults`
 
-Listet die Vaults, die AIOS findet, nur lesend (V0.6, Memos 115, 120, H8). Gesucht wird flach, ohne `.git`:
+Listet die Vaults, die AIOS findet, nur lesend (V0.6, Memos 115, 120, H8). Gesucht wird flach, ohne versteckte Ordner wie `.git`; `beside`, `inside` und `above` gehen nur von vorhandenen Vaults der ersten drei Quellen aus, nicht von Vaults, die selbst erst so gefunden wurden:
 
 | Quelle | Vaults |
 |---|---|
@@ -491,11 +491,11 @@ Listet die Vaults, die AIOS findet, nur lesend (V0.6, Memos 115, 120, H8). Gesuc
 | `inside` | `§`-Ordner in einem Vault aus den Quellen oben, bis zu drei Ebenen tief, ohne versteckte Ordner und nicht unter einem gefundenen `§`-Ordner (V0.6, Memo 128, F104) |
 | `above` | `§`-Ordner über einem Vault aus den Quellen oben, wie `§Obsidian` über `§Hugo` (V0.6, Memo 124, F97) |
 
-Je Vault eine Zeile mit Pfad, Art und Bindung nach Spec 02, *Arten von Vaults* (`aios 0.6.1`, `alt 0.5.1`, `legacy`, `none`), und den Quellen, die ihn gefunden haben; ein Pfad aus einer Quelle, den es nicht mehr gibt, steht als `missing`. Die Suche nutzen auch `aios --remove-version` (unten) und der Bestandslauf einer Abnahme. `aios --install` bleibt bei den bekannten Vaults (*Installieren*, Schritt 7).
+Je Vault eine Zeile mit Pfad, Art und Bindung nach Spec 02, *Arten von Vaults* (`aios 0.6.1`, `alt 0.5.1`, `legacy`, `none`), und den Quellen, die ihn gefunden haben; ein Pfad aus einer Quelle, den es nicht mehr gibt, steht als `missing`. Die Zeilen sind nach Pfad sortiert, die Quellen in der Reihenfolge der Tabelle; ohne Fund meldet der Befehl `no vault found`. Die Suche nutzen auch `aios --remove-version` (unten) und der Bestandslauf einer Abnahme. `aios --install` bleibt bei den bekannten Vaults (*Installieren*, Schritt 7).
 
 ### `aios --remove-version v<version>`
 
-Entfernt `~/.aios/versions/v<version>/` (bzw. `/opt/aios/v<version>/`) und den Eintrag in `installations.yaml` nach Warnung und Bestätigung. Der Plan nennt die Vaults aus der Suche von *`aios --vaults`*, die an diese Version gebunden sind, je mit Pfad; sie laufen nach dem Entfernen nicht mehr, bis die Version wieder installiert oder der Vault umgebunden ist (V0.6, Memos 110, 120, H6). Zeigt der Eintrag auf ein anderes Verzeichnis, etwa einen Klon als Entwicklungsstand, wird nur der Eintrag entfernt. Ist die Version die einzige installierte, wird zusätzlich auf `aios --uninstall` hingewiesen.
+Entfernt `~/.aios/versions/v<version>/` (bzw. `/opt/aios/v<version>/`) und den Eintrag in `installations.yaml` nach Warnung und Bestätigung. Der Plan nennt die Vaults aus der Suche von *`aios --vaults`*, die an diese Version gebunden sind, je mit Pfad; sie laufen nach dem Entfernen nicht mehr, bis die Version wieder installiert oder der Vault umgebunden ist (V0.6, Memos 110, 120, H6). Findet die Suche keinen, sagt der Plan das ausdrücklich (`no vault found that is bound to <version>`). Zeigt der Eintrag auf ein anderes Verzeichnis, etwa einen Klon als Entwicklungsstand, wird nur der Eintrag entfernt. Ist die Version die einzige installierte, wird zusätzlich auf `aios --uninstall` hingewiesen.
 
 ### `aios --uninstall`
 
