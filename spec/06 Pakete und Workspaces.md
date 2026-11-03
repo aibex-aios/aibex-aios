@@ -1,8 +1,8 @@
 ---
 title: "Pakete und Workspaces"
-date: 2026-11-01
+date: 2026-11-03
 author: iHux
-status: Spec
+status: Entwurf
 tags: [spec, aios, v0.6, pakete, workspaces]
 number: 06
 related:
@@ -50,10 +50,11 @@ Für Pakete gelten drei Verben (V0.4, Memos 23, 24):
 ├── commands/<name>                 Befehle (ausführbar)
 ├── worker/                         Datei mit Hashes bzw. Skripte eines Arbeitspferds (nur type: worker, Spec 07)
 ├── contrib/<user>/…                Rückflüsse (aios --contribute)
+├── STATUS.md                       optional: Schritte des Implementierungsplans mit ☐/☑
 └── README.md                       optional
 ```
 
-Nur `manifest.yaml` ist Pflicht. Welche Ordner ein Paket hat, nennt `contents`.
+Nur `manifest.yaml` ist Pflicht. Welche Ordner ein Paket hat, nennt `contents`. `STATUS.md` hält bei einem Paket mit Implementierungsplan dessen Schritte fest; jeder Schritt wird im Commit abgehakt, der ihn umsetzt. Es wird wie `README.md` beim Holen mitgespiegelt (V0.6, Memo 123).
 
 ### `manifest.yaml`
 
@@ -289,7 +290,7 @@ depends:
 | Installieren | `aios --install distribution-<name> [<vault>] [--from <repo>]` (Spec 04): erst der Rechner (Kernel, Arbeitspferde), dann der Vault (binden, holen, registrieren); ein Plan, ein Ja. Scheitert der Rechnerteil, bleibt der Vault unberührt; schon Installiertes bleibt liegen. Scheitert der Vaultteil, gilt die Sicherung (*Holen*) |
 | im Vault | die Distribution steht in `packages:` der Vault-Root (`distribution-rothirsch: "==1.1.0"`), ihre Pakete in `lock.yaml` mit `required_by: [distribution-rothirsch]` |
 | eine je Vault | höchstens eine Distribution mit `kernel:` je Vault; eine zweite ist ein Konflikt im Plan; Distributionen ohne `kernel:` dürfen daneben stehen |
-| anderer Kernel | ist der Vault an einen anderen Kernel gebunden, zeigt der Plan die Umstellung (`aios: 0.4.0 → 0.5.0`) samt der Umstellung des Vaults (*Umstellung*) und führt sie im selben Plan aus |
+| anderer Kernel | ist der Vault an einen anderen Kernel gebunden, zeigt der Plan die Umstellung (`aios: 0.4.0 → 0.5.0`) samt der Umstellung des Vaults (*Umstellung*) und führt sie im selben Plan aus. Umgekehrt nennt `aios --activate` eine Distribution, deren `kernel:` die neue Bindung nicht erfüllt, nur als Hinweis mit dem Befehl zum Aktualisieren (Spec 04, *`aios --activate`*, Zeile *Distribution*; V0.6, Memo 120, H5) |
 | Aktualisieren | `aios --install distribution-<name>` erneut, ohne Version die höchste; der Plan zeigt `upgrade 1.0.0 → 1.1.0` mit Kernel, Arbeitspferden und Paketen |
 | Entfernen | `aios --fetch --remove distribution-<name>` nach den allgemeinen Regeln (*Holen*); die Bindung an den Kernel bleibt |
 | Übersteuern | nur mit `only` (*Ausrollen*); eine andere Version eines Pakets der Distribution, z. B. durch einen eigenen Eintrag in `packages:`, ist ein Konflikt im Plan |
@@ -297,7 +298,7 @@ depends:
 
 Zusammengestellt werden Distributionen mit dem Kernel-Skill `/aios-distribution` (Spec 03). Gepflegt werden die Distributionen des Hubs `aibex-aios` in eigenen Projekten des Vaults `§AIOS` (`D-Distribution/DC-Capricorn`, `D-Distribution/DR-Rothirsch`; V0.6, Memo 83).
 
-**Vorabversionen:** Ein Bereich mit `==` nimmt eine Vorabversion nur an, wenn er sie selbst nennt (*Versionen und Bereiche*). Für die Abnahme eines Release-Kandidaten des Kernels (z. B. `v0.6.1-rc1`) gibt es deshalb Testversionen der Distribution mit Vorabversion (`1.1.0-rc1` mit `kernel: "==0.6.1-rc1"`), nur lokal getaggt; die endgültige Version nennt den endgültigen Kernel (V0.6, Memo 82, F49).
+**Vorabversionen:** Ein Bereich mit `==` nimmt eine Vorabversion nur an, wenn er sie selbst nennt (*Versionen und Bereiche*). Für die Abnahme eines Release-Kandidaten des Kernels (z. B. `v0.6.1-rc1`) gibt es deshalb Testversionen der Distribution mit Vorabversion (`1.1.0-rc1` mit `kernel: "==0.6.1-rc1"`), nur lokal getaggt; die endgültige Version nennt den endgültigen Kernel (V0.6, Memo 82, F49). Liegt ein Paket der Distribution noch in keinem Hub, weil es mit dem Kernel erst veröffentlicht wird, kommt sein Kandidat für die Abnahme aus einem lokalen Hub in der Hub-Liste des Probe-Vaults (`aios --hubs add <name> file://<ordner> --vault`), der nach dem Veröffentlichen wieder entfernt wird (V0.6, Memo 122, F94).
 
 ## Konfiguration und Lock
 

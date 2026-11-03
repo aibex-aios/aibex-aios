@@ -1,8 +1,8 @@
 ---
 title: "Master-Kontext"
-date: 2026-10-31
+date: 2026-11-03
 author: iHux
-status: Spec
+status: Entwurf
 tags: [spec, aios, v0.6, master-kontext]
 number: 02
 related:
@@ -280,13 +280,13 @@ Für das **Skill-Werkzeug** gibt der Hook `permissionDecision: "allow"` aus, wen
 | S2 | `tool_input.skill` ist ein Kernel-Skill dieses Kernels oder der Alias `gui` und als Hülle des Kernels registriert (`source: "kernel"` in `.aios/registry` des `cwd` oder eines Ordners darüber). Andere Skills gibt er nicht frei. |
 | S3 | Keine `deny`- oder `ask`-Regel aus den Dateien von E4 trifft den Skill. Ausgewertet werden `Skill`, `Skill(<name>)`, `Skill(<präfix>:*)` und `Skill(<muster mit *>)`; ein Muster anderer Form zählt als Treffer. |
 
-Für das Werkzeug **`Read`** gibt der Hook `permissionDecision: "allow"` aus, wenn alle Bedingungen gelten. So liest eine Session die Part-Dateien des Master-Kontexts und eines Assistenten (`aios --context --load`, `--assistant … --load`) ohne Rückfrage, obwohl `~/.aios/cache/` außerhalb ihrer Arbeitsverzeichnisse liegt (V0.6, Memos 100, 101, B18):
+Für das Werkzeug **`Read`** gibt der Hook `permissionDecision: "allow"` aus, wenn alle Bedingungen gelten. So liest eine Session die Part-Dateien des Master-Kontexts und eines Assistenten (`aios --context --load`, `--assistant … --load`) ohne Rückfrage, obwohl `~/.aios/cache/` außerhalb ihrer Arbeitsverzeichnisse liegt (V0.6, Memos 100, 101, B18), und ebenso Spec und Tutorials der Version, an die ihr Vault gebunden ist (V0.6, Memos 116, 120, H9):
 
 | # | Bedingung |
 |---|---|
 | R1 | `cwd` liegt in einem A/W. |
-| R2 | `tool_input.file_path` ist ein absoluter Pfad, der nach dem Auflösen von `..` und Symlinks unter `~/.aios/cache/` liegt (nicht der Ordner selbst). Andere Dateien gibt er nicht frei, auch nicht in `~/.aios/`. |
-| R3 | Keine `deny`- oder `ask`-Regel aus den Dateien von E4 trifft die Datei. Ausgewertet werden `Read`, `Read(~/<muster>)` und `Read(//<muster>)` mit `*` und `**`; `Read(**)` und ein Muster mit `[`, `]` oder `?` zählen als Treffer. Andere Formen beziehen sich auf ein Projekt oder den Ordner einer Einstellungsdatei und treffen den Cache nicht. |
+| R2 | `tool_input.file_path` ist ein absoluter Pfad, der nach dem Auflösen von `..` und Symlinks unter `~/.aios/cache/` oder unter `<installation>/doc/` liegt (nicht der Ordner selbst). `<installation>` ist das Verzeichnis der Version, an die der Vault des `cwd` gebunden ist (`aios:` der Vault-Root), wie es `installations.yaml` nennt (`~/.aios/versions/v<version>/` oder `/opt/aios/v<version>/`, Spec 04). `doc/` anderer installierter Versionen und andere Dateien gibt er nicht frei, auch nicht in `~/.aios/`. |
+| R3 | Keine `deny`- oder `ask`-Regel aus den Dateien von E4 trifft die Datei. Ausgewertet werden `Read`, `Read(~/<muster>)` und `Read(//<muster>)` mit `*` und `**`; `Read(**)` und ein Muster mit `[`, `]` oder `?` zählen als Treffer. Andere Formen beziehen sich auf ein Projekt oder den Ordner einer Einstellungsdatei und treffen diese Orte nicht. |
 
 Sonst gibt der Hook nichts aus, und der Host fragt wie gewohnt; ebenso für ein anderes Werkzeug als `Bash`, `Skill` oder `Read` im Hook-JSON. Ein Fehler gibt nie frei. Regeln, die den Weiterleiter mit `~` schreiben, trifft E4 nicht; Claude Code achtet sie selbst (V0.6, Memo 47, F55). Claude Code lässt `deny`- und `ask`-Regeln einem `allow` aus `PreToolUse` ohnehin vorgehen (V0.6, Memo 22); E4 bleibt als zweite Sicherung für Hosts, die das anders handhaben. Befehle in `` !`…` `` eines Skills laufen nicht durch `PreToolUse`; sie gibt das `allowed-tools` der Hülle frei (Spec 03; V0.6, Memo 29).
 

@@ -1,8 +1,8 @@
 ---
 title: "Installation und Konfiguration"
-date: 2026-11-01
+date: 2026-11-03
 author: iHux
-status: Spec
+status: Entwurf
 tags: [spec, aios, v0.6, installation, konfiguration]
 number: 04
 related:
@@ -385,6 +385,7 @@ Die Weiterleiter lesen nur kleine Dateien und greifen nie auf das Netzwerk zu.
 | `aios --deactivate [<vault-root>]` | Bindung lösen |
 | `aios --config [<pfad>]` | wirksame Konfiguration mit der Herkunft je Schlüssel, nur lesend |
 | `aios --versions` | installierte Versionen und ihre Orte |
+| `aios --vaults` | gefundene Vaults mit Art, Bindung und Quelle, nur lesend (*`aios --vaults`*) |
 | `aios --remove-version v<version>` | Installation entfernen |
 | `aios --uninstall` | Benutzereinrichtung entfernen |
 | `aios --register [<pfad>]` | Hüllen der Kernel-Skills und Projekt-Skills registrieren, mit Vorschau (Spec 03) |
@@ -431,7 +432,7 @@ Aufgerufen aus einem Klon des Repos `aibex-aios` (`./bin/aios --install …`) od
 4. **Installieren**, falls `v<version>` noch nicht installiert ist: Stand des Tags mit `git archive` nach `~/.aios/versions/v<version>/` (mit `--system`: `/opt/aios/v<version>/`) übertragen (Abbildung siehe *Repo*), venv in `python/` anlegen und `pyyaml` installieren, `python -m compileall`, Dateien schreibschützen, Eintrag in `installations.yaml` desselben Orts.
 5. **Benutzer einrichten**, was fehlt: Weiterleiter nach `~/.aios/bin/aios`; ein vorhandener wird nur durch einen neueren ersetzt. Nichts in `~/bin`; ein `~/bin/aios` früherer Versionen nennt der Plan als Altbestand und lässt es stehen. `~/.aios/config.yaml` mit `hosts: [claude-code]`, die drei Hooks mit absolutem Pfad eintragen bzw. an ihrer Stelle ersetzen (*Hooks in `~/.claude/settings.json`*) und `ai-brain`-Hooks sichern, `~/.aios/repo` merken.
 6. **Keine globalen Hüllen:** `aios --install` schreibt nichts nach `~/.claude/skills/`; die Hüllen der Kernel-Skills entstehen mit der Registrierung im Vault (Spec 03). Pakete holt der User mit `aios --fetch` bzw. `/aios-package` (Spec 06).
-7. **Bekannte Vaults** nennt der Plan mit ihrer Art (Spec 02, *Arten von Vaults*): Vaults mit Altbindung mit dem Befehl `aios --activate v0.6.<n> <vault>`; bekannt sind die Vaults aus den Merkern der Sessions (`cwd`), aus `~/.aios/repo` und aus den Projekten in `workers.yaml`; nur bekannte Vaults zählen (V0.6, Memo 49, F61). Für die Markierung `legacy: ai-brain` bietet der Plan bekannte Vaults ohne Bindung und die `§`-Ordner daneben im selben Elternordner an.
+7. **Bekannte Vaults** nennt der Plan mit ihrer Art (Spec 02, *Arten von Vaults*): Vaults mit Altbindung mit dem Befehl `aios --activate v0.6.<n> <vault>`; bekannt sind die Vaults aus den Merkern der Sessions (`cwd`), aus `~/.aios/repo` und aus den Projekten in `workers.yaml`; nur bekannte Vaults zählen (V0.6, Memo 49, F61). Die erweiterte Suche aus *`aios --vaults`* gilt hier nicht (V0.6, Memo 122, F93). Für die Markierung `legacy: ai-brain` bietet der Plan bekannte Vaults ohne Bindung und die `§`-Ordner daneben im selben Elternordner an.
 
 Das Übertragen geschieht in ein temporäres Verzeichnis neben dem Ziel, das erst am Ende umbenannt wird; ein Abbruch hinterlässt keine halbe Installation.
 
@@ -465,20 +466,36 @@ Ziel der Arbeitspferde ist der Ort nach *Installationen* (Spec 07); der Plan nen
 | Prüfung | Pfad ist eine Vault-Root (Name beginnt mit `§`), sonst Abbruch mit Hinweis auf die Vault-Root, die gebunden werden kann (V0.6, Memo 16, F5); `v<version>` ist installiert, sonst Abbruch mit Hinweis auf `aios --install` |
 | Vault-Root | Die Aktivierung macht sie zum Root-Projekt: Was von der Struktur eines Projekts fehlt (`@/`, `.git` mit Branch `main`, `.gitignore`), gehört in den Plan und wird nach Ja angelegt, mit erstem Commit wie bei `aios --init` (Spec 05; V0.3, Memo 23). Die Namensregel gilt für die Vault-Root nicht |
 | Wirkung | `aios: <version>` in `<vault-root>/.aios/config.yaml` schreiben bzw. ersetzen; eine Markierung `legacy:` in derselben Datei wird dabei entfernt. `.aios/config.yaml` ist Teil des ersten Commits, sonst committet `aios --activate` nicht |
-| Registrierung | ab v0.6: die Hüllen der Kernel-Skills und des Alias an der Vault-Root und in allen Projekten des Vaults (Spec 03; V0.6, Memo 30, F18) |
+| Registrierung | ab v0.6: die Hüllen der Kernel-Skills und des Alias an der Vault-Root und in allen Projekten des Vaults (Spec 03; V0.6, Memo 30, F18). Ein Unterordner, dessen Name mit `§` beginnt, ist eine eigene Vault-Root (`config.vault_root`): Er und alles darunter gehören nicht zum Vault und werden übersprungen, ob er gebunden ist oder nicht (V0.6, Memos 111, 120, H7) |
 | Hüllen früherer Versionen | Hängt danach kein bekannter Vault mehr an einer Version unter 0.6 (*Installieren*, Schritt 7), bietet der Plan an, die globalen Hüllen in `~/.claude/skills/aios-*/` und `~/.claude/skills/gui/` zu entfernen, mit eigener Frage; fremde Ordner bleiben (V0.6, Memo 30, F19) |
 | Offene Dateien | Der Plan nennt offene Dateien des Vaults, die er ändert oder committet, zusammengefasst je Paketordner wie Spec 06, *Holen*, Schritt 4; er committet sie nicht selbst (V0.6, Memos 02, 81) |
 | Version | mit oder ohne `v` angegeben, geschrieben ohne `v`; steht dieselbe Version schon in der Datei, fehlt nichts von der Struktur und ist die Registrierung aktuell: „nichts zu tun", keine Rückfrage |
 | Umstellung | Pakete, die mit der neuen Version nicht laufen, im selben Plan mit allen Unterschritten (Spec 06, *Paketwechsel bei der Aktivierung*); von v0.3 bzw. v0.4 ebenso (Spec 06, *Umstellung von v0.3*, *Umstellung von v0.4*) |
+| Distribution | Hält der Vault eine Distribution mit `kernel:`, das die neue Version nicht erfüllt, nennt der Plan sie als Hinweis: `note: distribution-<name> <version> wants kernel <bereich>; update it with aios --install distribution-<name>`. Umgebunden wird trotzdem; die Distribution wird nicht geändert (Spec 06, *Distributionen*; V0.6, Memos 108, 120, H5) |
 | Hinweis | Master-Kontext und Registrierung gelten ab dem nächsten Chat |
 
 ### `aios --deactivate [<vault-root>]`
 
 Entfernt den Schlüssel `aios` aus `<vault-root>/.aios/config.yaml`. Danach ist der Vault ohne Bindung und damit wirkungslos; das wird gemeldet, mit dem Hinweis auf `legacy: ai-brain` für den Legacy-Modus. `skills`, `assistant` und andere Schlüssel bleiben stehen, ebenso Kommentare; eine leere Datei wird entfernt, ein danach leeres `.aios/` ebenfalls. `@/`, `.git` und `.gitignore` bleiben. Steht kein `aios` in der Datei: „nichts zu tun".
 
+### `aios --vaults`
+
+Listet die Vaults, die AIOS findet, nur lesend (V0.6, Memos 115, 120, H8). Gesucht wird flach, ohne `.git`:
+
+| Quelle | Vaults |
+|---|---|
+| `session` | Vault-Roots der `cwd` aus den Merkern der Sessions (`~/.aios/sessions/`) |
+| `repo` | Vault-Root von `~/.aios/repo`, falls der Klon in einem Vault liegt |
+| `workers` | Vault-Roots der Projekte in `workers.yaml` an beiden Orten (`~/.aios/`, `/opt/aios/`) |
+| `beside` | `§`-Ordner im selben Elternordner wie ein Vault aus den drei Quellen oben |
+| `inside` | `§`-Ordner in einem Vault aus den Quellen oben, gesucht bis zur nächsten Vault-Root darunter |
+| `above` | `§`-Ordner über einem Vault aus den Quellen oben, wie `§Obsidian` über `§Hugo` (V0.6, Memo 124, F97) |
+
+Je Vault eine Zeile mit Pfad, Art und Bindung nach Spec 02, *Arten von Vaults* (`aios 0.6.1`, `alt 0.5.1`, `legacy`, `none`), und den Quellen, die ihn gefunden haben; ein Pfad aus einer Quelle, den es nicht mehr gibt, steht als `missing`. Die Suche nutzen auch `aios --remove-version` (unten) und der Bestandslauf einer Abnahme. `aios --install` bleibt bei den bekannten Vaults (*Installieren*, Schritt 7).
+
 ### `aios --remove-version v<version>`
 
-Entfernt `~/.aios/versions/v<version>/` (bzw. `/opt/aios/v<version>/`) und den Eintrag in `installations.yaml` nach Warnung und Bestätigung. Zeigt der Eintrag auf ein anderes Verzeichnis, etwa einen Klon als Entwicklungsstand, wird nur der Eintrag entfernt. Ist die Version die einzige installierte, wird zusätzlich auf `aios --uninstall` hingewiesen.
+Entfernt `~/.aios/versions/v<version>/` (bzw. `/opt/aios/v<version>/`) und den Eintrag in `installations.yaml` nach Warnung und Bestätigung. Der Plan nennt die Vaults aus der Suche von *`aios --vaults`*, die an diese Version gebunden sind, je mit Pfad; sie laufen nach dem Entfernen nicht mehr, bis die Version wieder installiert oder der Vault umgebunden ist (V0.6, Memos 110, 120, H6). Zeigt der Eintrag auf ein anderes Verzeichnis, etwa einen Klon als Entwicklungsstand, wird nur der Eintrag entfernt. Ist die Version die einzige installierte, wird zusätzlich auf `aios --uninstall` hingewiesen.
 
 ### `aios --uninstall`
 
