@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import re
 from pathlib import Path
 
 from . import aiosinit, config, install, migrate, paths, semver
@@ -62,6 +63,9 @@ def plan_activation(tag, p, plan, installed=True):
         what = f"create {file} with aios: {m.group(1)}"
     if what:
         plan.add(what, lambda: config.set_aios(file, m.group(1)))
+        if installed:                               # not when a distribution brings the kernel
+            for note in distribution_notes(p, m.group(1)):
+                plan.add(note)
     if file.is_file() and "legacy" in config.read(file):
         plan.add(f"remove legacy: from {file} (aios: applies)", lambda: config.drop_key(file, "legacy"))
     from .fetch import open_files                  # V0.6, memo 02: only named
@@ -71,6 +75,26 @@ def plan_activation(tag, p, plan, installed=True):
         steps.commit(extra=[".aios/config.yaml"])
     plan.steps += later.steps                       # changeover from v0.3 after the activation (spec 06)
     return True
+
+
+DIST_KERNEL = re.compile(r"""^kernel:\s*["']?==\s*([0-9][^"'\s#]*)""", re.M)
+DIST_VERSION = re.compile(r"""^version:\s*["']?([0-9][^"'\s#]*)""", re.M)
+
+
+def distribution_notes(root, version):
+    """Notes on distributions in the vault root whose kernel: is not version (spec 04, aios
+    --activate, Distribution; V0.6, memos 108, 120: H5, F99); the binding is written anyway."""
+    notes = []
+    for d in sorted((root / "@" / "@!Package").glob("distribution-*")):
+        try:
+            text = (d / "manifest.yaml").read_text(encoding="utf-8")
+        except OSError:
+            continue
+        k, v = DIST_KERNEL.search(text), DIST_VERSION.search(text)
+        if k and k.group(1) != version:
+            notes.append(f"note: {d.name} {v.group(1) if v else '?'} wants kernel =={k.group(1)}; "
+                         f"update it with aios --install {d.name}")
+    return notes
 
 
 def vault_projects(root):

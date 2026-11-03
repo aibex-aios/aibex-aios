@@ -176,6 +176,25 @@
    assert_eq "$(cat "$V7/§Innen/.aios/config.yaml")" "aios: 0.1.0" "H7: binding of the vault inside unchanged"
 
 #===============================================================================
+# v0.6.2 step 3 (H5): a distribution whose kernel: does not fit the new binding is named
+# as a note with the command; the binding is written anyway (spec 04, aios --activate, Distribution)
+#===============================================================================
+
+   V8="$W/§Dist"; DM="$V8/@/@!Package/distribution-demo/manifest.yaml"; mkdir -p "$(dirname "$DM")" "$V8/@/@!Package/distribution-ohne"
+   printf 'name: distribution-demo\nversion: 1.0.0\ntype: distribution\nkernel: "==0.1.0"\n' > "$DM"
+   printf 'name: distribution-ohne\nversion: 0.2.0\ntype: distribution\n' > "$V8/@/@!Package/distribution-ohne/manifest.yaml"
+   cp "$DM" "$SANDBOX/dm.orig"
+   NOTE="note: distribution-demo 1.0.0 wants kernel ==0.1.0; update it with aios --install distribution-demo"
+   assert_not_contains "$(A --activate v0.1.0 "$V8" --plan)" "note: distribution-" "H5: no note when the kernel fits"
+   OUT="$(A --activate v0.6.0 "$V8" --plan)"
+   assert_contains "$OUT" "$NOTE" "H5: note with the command"
+   assert_not_contains "$OUT" "distribution-ohne" "H5: a distribution without kernel: is not named"
+   OUT="$(echo y | A --activate v0.6.0 "$V8")"
+   assert_eq "$(CFG "$V8" "c.aios")" "0.6.0" "H5: bound anyway"
+   cmp -s "$DM" "$SANDBOX/dm.orig" && ok || fail "H5: the distribution is not changed"
+   assert_not_contains "$(A --activate v0.6.0 "$V8" --plan)" "note: distribution-" "H5: no note when nothing changes"
+
+#===============================================================================
 # v0.6 step 10 (B3): the vault reached through a symlink binds like its physical path (spec 02)
 #===============================================================================
 
