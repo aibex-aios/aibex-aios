@@ -74,9 +74,12 @@ def plan_activation(tag, p, plan, installed=True):
 
 
 def vault_projects(root):
-    """The vault root and all projects below it (as /aios-integrity finds them)."""
+    """The vault root and all projects below it (as /aios-integrity finds them), without the
+    vaults inside it: a §-folder below root is a vault root of its own (V0.6, memos 111, 120: H7).
+    /aios-integrity keeps all projects (F100)."""
     from . import integrity
-    return [p for p, _ in integrity.projects(root)]
+    own = Path(os.path.realpath(root))
+    return [p for p, _ in integrity.projects(root) if config.vault_root(p) == own]
 
 
 def plan_registration(root, plan):

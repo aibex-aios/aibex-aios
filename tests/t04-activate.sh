@@ -159,6 +159,23 @@
    [ ! -e "$OLDW/aios-init" ] && [ ! -e "$OLDW/gui" ] && [ -e "$OLDW/synced" ] && ok || fail "0.6: yes removes only the AIOS wrappers"
 
 #===============================================================================
+# v0.6.2 step 2 (H7): the registration ends at the vaults inside a vault, bound or not
+# (spec 04, aios --activate, Registrierung; V0.6, memos 111, 120)
+#===============================================================================
+
+   V7="$W/§Aussen"; mkdir -p "$V7/@" "$V7/P/@" "$V7/§Innen/@" "$V7/§Innen/Q/@" "$V7/Ordner/§Leer/R/@" "$V7/§Innen/.aios"
+   printf 'aios: 0.1.0\n' > "$V7/§Innen/.aios/config.yaml"
+   mkdir -p "$V7/§Auch/.aios" "$V7/§Auch/S/@"; printf 'aios: 0.6.0\n' > "$V7/§Auch/.aios/config.yaml"   # an A/W inside (§Obsidian, memo 111)
+   OUT="$(A --activate v0.6.0 "$V7" --plan)"
+   assert_contains "$OUT" "register the wrappers of the kernel skills in 2 projects of $V7" "H7: only the root and P counted"
+   OUT="$(echo y | A --activate v0.6.0 "$V7")"
+   assert_eq "$(ls "$V7/P/.claude/skills" 2>/dev/null | grep -c '^aios-')" "12" "H7: wrappers in the project of the vault"
+   [ ! -e "$V7/§Innen/.claude" ] && [ ! -e "$V7/§Innen/Q/.claude" ] && ok || fail "H7: no wrappers in a bound vault inside"
+   [ ! -e "$V7/Ordner/§Leer/R/.claude" ] && ok || fail "H7: no wrappers in an unbound vault inside"
+   [ ! -e "$V7/§Auch/S/.claude" ] && ok || fail "H7: no wrappers in an A/W inside"
+   assert_eq "$(cat "$V7/§Innen/.aios/config.yaml")" "aios: 0.1.0" "H7: binding of the vault inside unchanged"
+
+#===============================================================================
 # v0.6 step 10 (B3): the vault reached through a symlink binds like its physical path (spec 02)
 #===============================================================================
 
