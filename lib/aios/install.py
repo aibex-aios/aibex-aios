@@ -430,6 +430,8 @@ def build(stage, tag, root, entries):
         for d in ("tutorials", "wiki"):
             if (stage / "doc" / d).is_dir():
                 shutil.copytree(stage / "doc" / d, inst / "doc" / d)
+        if (stage / "doc" / "README.md").is_file():      # index of the files under doc/ (V0.6, B22)
+            shutil.copyfile(stage / "doc" / "README.md", inst / "doc" / "README.md")
         pip = paths.pip_cmd()
         run([sys.executable, "-m", "venv", *(["--without-pip"] if pip else []), str(inst / "python")])
         req = inst / "python" / "requirements.txt"

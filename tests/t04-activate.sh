@@ -174,6 +174,10 @@
    [ ! -e "$V7/Ordner/§Leer/R/.claude" ] && ok || fail "H7: no wrappers in an unbound vault inside"
    [ ! -e "$V7/§Auch/S/.claude" ] && ok || fail "H7: no wrappers in an A/W inside"
    assert_eq "$(cat "$V7/§Innen/.aios/config.yaml")" "aios: 0.1.0" "H7: binding of the vault inside unchanged"
+   rm -rf "$V7/P/.claude/skills/aios-status"          # B20: an A/W with an outdated registration
+   assert_contains "$(A --activate v0.6.0 "$V7" --plan)" "register the wrappers of the kernel skills in 2 projects of $V7" "B20: number of projects also for an A/W"
+   echo y | A --activate v0.6.0 "$V7" >/dev/null
+   assert_contains "$(A --activate v0.6.0 "$V7" --plan)" "nothing to do" "B20: nothing to do when the registration is current"
 
 #===============================================================================
 # v0.6.2 step 3 (H5): a distribution whose kernel: does not fit the new binding is named

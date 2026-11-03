@@ -350,7 +350,7 @@ Weiterleiter und `aios` verwenden ausschließlich diese Variablen, nie fest verd
 
 1. Ist `AIOS_HOME` gesetzt: `$AIOS_HOME/bin/aios` aufrufen.
 2. `aios --activate v<version> …`: Ist diese Version installiert, wird sie aufgerufen, unabhängig davon, an welche Version `cwd` gebunden ist; so aktiviert immer die genannte Version (V0.3, Memo 54, A1). Ist sie nicht installiert, gilt die übliche Wahl, und die gewählte Version meldet die fehlende Installation.
-3. `aios --install distribution-…` (auch mit Hub-Präfix): die höchste installierte Version, unabhängig von `cwd`; ist sie älter als 0.5, Fehler mit Hinweis auf `aios --install v0.5.<n>` (Weiterleiter 0.3.0; V0.5, Memo 55).
+3. `aios --install distribution-…` (auch mit Hub-Präfix): die höchste installierte Version, unabhängig von `cwd`; ist sie älter als 0.5, Fehler mit Hinweis auf `aios --install v0.5.<n>` (Weiterleiter 0.3.0; V0.5, Memo 55). Ebenso `aios --remove-version …` und `aios --vaults`: Nur die neueste Version kennt alle Vaults und nennt die gebundenen, auch wenn `cwd` an die Version gebunden ist, die entfernt werden soll (Weiterleiter 0.4.1; V0.6, Memos 137, 138: B21).
 4. Sonst vom physischen `cwd` (`pwd -P`) aufwärts die Vault-Root suchen und dort in `.aios/config.yaml` die Zeilen `aios: <version>` und `legacy: ai-brain` lesen. Andere `.aios/config.yaml` zählen nicht (Spec 01, I14). Außerhalb eines Vaults wird nicht gesucht, und `~/.aios/config.yaml` zählt nie, auch wenn `~` in einem Vault liegt.
 5. `aios:` gefunden: `v<version>` in `~/.aios/installations.yaml`, danach in `/opt/aios/installations.yaml` nachschlagen und `<pfad>/bin/aios` mit allen Argumenten aufrufen; das gilt auch für eine Altbindung an 0.5 (Spec 02, *Arten von Vaults*). Nicht installiert: bei `aios --context …` nichts ausgeben (`--id`: `mode=none`) und den Fehler ins Log schreiben (Spec 02), sonst Fehler mit Hinweis auf `aios --install v<version>`.
 6. Kein `aios:`:
@@ -466,7 +466,7 @@ Ziel der Arbeitspferde ist der Ort nach *Installationen* (Spec 07); der Plan nen
 | Prüfung | Pfad ist eine Vault-Root (Name beginnt mit `§`), sonst Abbruch mit Hinweis auf die Vault-Root, die gebunden werden kann (V0.6, Memo 16, F5); `v<version>` ist installiert, sonst Abbruch mit Hinweis auf `aios --install` |
 | Vault-Root | Die Aktivierung macht sie zum Root-Projekt: Was von der Struktur eines Projekts fehlt (`@/`, `.git` mit Branch `main`, `.gitignore`), gehört in den Plan und wird nach Ja angelegt, mit erstem Commit wie bei `aios --init` (Spec 05; V0.3, Memo 23). Die Namensregel gilt für die Vault-Root nicht |
 | Wirkung | `aios: <version>` in `<vault-root>/.aios/config.yaml` schreiben bzw. ersetzen; eine Markierung `legacy:` in derselben Datei wird dabei entfernt. `.aios/config.yaml` ist Teil des ersten Commits, sonst committet `aios --activate` nicht |
-| Registrierung | ab v0.6: die Hüllen der Kernel-Skills und des Alias an der Vault-Root und in allen Projekten des Vaults (Spec 03; V0.6, Memo 30, F18). Ein Unterordner, dessen Name mit `§` beginnt, ist eine eigene Vault-Root (`config.vault_root`): Er und alles darunter gehören nicht zum Vault und werden übersprungen, ob er gebunden ist oder nicht (V0.6, Memos 111, 120, H7) |
+| Registrierung | ab v0.6: die Hüllen der Kernel-Skills und des Alias an der Vault-Root und in allen Projekten des Vaults (Spec 03; V0.6, Memo 30, F18). Ein Unterordner, dessen Name mit `§` beginnt, ist eine eigene Vault-Root (`config.vault_root`): Er und alles darunter gehören nicht zum Vault und werden übersprungen, ob er gebunden ist oder nicht (V0.6, Memos 111, 120, H7). Der Plan nennt die Zahl der Projekte (`in N projects of …`), auch wenn der Vault schon ein A/W ist (V0.6, Memo 138, B20) |
 | Hüllen früherer Versionen | Hängt danach kein bekannter Vault mehr an einer Version unter 0.6 (*Installieren*, Schritt 7), bietet der Plan an, die globalen Hüllen in `~/.claude/skills/aios-*/` und `~/.claude/skills/gui/` zu entfernen, mit eigener Frage; fremde Ordner bleiben (V0.6, Memo 30, F19) |
 | Offene Dateien | Der Plan nennt offene Dateien des Vaults, die er ändert oder committet, zusammengefasst je Paketordner wie Spec 06, *Holen*, Schritt 4; er committet sie nicht selbst (V0.6, Memos 02, 81) |
 | Version | mit oder ohne `v` angegeben, geschrieben ohne `v`; steht dieselbe Version schon in der Datei, fehlt nichts von der Struktur und ist die Registrierung aktuell: „nichts zu tun", keine Rückfrage |
@@ -515,6 +515,7 @@ aibex-aios/                          GitHub aibex-aios/aibex-aios, Tags v<versio
 ├── templates/                       forwarder (Weiterleiter), gitignore (Vorlage für aios --init)
 ├── python/requirements.txt          pyyaml
 ├── spec/                            diese Spec (gepflegt aus dem Konzeptprojekt)
+├── doc/README.md                    Inhaltsverzeichnis von doc/ mit den Dateinamen (V0.6, B22)
 ├── doc/tutorials/                   Tutorials; künftig auch doc/wiki/
 ├── dev/                             Entwickler-Doku, nicht installiert
 ├── tests/                           Tests im Sandkasten (tests/run), nicht installiert;
@@ -534,6 +535,7 @@ Das Repo enthält keinen Vault. Vaults legt der User an und bindet sie mit `aios
 | `skills/aios/<name>/` | `v<version>/skills/aios/<name>/` |
 | `python/requirements.txt` | `v<version>/python/` (venv) |
 | `spec/` | `v<version>/doc/spec/` |
+| `doc/README.md` | `v<version>/doc/README.md`: nennt jede Datei in `doc/spec/` und `doc/tutorials/`, weil eine Session `doc/` lesen, aber nicht auflisten darf (Spec 02, *Freigabe*; V0.6, Memos 139, 140: B22) |
 | `doc/tutorials/`, `doc/wiki/` (künftig) | `v<version>/doc/tutorials/`, `v<version>/doc/wiki/` |
 
 Ein Release (Tag `v<version>`) ist nur vollständig, wenn `spec/` den Soll-Stand dieser Version beschreibt und `version` in `manifest.yaml` dem Tag entspricht.

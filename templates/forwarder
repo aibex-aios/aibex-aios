@@ -10,7 +10,8 @@
       echo '          .aios/config.yaml of the vault root, otherwise aios --context: ai-brain with'
       echo '          legacy: ai-brain there, else nothing; everything else: highest installed'
       echo '          version; aios --install distribution-*: always the highest installed'
-      echo '          version, at least 0.5; aios --context with a version below 0.5: its aios-context'
+      echo '          version, at least 0.5; aios --remove-version and aios --vaults: always the highest'
+      echo '          installed version; aios --context with a version below 0.5: its aios-context'
       echo '   see also: aios, ai-brain'
       exit 1
    fi
@@ -20,7 +21,7 @@
 #===============================================================================
 
    if [ "$*" == "---version" ]; then
-      echo "0.4.0"; exit 0
+      echo "0.4.1"; exit 0
    fi
 
 #===============================================================================
@@ -124,6 +125,11 @@
             fi
             KIND=aios; TARGET="${E#*|}/bin/aios"; WHY="aios --install distribution-*: highest installed ${E%%|*}"
             return 0
+         fi
+      fi
+      if [ "$ARG1" == "--remove-version" ] || [ "$ARG1" == "--vaults" ]; then
+         if E="$(highest)"; then                    # independent of cwd: the newest kernel knows all vaults (V0.6, B21)
+            KIND=aios; TARGET="${E#*|}/bin/aios"; WHY="aios $ARG1: highest installed ${E%%|*}"; return 0
          fi
       fi
       if [ "$ARG1" == "--activate" ] && [[ "$ARG2" =~ ^v([0-9][^[:space:]]*)$ ]] \

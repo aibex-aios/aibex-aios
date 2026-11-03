@@ -256,6 +256,10 @@ EOF
       F="$(basename "$SP")"
       [ -f "$I/doc/spec/$F" ] && assert_eq "$(cat "$I/doc/spec/$F")" "$(cat "$SP")" "doc/spec: $F" || fail "doc/spec: $F missing"
    done
+   assert_file "$I/doc/README.md"                    # index of doc/ (V0.6, B22): every file named
+   for SP in "$S"/spec/*.md "$S"/doc/tutorials/*.md; do
+      assert_contains "$(cat "$I/doc/README.md")" "\`$(basename "$SP")\`" "doc/README.md names $(basename "$SP")"
+   done
 
 #===============================================================================
 # v0.6 step 7: changeover of a v0.5.1 setup - hooks in place with the absolute path, PreToolUse,

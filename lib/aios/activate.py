@@ -110,16 +110,13 @@ def plan_registration(root, plan):
     """Wrappers of the kernel skills at the vault root and in all projects (spec 03; V0.6, F18);
     False if all are up to date."""
     from . import context, registry
-    if config.load(root).kind != "aios":
-        projects = vault_projects(root)
-        plan.add(f"register the wrappers of the kernel skills in {len(projects)} projects of {root}",
-                 lambda: register_vault(root))
-        return True
-    if any(registry.Sync(context.Context(p), with_root=False) for p in vault_projects(root)):
-        plan.add(f"register the wrappers of the kernel skills in the projects of {root}",
-                 lambda: register_vault(root))
-        return True
-    return False
+    projects = vault_projects(root)
+    if config.load(root).kind == "aios" and \
+            not any(registry.Sync(context.Context(p), with_root=False) for p in projects):
+        return False
+    plan.add(f"register the wrappers of the kernel skills in {len(projects)} projects of {root}",   # B20
+             lambda: register_vault(root))
+    return True
 
 
 def register_vault(root):

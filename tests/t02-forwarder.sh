@@ -37,7 +37,7 @@
 # forwarder: own options, arguments passed unchanged
 #===============================================================================
 
-   assert_eq "$(aios ---version)" "0.4.0" "---version"
+   assert_eq "$(aios ---version)" "0.4.1" "---version"
    assert_exit 1 aios ---help
    assert_contains "$(aios ---help)" "aios ---which" "---help names the tool"
 
@@ -160,6 +160,8 @@
    assert_eq "$(run "$V/Sterne" aios --install distribution-demo "$V")" "sys-0.5.0 aios --install distribution-demo $V" "distribution: highest version, not that of cwd"
    assert_eq "$(run "$V/Sterne" aios --install aibex-aios/distribution-demo==1.0.0)" "sys-0.5.0 aios --install aibex-aios/distribution-demo==1.0.0" "distribution with hub and version"
    assert_eq "$(run "$V/Sterne" aios --install v0.2.0)" "sys-0.1.0 aios --install v0.2.0" "--install of a version: cwd decides as before"
+   assert_eq "$(run "$V/Sterne" aios --remove-version v0.1.0)" "sys-0.5.0 aios --remove-version v0.1.0" "B21: --remove-version: highest version, not that of cwd"
+   assert_eq "$(run "$V/Sterne" aios --vaults)" "sys-0.5.0 aios --vaults" "B21: --vaults: highest version"
    rm -rf "$V/.aios" "$AIOS_PREFIX/v0.5.0"
 
 #===============================================================================
