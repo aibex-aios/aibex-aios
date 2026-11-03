@@ -136,12 +136,15 @@ alone as one Bash command (no cd, no ; && | around it: AIBOS permits only the ca
 and follow them.
 - aios-init — /Users/…/.aios/bin/aios --skill aios-init
 - …
+Documentation of this version (spec, tutorials; Read without a question): /Users/…/.aios/versions/v0.6.2/doc/README.md
 </aios-kernel-skills>
 ```
 
+Die letzte Zeile nennt `doc/README.md` der Installation des laufenden Kernels, also der Version, an die der Vault gebunden ist; so finden Assistenten Spec und Tutorials, die sie nach *Freigabe*, R2, ohne Rückfrage lesen, aber nicht auflisten dürfen. Fehlt die Datei (ältere Installation), fehlt die Zeile (V0.6, Memos 142, 143: B23).
+
 Der Hinweis, den Aufruf allein als einen Bash-Befehl auszuführen, folgt aus *Freigabe*, E3: Einen verketteten Aufruf (mit `cd`, `;`, `&&`, `|`) gibt AIBOS nicht frei, und der Host fragt (V0.6, Memo 98, B17).
 
-Der Aufruf nennt den absoluten Pfad des Weiterleiters (Spec 04). Der Block nennt keine `allowed-tools`; die Befehle gibt der Hook `PreToolUse` frei (*Hooks*). Er steht neben den registrierten Hüllen (Spec 03): Sie tragen `/<name>` in jedem Host und die Beschreibungen, an denen die Auslösung über einen Satz hängt; der Block nennt Namen und Aufruf auch dort, wo die Registrierung fehlt. Mit 12 Kernel-Skills hat er etwa 1000 Zeichen (gemessen 997 mit `/Users/hux`).
+Der Aufruf nennt den absoluten Pfad des Weiterleiters (Spec 04). Der Block nennt keine `allowed-tools`; die Befehle gibt der Hook `PreToolUse` frei (*Hooks*). Er steht neben den registrierten Hüllen (Spec 03): Sie tragen `/<name>` in jedem Host und die Beschreibungen, an denen die Auslösung über einen Satz hängt; der Block nennt Namen und Aufruf auch dort, wo die Registrierung fehlt. Mit 12 Kernel-Skills hat er etwa 1000 Zeichen (gemessen 997 mit `/Users/hux`), mit der Zeile zur Dokumentation 121 mehr (gemessen mit `/Users/hux` und `v0.6.2`).
 
 ## CLI `aios --context`
 

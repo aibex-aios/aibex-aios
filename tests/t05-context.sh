@@ -46,6 +46,7 @@ Kernel skills of AIBOS (descriptions in the registered skills). A skill is trigg
 alone as one Bash command (no cd, no ; && | around it: AIBOS permits only the call alone),
 and follow them.
 $(for N in $(ls "$SRC/skills/aios"); do printf -- '- %s — %s --skill %s\n' "$N" "$HOME/.aios/bin/aios" "$N"; done)
+Documentation of this version (spec, tutorials; Read without a question): $SRC/doc/README.md
 </aios-kernel-skills>
 "
    EXP="<aios-context id=\"$ID\" files=\"6\" cwd=\"$D/Garten\" version=\"$VER\">

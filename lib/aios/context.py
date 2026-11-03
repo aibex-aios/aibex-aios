@@ -171,7 +171,8 @@ def kernel_skills():
 
 def kernel_skills_block():
     """Block <aios-kernel-skills> of the master context: name and call per kernel skill; the
-    descriptions come with the registered wrappers (spec 02, Block der Kernel-Skills; V0.6, memo 46)."""
+    descriptions come with the registered wrappers (spec 02, Block der Kernel-Skills; V0.6, memo 46);
+    then the index of the documentation of the running kernel, if it has one (B23)."""
     fwd = paths.forwarder()
     lines = ["<aios-kernel-skills>\n",
              "Kernel skills of AIBOS (descriptions in the registered skills). A skill is triggered by\n",
@@ -179,6 +180,9 @@ def kernel_skills_block():
              "alone as one Bash command (no cd, no ; && | around it: AIBOS permits only the call alone),\n",
              "and follow them.\n"]   # B17: a chained call is not permitted (spec 02, Freigabe, E3)
     lines += [f"- {n} — {fwd} --skill {n}\n" for n in kernel_skills()]
+    doc = Path(__file__).resolve().parents[2] / "doc" / "README.md"   # B23: where the docs are (V0.6, memo 143)
+    if doc.is_file():
+        lines.append(f"Documentation of this version (spec, tutorials; Read without a question): {doc}\n")
     lines.append("</aios-kernel-skills>\n")
     return "".join(lines)
 
