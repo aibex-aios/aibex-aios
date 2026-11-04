@@ -212,4 +212,4 @@ Das Wurzelprojekt wird behandelt wie ein Projekt des Workspace: Es landet im Ord
 | Einfrieren | `aios --workspace freeze`, Abschnitt `workspace:` in `lock.yaml` |
 | zweiter Rechner | `aios --workspace init <repo>` |
 
-Die vollständigen Regeln stehen in Spec 06 *Pakete und Workspaces*, Abschnitt *Workspaces*, und in Spec 05 *Projekte*, installiert unter `~/.aios/versions/v0.6.0/doc/spec/`.
+Die vollständigen Regeln stehen in Spec 06 *Pakete und Workspaces*, Abschnitt *Workspaces*, und in Spec 05 *Projekte*, installiert unter `~/.aios/versions/v0.6.3/doc/spec/`.

@@ -2,7 +2,7 @@
 
 Dieses Tutorial führt in etwa 20 Minuten durch einen kleinen Vault mit zwei Projekten und den beiden Demo-Assistenten von AIbex AIOS: dem **Gärtner**, der nur mit Äpfeln und Birnen rechnet, und dem **Astronomen**, der nur mit Sonne und Mond rechnet. Am Ende weißt du, wie ein Chat sein Wissen bekommt, wie Assistenten als Pakete geholt und einem Projekt zugeordnet werden, warum ein Assistent nur in seinem Teil des Vaults sichtbar ist und wie du seine Oberfläche öffnest.
 
-Voraussetzung: AIBOS v0.6 ist installiert (`aios --install v0.6.0`, siehe README) und Claude Code läuft als Desktop-App oder CLI. Die Beispiele schreiben `aios`; steht `~/.aios/bin` nicht in deinem `PATH`, rufe `~/.aios/bin/aios` auf.
+Voraussetzung: AIBOS v0.6 ist installiert (`aios --install v0.6.3`, siehe README) und Claude Code läuft als Desktop-App oder CLI. Die Beispiele schreiben `aios`; steht `~/.aios/bin` nicht in deinem `PATH`, rufe `~/.aios/bin/aios` auf.
 
 Starte jeden Chat direkt im Ordner des Projekts. Legt die Desktop-App für den Chat eine Arbeitskopie an (`.claude/worktrees/<name>/` auf einem eigenen Branch), landen die Ergebnisse auf diesem Branch und erscheinen erst nach dem Übernehmen (Merge) im Ordner. AIOS erkennt das beim Start: Claude sagt es dir vor der ersten Arbeit und bietet danach das Übernehmen an.
 
@@ -12,11 +12,11 @@ Ein Vault ist ein Verzeichnis, dessen Name mit `§` beginnt. Lege ihn an und bin
 
 ```bash
 mkdir -p ~/tmp/§Demo
-aios --activate v0.6.0 ~/tmp/§Demo
+aios --activate v0.6.3 ~/tmp/§Demo
 ```
 
 ```
-=> activate AIOS v0.6.0 for ~/tmp/§Demo
+=> activate AIOS v0.6.3 for ~/tmp/§Demo
 => ~/tmp/§Demo runs with AIOS 0.6.0 (~/tmp/§Demo/.aios/config.yaml)
    the master context and the skill registration apply from the next chat
 ```
@@ -95,7 +95,7 @@ aibex-aios/assistant-astronom  assistant     Demo-Assistent Astronom, rechnet nu
 aibex-aios/assistant-gaertner  assistant     Demo-Assistent Gärtner, rechnet nur mit Äpfeln und Birnen, mit Oberfläche
 ```
 
-Der Name eines Pakets nennt seine Art: `assistant-…`, `skill-…`, `knowledge-…`, `app-…`, `worker-…`, `distribution-…`. Bis v0.4 hießen die Assistenten `assistent-…`; `aios --activate v0.6.0` stellt einen älteren Vault um. Ein Paket wird nicht automatisch verwendet; du **holst** es in ein Projekt. Mehr über Pakete und Hubs zeigt Tutorial *03 Pakete und Taschenrechner*.
+Der Name eines Pakets nennt seine Art: `assistant-…`, `skill-…`, `knowledge-…`, `app-…`, `worker-…`, `distribution-…`. Bis v0.4 hießen die Assistenten `assistent-…`; `aios --activate v0.6.3` stellt einen älteren Vault um. Ein Paket wird nicht automatisch verwendet; du **holst** es in ein Projekt. Mehr über Pakete und Hubs zeigt Tutorial *03 Pakete und Taschenrechner*.
 
 ## 4. Den Gärtner holen
 
@@ -204,7 +204,7 @@ Willst du einen Assistenten nur ausprobieren, ohne die Zuordnung eines Projekts 
 
 | Begriff | im Tutorial |
 |---|---|
-| Vault, A/W, Aktivierung | `§Demo`, `aios --activate v0.6.0`; außerhalb eines A/W kein AIBOS |
+| Vault, A/W, Aktivierung | `§Demo`, `aios --activate v0.6.3`; außerhalb eines A/W kein AIBOS |
 | Projekt, Kette, Name | `G-Garten`, `S-Sternwarte`; ein Chat sieht von der Vault-Root bis zu seinem Projekt |
 | Klassen | `@Rule` geladen, `@@Sortenkunde` verfügbar, `@!Assistant` verborgen |
 | Paket, Hub, Holen | `aios --library assistant`, `/aios-fetch assistant-gaertner`, `packages:` und `lock.yaml` |
@@ -221,4 +221,4 @@ Willst du einen Assistenten nur ausprobieren, ohne die Zuordnung eines Projekts 
 - Tutorial *05 Arbeitspferde und Distributionen*: Programme wie `yt-dlp` als Arbeitspferde und die Distribution Rothirsch.
 - Zum Aufräumen: `aios --deactivate ~/tmp/§Demo` löst die Bindung; der Vault ist dann ohne Wirkung, die Dateien bleiben.
 
-Die vollständigen Regeln stehen in der Spec, installiert unter `~/.aios/versions/v0.6.0/doc/spec/`.
+Die vollständigen Regeln stehen in der Spec, installiert unter `~/.aios/versions/v0.6.3/doc/spec/`.

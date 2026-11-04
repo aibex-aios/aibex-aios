@@ -35,22 +35,23 @@ for `aios --contribute`. Setting up workhorses needs access to PyPI.
 Copy this line into a terminal:
 
 ```sh
-R=~/git/AIbex/aibex-aios; ([ -d "$R/.git" ] || git clone https://github.com/aibex-aios/aibex-aios "$R") && "$R/bin/aios" --install v0.6.0
+R=~/git/AIbex/aibex-aios; ([ -d "$R/.git" ] || git clone https://github.com/aibex-aios/aibex-aios "$R") && "$R/bin/aios" --install v0.6.3
 ```
 
 It clones the repository to `~/git/AIbex/aibex-aios` unless a clone is already
 there (an existing clone is left as it is), checks the basic kit and installs.
-The installed files always come from the tag `v0.6.0`, not from the working
+The installed files always come from the tag `v0.6.3`, not from the working
 tree of the clone; without a version, the highest release tag is installed.
 
 `aios --install` shows a plan and asks once before it writes anything. It
-installs the kernel read-only to `~/.aios/versions/v0.6.0/` and puts the
+installs the kernel read-only to `~/.aios/versions/v0.6.3/` and puts the
 forwarder `aios` into `~/.aios/bin/aios`. It adds three hooks to
 `~/.claude/settings.json`, each with the absolute path of the forwarder:
-`SessionStart`, `UserPromptSubmit` and `PreToolUse` (matcher `Bash|Skill`; it
-allows single calls of the forwarder and the registered kernel skills in an
-AIBOS workspace without a permission prompt, while `deny` and `ask` rules of
-the user still win). It writes nothing
+`SessionStart`, `UserPromptSubmit` and `PreToolUse` (matcher `Bash|Skill|Read`; it
+allows single calls of the forwarder and the registered kernel skills, and
+reading the cached master context and the documentation of the bound version,
+in an AIBOS workspace without a permission prompt, while `deny` and `ask`
+rules of the user still win). It writes nothing
 to `~/bin` and no skills to `~/.claude/skills/`. Hooks of `ai-brain` are saved
 and restored by `aios --uninstall`. Only `aios --install --system` installs to
 `/opt/aios/` instead (computer-wide, with `sudo`).
@@ -74,14 +75,14 @@ the vault root keeps a vault with `ai-brain`; a `§` folder without binding or
 marker is not affected at all.
 
 **Changeover from v0.5:** run the installer of the clone,
-`~/git/AIbex/aibex-aios/bin/aios --install v0.6.0` (as under *Install*); a
+`~/git/AIbex/aibex-aios/bin/aios --install v0.6.3` (as under *Install*); a
 typed `aios` would still reach the installer of v0.5 through `~/bin/aios`.
 It replaces the two AIOS hooks in place, adds `PreToolUse` and leaves
 `~/bin/aios` as it is. Vaults bound to
 0.5 keep running with v0.5 until you switch each one with
-`aios --activate v0.6.0 <vault>`. When no known vault is bound below 0.6 any
+`aios --activate v0.6.3 <vault>`. When no known vault is bound below 0.6 any
 more, this plan offers, with its own question, to remove the old global skill
-wrappers in `~/.claude/skills/`. `aios --activate v0.6.0` also switches vaults
+wrappers in `~/.claude/skills/`. `aios --activate v0.6.3` also switches vaults
 of v0.4 and v0.3 (packages renamed and moved to versions that allow 0.6, from
 v0.3 `skills:` and `assistants:` turned into packages).
 
@@ -99,11 +100,11 @@ Rothirsch 1.1.0 binds kernel 0.6.1.
 
 ```sh
   mkdir ~/Vaults/§Demo
-  aios --activate v0.6.0 ~/Vaults/§Demo      # writes §Demo/.aios/config.yaml, creates §Demo/@/ and a git repo
+  aios --activate v0.6.3 ~/Vaults/§Demo      # writes §Demo/.aios/config.yaml, creates §Demo/@/ and a git repo
 ```
 
 ```
-=> activate AIOS v0.6.0 for ~/Vaults/§Demo
+=> activate AIOS v0.6.3 for ~/Vaults/§Demo
 => ~/Vaults/§Demo runs with AIOS 0.6.0 (~/Vaults/§Demo/.aios/config.yaml)
    the master context and the skill registration apply from the next chat
 ```
@@ -282,7 +283,7 @@ installed to `~/.aios/versions/v<version>/doc/spec/` (with `--system`:
 ```
 
 A clone can be used without installing: point `AIOS_HOME` to it, or add a
-line `v0.6.0-dev: ~/git/AIbex/aibex-aios` to `~/.aios/installations.yaml`.
+line `v0.6.3-dev: ~/git/AIbex/aibex-aios` to `~/.aios/installations.yaml`.
 `AIOS_HUBS` and `AIOS_GITHUB` redirect hubs for tests (spec 04).
 `CLAUDE.md` holds the rules for working on the repository, `STATUS.md` the
 state of the implementation.
