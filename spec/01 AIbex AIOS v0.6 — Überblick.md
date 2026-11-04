@@ -1,8 +1,8 @@
 ---
 title: "AIbex AIOS v0.6 — Überblick"
-date: 2026-11-03
+date: 2026-11-04
 author: iHux
-status: Spec
+status: Entwurf
 tags: [spec, aios, v0.6]
 number: 01
 related:
@@ -59,7 +59,7 @@ Die Spec v0.6 besteht aus sieben Dokumenten, die sich nicht wiederholen:
 | **06 Pakete und Workspaces** | Paket-Manifest, Versionen und Bereiche, Hubs und Hub-Liste, Resolver, Paket laden (`aios --fetch`), ausrollen (`aios --deploy`), Distributionen, Lock, `@Data/`, Workspaces, Rückfluss, Demo-App Taschenrechner |
 | **07 Arbeitspferde** | Definition, Pakete `worker-<name>`, Installation je Version, Aktivierung über `lock.yaml`, Weiterleiter, Abläufe, `aios --worker`, Tests |
 
-Die Begründungen stehen in den Memos der Konzeptprojekte unter `§AIOS/A-AIOS/AA-AIbex-AIOS/`: `@Memo/V0.1/` für die Grundlage, `@Memo/V0.2/` (Memos 13–18) für die Änderungen in v0.2, `@Memo/V0.3/` (Memos 01–28) für die Änderungen in v0.3, `@Memo/V0.4/` (Memos 01–29) für die Änderungen in v0.4, `@Memo/V0.5/` (Memos 11–41, Soll-Bild Memo 36) für die Änderungen in v0.5, dort auch die Memos 70–86 für v0.5.1, `@Memo/V0.6/` (Memos 01–36, Soll-Bild Memo 34, Skizze Memo 35) für die Änderungen in v0.6, dort auch die Memos 79–84 (Bewertung Memo 79, Skizze Memo 84) für v0.6.1 und die Memos 114–123 (Bewertung Memo 118, Soll-Bild und Skizze Memo 122) für v0.6.2. In den Memos 01–11 von V0.3 heißt der Assistent noch *Agent* (V0.3, Memo 13). Die Spec beschreibt nur den Soll-Stand. Sie wird im Repo `aibex-aios` unter `spec/` gepflegt und mit jeder Version nach `doc/spec/` ausgeliefert.
+Die Begründungen stehen in den Memos der Konzeptprojekte unter `§AIOS/A-AIOS/AA-AIbex-AIOS/`: `@Memo/V0.1/` für die Grundlage, `@Memo/V0.2/` (Memos 13–18) für die Änderungen in v0.2, `@Memo/V0.3/` (Memos 01–28) für die Änderungen in v0.3, `@Memo/V0.4/` (Memos 01–29) für die Änderungen in v0.4, `@Memo/V0.5/` (Memos 11–41, Soll-Bild Memo 36) für die Änderungen in v0.5, dort auch die Memos 70–86 für v0.5.1, `@Memo/V0.6/` (Memos 01–36, Soll-Bild Memo 34, Skizze Memo 35) für die Änderungen in v0.6, dort auch die Memos 79–84 (Bewertung Memo 79, Skizze Memo 84) für v0.6.1 die Memos 114–123 (Bewertung Memo 118, Soll-Bild und Skizze Memo 122) für v0.6.2 und die Memos 152–154 (Bewertung und Skizze Memo 153) für v0.6.3. In den Memos 01–11 von V0.3 heißt der Assistent noch *Agent* (V0.3, Memo 13). Die Spec beschreibt nur den Soll-Stand. Sie wird im Repo `aibex-aios` unter `spec/` gepflegt und mit jeder Version nach `doc/spec/` ausgeliefert.
 
 ## Begriffe
 
@@ -174,6 +174,15 @@ v0.6.2 ist ein Patch auf v0.6.1, ein Release aus Kernel, `skill-cleanup` und `di
 | Release-Kandidaten `v0.6.2-rc<n>`, Capricorn mit derselben Nummer, `skill-cleanup` mit eigenen (*Abnahmetest*) | Memos 121, 122 |
 | aus der Abnahme: Zahl der Projekte im Plan von `--activate` auch für ein A/W (B20); `--remove-version` und `--vaults` über den Weiterleiter mit der höchsten installierten Version (B21); `doc/README.md` als Inhaltsverzeichnis von `doc/` (B22) | Memos 137–140 |
 
+v0.6.3 ist ein Patch auf v0.6.2, nur der Kernel (V0.6, Memos 152–154):
+
+| in v0.6.3 | Memos |
+|---|---|
+| Aus `/opt/aios/workers.yaml` zählen für bekannte Vaults und `aios --vaults` nur Projekte des aktuellen Benutzers (Spec 04, *`aios --install`*, Schritt 7; B26); Testvariable `AIOS_TEST_UID` | Installer, Memo 33; V0.6, Memos 153, 154 (F150, F151) |
+| `README.md` und Tutorials nennen die Version des Release (H13, F152); Beispielpfade in der Spec ohne Namen eines Benutzers | Installer, Memos 02, 23; V0.6, Memo 153 |
+| Keine Begleitpakete: `distribution-capricorn` bleibt 0.4.1 mit `kernel: "==0.6.2"` (F149) | V0.6, Memo 154 |
+| Release-Kandidaten `v0.6.3-rc<n>` (*Abnahmetest*) | V0.6, Memo 153 |
+
 ## Vorabversionen
 
 Alle Versionen unter 1.0 sind Alpha- und Beta-Versionen; an Kunden wird erst ab v1.0 ausgeliefert. Das gilt für AIOS selbst und für die Pakete der Grundausstattung, die deshalb mit `0.1.0` beginnen (Ausnahme: `memo` behält seine Versionsfolge, 6.0.0).
@@ -203,28 +212,22 @@ AIBOS hält diese Regeln in jedem Befehl ein (für Pakete zusätzlich P1–P8, S
 
 ## Abnahmetest
 
-Der Abnahmetest von v0.6.2 läuft auf dem Arbeitsrechner nach der Implementierung, auf dem letzten Release-Kandidaten `v0.6.2-rc<n>` (V0.6, Memo 122); `distribution-capricorn` hat Kandidaten `0.4.0-rc<n>` mit derselben Nummer und `kernel: "==0.6.2-rc<n>"`, `skill-cleanup` eigene Kandidaten `0.1.1-rc<m>`, die Capricorn mit `==` nennt (F91). An den Kandidaten gebunden werden nur `~/vault/§Probe-AIBOS` (mit dem Probe-Projekt `P-Probe`) und `~/vault/§Probe-Capricorn`; die übrigen Vaults bleiben bis Schritt 13 auf 0.6.1. `/cleanup` wird im Testprojekt `MSC-Cleanup/MSCP-Probe-Cleanup` im Vault `§AIOS` auf 0.6.1 abgenommen (F96).
+Der Abnahmetest von v0.6.3 läuft auf dem Arbeitsrechner nach der Implementierung, auf dem letzten Release-Kandidaten `v0.6.3-rc<n>` (V0.6, Memos 153, 154), im Benutzer des Arbeitsrechners und in einem zweiten macOS-Benutzer (hier `aibex`), der eine eigene Installation unter `~/.aios` hat und `/opt/aios/workers.yaml` des Rechners mitliest. An den Kandidaten gebunden wird nur `~/vault/§Probe-AIBOS`; die übrigen Vaults bleiben bis Schritt 9 auf 0.6.2. Capricorn bleibt 0.4.1 (F149).
 
-**Headless:** Die Schritte im Chat (7, 9, 10) laufen als Headless-Sessions: `claude -p "<prompt>" --setting-sources project --settings <nur die Hooks aus ~/.claude/settings.json> --output-format json`, über mehrere Züge mit `--resume`; Modus „Manuell" entspricht `--permission-mode default`. Abgelehnte Aufrufe stehen in `permission_denials`; geprüft wird im JSON und im Transkript (V0.6, Memos 139, 141). Was nur mit den Sitzungswerkzeugen der Desktop-App geht (Testsitzungen archivieren), bleibt headless ungeprüft.
-
-Die Abnahmetests von v0.6.1, v0.6.0 und v0.5 stehen in dieser Spec in den Tags `v0.6.1`, `v0.6.0` bzw. `v0.5.1`.
+Die Abnahmetests von v0.6.2, v0.6.1, v0.6.0 und v0.5 stehen in dieser Spec in den Tags `v0.6.2`, `v0.6.1`, `v0.6.0` bzw. `v0.5.1`.
 
 | # | Schritt | erwartet |
 |---|---|---|
-| 1 | `~/git/AIbex/aibex-aios/bin/aios --install v0.6.2-rc<n> --plan`, dann mit Ja | Kernel nach `~/.aios/versions/v0.6.2-rc<n>/`; Weiterleiter und Hooks unverändert; nichts in `~/bin` |
-| 2 | `aios --vaults` | alle Vault-Wurzeln unter `~/vault/` und `§Obsidian/`, an 0.6.1 gebunden, je mit Quelle; `§Obsidian` mit `above`, `§BrainLab`, `§KI-Kit`, `§Lisa` mit `beside`, auch ohne Merker (H8) |
-| 3 | `aios --activate v0.6.2-rc<n> ~/vault/§Probe-AIBOS` mit Ja | Bindung `0.6.2-rc<n>`; Hüllen in `.aios/registry` mit `source` Kernel `0.6.2-rc<n>`; Pakete unverändert |
-| 4 | `aios --activate v0.6.2-rc<n> "<Google Drive>/Meine Ablage/§Obsidian" --plan` (nur der Plan) | `register the wrappers of the kernel skills in 1 projects of …/§Obsidian`: nur die Vault-Root, nicht die Projekte der Vaults darin (H7, B20; vorher 104 Projekte, V0.6, Memo 111) |
-| 5 | `aios --activate v0.6.2-rc<n> ~/vault/§Probe-Capricorn --plan`, dann mit Ja | der Plan nennt `distribution-capricorn` 0.3.0 mit `kernel: "==0.6.1"` und `aios --install distribution-capricorn` (H5); Bindung `0.6.2-rc<n>` (F95) |
-| 6 | in `§Probe-AIBOS`: `aios --remove-version v0.6.1 --plan` (nur der Plan) | der Plan nennt die Vault-Wurzeln, die noch an 0.6.1 hängen (H6); der Weiterleiter wählt die höchste installierte Version (B21), auch aus einem Vault an 0.6.1 |
-| 7 | headless in `P-Probe` (Anja zugeordnet): „Was sagt Spec 02 zur Freigabe von Read? Lies dazu die Spec der AIOS-Version, an die dieser Vault gebunden ist." | Anja findet den Dateinamen über `doc/README.md` (B22) und liest `~/.aios/versions/v0.6.2-rc<n>/doc/spec/02 Master-Kontext.md`; `permission_denials` ohne `Read` (H9) |
-| 8 | in `§Probe-Capricorn`: `aios --hubs add aibex-local file://<MSC-Cleanup>/@Package --vault` mit Ja | Hub-Liste der Vault-Root `aibex-aios`, `aibex-local` (F94) |
-| 9 | `aios --install "distribution-capricorn==0.4.0-rc<n>" ~/vault/§Probe-Capricorn --from ~/git/AIbex/distribution-capricorn --plan`, dann mit Ja; danach headless in `§Probe-Capricorn`: Skill `cleanup`, Assistenten, Version des Master-Kontexts | Upgrade auf `0.4.0-rc<n>`; `assistant-anja` 0.2.1 → 0.3.0; neu `skill-cleanup` `0.1.1-rc<m>` aus `aibex-local`; übrige Pakete unverändert; headless: `cleanup` verfügbar, `anja` 0.3.0, Master-Kontext `0.6.2-rc<n>` |
-| 10 | in `MSCP-Probe-Cleanup`: `aios --fetch "skill-cleanup==0.1.1-rc<m>" --from <MSC-Cleanup>/@Package/skill-cleanup` im Testprojekt, Ausgangslage A1 der Paket-Spec, dann A1b–A9 headless | wie in der Paket-Spec `MSC-Cleanup/@Spec/01`; Archivieren der Testsitzung nur interaktiv |
-| 11 | `tests/run`, `tests/live/fresh.sh`, `permit.sh`, `rothirsch.sh`, `changeover.sh` | alle grün |
-| 12 | Bestandslauf: je Vault aus `aios --vaults` `aios --activate v0.6.2-rc<n> <vault> --plan`; Hooks, `~/.claude/skills/`, `workers.yaml`, `installations.yaml` | keine Konflikte; Tabelle im Abnahme-Memo |
-| 13 | nach Freigabe: Tags `v0.6.2`, `skill-cleanup` `v0.1.1`, `distribution-capricorn` `v0.4.0`; `aios --install v0.6.2`; Probe-Vaults umbinden; mit eigener Frage die übrigen Vaults; `aios --remove-version v0.6.2-rc<n>` und, wenn kein Vault mehr daran hängt, `v0.6.1` | Bindung `0.6.2`; keine Hülle verweist auf einen Kandidaten |
-| 14 | Veröffentlichen, jeder Schritt mit eigener Rückfrage: `skill-cleanup` im Hub, Kernel `v0.6.2` mit Konzept-Tag auf dem Abnahme-Memo, `distribution-capricorn` `v0.4.0`; dann `aios --hubs remove aibex-local --vault` in `§Probe-Capricorn` und Probe gegen den Hub | alles aus dem Hub holbar; `lock.yaml` ohne `aibex-local` |
+| 1 | `~/git/AIbex/aibex-aios/bin/aios --install v0.6.3-rc<n> --plan`, dann mit Ja | Kernel nach `~/.aios/versions/v0.6.3-rc<n>/`; Weiterleiter und Hooks unverändert |
+| 2 | `~/.aios/bin/aios --vaults` | dieselben Vaults mit denselben Quellen wie mit 0.6.2, weil alle Projekte in `/opt/aios/workers.yaml` dem Benutzer gehören |
+| 3 | im zweiten Benutzer, im Terminal: `git -c safe.directory='*' -C ~/.aios/installer/aibex-aios fetch /Users/<user>/git/AIbex/aibex-aios tag v0.6.3-rc<n>`, dann `~/.aios/bin/aios --install v0.6.3-rc<n>` mit Ja, dann `~/.aios/bin/aios --vaults` | nur Vaults im Home des zweiten Benutzers; kein Pfad aus dem Home des ersten (B26) |
+| 4 | `~/.aios/bin/aios --activate v0.6.3-rc<n> ~/vault/§Probe-AIBOS` mit Ja | Bindung `0.6.3-rc<n>`; Hüllen in `.aios/registry` mit `source` Kernel `0.6.3-rc<n>`; Pakete unverändert |
+| 5 | `git -C ~/git/AIbex/aibex-aios grep -n -E "v0\.6\.[0-2]" -- README.md doc` und `git -C ~/git/AIbex/aibex-aios grep -n "/Users/[a-z]" -- spec doc README.md` | nur historische Aussagen bzw. kein Treffer (H13, F152) |
+| 6 | `tests/run`, `tests/live/fresh.sh`, `permit.sh`, `changeover.sh`, `rothirsch.sh` | alle grün |
+| 7 | Bestandslauf: je Vault aus `aios --vaults` `aios --activate v0.6.3-rc<n> <vault> --plan`; Hooks, `~/.claude/skills/`, `workers.yaml` und `installations.yaml` an beiden Orten | keine Konflikte; Tabelle im Abnahme-Memo |
+| 8 | Abnahme-Memo | Schritte 1–7 bestanden |
+| 9 | nach Freigabe: `VERSION` `0.6.3`, Tag `v0.6.3`; `aios --install v0.6.3`; `§Probe-AIBOS` umbinden; mit eigener Frage die übrigen Vaults; `aios --remove-version v0.6.3-rc<n>` und, wenn kein Vault mehr daran hängt, `v0.6.2` | Bindung `0.6.3`; keine Hülle verweist auf einen Kandidaten |
+| 10 | Veröffentlichen, jeder Schritt mit eigener Rückfrage: `main` und Tag `v0.6.3` pushen, Konzept-Tag `v0.6.3` auf dem Abnahme-Memo | `aios --install v0.6.3` aus einem frischen Klon möglich |
 
 ## Offen
 

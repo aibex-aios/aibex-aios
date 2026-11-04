@@ -1,8 +1,8 @@
 ---
 title: "Master-Kontext"
-date: 2026-11-03
+date: 2026-11-04
 author: iHux
-status: Spec
+status: Entwurf
 tags: [spec, aios, v0.6, master-kontext]
 number: 02
 related:
@@ -144,7 +144,7 @@ Die letzte Zeile nennt `doc/README.md` der Installation des laufenden Kernels, a
 
 Der Hinweis, den Aufruf allein als einen Bash-Befehl auszuführen, folgt aus *Freigabe*, E3: Einen verketteten Aufruf (mit `cd`, `;`, `&&`, `|`) gibt AIBOS nicht frei, und der Host fragt (V0.6, Memo 98, B17).
 
-Der Aufruf nennt den absoluten Pfad des Weiterleiters (Spec 04). Der Block nennt keine `allowed-tools`; die Befehle gibt der Hook `PreToolUse` frei (*Hooks*). Er steht neben den registrierten Hüllen (Spec 03): Sie tragen `/<name>` in jedem Host und die Beschreibungen, an denen die Auslösung über einen Satz hängt; der Block nennt Namen und Aufruf auch dort, wo die Registrierung fehlt. Mit 12 Kernel-Skills hat er etwa 1000 Zeichen (gemessen 997 mit `/Users/hux`), mit der Zeile zur Dokumentation 121 mehr (gemessen mit `/Users/hux` und `v0.6.2`).
+Der Aufruf nennt den absoluten Pfad des Weiterleiters (Spec 04). Der Block nennt keine `allowed-tools`; die Befehle gibt der Hook `PreToolUse` frei (*Hooks*). Er steht neben den registrierten Hüllen (Spec 03): Sie tragen `/<name>` in jedem Host und die Beschreibungen, an denen die Auslösung über einen Satz hängt; der Block nennt Namen und Aufruf auch dort, wo die Registrierung fehlt. Mit 12 Kernel-Skills hat er etwa 1000 Zeichen (gemessen 997 mit einem Home-Pfad von 10 Zeichen), mit der Zeile zur Dokumentation 121 mehr (gemessen mit demselben Home-Pfad und `v0.6.2`).
 
 ## CLI `aios --context`
 

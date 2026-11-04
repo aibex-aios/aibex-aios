@@ -1,8 +1,8 @@
 ---
 title: "Installation und Konfiguration"
-date: 2026-11-03
+date: 2026-11-04
 author: iHux
-status: Spec
+status: Entwurf
 tags: [spec, aios, v0.6, installation, konfiguration]
 number: 04
 related:
@@ -227,12 +227,12 @@ workers:
     0.1.0:
       kind: python
       check: ok
-      projects: ["/Users/hux/vault/§Wald", "/Users/hux/vault/§Wald/P-Probe-Alt"]
+      projects: ["/Users/<user>/vault/§Wald", "/Users/<user>/vault/§Wald/P-Probe-Alt"]
   worker-deno:
     0.1.0:
       kind: python
       check: ok
-      projects: ["/Users/hux/vault/§Wald"]
+      projects: ["/Users/<user>/vault/§Wald"]
 ```
 
 `programs` nennt je Programm die Pakete, die es bereitstellen (gelesen vom Weiterleiter, Spec 07). Unter `workers` steht je Paket und Version die Art, das letzte Ergebnis von `check` (`ok` oder `failed`) und die nutzenden Projekte. Der Ort einer Version ergibt sich aus dem Ort der Datei (`<workers.yaml>/../workers/<paket>/v<version>/`). Pfade mit Leerzeichen oder Sonderzeichen stehen in Anführungszeichen.
@@ -338,6 +338,7 @@ Alle festen Orte lassen sich über Umgebungsvariablen umlenken, damit Tests in e
 | `AIOS_TEST_FAIL` | `<n>` lässt den n-ten Schritt eines Plans scheitern, `<n>:crash` beendet den Prozess dort ohne Aufräumen (Tests der Sicherung, Spec 06; V0.5, Memo 51) | — |
 | `AIOS_PREPARE_PATH` | `PATH` für die Prüfung der Grund- und Entwicklerausstattung in `aios --prepare` und `aios --install` (V0.5, Memo 49) | `PATH` |
 | `AIOS_MANAGED_SETTINGS` | Managed Settings für `aios --context --permit` (Spec 02, *Freigabe*), statt der Standardorte | — |
+| `AIOS_TEST_UID` | eigene uid bei der Prüfung des Eigentümers von Projekten aus `/opt/aios/workers.yaml` (*`aios --install`*, Schritt 7); damit wirken Vaults im Sandkasten fremd (V0.6, Memos 153, 154: F151) | eigene uid |
 | `AIOS_PIP_FIND_LINKS` | Ordner mit Wheels für das setup von Arbeitspferden: `pip` läuft dann mit `--no-index --find-links <ordner>`, nie ohne `--no-index` (Spec 07) | — |
 
 Tests rufen damit nie das echte `sudo` auf und greifen nie auf das Netzwerk zu.
@@ -432,7 +433,7 @@ Aufgerufen aus einem Klon des Repos `aibex-aios` (`./bin/aios --install …`) od
 4. **Installieren**, falls `v<version>` noch nicht installiert ist: Stand des Tags mit `git archive` nach `~/.aios/versions/v<version>/` (mit `--system`: `/opt/aios/v<version>/`) übertragen (Abbildung siehe *Repo*), venv in `python/` anlegen und `pyyaml` installieren, `python -m compileall`, Dateien schreibschützen, Eintrag in `installations.yaml` desselben Orts.
 5. **Benutzer einrichten**, was fehlt: Weiterleiter nach `~/.aios/bin/aios`; ein vorhandener wird nur durch einen neueren ersetzt. Nichts in `~/bin`; ein `~/bin/aios` früherer Versionen nennt der Plan als Altbestand und lässt es stehen. `~/.aios/config.yaml` mit `hosts: [claude-code]`, die drei Hooks mit absolutem Pfad eintragen bzw. an ihrer Stelle ersetzen (*Hooks in `~/.claude/settings.json`*) und `ai-brain`-Hooks sichern, `~/.aios/repo` merken.
 6. **Keine globalen Hüllen:** `aios --install` schreibt nichts nach `~/.claude/skills/`; die Hüllen der Kernel-Skills entstehen mit der Registrierung im Vault (Spec 03). Pakete holt der User mit `aios --fetch` bzw. `/aios-package` (Spec 06).
-7. **Bekannte Vaults** nennt der Plan mit ihrer Art (Spec 02, *Arten von Vaults*): Vaults mit Altbindung mit dem Befehl `aios --activate v0.6.<n> <vault>`; bekannt sind die Vaults aus den Merkern der Sessions (`cwd`), aus `~/.aios/repo` und aus den Projekten in `workers.yaml`; nur bekannte Vaults zählen (V0.6, Memo 49, F61). Die erweiterte Suche aus *`aios --vaults`* gilt hier nicht (V0.6, Memo 122, F93). Für die Markierung `legacy: ai-brain` bietet der Plan bekannte Vaults ohne Bindung und die `§`-Ordner daneben im selben Elternordner an.
+7. **Bekannte Vaults** nennt der Plan mit ihrer Art (Spec 02, *Arten von Vaults*): Vaults mit Altbindung mit dem Befehl `aios --activate v0.6.<n> <vault>`; bekannt sind die Vaults aus den Merkern der Sessions (`cwd`), aus `~/.aios/repo` und aus den Projekten in `workers.yaml`; nur bekannte Vaults zählen (V0.6, Memo 49, F61). Aus `~/.aios/workers.yaml` zählt jedes Projekt. `/opt/aios/workers.yaml` ist computerweit und nennt auch Projekte anderer Benutzer; daraus zählt ein Projekt nur, wenn sein Ordner existiert und dem aktuellen Benutzer gehört (Eigentümer gleich der eigenen uid); ein fehlender oder nicht lesbarer Pfad von dort zählt nicht (V0.6, Memos 153, 154: B26, F150). Die erweiterte Suche aus *`aios --vaults`* gilt hier nicht (V0.6, Memo 122, F93). Für die Markierung `legacy: ai-brain` bietet der Plan bekannte Vaults ohne Bindung und die `§`-Ordner daneben im selben Elternordner an.
 
 Das Übertragen geschieht in ein temporäres Verzeichnis neben dem Ziel, das erst am Ende umbenannt wird; ein Abbruch hinterlässt keine halbe Installation.
 
@@ -486,12 +487,12 @@ Listet die Vaults, die AIOS findet, nur lesend (V0.6, Memos 115, 120, H8). Gesuc
 |---|---|
 | `session` | Vault-Roots der `cwd` aus den Merkern der Sessions (`~/.aios/sessions/`) |
 | `repo` | Vault-Root von `~/.aios/repo`, falls der Klon in einem Vault liegt |
-| `workers` | Vault-Roots der Projekte in `workers.yaml` an beiden Orten (`~/.aios/`, `/opt/aios/`) |
+| `workers` | Vault-Roots der Projekte in `workers.yaml` an beiden Orten (`~/.aios/`, `/opt/aios/`); aus `/opt/aios/` nur Projekte des aktuellen Benutzers, wie in *`aios --install`*, Schritt 7 (B26) |
 | `beside` | `§`-Ordner im selben Elternordner wie ein Vault aus den drei Quellen oben |
 | `inside` | `§`-Ordner in einem Vault aus den Quellen oben, bis zu drei Ebenen tief, ohne versteckte Ordner und nicht unter einem gefundenen `§`-Ordner (V0.6, Memo 128, F104) |
 | `above` | `§`-Ordner über einem Vault aus den Quellen oben, wie `§Obsidian` über `§Hugo` (V0.6, Memo 124, F97) |
 
-Je Vault eine Zeile mit Pfad, Art und Bindung nach Spec 02, *Arten von Vaults* (`aios 0.6.1`, `alt 0.5.1`, `legacy`, `none`), und den Quellen, die ihn gefunden haben; ein Pfad aus einer Quelle, den es nicht mehr gibt, steht als `missing`. Die Zeilen sind nach Pfad sortiert, die Quellen in der Reihenfolge der Tabelle; ohne Fund meldet der Befehl `no vault found`. Die Suche nutzen auch `aios --remove-version` (unten) und der Bestandslauf einer Abnahme. `aios --install` bleibt bei den bekannten Vaults (*Installieren*, Schritt 7).
+Je Vault eine Zeile mit Pfad, Art und Bindung nach Spec 02, *Arten von Vaults* (`aios 0.6.1`, `alt 0.5.1`, `legacy`, `none`), und den Quellen, die ihn gefunden haben; ein Pfad aus einer Quelle, den es nicht mehr gibt, steht als `missing`, außer er stammt nur aus `/opt/aios/workers.yaml` (dann fehlt er, B26). Die Zeilen sind nach Pfad sortiert, die Quellen in der Reihenfolge der Tabelle; ohne Fund meldet der Befehl `no vault found`. Die Suche nutzen auch `aios --remove-version` (unten) und der Bestandslauf einer Abnahme. `aios --install` bleibt bei den bekannten Vaults (*Installieren*, Schritt 7).
 
 ### `aios --remove-version v<version>`
 
