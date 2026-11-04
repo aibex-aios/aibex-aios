@@ -292,6 +292,12 @@ EOF2
    assert_contains "$OUT" "vault $V5: binding 0.5.1 below 0.6; change over with: aios --activate v0.6.0 $V5" "v0.6: vault with a binding below 0.6 named"
    assert_contains "$OUT" "(then with its own question: mark $NB with legacy: ai-brain)" "v0.6: sibling without binding offered for legacy: ai-brain"
    case "$OUT" in *"$V5 with legacy"*) fail "v0.6: a bound vault is not offered for the marker" ;; *) ok ;; esac
+   V6="$SANDBOX/work/§Alt6"; mkdir -p "$V6/.aios" "$V6/P" "$AIOS_PREFIX"     # known only from /opt/aios/workers.yaml (B26)
+   printf 'aios: 0.5.1\n' > "$V6/.aios/config.yaml"
+   printf 'worker-y:\n  0.1.0:\n    projects: ["%s"]\n' "$V6/P" > "$AIOS_PREFIX/workers.yaml"
+   assert_contains "$("$S/bin/aios" --install v0.6.0 --plan 2>&1)" "vault $V6: binding 0.5.1 below 0.6" "B26: own project of /opt/aios/workers.yaml is a known vault"
+   case "$(AIOS_TEST_UID=99999 "$S/bin/aios" --install v0.6.0 --plan 2>&1)" in *"$V6"*) fail "B26: project of another user is no known vault" ;; *) ok ;; esac
+   rm -rf "$V6" "$AIOS_PREFIX/workers.yaml"
    OUT="$(printf 'y\ny\n' | "$S/bin/aios" --install v0.6.0 2>&1)"; RC=$?
    assert_eq "$RC" "0" "v0.6: install exit 0"
    assert_eq "$(J "$CMDS" "$SET")" "other --hook $F --context --session $F --context --advise" "v0.6: AIOS hooks at their place with the absolute path, others kept"

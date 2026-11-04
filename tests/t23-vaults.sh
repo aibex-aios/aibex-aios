@@ -1,4 +1,5 @@
 # t23-vaults.sh: v0.6.2 step 1 - aios --vaults, the vaults AIOS finds (spec 04, aios --vaults; V0.6, memos 115, 120, H8)
+#               v0.6.3 step 1 - of /opt/aios/workers.yaml only projects of the current user (B26; V0.6, memos 153, 154)
 
    case "$SANDBOX" in */aios-test.*) ;; *) echo "*** run via tests/run, never directly (it would touch the real HOME)" >&2; exit 1;; esac
 
@@ -54,3 +55,20 @@
    find "$W" "$HOME" -type f | sort > "$SANDBOX/after"
    cmp -s "$SANDBOX/before" "$SANDBOX/after" && ok || fail "aios --vaults writes nothing"
    assert_exit 1 "$SRC/bin/aios" --vaults extra
+
+#===============================================================================
+# B26: /opt/aios/workers.yaml is computer-wide; only existing projects of the current user count (F150, F151)
+#===============================================================================
+
+   rm -f "$HOME/.aios/sessions/c.yaml"
+   mk "$W/e/§Shared/P/x.md" $'# x\n'
+   mk "$AIOS_PREFIX/workers.yaml" "worker-y:"$'\n'"  0.1.0:"$'\n'"    projects: [\"$W/e/§Shared/P\", \"$W/f/§Vanished/P\"]"$'\n'
+   OUT="$(V)"
+   assert_contains "$OUT" "   none         $W/e/§Shared  (workers)" "B26: own project from /opt/aios/workers.yaml"
+   assert_not_contains "$OUT" "§Vanished" "B26: missing path from /opt/aios/workers.yaml not listed"
+   assert_contains "$OUT" "   none         $W/c/§Work  (workers)" "B26: project from ~/.aios/workers.yaml"
+   OUT="$(AIOS_TEST_UID=99999 V)"
+   assert_not_contains "$OUT" "§Shared" "B26: project of another user not listed"
+   assert_contains "$OUT" "   none         $W/c/§Work  (workers)" "B26: ~/.aios/workers.yaml counts for any owner"
+   mk "$HOME/.aios/workers.yaml" "worker-x:"$'\n'"  0.1.0:"$'\n'"    projects: [\"$W/c/§Work/P\", \"$W/e/§Shared/P\"]"$'\n'
+   assert_contains "$(AIOS_TEST_UID=99999 V)" "   none         $W/e/§Shared  (workers)" "B26: same project in ~/.aios/workers.yaml is listed"

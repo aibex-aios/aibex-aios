@@ -685,6 +685,31 @@ def plan_user(plan, src, repo):
         plan.add(f"remember the clone {repo} in ~/.aios/repo", remember)
 
 
+def own_uid():
+    """The uid that counts as the current user; AIOS_TEST_UID in tests (spec 04; V0.6, memo 153: F151)."""
+    v = os.environ.get("AIOS_TEST_UID", "")
+    return int(v) if v.isdigit() else os.getuid()
+
+
+def workers_projects():
+    """Paths of the projects in workers.yaml: all of ~/.aios/workers.yaml; of the computer-wide
+    /opt/aios/workers.yaml only existing folders owned by the current user (spec 04; B26, F150)."""
+    found = []
+    for f, own in ((paths.user_dir() / "workers.yaml", False), (paths.prefix() / "workers.yaml", True)):
+        if not f.is_file():
+            continue
+        for m in re.finditer(r'"(/[^"]+)"', f.read_text(encoding="utf-8", errors="replace")):
+            p = m.group(1)
+            if own:
+                try:
+                    if not os.path.isdir(p) or os.stat(p).st_uid != own_uid():
+                        continue
+                except OSError:
+                    continue
+            found.append(p)
+    return found
+
+
 def known_vaults():
     """Vault roots known from the markers of the sessions, ~/.aios/repo and workers.yaml (spec 04)."""
     from . import config
@@ -696,11 +721,9 @@ def known_vaults():
     repo = paths.user_dir() / "repo"
     if repo.is_file():
         found.add(config.vault_root(repo.read_text(encoding="utf-8").strip() or "/"))
-    for f in (paths.user_dir() / "workers.yaml", paths.prefix() / "workers.yaml"):
-        if f.is_file():
-            for m in re.finditer(r'"([^"]+)"', f.read_text(encoding="utf-8", errors="replace")):
-                if os.path.isdir(m.group(1)):
-                    found.add(config.vault_root(m.group(1)))
+    for p in workers_projects():
+        if os.path.isdir(p):
+            found.add(config.vault_root(p))
     return sorted(v for v in found if v is not None)
 
 
@@ -725,10 +748,8 @@ def source_vaults():
     repo = paths.user_dir() / "repo"
     if repo.is_file() and repo.read_text(encoding="utf-8").strip():
         add(repo.read_text(encoding="utf-8").strip(), "repo")
-    for f in (paths.user_dir() / "workers.yaml", paths.prefix() / "workers.yaml"):
-        if f.is_file():
-            for m in re.finditer(r'"(/[^"]+)"', f.read_text(encoding="utf-8", errors="replace")):
-                add(m.group(1), "workers")
+    for p in workers_projects():
+        add(p, "workers")
     return found
 
 
