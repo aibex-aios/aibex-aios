@@ -23,8 +23,8 @@ FILE = Path(".aios") / "workspace.yaml"
 LOCAL = Path(".aios") / "workspace.local.yaml"
 LOCAL_HEAD = "# written by AIOS (workspace), do not edit\n"
 CLOUD = ("Library/CloudStorage", "Library/Mobile Documents", "Dropbox")   # spec 06, Schlüssel sync:
-USAGE = ("usage: aios --workspace attach <repo> [<vault-folder>] | sync [<path>] [--group <g>]"
-         " | status [<path>] | freeze [<path>]")
+USAGE = ("usage: aios --workspace attach <repo> [<vault-folder>] | attach <path> | sync [<path>] [--group <g>]"
+         " | detach [<path>] | status [<path>] | freeze [<path>]")
 
 
 @dataclass
@@ -716,8 +716,11 @@ def command(args):
     if sub == "attach" and 1 <= len(rest) <= 2 and not groups:
         if is_repo(rest[0]):
             return attach(rest[0], rest[1] if len(rest) == 2 else None)
-        raise Abort("attach <path> (get a detached subtree back) comes with detach; "
-                    "attach a workspace with the URL of its vault root")
+        if len(rest) == 1:
+            return attach_path(rest[0])
+        raise Abort(USAGE)
+    if sub == "detach" and len(rest) <= 1 and not groups:
+        return detach(rest[0] if rest else None)
     if sub == "sync" and len(rest) <= 1:
         return do_sync(rest[0] if rest else None, groups)
     if sub == "freeze" and len(rest) <= 1 and not groups:
@@ -728,6 +731,234 @@ def command(args):
         raise Abort(f"--workspace {sub} is gone since v0.6.4: use "
                     + ("attach <repo> [<vault-folder>]" if sub == "init" else "sync [<path>]"))
     raise Abort(USAGE)
+
+
+# ---------------------------------------------------------------------------
+# detach [<path>], attach <path> (spec 06, detach; V0.6, memos 170, 172, 175: F162-F169, F173, F174)
+# ---------------------------------------------------------------------------
+
+REGENERABLE = (".claude/skills/", ".aios/registry", ".aios/workspace.local.yaml")   # F193, F219
+
+
+def write_local(root, entries):
+    import yaml
+    f = Path(root) / LOCAL
+    if not entries:
+        if f.exists():
+            f.unlink()
+        return
+    f.parent.mkdir(parents=True, exist_ok=True)
+    body = yaml.safe_dump({"schema": 1, "detached": entries}, sort_keys=False, allow_unicode=True)
+    f.write_text(LOCAL_HEAD + body, encoding="utf-8")
+
+
+def local_entries(root):
+    import yaml
+    f = Path(root) / LOCAL
+    if not f.is_file():
+        return []
+    data = yaml.safe_load(f.read_text(encoding="utf-8")) or {}
+    return [e for e in data.get("detached") or [] if isinstance(e, dict) and e.get("path")]
+
+
+def repos_in(d):
+    """d and every git repo below it (nested projects too), deepest last."""
+    found = [Path(d)] if (Path(d) / ".git").exists() else []
+    for base, dirs, files in os.walk(d):
+        b = Path(base)
+        if b != Path(d) and (b / ".git").exists():
+            found.append(b)
+        dirs[:] = sorted(x for x in dirs if x != ".git")
+    return found
+
+
+def obstacles(d):
+    """Why the repo d cannot be dropped safely (F165, F193); empty when nothing would be lost."""
+    if not origin_of(d):
+        return ["no remote"]
+    if git(d, "fetch", "-q", "--tags", "origin").returncode:
+        return ["fetch failed, the remote is not reachable"]
+    why = []
+    st = [x for x in git(d, "status", "--porcelain").stdout.splitlines() if x]
+    if st:
+        why.append(f"{len(st)} uncommitted or untracked: {', '.join(x[3:] for x in st[:3])}"
+                   + (" …" if len(st) > 3 else ""))
+    if git(d, "stash", "list").stdout.strip():
+        why.append("entries in git stash")
+    if outgoing(d):
+        why.append(f"{len(outgoing(d))} commit(s) not pushed")
+    on_remote = git(d, "for-each-ref", "--contains", "HEAD", "refs/remotes").stdout.strip()
+    if not on_remote:                                   # ws/<tag>: the commit of a tag at the remote
+        head = git(d, "rev-parse", "HEAD").stdout.strip()
+        on_remote = head and head in git(d, "ls-remote", "--tags", "origin").stdout
+    if not on_remote:
+        why.append("the checked out state is not on the remote")
+    nested = {Path(r).relative_to(d).as_posix() + "/" for r in repos_in(d) if Path(r) != Path(d)}
+    ignored = git(d, "ls-files", "--others", "--ignored", "--exclude-standard").stdout
+    lost = [f for f in ignored.splitlines()
+            if f and Path(f).name != ".DS_Store"
+            and not any(f.startswith(n) for n in nested)
+            and not any(f == r or f.startswith(r) for r in REGENERABLE)]
+    if lost:
+        why.append(f"ignored file that cannot be restored: {', '.join(lost[:3])}" + (" …" if len(lost) > 3 else ""))
+    return why
+
+
+def check_all(top):
+    """{repo: [obstacle]} for top and every repo below it."""
+    found = {}
+    for r in repos_in(top):
+        w = obstacles(r)
+        if w:
+            found[r] = w
+    return found
+
+
+def trash_target(d):
+    """~/.Trash/<name> <date time> (F173, F194)."""
+    stamp = datetime.datetime.now().strftime("%Y-%m-%d %H.%M.%S")
+    return paths.home() / ".Trash" / f"{Path(d).name} {stamp}"
+
+
+def to_trash(d):
+    import shutil
+    target = trash_target(d)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    shutil.move(str(d), str(target))
+    return target
+
+
+DETACHED_MD = """# {name} — ausgelagert
+
+**Seit:** {since}
+**Workspace:** {root}
+
+Dieser Ordner ist auf diesem Rechner ausgelagert (`aios --workspace detach`). Sein Inhalt liegt vollständig an den Remotes und kommt mit seiner Geschichte zurück:
+
+| Repo | Remote |
+|---|---|
+{rows}
+
+**Zurückholen:**
+
+- im Chat: `/aios-attach {path}`
+- im Terminal: `~/.aios/bin/aios --workspace attach "{abs}"`
+- im Finder (macOS): Doppelklick auf `DETACHED.command`
+
+Andere Rechner sind davon nicht betroffen. Geschrieben von AIOS; nicht ändern.
+"""
+
+DETACHED_COMMAND = """#!/bin/bash
+# DETACHED.command: written by AIOS (aios --workspace detach); a double-click gets this subtree back
+cd "$(dirname "$0")" || exit 1
+"$HOME/.aios/bin/aios" --workspace attach "$(pwd)"
+echo
+read -n 1 -s -r -p "Press any key to close this window"
+"""
+
+
+def placeholder(root, d, rel, origins):
+    d.mkdir(parents=True, exist_ok=True)
+    since = datetime.date.today().isoformat()
+    rows = "\n".join(f"| `{r}` | `{u}` |" for r, u in origins) or "| — | — |"
+    (d / "DETACHED.md").write_text(DETACHED_MD.format(name=d.name, since=since, root=root, rows=rows,
+                                                      path=rel, abs=d), encoding="utf-8")
+    cmd = d / "DETACHED.command"
+    cmd.write_text(DETACHED_COMMAND, encoding="utf-8")
+    cmd.chmod(0o755)
+
+
+def detach(path=None):
+    """aios --workspace detach [<path>]: with a path detach the subtree, without it the workspace."""
+    start = Path(os.path.realpath(path or paths.cwd()))
+    root = root_of(start)
+    activated(root)
+    if path is None or start == root:
+        return detach_all(root)
+    rel = start.relative_to(root).as_posix()
+    items = {i.path: i for i in load(root)}
+    if rel not in items:
+        raise Abort(f"{rel} is not a project of {root / FILE}; detach takes a project of the workspace")
+    if is_detached(rel, detached(root)):
+        raise Abort(f"{rel} is detached already; get it back with: aios --workspace attach {start}")
+    found = check_all(start)
+    if found:
+        lines = [f"{Path(r).relative_to(root).as_posix() or '.'}: {'; '.join(w)}" for r, w in found.items()]
+        raise Abort("nothing detached, something would be lost:\n      " + "\n      ".join(lines))
+    origins = [(Path(r).relative_to(root).as_posix(), origin_of(r)) for r in repos_in(start)]
+    plan = Plan()
+
+    def run():
+        target = to_trash(start)
+        placeholder(root, start, rel, origins)
+        write_local(root, local_entries(root) + [{"path": rel, "since": datetime.date.today().isoformat()}])
+        report(rel, "detached", f"moved to {target}")
+    plan.add(f"move {rel} with {len(origins)} repo(s) to the trash (~/.Trash), checked: nothing is lost", run)
+    plan.add(f"placeholder {rel}/DETACHED.md and {rel}/DETACHED.command; entry in {LOCAL}")
+    if ui.MODE != "yes":
+        say(f"=> detach {rel} on this machine")
+    ui.confirm(plan, "go on?", "cancelled")
+    say(f"=> {rel} detached; get it back with: aios --workspace attach {start}")
+    return 0
+
+
+def detach_all(root):
+    found = check_all(root)
+    if found:
+        lines = [f"{Path(r).relative_to(root).as_posix() or '.'}: {'; '.join(w)}" for r, w in found.items()]
+        raise Abort("nothing detached, something would be lost:\n      " + "\n      ".join(lines))
+    plan = Plan()
+
+    def run():
+        target = to_trash(root)
+        report(".", "detached", f"moved to {target}")
+    plan.add(f"move the vault {root} to the trash (~/.Trash), checked: nothing is lost", run)
+    plan.add("the installation, the hooks and other vaults stay")
+    if ui.MODE != "yes":
+        say(f"=> detach the workspace {root} from this machine")
+    ui.confirm(plan, "go on?", "cancelled")
+    say(f"=> workspace {root.name} detached; attach it again with: aios --workspace attach <repo>")
+    return 0
+
+
+def attach_path(path):
+    """aios --workspace attach <path>: get a detached subtree back (F162, F167)."""
+    start = Path(os.path.abspath(path))
+    root = root_of(start.parent if not start.exists() else start)
+    activated(root)
+    rel = start.relative_to(root).as_posix()
+    entries = local_entries(root)
+    if not any(e["path"] == rel for e in entries):
+        raise Abort(f"{rel} is not detached on this machine ({root / LOCAL})")
+    extra = [x.name for x in start.iterdir() if x.name not in ("DETACHED.md", "DETACHED.command", ".DS_Store")] \
+        if start.is_dir() else []
+    if extra:
+        raise Abort(f"{start} holds more than the placeholder ({', '.join(extra)}); nothing changed")
+    items = [i for i in load(root) if under(i, rel)]
+    plan = Plan()
+    cloned = []
+
+    def unplace():
+        for n in ("DETACHED.md", "DETACHED.command", ".DS_Store"):
+            if (start / n).exists():
+                (start / n).unlink()
+        if start.is_dir():
+            start.rmdir()
+        write_local(root, [e for e in entries if e["path"] != rel])
+    plan.add(f"remove the placeholder of {rel} and its entry in {LOCAL}", unplace)
+    for item in items:
+        def act(item=item, d=root / item.path):
+            clone(item, d)
+            cloned.append(d)
+            report(item.path, "cloned", item.revision)
+        plan.add(f"clone {item.url} ({item.revision}) -> {item.path}", act)
+    plan.add("make the cloned projects runnable (aios --fetch, registration)",
+             lambda: [runnable(d) for d in cloned])
+    if ui.MODE != "yes":
+        say(f"=> attach {rel} again")
+    ui.confirm(plan, "go on?", "cancelled")
+    say(f"=> {rel} attached")
+    return 0
 
 
 # ---------------------------------------------------------------------------
