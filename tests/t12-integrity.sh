@@ -10,7 +10,7 @@
    export GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@t GIT_COMMITTER_NAME=t GIT_COMMITTER_EMAIL=t@t
    D="$SANDBOX/work/§Demo"
    mk() { mkdir -p "$(dirname "$1")"; printf '%s' "$2" > "$1"; }
-   GI=$'.DS_Store\n.claude/skills/\n.claude/worktrees/\n.agents/\n.aios/registry\n.aios/backup/\n'
+   GI=$'.DS_Store\n.claude/skills/\n.claude/worktrees/\n.agents/\n.aios/registry\n.aios/backup/\n.aios/workspace.local.yaml\n@Secret/\n'
    mkproj() { mkdir -p "$1/@"; touch "$1/@/.gitkeep"; mk "$1/.gitignore" "$GI$2"; git -C "$1" init -q -b main
               git -C "$1" add -A && git -C "$1" commit -qm init; }
    A() { "$SRC/bin/aios" "$@" 2>&1; }
@@ -53,7 +53,7 @@
    assert_contains "$OUT" "- GB-Beet: missing own git repo" "GB-Beet: missing repo under Notes (A15)"
    assert_contains "$(printf '%s\n' "$OUT" | grep GB-Beet)" "—" "GB-Beet: no own repo, commit —"
    assert_contains "$(printf '%s\n' "$OUT" | grep '^ *S-Sternwarte')" "missing: 1 part" "S-Sternwarte: one missing part (A15)"
-   assert_contains "$OUT" "- S-Sternwarte: missing .gitignore lines: .DS_Store, .claude/skills/, .claude/worktrees/, .agents/, .aios/registry, .aios/backup/" "S-Sternwarte: gitignore lines under Notes"
+   assert_contains "$OUT" "- S-Sternwarte: missing .gitignore lines: .DS_Store, .claude/skills/, .claude/worktrees/, .agents/, .aios/registry, .aios/backup/, .aios/workspace.local.yaml, @Secret/" "S-Sternwarte: gitignore lines under Notes"
    assert_contains "$(printf '%s\n' "$OUT" | grep S-Sternwarte)" "2 changed, 2 new" "changed and new separately (deleted .gitignore counts as changed, new files one by one)"
    assert_eq "$(printf '%s\n' "$OUT" | grep '^  G-Garten ' | tr -s ' ')" " G-Garten ok ok" "G-Garten integer"
    assert_contains "$OUT" "Result: 4 of 6 projects integer" "result line"

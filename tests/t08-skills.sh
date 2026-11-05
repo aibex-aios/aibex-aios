@@ -44,12 +44,12 @@ import sys; t=open(sys.argv[1],encoding='utf-8').read(); e=t.find('\n---',3); pr
    case "$(at "$D" aios --skill aios-init)" in *"name: aios-init"*|*"allowed-tools"*) fail "--skill: no frontmatter" ;; *) ok ;; esac
    case "$(at "$D" aios --skill aios-init)" in *"Nur in Version 0.7.0"*) fail "--skill in §Demo: version 0.6.0" ;; *) ok ;; esac
    assert_not_contains "$(at "$D/Garten" aios --skill aios-init)" "Nur in Version 0.7.0" "--skill in Garten: the vault root decides (I14)"
-   for S in aios-context aios-init aios-register aios-status aios-deploy aios-assistant aios-integrity aios-memo aios-gui aios-fetch aios-package aios-distribution; do
+   for S in aios-context aios-init aios-register aios-status aios-deploy aios-assistant aios-integrity aios-memo aios-gui aios-fetch aios-package aios-distribution aios-attach aios-sync aios-detach; do
       assert_contains "$(at "$D" aios --skill "$S")" "Ein AIOS-Skill von AIbex AIOS" "--skill $S"
    done
    assert_exit 1 "$SRC/bin/aios" --skill aios-nope
    assert_exit 1 "$SRC/bin/aios" --skill aios-agent
-   assert_eq "$(ls "$SRC/skills/aios" | tr '\n' ' ')" "aios-assistant aios-context aios-deploy aios-distribution aios-fetch aios-gui aios-init aios-integrity aios-memo aios-package aios-register aios-status " "AIOS skills of v0.5 (with aios-distribution)"
+   assert_eq "$(ls "$SRC/skills/aios" | tr '\n' ' ')" "aios-assistant aios-attach aios-context aios-deploy aios-detach aios-distribution aios-fetch aios-gui aios-init aios-integrity aios-memo aios-package aios-register aios-status aios-sync " "AIOS skills of v0.6.4 (with aios-attach, aios-detach, aios-sync)"
    FM() { sed -n '/^allowed-tools:/p' "$SRC/skills/aios/$1/SKILL.md"; }
    assert_eq "$(FM aios-distribution)" "allowed-tools: Bash(aios --library *), Bash(aios --install * --plan), Bash(aios --context *), Bash(git -C *), Bash(mkdir -p *), Write" "aios-distribution: allowed-tools (N16)"
    assert_contains "$(FM aios-package)" "Bash(aios --install distribution-*)" "aios-package: may install distributions"
@@ -164,7 +164,7 @@ for n in ('aios-assistant', 'aios-context', 'aios-init'):
    assert_contains "$OUT" "name Wiese: the name has no prefix" "init plan: name rule"
    assert_contains "$OUT" "proposal: W-Wiese" "init plan: proposal"
    assert_contains "$OUT" "create @/ (with .gitkeep)" "init plan: masterspace"
-   assert_contains "$OUT" ".gitignore: .DS_Store, .claude/skills/, .claude/worktrees/, .agents/, .aios/registry, .aios/backup/" "init plan: gitignore"
+   assert_contains "$OUT" ".gitignore: .DS_Store, .claude/skills/, .claude/worktrees/, .agents/, .aios/registry, .aios/backup/, .aios/workspace.local.yaml, @Secret/" "init plan: gitignore"
    assert_contains "$OUT" "git init (branch main)" "init plan: git init"
    [ ! -e "$D/Wiese/@" ] && [ ! -e "$D/Wiese/.git" ] && ok || fail "init --plan: nothing written"
    OUT="$(at "$D/Wiese" "$SRC/bin/aios" --init --yes)"; RC=$?
@@ -178,7 +178,7 @@ for n in ('aios-assistant', 'aios-context', 'aios-init'):
    assert_eq "$OUT" "=> $D/Wiese is a project" "init --yes: only the result"
    assert_file "$D/Wiese/@/.gitkeep"
    [ ! -e "$D/Wiese/@Memo" ] && ok || fail "init: no @Memo/ (spec 05)"
-   assert_eq "$(cat "$D/Wiese/.gitignore")" "$(printf 'eigen.txt\n.DS_Store\n.claude/skills/\n.claude/worktrees/\n.agents/\n.aios/registry\n.aios/backup/')" "init: .gitignore completed, own lines kept"
+   assert_eq "$(cat "$D/Wiese/.gitignore")" "$(printf 'eigen.txt\n.DS_Store\n.claude/skills/\n.claude/worktrees/\n.agents/\n.aios/registry\n.aios/backup/\n.aios/workspace.local.yaml\n@Secret/')" "init: .gitignore completed, own lines kept"
    assert_eq "$(git -C "$D/Wiese" symbolic-ref --short HEAD)" "main" "init: branch main"
    assert_eq "$(git -C "$D/Wiese" log --format=%s)" "AIOS: Projekt initialisiert" "init: first commit"
    assert_eq "$(git -C "$D/Wiese" show --name-only --format= | sort | tr '\n' ' ')" ".gitignore @/.gitkeep " "init: committed files"

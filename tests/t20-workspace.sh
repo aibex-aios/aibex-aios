@@ -254,3 +254,32 @@ YAML
    assert_contains "$OUT" "workspace §W2 detached" "detach of the workspace, ws/<tag> counts as on the remote"
    [ ! -e "$V2" ] && ok || fail "the vault is gone"
    assert_contains "$(ls "$HOME/.Trash")" "§W2 20" "the vault in the trash"
+
+#===============================================================================
+# hook and master context: <aios-workspace>, AIOS-SYNC, AIOS-DETACHED; integrity: detached (F168, F169,
+# F183-F189, F198)
+#===============================================================================
+
+   S() { (cd "$1" && printf '{"source":"%s","session_id":"t20"}' "${2:-startup}" | "$SRC/bin/aios" --context --session 2>&1); }
+   assert_contains "$(A "$V" --context)" "<aios-workspace>
+This vault is an AIBOS workspace with sync: auto." "block with sync: auto"
+   assert_contains "$(A "$D" --context)" "This vault lies in a cloud folder (CloudStorage)" "block in a cloud folder"
+   echo 2 >> "$SANDBOX/src/sub/@/README.md"; git -C "$SANDBOX/src/sub" commit -qam "sub 2"; git -C "$SANDBOX/src/sub" push -q origin main
+   OUT="$(S "$V/libs/lib-a/sub")"
+   assert_contains "$OUT" "AIOS-SYNC: sub fast-forwarded to origin/main (1 commits)." "hook: fast-forward at startup"
+   assert_eq "$(git -C "$V/libs/lib-a/sub" log -1 --format=%s)" "sub 2" "sub at the new commit"
+   assert_contains "$(S "$V/libs/lib-a/sub")" "AIOS-SYNC: sub is up to date with origin/main." "hook: up to date"
+   assert_not_contains "$(S "$V/libs/lib-a/sub" resume)" "AIOS-SYNC" "hook: not at resume"
+   assert_contains "$(S "$V/libs/lib-a")" "AIOS-SYNC: lib-a not updated: own commits, no fast-forward possible." "hook: own commits named"
+   printf 'aios: %s\nsync: manual\n' "$VER" > "$V/.aios/config.yaml"
+   assert_not_contains "$(S "$V/libs/lib-a/sub")" "AIOS-SYNC" "hook: no fetch with sync: manual"
+   assert_contains "$(A "$V" --context)" "with sync: manual." "block with sync: manual"
+   printf 'aios: %s\nsync: off\n' "$VER" > "$V/.aios/config.yaml"
+   assert_not_contains "$(A "$V" --context)" "<aios-workspace>" "no block with sync: off"
+   printf 'aios: %s\n' "$VER" > "$V/.aios/config.yaml"
+   A "$V" --workspace detach "$V/new" --yes >/dev/null
+   OUT="$(S "$V/new")"
+   assert_contains "$OUT" "AIOS-DETACHED: new is detached on this machine (since " "hook: AIOS-DETACHED"
+   assert_not_contains "$OUT" "PROJECT-UNINITIALIZED" "hook: a placeholder is no project to initialize"
+   assert_contains "$(A "$V" --integrity | grep ' new ')" "detached" "integrity: detached"
+   assert_not_contains "$(A "$V" --integrity)" "new: " "integrity: no notes for a detached subtree"

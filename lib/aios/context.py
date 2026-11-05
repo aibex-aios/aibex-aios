@@ -143,6 +143,7 @@ class Context:
             h.update(f"available {p}\n".encode())
         if self.mode == "aios":
             h.update(f"kernel-skills {version()}\n".encode())
+            h.update(workspace_block(self).encode())
         return h.hexdigest()[:8]
 
     def render(self):
@@ -159,6 +160,7 @@ class Context:
             out.append("</aios-available>\n")
         if self.mode == "aios":
             out.append(kernel_skills_block())
+            out.append(workspace_block(self))
         out.append(f'</aios-context id="{ident}">\n')
         return "".join(out)
 
@@ -185,6 +187,85 @@ def kernel_skills_block():
         lines.append(f"Documentation of this version (spec, tutorials; Read without a question): {doc}\n")
     lines.append("</aios-kernel-skills>\n")
     return "".join(lines)
+
+
+WORKSPACE_TEXT = {                                  # spec 02, Regel des Workspace (V0.6, memo 174)
+    "auto": ("This vault is an AIBOS workspace with sync: auto. After every commit, offer /aios-sync at once "
+             "so that the remote holds a backup (push only after the user's yes). Name commits that are not "
+             "pushed when you finish."),
+    "manual": "This vault is an AIBOS workspace with sync: manual. /aios-sync synchronizes it with its remotes on request.",
+    "cloud": ("This vault lies in a cloud folder ({cloud}); the workspace sync of AIBOS is off. Plain git "
+              "(commit, push, pull) stays allowed on the user's request."),
+}
+
+
+def workspace_info(ctx):
+    """(root, mode, cloud) of the vault of ctx as a workspace, or None (spec 06, Schlüssel sync:)."""
+    from . import workspace
+    if ctx.mode != "aios" or ctx.vault is None:
+        return None
+    root = Path(ctx.vault)
+    cloud = workspace.cloud_folder(root)
+    if not cloud and not (root / workspace.FILE).is_file():
+        return None
+    mode, _ = workspace.sync_mode(root, ctx.cfg)
+    return root, mode, cloud
+
+
+def workspace_block(ctx):
+    """Block <aios-workspace> after the kernel skills; empty with off outside a cloud folder."""
+    info = workspace_info(ctx)
+    if info is None:
+        return ""
+    root, mode, cloud = info
+    if cloud:
+        text = WORKSPACE_TEXT["cloud"].format(cloud=cloud)
+    elif mode in ("auto", "manual"):
+        text = WORKSPACE_TEXT[mode]
+    else:
+        return ""
+    return f"<aios-workspace>\n{text}\n</aios-workspace>\n"
+
+
+def detached_message(ctx):
+    """AIOS-DETACHED when cwd lies in a subtree detached on this machine (F168), else None."""
+    from . import workspace
+    if ctx.vault is None:
+        return None
+    root = workspace.find_root(ctx.cwd) or Path(ctx.vault)
+    try:
+        rel = ctx.cwd.relative_to(root).as_posix()
+    except ValueError:
+        return None
+    for e in workspace.local_entries(root) if (root / workspace.LOCAL).is_file() else []:
+        if rel != "." and workspace.is_detached(rel, [e["path"]]):
+            return (f"AIOS-DETACHED: {e['path']} is detached on this machine (since {e.get('since', '?')}); "
+                    f"only the placeholder is here.\n Before your first answer, tell the user and offer "
+                    f"/aios-attach {e['path']} to get it back.")
+    return None
+
+
+def sync_message(ctx):
+    """With sync: auto, fetch and fast-forward the project of the session (F185, F189)."""
+    from . import workspace
+    info = workspace_info(ctx)
+    if info is None or info[1] != "auto" or info[2] or ctx.project is None:
+        return None
+    d = Path(ctx.project)
+    if not (d / ".git").exists() or not workspace.origin_of(d):
+        return None
+    name = d.name
+    branch = workspace.git(d, "rev-parse", "--abbrev-ref", "HEAD").stdout.strip()
+    if workspace.git(d, "rev-parse", "--abbrev-ref", "@{upstream}").returncode:
+        return f"AIOS-SYNC: {name} not updated: no upstream. Mention it to the user before your first work."
+    before = workspace.git(d, "rev-parse", "HEAD").stdout.strip()
+    state, why = workspace.update(workspace.Item(name, workspace.origin_of(d), branch, "."), d)
+    if state == "moved":
+        n = workspace.git(d, "rev-list", "--count", f"{before}..HEAD").stdout.strip()
+        return f"AIOS-SYNC: {name} fast-forwarded to origin/{branch} ({n} commits)."
+    if state == "ok":
+        return f"AIOS-SYNC: {name} is up to date with origin/{branch}."
+    return f"AIOS-SYNC: {name} not updated: {why}. Mention it to the user before your first work."
 
 
 # ---------------------------------------------------------------------------
@@ -460,12 +541,22 @@ def session(ctx, source="startup", sid=None):
     wt = project.worktree(ctx.cwd)
     if wt:
         out.append(worktree_message(wt))
-    if not ctx.initialized:
+    gone = detached_message(ctx)                    # F168: a placeholder is no project to initialize
+    if gone:
+        out.append(gone)
+    elif not ctx.initialized:
         out.append(uninitialized_message(ctx))
     elif source == "startup" and not wt:            # consistency check, first start only (spec 02)
         gaps = project.check(ctx.cwd)
         if gaps:
             out.append(incomplete_message(ctx, gaps))
+    if source == "startup" and not wt and not gone and ctx.initialized:
+        try:
+            msg = sync_message(ctx)                 # F185: fast-forward only, nothing can be lost
+        except Exception as e:                      # noqa: BLE001 - a hook never fails the session
+            msg = f"AIOS-SYNC: not updated: {type(e).__name__}: {e}"
+        if msg:
+            out.append(msg)
     text = ctx.render()
     limit = ctx.cfg.inline_limit
     if len(text) <= limit:

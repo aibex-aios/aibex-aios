@@ -4,3 +4,5 @@
 .agents/
 .aios/registry
 .aios/backup/
+.aios/workspace.local.yaml
+@Secret/

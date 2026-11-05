@@ -14,7 +14,7 @@
    mk "$D/@/@Rule/stil.md"        $'# Stil\nschreib klar\n'
    mk "$D/Garten/@/garten.md"     $'# Garten\nApfel\n'
    mkdir -p "$D/Garten/Neu"
-   mk "$D/Garten/.gitignore"      $'.DS_Store\n.claude/skills/\n.claude/worktrees/\n.agents/\n.aios/registry\n.aios/backup/\n'
+   mk "$D/Garten/.gitignore"      $'.DS_Store\n.claude/skills/\n.claude/worktrees/\n.agents/\n.aios/registry\n.aios/backup/\n.aios/workspace.local.yaml\n@Secret/\n'
    git -C "$D/Garten" init -q                      # Garten is a complete project (spec 05, S1-S4)
    mk "$D/Wiese/@/wiese.md"       $'# Wiese\n'
    mk "$SANDBOX/work/§Alt/@/a.md" $'# A\n'; mk "$SANDBOX/work/§Alt/.aios/config.yaml" $'legacy: ai-brain\n'
@@ -70,7 +70,7 @@ Give no other answer until the user decides." "uninitialized: skill /aios-init, 
 
    HOOK --session "$D/Wiese" >/dev/null          # registers the wrappers first (V0.6)
    OUT="$(HOOK --session "$D/Wiese")"
-   assert_eq "$(printf '%s\n' "$OUT" | head -1)" "PROJECT-INCOMPLETE: $D/Wiese is an AIOS project but lacks: own git repo, .gitignore lines: .DS_Store, .claude/skills/, .claude/worktrees/, .agents/, .aios/registry, .aios/backup/." "incomplete: gaps named"
+   assert_eq "$(printf '%s\n' "$OUT" | head -1)" "PROJECT-INCOMPLETE: $D/Wiese is an AIOS project but lacks: own git repo, .gitignore lines: .DS_Store, .claude/skills/, .claude/worktrees/, .agents/, .aios/registry, .aios/backup/, .aios/workspace.local.yaml, @Secret/." "incomplete: gaps named"
    assert_contains "$OUT" "call the skill /aios-init
 (Skill tool) for \"$D/Wiese\" and follow it (plan from --plan, after yes run with
 --yes; never answer a question of aios yourself)." "incomplete: offer /aios-init (A2, A3)"

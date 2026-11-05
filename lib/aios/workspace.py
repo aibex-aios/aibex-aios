@@ -982,11 +982,17 @@ def integrity_of(root, start, results):
         warn(str(e))
         return
     known = {r.path: r for r in results}
+    gone = detached(root)
     for item in items:
         d = (root / item.path).resolve() if (root / item.path).exists() else root / item.path
         if start != d and start not in d.parents:
             continue
         depth = sum(1 for r in results if r.path != d and r.path in d.parents)   # projects above it
+        if is_detached(item.path, gone):            # F169, F198: integer, the projects below not checked
+            if any(Path(g) == Path(item.path) for g in gone):
+                results[:] = [r for r in results if r.path != d]
+                results.append(Result(d, depth, repo=True, init_note="detached"))
+            continue
         if not d.exists():
             results.append(Result(d, depth, init_note="missing: clone"))
             continue
