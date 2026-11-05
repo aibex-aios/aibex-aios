@@ -1,15 +1,18 @@
-# Stand der Umsetzung AIOS v0.6.3
+# Stand der Umsetzung AIOS v0.6.4
 
-v0.6.3 ist ein Patch auf v0.6.2 in verkürzter Form, ohne eigenen Implementierungsplan: die Schritte stehen in Memo 156 in `AA-AIbex-AIOS/@Memo/V0.6/` (Vorschau in Memo 153; Spec freigegeben in Memo 156). Jeder Schritt wird im selben Commit `v0.6.3 Schritt N: …` abgehakt, der ihn abschließt. Diese Datei enthält alle Schritte von Anfang an (F102).
+v0.6.4 macht Workspaces zuverlässig auf mehreren Rechnern: `attach`, `sync`, `detach` (mit Teilauslagerung), Namensschema am Remote, `@Secret/`, Schlüssel `sync:`, drei Kernel-Skills. Verkürzte Form ohne eigenen Implementierungsplan: die Schritte stehen in Memo 176 in `AIBOS-AA-AIbex-AIOS/@Memo/V0.6/` (Skizze Memo 171; Spec freigegeben in Memo 176, ergänzt in Memo 177). Jeder Schritt wird im selben Commit `v0.6.4 Schritt N: …` abgehakt, der ihn abschließt. Diese Datei enthält alle Schritte von Anfang an (F102).
 
-v0.6.2 ist abgeschlossen (Tag `v0.6.2`, Abnahme in Memo 145 von `AA-AIbex-AIOS/@Memo/V0.6/`); sein Stand steht in `STATUS.md` des Tags `v0.6.2`, frühere in den Tags `v0.6.1` und `v0.6.0`.
+v0.6.3 ist abgeschlossen (Tag `v0.6.3`, Abnahme in Memo 160, Veröffentlichung in Memo 162); sein Stand steht in `STATUS.md` des Tags `v0.6.3`, frühere in den Tags `v0.6.2`, `v0.6.1` und `v0.6.0`.
 
-v0.6.3 betrifft nur den Kernel; `distribution-capricorn` bleibt 0.4.1 (F149).
+Das Repo liegt seit 2026-11-05 im Konzeptprojekt unter `~/Workspace/§AIBOS/A-AIOS/AA-AIbex-AIOS/@Package/aibex-aios` (Memos 178, 179, 183); am alten Ort `~/git/AIbex/aibex-aios` steht ein Link.
 
 | # | Schritt | Ergebnis | Spec | Stand |
 |---|---|---|---|---|
-| 0 | **Repo auf 0.6.3:** `VERSION`, `manifest.yaml`, `STATUS.md`, `CLAUDE.md` | Ausgangsprüfung 1402 Prüfungen grün; `VERSION` und `manifest.yaml` `0.6.3-dev`; `STATUS.md` neu für v0.6.3 (v0.6.2 im Tag); `CLAUDE.md` mit den Memos von v0.6.3, Arbeitsrechner auf 0.6.2, Zweig-Regel; 1402 Prüfungen grün | 01 | ☑ abgeschlossen |
-| 1 | **B26:** nur eigene Projekte aus `/opt/aios/workers.yaml` | `install.workers_projects()` liefert die Projekte beider `workers.yaml`; aus `<prefix>/workers.yaml` nur existierende Ordner mit der eigenen uid als Eigentümer (F150), uid über `install.own_uid()` mit `AIOS_TEST_UID` (F151); `known_vaults()` und `source_vaults()` nutzen sie, damit auch der Plan von `--install`, `--activate`, `--remove-version` und die Suche in Spec 07; Tests: t23 (+6), t03 (+2); Gegenprobe ohne Korrektur: t23 2, t03 1 Fehler; auf dem Arbeitsrechner nur lesend `aios --vaults` gleich wie mit 0.6.2 (16 Vaults); 1410 Prüfungen grün | 04 | ☑ abgeschlossen |
-| 2 | **H13:** `README.md` und Tutorials auf `v0.6.3` (F152) | `README.md` 9 Zeilen `v0.6.0` → `v0.6.3` (Installationszeile, Pfade, Umstieg, `-dev`-Eintrag); dazu Matcher von `PreToolUse` `Bash\|Skill\|Read` mit dem Satz zu `Read` (war `Bash\|Skill`, F154); `doc/tutorials/01–05` 14 Zeilen `v0.6.0`/`v0.6.1` → `v0.6.3`; `git grep -E "v0\.6\.[0-2]" -- README.md doc` und `git grep "/Users/[a-z]" -- spec doc README.md` ohne Treffer (Abnahmetest, Schritt 5); 1410 Prüfungen grün | 01 | ☑ abgeschlossen |
-| 3 | **Release-Kandidat** `0.6.3-rc1`, Live-Tests | `VERSION` und `manifest.yaml` `0.6.3-rc1`; `tests/run` 1410 grün; Live-Läufe mit haiku gegen den Kernel `0.6.3-rc1` aus einem Sandkasten-Klon, alle grün: `fresh.sh` 24, `permit.sh` 11, `rothirsch.sh` 24, `changeover.sh` 26; lokaler Tag `v0.6.3-rc1` (nie verschieben, bei Befunden `rc2`) | 01 | ☑ abgeschlossen |
-| 4 | **Abnahme** nach Spec 01, danach Veröffentlichen | mit `rc1` (Konzept-Repo V0.6, Memos 158, 159): Bestandslauf ohne Konflikt; Schritte 1–7 bestanden, Schritt 3 headless aus Sicht des zweiten Benutzers (`HOME=/Users/aibex`, `AIOS_TEST_UID=504`: 3 statt 14 Vaults); keine Befunde, Hinweis H27 (Spalte der Bindung in `--vaults`, später); **Abnahme bestanden** (Memo 160), `VERSION` `0.6.3`, Tag `v0.6.3`; alle 11 Vault-Wurzeln des Arbeitsrechners an 0.6.3, `rc1` und `v0.6.2` entfernt (Memo 161); veröffentlicht: `main` und Tag `v0.6.3` gepusht, Konzept-Tag `v0.6.3` auf Memo 160, frischer Klon des Tags aus dem Hub geprüft (Memo 162) | 01 | ☑ abgeschlossen |
+| 0 | **Repo auf 0.6.4:** `VERSION`, `manifest.yaml`, `STATUS.md`, `CLAUDE.md` | Ausgangsprüfung 1410 Prüfungen grün; `VERSION` und `manifest.yaml` `0.6.4-dev`; `STATUS.md` neu für v0.6.4 (v0.6.3 im Tag); `CLAUDE.md` mit den Memos von v0.6.4, Arbeitsrechner auf 0.6.3, Zweig-Regel | 01 | ☑ abgeschlossen |
+| 1 | **Spec 01–06** nach Memo 171 | Entwurf `b2a2568`, freigegeben `add92cb` (Memo 176), Paket-Repos klein `b1f95e9` (Memo 177), Abnahmetest mit `~/Workspace` `b6196d8` | 01–06 | ☑ abgeschlossen |
+| 2 | **`workspace.py`:** Manifest, Merker `workspace.local.yaml`, Eltern vor Kindern, `attach <repo>`, `sync` ohne Push, `status` | — | 06 | ☐ |
+| 3 | **sync:** Manifest nachführen, Push, Prüfung auf Geheimnisse | — | 06 | ☐ |
+| 4 | **detach und attach mit Pfad:** Prüfung, Platzhalter `DETACHED.md` und `DETACHED.command`, Papierkorb; Probe zu `DETACHED.command` | — | 06 | ☐ |
+| 5 | **Hook, Integrität, Vorlage, Kernel-Skills:** `AIOS-SYNC`, `AIOS-DETACHED`, `<aios-workspace>`, Zustand `detached`, `.gitignore`-Vorlage, `aios-attach`, `aios-sync`, `aios-detach` | — | 01–05 | ☐ |
+| 6 | **README, Tutorial 04; Release-Kandidat** `0.6.4-rc1`, Live-Tests | — | 01 | ☐ |
+| 7 | **Abnahme** nach Spec 01 (Vorabnahme im zweiten Benutzer, Abnahme auf dem Notebook), danach Veröffentlichen | — | 01 | ☐ |
