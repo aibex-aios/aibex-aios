@@ -308,3 +308,26 @@ This vault is an AIBOS workspace with sync: auto." "block with sync: auto"
    assert_contains "$(A "$N" --workspace status)" "sync: auto" "now a workspace with sync: auto"
    M="$U/§M"; mkdir -p "$M/.aios"; printf 'aios: %s\nsync: off\n' "$VER" > "$M/.aios/config.yaml"; git -C "$M" init -q -b main
    assert_contains "$(A "$M" --workspace sync --yes)" "no workspace is created" "sync: off: no new workspace"
+
+#===============================================================================
+# B30: a clone that fails is reported, the others go on; B31: uncommitted changes stop the
+# update, not the push (V0.6, memos 194, 196)
+#===============================================================================
+
+   echo 3 >> "$V/libs/lib-a/sub/@/README.md"; git -C "$V/libs/lib-a/sub" commit -qam "sub 3"
+   echo wip > "$V/libs/lib-a/sub/wip.txt"
+   OUT="$(A "$V" --workspace sync --yes)"
+   assert_contains "$OUT" "libs/lib-a/sub: kept (uncommitted changes)" "B31: dirty tree not updated"
+   assert_contains "$OUT" "libs/lib-a/sub: pushed (1 commit to origin/main)" "B31: committed work pushed anyway"
+   assert_eq "$(git -C "$RM/sub" log -1 --format=%s main)" "sub 3" "B31: remote has the commit"
+   assert_file "$V/libs/lib-a/sub/wip.txt"
+   rm "$V/libs/lib-a/sub/wip.txt"
+   cp "$V/.aios/workspace.yaml" "$SANDBOX/ws.bak"
+   printf '  - name: gone\n    repo: file://%s/nope\n    revision: main\n    path: gone\n  - name: gone-child\n    repo: file://%s/sub\n    revision: main\n    path: gone/child\n' "$RM" "$RM" >> "$V/.aios/workspace.yaml"
+   printf '/gone/\n' >> "$V/.gitignore"
+   OUT="$(A "$V" --workspace sync --yes)"
+   assert_contains "$OUT" "gone: not cloned (cannot clone file://$RM/nope" "B30: failed clone reported"
+   assert_contains "$OUT" "gone/child: not cloned (gone is not cloned)" "B30: child of a failed clone passed over"
+   assert_contains "$OUT" "workspace §W synchronized" "B30: sync goes on"
+   [ ! -e "$V/gone" ] && ok || fail "B30: no folder left for the failed parent"
+   cp "$SANDBOX/ws.bak" "$V/.aios/workspace.yaml"; git -C "$V" checkout -q -- .gitignore

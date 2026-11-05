@@ -411,7 +411,7 @@ def new_workspace(plan, root):
 
     def upd(item, d):
         st, why = update(item, d)
-        if st == "kept":
+        if st == "kept" and why != "uncommitted changes":   # B31
             kept[item.path] = why
         report(item.path, st, why)
     for item in targets:
@@ -510,28 +510,43 @@ def push_steps(plan, root, targets, kept):
             plan.add(line)
 
 
+def try_clone(item, d, cloned, failed):
+    """Clone one project; a failure is reported and the others go on (B30). A project below a
+    project that could not be cloned is passed over, so that the parent can be cloned later."""
+    blocked = next((f for f in failed if Path(f) in Path(item.path).parents), None)
+    if blocked:
+        report(item.path, "not cloned", f"{blocked} is not cloned")
+        failed.append(item.path)
+        return
+    try:
+        clone(item, d)
+    except Abort as e:
+        report(item.path, "not cloned", str(e))
+        failed.append(item.path)
+        return
+    cloned.append(d)
+    report(item.path, "cloned", item.revision)
+
+
 def plan_sync(plan, root, rel=".", groups=()):
     """Add the steps of sync for the projects of root at or below rel to plan (spec 06, sync)."""
     items = [i for i in selected(load(root), groups) if under(i, rel)]
     gone = detached(root)
-    cloned, kept = [], {}
+    cloned, kept, failed = [], {}, []
     for item in items:                                  # step 1: clone what is missing
         d = root / item.path
         if is_detached(item.path, gone):
             continue
         if not d.exists():
-            def act(item=item, d=d):
-                clone(item, d)
-                cloned.append(d)
-                report(item.path, "cloned", item.revision)
-            plan.add(f"clone {item.url} ({item.revision}) -> {item.path}", act)
+            plan.add(f"clone {item.url} ({item.revision}) -> {item.path}",
+                     lambda item=item, d=d: try_clone(item, d, cloned, failed))
     with_root = rel in ("", ".") and bool(origin_of(root))
     targets = ([root_item(root)] if with_root else []) + \
         [i for i in items if (root / i.path).exists() and not is_detached(i.path, gone)]
 
     def upd(item, d):
         st, why = update(item, d)
-        if st == "kept":
+        if st == "kept" and why != "uncommitted changes":   # B31: a push leaves the working tree alone
             kept[item.path] = why
         report(item.path, st, why)
     for item in targets:                                # step 2: fetch, fast-forward only
@@ -1009,12 +1024,10 @@ def attach_path(path):
             start.rmdir()
         write_local(root, [e for e in entries if e["path"] != rel])
     plan.add(f"remove the placeholder of {rel} and its entry in {LOCAL}", unplace)
+    failed = []
     for item in items:
-        def act(item=item, d=root / item.path):
-            clone(item, d)
-            cloned.append(d)
-            report(item.path, "cloned", item.revision)
-        plan.add(f"clone {item.url} ({item.revision}) -> {item.path}", act)
+        plan.add(f"clone {item.url} ({item.revision}) -> {item.path}",
+                 lambda item=item, d=root / item.path: try_clone(item, d, cloned, failed))
     plan.add("make the cloned projects runnable (aios --fetch, registration)",
              lambda: [runnable(d) for d in cloned])
     if ui.MODE != "yes":
