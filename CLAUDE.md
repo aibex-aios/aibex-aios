@@ -12,14 +12,14 @@ Regeln für Sessions, die an AIbex AIOS arbeiten, ob sie im Repo laufen oder im 
 | Stand der Umsetzung | `STATUS.md`: alle Schritte des freigegebenen Implementierungsplans mit ☐/☑; liegt in jedem Paket-Repo mit Implementierungsplan, auch hier (V0.6, Memos 123, 126: F102) |
 | Code | `bin/` (Bash: `aios`; `aios --context` für Hooks und lesende Skills), `templates/forwarder` (Weiterleiter `~/.aios/bin/aios`), `lib/aios/` (Python) |
 | Skills | `skills/aios/<name>/SKILL.md` (AIOS-Skills); Pakete (Skills, Assistenten, Wissen, Arbeitspferde, Distributionen) in eigenen Paket-Repos unter `~/git/AIbex/<paket>/` oder im Konzeptprojekt unter `@Package/<paket>/` |
-| Ort dieses Repos | `~/vault/§AIBOS/A-AIOS/AA-AIbex-AIOS/@Package/aibex-aios/` im Konzeptprojekt; am alten Ort `~/git/AIbex/aibex-aios` steht ein Link (Konzept-Repo V0.6, Memo 178) |
+| Ort dieses Repos | `~/Workspace/§AIBOS/A-AIOS/AA-AIbex-AIOS/@Package/aibex-aios/` im Konzeptprojekt; am alten Ort `~/git/AIbex/aibex-aios` steht ein Link (Konzept-Repo V0.6, Memo 178) |
 | Paket-Manifest des Kernels | `manifest.yaml` (`name: aios`, `type: kernel`), Version wie `VERSION` |
 | Tests | `tests/run` |
 | Entwickler-Doku | `dev/` (wird nicht installiert) |
 
 Das Repo enthält keinen Vault. Vaults legt der User an und bindet sie mit `aios --activate` an eine installierte Version; Tests legen ihre Vaults im Sandkasten an.
 
-Memos und ToDos im Projekt `~/vault/§AIBOS/A-AIOS/AA-AIbex-AIOS/` (Regeln `@/@Rule/Weiter.md` und `@/@Rule/01 Implementierung im Repo aibex-aios (Rule).md`), je Version ein Unterordner. Bis 2026-10-19 waren das eigene Unterprojekte `AAA-AIbex-AIOS-V0.<n>`; die Zuordnung alt → neu steht in `@Memo/03` von `AA-AIbex-AIOS`. Das Projekt ist das Konzept-Repo `AA-AIbex-AIOS` (`aibex-aios/AA-AIbex-AIOS`):
+Memos und ToDos im Projekt `~/Workspace/§AIBOS/A-AIOS/AA-AIbex-AIOS/` (Regeln `@/@Rule/Weiter.md` und `@/@Rule/01 Implementierung im Repo aibex-aios (Rule).md`), je Version ein Unterordner. Bis 2026-10-19 waren das eigene Unterprojekte `AAA-AIbex-AIOS-V0.<n>`; die Zuordnung alt → neu steht in `@Memo/03` von `AA-AIbex-AIOS`. Das Projekt ist das Konzept-Repo `AA-AIbex-AIOS` (`aibex-aios/AA-AIbex-AIOS`):
 
 | Ordner | Inhalt |
 |---|---|
@@ -43,7 +43,7 @@ Memos und ToDos im Projekt `~/vault/§AIBOS/A-AIOS/AA-AIbex-AIOS/` (Regeln `@/@R
 Vorher den Skill `memo` vollständig lesen und befolgen (Nummerierung, Header-Block, bestehende Memos werden nie geändert):
 
 ```
-~/vault/§AIBOS/@/@!Package/skill-memo/skills/memo/SKILL.md
+~/Workspace/§AIBOS/@/@!Package/skill-memo/skills/memo/SKILL.md
 ```
 
 Das Memo wird im Versionsordner der laufenden Version angelegt (`AA-AIbex-AIOS/@Memo/V0.6/`, nächste Nummer dieses Ordners; der Skill kennt keine Unterordner, deshalb den Ordner ausdrücklich nennen) und im Konzept-Repo `AA-AIbex-AIOS` committet, die Spec-Änderung in diesem Repo.

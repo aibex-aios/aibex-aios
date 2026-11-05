@@ -232,11 +232,11 @@ Die Abnahmetests von v0.6.3, v0.6.2, v0.6.1, v0.6.0 und v0.5 stehen in dieser Sp
 | # | Wer, wo | Schritt | erwartet |
 |---|---|---|---|
 | 0 | erster Benutzer, GitHub | Repos des Vault `§AIOS` nach dem Namensschema (Spec 06): bestehende Repos von Projekten mit `@/` umbenennen, fehlende privat anlegen (außer Probe-Projekten), `origin` je Repo nachführen; dazu das Testprojekt | jedes mitreisende Projekt hat ein Remote nach dem Schema |
-| 1 | erster Benutzer, Terminal | `~/git/AIbex/aibex-aios/bin/aios --install v0.6.4-rc<n>`, dann `~/.aios/bin/aios --activate v0.6.4-rc<n> ~/vault/§AIOS`, je mit Ja | Bindung `0.6.4-rc<n>` an `§AIOS` |
+| 1 | erster Benutzer, Terminal | `~/git/AIbex/aibex-aios/bin/aios --install v0.6.4-rc<n>`, dann `~/.aios/bin/aios --activate v0.6.4-rc<n> ~/Workspace/§AIBOS`, je mit Ja | Bindung `0.6.4-rc<n>` an `§AIOS` |
 | 2 | erster Benutzer, Chat in `§AIOS` | `/aios-sync` | Plan mit den Einträgen für alle Repos mit Remote, dem Commit von `workspace.yaml` und den Pushes; danach `aios --workspace status` ohne Abweichung; `sync: auto` wirkt, der Master-Kontext enthält `<aios-workspace>` |
 | 3 | zweiter Benutzer, Terminal | Zugang zu den privaten Repos einrichten | `git ls-remote <url der Vault-Root>` gelingt |
 | 4 | zweiter Benutzer, Terminal | Kandidat installieren (Tag in den eigenen Klon holen, `~/.aios/bin/aios --install v0.6.4-rc<n>`) | Kernel unter `~/.aios/versions/` des zweiten Benutzers |
-| 5 | zweiter Benutzer, Terminal | `~/.aios/bin/aios --workspace attach <url der Vault-Root> ~/vault/§AIOS` | ein Plan, ein Ja; alle Projekte des Manifests geklont, Eltern vor Kindern; Pakete und Arbeitspferde abgeglichen; `status` ohne Abweichung |
+| 5 | zweiter Benutzer, Terminal | `~/.aios/bin/aios --workspace attach <url der Vault-Root> ~/Workspace/§AIBOS` | ein Plan, ein Ja; alle Projekte des Manifests geklont, Eltern vor Kindern; Pakete und Arbeitspferde abgeglichen; `status` ohne Abweichung |
 | 6 | zweiter Benutzer, erster Chat im Testprojekt | „sync den Workspace" | Kernel-Skill über den Block der Kernel-Skills; Plan ohne Änderungen |
 | 7 | zweiter Benutzer, zweiter Chat | `/aios-sync` | der Slash-Befehl läuft |
 | 8 | zweiter, dann erster Benutzer | im Testprojekt eine Datei ändern und committen | Claude bietet sofort `/aios-sync` an; nach Ja ist der Commit am Remote; ein neuer Chat des ersten Benutzers im Testprojekt holt ihn beim Start ohne Rückfrage (`AIOS-SYNC: … fast-forwarded`) |
