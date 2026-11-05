@@ -464,7 +464,7 @@ def push_steps(plan, root, targets, kept):
         text = f"push {item.path}" + (f": {len(lines)} commit(s)" if lines else " (if workspace.yaml was added)")
         plan.add(text, lambda item=item, d=d: push(item.path, d, kept))
         for line in lines:
-            plan.add(f"   {line}")
+            plan.add(line)
 
 
 def plan_sync(plan, root, rel=".", groups=()):

@@ -1,24 +1,18 @@
 # Workspaces
 
-Dieses Tutorial führt in etwa 15 Minuten durch Workspaces von AIbex AIOS. Ein **Workspace** ist ein Projekt, das in `.aios/workspace.yaml` weitere Repos nennt, mit Revision und Pfad. AIOS klont sie verschachtelt darunter, hält sie auf ihrer Revision und friert den Stand ein. So arbeitest du an Paketen als Git-Checkouts (Entwickler-Site), während ein Vault Pakete als Kopie in `@!Package/` hat (Anwender-Site).
+Dieses Tutorial führt in etwa 20 Minuten durch Workspaces von AIbex AIOS. Ein **Workspace** ist eine Vault-Root, die in `.aios/workspace.yaml` ihre Projekte nennt, jedes ein eigenes Git-Repo an seinem eigenen Remote. Damit kommt ein ganzer Vault auf einen zweiten Rechner und bleibt dort abgeglichen. Drei Handgriffe genügen, je für den ganzen Workspace oder mit Pfad für einen Teilbaum:
 
-Voraussetzung: AIBOS v0.6 ist installiert, der Vault `~/tmp/§Demo` ist ein AIBOS-Workspace (Tutorial 01). Die Repos des Beispiels sind die Paket-Repos des Hubs `aibex-aios`; zum Klonen genügt Lesezugriff.
+| Handgriff | Bedeutung |
+|---|---|
+| `attach` | den Workspace an diesen Rechner anbinden; mit Pfad: einen ausgelagerten Teilbaum zurückholen |
+| `sync` | den Projektbaum mit den Remotes abgleichen |
+| `detach` | den Workspace von diesem Rechner lösen; mit Pfad: einen Teilbaum auslagern |
 
-## 1. Das Wurzelprojekt
+Voraussetzung: AIBOS v0.6.4 ist installiert, der Vault `~/tmp/§Demo` ist ein AIBOS-Workspace (Tutorial 01) und hat ein eigenes Git-Repo. Die Projekte des Beispiels sind Paket-Repos des Hubs `aibex-aios`; zum Klonen genügt Lesezugriff.
 
-Lege ein Projekt `W-Werkstatt` an:
+## 1. Das Manifest in der Vault-Root
 
-```bash
-mkdir ~/tmp/§Demo/W-Werkstatt
-cd ~/tmp/§Demo/W-Werkstatt
-aios --init
-```
-
-```
-=> ~/tmp/§Demo/W-Werkstatt is a project
-```
-
-Schreib die Datei `.aios/workspace.yaml`:
+Schreib die Datei `~/tmp/§Demo/.aios/workspace.yaml`:
 
 ```yaml
 schema: 1
@@ -28,15 +22,15 @@ projects:
   - name: app-taschenrechner
     remote: aibex
     revision: v0.4.0
-    path: app-taschenrechner
+    path: W-Werkstatt/app-taschenrechner
   - name: skill-memo
     remote: aibex
     revision: main
-    path: skill-memo
+    path: W-Werkstatt/skill-memo
   - name: knowledge-orion
     remote: aibex
     revision: main
-    path: wissen/knowledge-orion
+    path: W-Werkstatt/wissen/knowledge-orion
     groups: [wissen]
 ```
 
@@ -45,50 +39,42 @@ projects:
 | `remotes` | Name und Basis-URL; die URL eines Projekts ist `<basis>/<name>` |
 | `remote` oder `repo` | ein Remote aus `remotes` oder eine volle URL |
 | `revision` | Zweig, Tag oder Commit |
-| `path` | Ort unter dem Wurzelprojekt, ohne `..` |
+| `path` | Ort unter der Vault-Root, ohne `..`; die Reihenfolge der Einträge ist egal, Eltern werden vor Kindern geklont |
 | `groups` | Gruppen für `--group` |
 
-Committe die Datei: `git add .aios/workspace.yaml` und `git commit -m "Workspace"`.
+Committe die Datei im Repo der Vault-Root: `git add .aios/workspace.yaml` und `git commit -m "Workspace"`.
 
-## 2. Klonen mit update
+Die drei Projekte sind **Paket-Repos**: Sie haben ein `manifest.yaml` und kein `@/`. Ihre Namen sind klein geschrieben und bleiben, wie sie im Hub stehen. Eigene Projekte mit `@/` bekommen am Remote einen Namen nach dem Schema `<Workspace>-<Ordnername>`, hier etwa `Demo-W-Werkstatt`.
+
+## 2. Klonen mit sync
 
 ```bash
-aios --workspace update --plan
+cd ~/tmp/§Demo
+aios --workspace sync --plan
 ```
 
 ```
-=> update the workspace ~/tmp/§Demo/W-Werkstatt
+=> sync the workspace ~/tmp/§Demo
    plan:
-      clone https://github.com/aibex-aios/app-taschenrechner (v0.4.0) -> app-taschenrechner
-      clone https://github.com/aibex-aios/skill-memo (main) -> skill-memo
-      clone https://github.com/aibex-aios/knowledge-orion (main) -> wissen/knowledge-orion
+      clone https://github.com/aibex-aios/app-taschenrechner (v0.4.0) -> W-Werkstatt/app-taschenrechner
+      clone https://github.com/aibex-aios/skill-memo (main) -> W-Werkstatt/skill-memo
+      clone https://github.com/aibex-aios/knowledge-orion (main) -> W-Werkstatt/wissen/knowledge-orion
+      make the newly cloned projects runnable (aios --fetch, registration)
    (plan only, nothing written)
 ```
 
 Ohne `--plan` fragt `aios` einmal und klont:
 
 ```
-   app-taschenrechner: cloned (v0.4.0)
-   skill-memo: cloned (main)
-   wissen/knowledge-orion: cloned (main)
-=> workspace W-Werkstatt: 3 projects
+   W-Werkstatt/app-taschenrechner: cloned (v0.4.0)
+   W-Werkstatt/skill-memo: cloned (main)
+   W-Werkstatt/wissen/knowledge-orion: cloned (main)
+=> workspace §Demo synchronized
 ```
 
-Ein **Zweig** wie `main` wird ausgecheckt. Ein **Tag** oder Commit wie `v0.4.0` wird zum lokalen Zweig `ws/v0.4.0`. So gibt es nie ein *detached HEAD*, und eigene Commits haben einen Zweig. Jedes Projekt ist im Repo darüber ausgeschlossen. AIOS hat dafür je eine Zeile in `W-Werkstatt/.gitignore` eingetragen und nur diese committet:
+Ein Zweig wird ausgecheckt, ein Tag als lokaler Zweig `ws/v0.4.0`, nie als *detached HEAD*. Jedes Projekt wird im Repo darüber ausgeschlossen, mit einem eigenen Commit nur dieser Zeile. Neu geklonte Projekte mit `@/` macht sync gleich lauffähig: Pakete und Arbeitspferde aus `lock.yaml`, registrierte Skills.
 
-```bash
-git log --format=%s
-```
-
-```
-AIOS: wissen/knowledge-orion als Projekt des Workspace ausgeschlossen
-AIOS: skill-memo als Projekt des Workspace ausgeschlossen
-AIOS: app-taschenrechner als Projekt des Workspace ausgeschlossen
-Workspace
-AIOS: Projekt initialisiert
-```
-
-Diese Commits pusht AIOS nicht; das bleibt bei dir.
+Im Chat heißt derselbe Handgriff `/aios-sync`; Claude zeigt den Plan und fragt einmal.
 
 ## 3. Status und Integrität
 
@@ -97,119 +83,109 @@ aios --workspace status
 ```
 
 ```
-Workspace W-Werkstatt — 2026-10-25
+Workspace §Demo — 2026-11-05 — sync: auto
 
-Project             Path                    Branch     Revision  Remote  Changes
-app-taschenrechner  app-taschenrechner      ws/v0.4.0  ok        —       ok
-skill-memo          skill-memo              main       ok        ok      ok
-knowledge-orion     wissen/knowledge-orion  main       ok        ok      ok
+Project             Path                                 Branch     Revision  Remote  Changes
+app-taschenrechner  W-Werkstatt/app-taschenrechner       ws/v0.4.0  ok        —       ok
+skill-memo          W-Werkstatt/skill-memo               main       ok        ok      ok
+knowledge-orion     W-Werkstatt/wissen/knowledge-orion   main       ok        ok      ok
 ```
 
-| Spalte | Inhalt |
-|---|---|
-| Revision | `ok`, wenn der ausgecheckte Zweig die Revision enthält |
-| Remote | voraus oder hinter dem Upstream; `—` ohne Upstream, wie bei `ws/v0.4.0` |
-| Changes | nicht committete Änderungen |
-
-Die Paket-Repos haben kein `@/`: Sie sind **Fremd-Repos**, keine AIOS-Projekte, und nicht Teil des Master-Kontexts. `aios --integrity` prüft sie über `workspace.yaml`, nur auf Klon und Commit-Stand:
-
-```bash
-aios --integrity
-```
-
-```
-Integrity W-Werkstatt — 2026-10-25
-
-Project               Init          Commit
-W-Werkstatt           ok            ok
-  app-taschenrechner  foreign repo  ok
-  skill-memo          foreign repo  ok
-  knowledge-orion     foreign repo  ok
-
-Result: 4 of 4 projects integer
-```
-
-Fehlt ein Klon, steht dort `missing: clone`, und das Projekt ist nicht integer.
+`aios --integrity` prüft die Projekte des Workspace mit; Paket-Repos ohne `@/` erscheinen als `foreign repo`, ein fehlender Klon als `missing: clone`.
 
 ## 4. Abgleichen ohne Verlust
 
-Leg im Taschenrechner eine Notiz an:
+Ein zweiter `aios --workspace sync` holt neue Stände, aber **nur per fast-forward**. Ein Projekt mit offenen Änderungen, eigenen Commits, einem anderen Zweig oder einem anderen `origin` bleibt unverändert und wird mit Grund gemeldet, etwa:
+
+```
+   W-Werkstatt/skill-memo: kept (uncommitted changes)
+```
+
+Mit einem Pfad gleicht sync nur diesen Teilbaum ab: `aios --workspace sync W-Werkstatt/skill-memo`.
+
+## 5. Hinausbringen
+
+sync pusht auch: je Repo mit Upstream und eigenen Commits den ausgecheckten Zweig, **nie Tags** und nie mit `--force`. Der Plan nennt die Commits, die hinausgehen:
+
+```
+      push W-Werkstatt/skill-memo: 1 commit(s)
+      (3f2a1c9 Du: Notiz ergänzt)
+```
+
+Zwei Sicherungen gehören dazu:
+
+- **Geheimnisse:** Berührt ein ausgehender Commit `@Secret/`, `.env`, `*.pem`, `*.key` oder einen SSH-Schlüssel, hält sync den Push dieses Repos an und nennt Datei und Commit. Geheimnisse gehören in den Ordner `@Secret/` eines Projekts; die `.gitignore`-Vorlage schließt ihn aus.
+- **Manifest:** Liegt unter der Vault-Root ein neues Repo mit Remote, trägt sync es in `workspace.yaml` ein und committet nur diese Datei. Ein Repo ohne Remote nennt sync als Hinweis, mit einem Namen nach dem Schema und, wenn die Vault-Root bei GitHub liegt, dem Befehl `gh repo create …`. Repos am Remote anlegen tut sync nie selbst.
+
+## 6. Der Workspace auf einem zweiten Rechner
+
+Liegt das Repo der Vault-Root bei GitHub, z. B. `https://github.com/du/Demo`, bindet ein Befehl den ganzen Workspace an einen anderen Rechner. AIBOS muss dort installiert sein (README, *Install*); der Befehl läuft im Terminal, weil es noch keinen Vault gibt:
 
 ```bash
-echo "# Notiz" > app-taschenrechner/NOTIZ.md
-aios --workspace status
+~/.aios/bin/aios --workspace attach https://github.com/du/Demo ~/tmp/§Demo --plan
 ```
 
 ```
-Project             Path                    Branch     Revision  Remote  Changes
-app-taschenrechner  app-taschenrechner      ws/v0.4.0  ok        —       1 changed
+=> attach the workspace https://github.com/du/Demo to this machine
+   plan:
+      clone https://github.com/du/Demo -> ~/tmp/§Demo (vault root)
+      (install the bound kernel version if it is missing (aios --install))
+      (then sync: clone the projects of workspace.yaml, parents before children; reconcile packages and workhorses; register the skills)
+   (plan only, nothing written)
 ```
 
-`aios --workspace update` bringt die Projekte auf ihre Revision, aber **nur per fast-forward**. Ein Projekt mit offenen Änderungen, eigenen Commits, einem anderen ausgecheckten Zweig oder einem anderen `origin` lässt es unverändert und meldet den Grund, etwa:
+Danach ist der Rechner bereit, ohne `aios --activate`: Die Bindung reist in `config.yaml` mit. Im allerersten Chat dort ist `/aios-sync` noch kein Slash-Befehl, „sync den Workspace" in Worten wirkt aber schon; ab dem zweiten Chat geht auch der Slash-Befehl.
+
+## 7. Platz sparen: Teilbäume auslagern
+
+Ein Rechner muss nicht alles tragen. `detach` mit Pfad lagert einen Teilbaum aus, aber nur, wenn nichts verloren gehen kann:
+
+```bash
+aios --workspace detach W-Werkstatt/wissen/knowledge-orion --plan
+```
 
 ```
-   app-taschenrechner: kept (uncommitted changes)
+=> detach W-Werkstatt/wissen/knowledge-orion on this machine
+   plan:
+      move W-Werkstatt/wissen/knowledge-orion with 1 repo(s) to the trash (~/.Trash), checked: nothing is lost
+      (placeholder W-Werkstatt/wissen/knowledge-orion/DETACHED.md and W-Werkstatt/wissen/knowledge-orion/DETACHED.command; entry in .aios/workspace.local.yaml)
+   (plan only, nothing written)
 ```
 
-Mit `--group wissen` gelten nur die Projekte dieser Gruppe und die Projekte ohne Gruppe. Ein `<pfad>` darf auch ein Ordner unter dem Wurzelprojekt sein; AIOS sucht die nächste `workspace.yaml` aufwärts.
+Geprüft wird jedes Repo im Teilbaum: Remote erreichbar, nichts offen, nichts ungepusht, kein Stash, keine ignorierten Dateien außer neu erzeugbaren. Sonst nennt `detach` die Hindernisse und ändert nichts. Der Ordner bleibt mit seinem Namen stehen und enthält `DETACHED.md` und `DETACHED.command`. Zurück geht es mit `aios --workspace attach W-Werkstatt/wissen/knowledge-orion`, im Chat mit `/aios-attach …` oder im Finder mit einem Doppelklick auf `DETACHED.command`. Die Auslagerung gilt nur für diesen Rechner; `sync` holt ausgelagerte Teilbäume nie von selbst zurück.
 
-## 5. Einfrieren
+`detach` ohne Pfad löst den ganzen Workspace und legt den Vault-Ordner in den Papierkorb, nach derselben Prüfung für alle Repos.
+
+## 8. Laufender Abgleich: sync auto, manual, off
+
+`sync:` in `.aios/config.yaml` der Vault-Root legt fest, wie der Workspace abgleicht; mit `workspace.yaml` gilt `auto`:
+
+| Wert | Wirkung |
+|---|---|
+| `auto` | ein neuer Chat holt sein Projekt per fast-forward (`AIOS-SYNC: … fast-forwarded …`), und Claude bietet nach jedem Commit `/aios-sync` an |
+| `manual` | abgeglichen wird nur auf Wunsch |
+| `off` | `attach` und `sync` verweigern |
+
+Ein Vault in einem Cloud-Ordner (Google Drive, OneDrive, iCloud Drive, Dropbox) gilt immer als `off`: Dort repliziert der Cloud-Dienst. Git bleibt erlaubt, nur der Abgleich von AIBOS ist aus.
+
+## 9. Einfrieren
 
 ```bash
 aios --workspace freeze
 ```
 
-```
-=> frozen: app-taschenrechner 6ad33b5b, skill-memo 9e007454, knowledge-orion 4fa0b258
-```
+`freeze` schreibt den Commit jedes Projekts in den Abschnitt `workspace:` von `.aios/lock.yaml` der Vault-Root. So lässt sich ein Stand festhalten.
 
-`freeze` schreibt den Commit jedes geklonten Projekts in `.aios/lock.yaml` des Wurzelprojekts, Abschnitt `workspace:`:
-
-```yaml
-# written by AIOS (fetch, workspace), do not edit
-schema: 1
-workspace:
-  app-taschenrechner: 6ad33b5b5ebc4e79e115b12eb7b52c40d4a75479
-  skill-memo: 9e0074541541104db199837883add03d7b265cb4
-  knowledge-orion: 4fa0b258f3eb45ce520fdd9db716c47b3a47a881
-```
-
-Hat das Wurzelprojekt auch Pakete, bleibt der Abschnitt `packages:` daneben stehen. Committe `lock.yaml`; der Stand des Workspace ist damit festgehalten.
-
-## 6. Der Workspace auf einem zweiten Rechner
-
-Push das Wurzelprojekt in ein eigenes Repo, z. B. `https://github.com/du/W-Werkstatt`. Auf einem anderen Rechner oder in einem anderen AIBOS-Workspace klont ein Befehl alles:
-
-```bash
-cd ~/tmp/§Zweit
-aios --workspace init https://github.com/du/W-Werkstatt --plan
-```
-
-```
-=> init the workspace ~/tmp/§Zweit/W-Werkstatt
-   plan:
-      clone https://github.com/du/W-Werkstatt -> ~/tmp/§Zweit/W-Werkstatt, then the projects of its .aios/workspace.yaml
-   (plan only, nothing written)
-```
-
-```
-   app-taschenrechner: cloned (v0.4.0)
-   skill-memo: cloned (main)
-   wissen/knowledge-orion: cloned (main)
-=> workspace ~/tmp/§Zweit/W-Werkstatt ready
-```
-
-Das Wurzelprojekt wird behandelt wie ein Projekt des Workspace: Es landet im Ordner der Session und ist im Repo darüber ausgeschlossen, hier im Repo des Vaults. Ein zweiter Ordner wählt `aios --workspace init <repo> <ordner>`, eine Auswahl `--group <g>`. Gibt es den Ordner schon, bricht `init` ab; dann gilt `update`.
-
-## 7. Was du gesehen hast
+## 10. Was du gesehen hast
 
 | Begriff | im Tutorial |
 |---|---|
-| Workspace, Wurzelprojekt | `W-Werkstatt` mit `.aios/workspace.yaml` |
-| Klonen | `aios --workspace update`: Zweig `main`, Tag als `ws/v0.4.0`, Ausschluss mit eigenem Commit |
-| Fremd-Repo | Paket-Repos ohne `@/`, in `aios --integrity` als `foreign repo` |
-| Abgleich | nur fast-forward; Abweichungen werden gemeldet und bleiben |
+| Workspace, Vault-Root | `§Demo` mit `.aios/workspace.yaml` |
+| Paket-Repo, Namensschema | Paket-Repos klein und unverändert; eigene Projekte `<Workspace>-<Ordnername>` |
+| sync | klonen, fast-forward, lauffähig machen, Manifest nachführen, pushen ohne Tags; Geheimnisse halten an |
+| attach | Workspace an einen zweiten Rechner; mit Pfad: Teilbaum zurück |
+| detach | Teilbaum auslagern, Workspace lösen, nur ohne Verlust; Papierkorb |
+| sync: | `auto`, `manual`, `off`; Cloud-Ordner immer `off` |
 | Einfrieren | `aios --workspace freeze`, Abschnitt `workspace:` in `lock.yaml` |
-| zweiter Rechner | `aios --workspace init <repo>` |
 
-Die vollständigen Regeln stehen in Spec 06 *Pakete und Workspaces*, Abschnitt *Workspaces*, und in Spec 05 *Projekte*, installiert unter `~/.aios/versions/v0.6.3/doc/spec/`.
+Die vollständigen Regeln stehen in Spec 06 *Pakete und Workspaces*, Abschnitt *Workspaces*, und in Spec 05 *Projekte*, installiert unter `~/.aios/versions/v0.6.4/doc/spec/`.

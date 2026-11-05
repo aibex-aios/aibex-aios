@@ -21,5 +21,5 @@ Inhaltsverzeichnis der Dokumentation, die mit jeder Version installiert wird, un
 | `01 Erste Schritte mit den Demo-Assistenten.md` | Installieren, Vault binden, Demo-Assistenten |
 | `02 Projekte und Integrität.md` | Projekte anlegen und prüfen |
 | `03 Pakete und Taschenrechner.md` | Pakete holen, die Demo-App Taschenrechner |
-| `04 Workspaces.md` | Workspaces mit mehreren Projekt-Repos |
+| `04 Workspaces.md` | Workspaces auf mehreren Rechnern: `attach`, `sync`, `detach`, Namensschema, `sync:` |
 | `05 Arbeitspferde und Distributionen.md` | Arbeitspferde und die Distribution Rothirsch |

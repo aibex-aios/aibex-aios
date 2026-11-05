@@ -35,16 +35,16 @@ for `aios --contribute`. Setting up workhorses needs access to PyPI.
 Copy this line into a terminal:
 
 ```sh
-R=~/git/AIbex/aibex-aios; ([ -d "$R/.git" ] || git clone https://github.com/aibex-aios/aibex-aios "$R") && "$R/bin/aios" --install v0.6.3
+R=~/git/AIbex/aibex-aios; ([ -d "$R/.git" ] || git clone https://github.com/aibex-aios/aibex-aios "$R") && "$R/bin/aios" --install v0.6.4
 ```
 
 It clones the repository to `~/git/AIbex/aibex-aios` unless a clone is already
 there (an existing clone is left as it is), checks the basic kit and installs.
-The installed files always come from the tag `v0.6.3`, not from the working
+The installed files always come from the tag `v0.6.4`, not from the working
 tree of the clone; without a version, the highest release tag is installed.
 
 `aios --install` shows a plan and asks once before it writes anything. It
-installs the kernel read-only to `~/.aios/versions/v0.6.3/` and puts the
+installs the kernel read-only to `~/.aios/versions/v0.6.4/` and puts the
 forwarder `aios` into `~/.aios/bin/aios`. It adds three hooks to
 `~/.claude/settings.json`, each with the absolute path of the forwarder:
 `SessionStart`, `UserPromptSubmit` and `PreToolUse` (matcher `Bash|Skill|Read`; it
@@ -75,14 +75,14 @@ the vault root keeps a vault with `ai-brain`; a `§` folder without binding or
 marker is not affected at all.
 
 **Changeover from v0.5:** run the installer of the clone,
-`~/git/AIbex/aibex-aios/bin/aios --install v0.6.3` (as under *Install*); a
+`~/git/AIbex/aibex-aios/bin/aios --install v0.6.4` (as under *Install*); a
 typed `aios` would still reach the installer of v0.5 through `~/bin/aios`.
 It replaces the two AIOS hooks in place, adds `PreToolUse` and leaves
 `~/bin/aios` as it is. Vaults bound to
 0.5 keep running with v0.5 until you switch each one with
-`aios --activate v0.6.3 <vault>`. When no known vault is bound below 0.6 any
+`aios --activate v0.6.4 <vault>`. When no known vault is bound below 0.6 any
 more, this plan offers, with its own question, to remove the old global skill
-wrappers in `~/.claude/skills/`. `aios --activate v0.6.3` also switches vaults
+wrappers in `~/.claude/skills/`. `aios --activate v0.6.4` also switches vaults
 of v0.4 and v0.3 (packages renamed and moved to versions that allow 0.6, from
 v0.3 `skills:` and `assistants:` turned into packages).
 
@@ -100,11 +100,11 @@ Rothirsch 1.1.0 binds kernel 0.6.1.
 
 ```sh
   mkdir ~/Vaults/§Demo
-  aios --activate v0.6.3 ~/Vaults/§Demo      # writes §Demo/.aios/config.yaml, creates §Demo/@/ and a git repo
+  aios --activate v0.6.4 ~/Vaults/§Demo      # writes §Demo/.aios/config.yaml, creates §Demo/@/ and a git repo
 ```
 
 ```
-=> activate AIOS v0.6.3 for ~/Vaults/§Demo
+=> activate AIOS v0.6.4 for ~/Vaults/§Demo
 => ~/Vaults/§Demo runs with AIOS 0.6.0 (~/Vaults/§Demo/.aios/config.yaml)
    the master context and the skill registration apply from the next chat
 ```
@@ -162,6 +162,7 @@ In a chat in an A/W:
 | `/gui` | surface of the assistant of the session |
 | `/aios-memo` | memo style in every project (only when no skill `memo` is available) |
 | `/aios-status` | project status from memos and git |
+| `/aios-sync`, `/aios-detach`, `/aios-attach` | workspace: sync the project tree with its remotes; detach a subtree (or the workspace) after checking that nothing is lost; get a detached subtree back |
 
 Registered skills become available in the **next** chat. The assistant is a
 property of the project: `assistant: <name>`, `none` or `inherit` (the default)
@@ -211,8 +212,16 @@ The hub `aibex-hub` holds `knowledge-scorpio` (the brightest stars of
 Scorpius). Each demo assistant politely refuses the other one's calculations,
 so the answer shows which assistant and which skill are active.
 
-**Workspaces** clone several repos as projects of one root project, from
-`.aios/workspace.yaml` (`aios --workspace init | update | freeze | status`).
+**Workspaces** bring a whole vault to another machine and keep it in sync: the
+vault root lists its projects in `.aios/workspace.yaml`, each project is a repo
+of its own at its own remote. Three moves handle it: `aios --workspace attach
+<repo> [<vault-folder>]` binds a workspace to a new machine (in the terminal),
+`sync` clones what is missing, fast-forwards, records new repos and pushes
+(never tags; secrets stop the push), `detach <path>` moves a subtree to the
+trash after checking that nothing is lost, `attach <path>` gets it back. With
+`sync: auto` in the vault root, a new session fast-forwards its project; in
+cloud folders (Google Drive, iCloud, Dropbox) the sync is off. Skills:
+`/aios-sync`, `/aios-detach`, `/aios-attach`.
 **Contributions** go back to a package as a pull request
 (`aios --contribute <file> --to <package>`).
 
@@ -224,7 +233,7 @@ The tutorials (German) walk through a demo vault:
 - [`01 Erste Schritte mit den Demo-Assistenten`](doc/tutorials/01%20Erste%20Schritte%20mit%20den%20Demo-Assistenten.md) — vault, projects, chain, assistants as packages
 - [`02 Projekte und Integrität`](doc/tutorials/02%20Projekte%20und%20Integrit%C3%A4t.md) — subprojects, consistency check, `/aios-integrity`
 - [`03 Pakete und Taschenrechner`](doc/tutorials/03%20Pakete%20und%20Taschenrechner.md) — hubs, fetch, deploy, the calculator, contribute
-- [`04 Workspaces`](doc/tutorials/04%20Workspaces.md) — `workspace.yaml`, `init`, `update`, `freeze`, `status`
+- [`04 Workspaces`](doc/tutorials/04%20Workspaces.md) — `workspace.yaml`, `attach`, `sync`, `detach`, `status`, `freeze`
 - [`05 Arbeitspferde und Distributionen`](doc/tutorials/05%20Arbeitspferde%20und%20Distributionen.md) — Rothirsch, workhorses, forwarders, a second machine
 
 
@@ -283,7 +292,7 @@ installed to `~/.aios/versions/v<version>/doc/spec/` (with `--system`:
 ```
 
 A clone can be used without installing: point `AIOS_HOME` to it, or add a
-line `v0.6.3-dev: ~/git/AIbex/aibex-aios` to `~/.aios/installations.yaml`.
+line `v0.6.4-dev: ~/git/AIbex/aibex-aios` to `~/.aios/installations.yaml`.
 `AIOS_HUBS` and `AIOS_GITHUB` redirect hubs for tests (spec 04).
 `CLAUDE.md` holds the rules for working on the repository, `STATUS.md` the
 state of the implementation.
