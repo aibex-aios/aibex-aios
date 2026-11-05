@@ -12,7 +12,7 @@ Voraussetzung: AIBOS v0.6.4 ist installiert, der Vault `~/tmp/§Demo` ist ein AI
 
 ## 1. Das Manifest in der Vault-Root
 
-Schreib die Datei `~/tmp/§Demo/.aios/workspace.yaml`:
+Haben die Projekte deines Vaults schon Remotes, legt `aios --workspace sync` an der Vault-Root die Datei selbst an: mit allen Repos, die ein Remote haben, und einem Commit nur dieser Datei. Für dieses Beispiel schreibst du sie von Hand, weil die Projekte noch nicht da sind. Schreib die Datei `~/tmp/§Demo/.aios/workspace.yaml`:
 
 ```yaml
 schema: 1

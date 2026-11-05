@@ -283,3 +283,28 @@ This vault is an AIBOS workspace with sync: auto." "block with sync: auto"
    assert_not_contains "$OUT" "PROJECT-UNINITIALIZED" "hook: a placeholder is no project to initialize"
    assert_contains "$(A "$V" --integrity | grep ' new ')" "detached" "integrity: detached"
    assert_not_contains "$(A "$V" --integrity)" "new: " "integrity: no notes for a detached subtree"
+
+#===============================================================================
+# B29: sync at a vault root without workspace.yaml creates it in the same plan (spec 06, sync,
+# Neuer Workspace)
+#===============================================================================
+
+   N="$U/§N"; mkdir -p "$N/.aios" "$N/@"; printf 'aios: %s\n' "$VER" > "$N/.aios/config.yaml"
+   cp "$SRC/templates/gitignore" "$N/.gitignore"; printf '/P-Eins/\n/P-Zwei/\n' >> "$N/.gitignore"
+   git -C "$N" init -q -b main; git -C "$N" add -A; git -C "$N" commit -qm vault
+   git clone -q --bare "$N" "$RM/nroot"; git -C "$N" remote add origin "file://$RM/nroot"; git -C "$N" fetch -q origin; git -C "$N" branch -q -u origin/main
+   repo p-eins @/README.md; git clone -q "file://$RM/p-eins" "$N/P-Eins"
+   mkdir -p "$N/P-Zwei/@"; git -C "$N/P-Zwei" init -q -b main
+   assert_contains "$(A "$N/P-Eins" --workspace sync --yes)" "no .aios/workspace.yaml at or above" "only at the vault root"
+   OUT="$(A "$N" --workspace sync --plan)"
+   assert_contains "$OUT" "create .aios/workspace.yaml (new workspace) with 1 projects: P-Eins" "plan: new workspace"
+   assert_contains "$OUT" "note: P-Zwei: no remote; suggested name N-P-Zwei" "plan: hint for the project without remote"
+   [ ! -e "$N/.aios/workspace.yaml" ] && ok || fail "--plan writes nothing"
+   OUT="$(A "$N" --workspace sync --yes)"
+   assert_contains "$OUT" ".: workspace.yaml created (1 projects)" "workspace.yaml created"
+   assert_contains "$(cat "$N/.aios/workspace.yaml")" "path: P-Eins" "entry of P-Eins"
+   assert_eq "$(git -C "$N" log -1 --format=%s)" "AIOS: workspace.yaml angelegt" "commit of only workspace.yaml"
+   assert_contains "$OUT" ".: pushed" "vault root pushed"
+   assert_contains "$(A "$N" --workspace status)" "sync: auto" "now a workspace with sync: auto"
+   M="$U/§M"; mkdir -p "$M/.aios"; printf 'aios: %s\nsync: off\n' "$VER" > "$M/.aios/config.yaml"; git -C "$M" init -q -b main
+   assert_contains "$(A "$M" --workspace sync --yes)" "no workspace is created" "sync: off: no new workspace"

@@ -333,8 +333,17 @@ def manifest_steps(plan, root, items, rel, gone):
     import yaml
     data = yaml.safe_load((root / FILE).read_text(encoding="utf-8")) or {}
     remotes = data.get("remotes") or {}
-    listed = {i.path for i in load(root)}
-    names = {i.name for i in load(root)}
+    entries, hints = scan(root, remotes, {i.path for i in load(root)}, {i.name for i in load(root)}, rel, gone)
+    if entries:
+        plan.add(f"workspace.yaml: add {', '.join(e['path'] for e in entries)}; commit only workspace.yaml",
+                 lambda: add_entries(root, entries))
+    for h in hints:
+        plan.add(f"note: {h}")
+
+
+def scan(root, remotes, listed, names, rel=".", gone=()):
+    """(entries, hints): repos with origin missing in workspace.yaml, notes for the rest (step 4)."""
+    names = set(names)
     folders = {}
     entries, hints = [], []
     for r in repos(root, gone):
@@ -372,9 +381,43 @@ def manifest_steps(plan, root, items, rel, gone):
         if len(where) > 1:
             hints.append(f"the folder name {folder} occurs {len(where)} times ({', '.join(where)}); "
                          "the schema gives no unique name")
-    if entries:
-        plan.add(f"workspace.yaml: add {', '.join(e['path'] for e in entries)}; commit only workspace.yaml",
-                 lambda: add_entries(root, entries))
+    return entries, hints
+
+
+def new_workspace(plan, root):
+    """B29: sync at a vault root without workspace.yaml creates it (spec 06, sync, Neuer Workspace)."""
+    owner = owner_of(origin_of(root))
+    remotes = {owner: f"https://github.com/{owner}"} if owner else {}
+    entries, hints = scan(root, remotes, set(), set())
+    items = [Item(e["name"], (remotes[e["remote"]] + "/" + e["name"]) if "remote" in e else e["repo"],
+                  e["revision"], e["path"]) for e in entries]
+
+    def create():
+        import yaml
+        f = root / FILE
+        f.parent.mkdir(parents=True, exist_ok=True)
+        body = yaml.safe_dump({"schema": 1, "remotes": remotes, "projects": entries},
+                              sort_keys=False, allow_unicode=True, default_flow_style=False)
+        f.write_text(body, encoding="utf-8")
+        git(root, "add", "--", str(FILE))
+        r = git(root, "commit", "-q", "-m", "AIOS: workspace.yaml angelegt", "--", str(FILE))
+        if r.returncode:
+            warn(f"commit in {root} failed ({(r.stderr or r.stdout).strip()}); commit workspace.yaml by hand")
+        report(".", "workspace.yaml created", f"{len(entries)} projects")
+    plan.add(f"create {FILE} (new workspace) with {len(entries)} projects: "
+             f"{', '.join(e['path'] for e in entries) or '-'}; commit only workspace.yaml", create)
+    targets = ([root_item(root)] if origin_of(root) else []) + items
+    kept = {}
+
+    def upd(item, d):
+        st, why = update(item, d)
+        if st == "kept":
+            kept[item.path] = why
+        report(item.path, st, why)
+    for item in targets:
+        d = root if item.path == "." else root / item.path
+        plan.add(f"update {item.path} ({item.revision}, fast-forward only)", lambda item=item, d=d: upd(item, d))
+    push_steps(plan, root, targets, kept)
     for h in hints:
         plan.add(f"note: {h}")
 
@@ -515,6 +558,8 @@ def refuse_off(root):
 def do_sync(path=None, groups=()):
     """aios --workspace sync [<path>] [--group <g>…] (spec 06, sync)."""
     start = Path(os.path.realpath(path or paths.cwd()))
+    if find_root(start) is None and config.vault_root(start) == start:
+        return sync_new(start)
     root = root_of(start)
     activated(root)
     refuse_off(root)
@@ -527,6 +572,24 @@ def do_sync(path=None, groups=()):
         say(f"=> sync the workspace {root}" + ("" if rel == "." else f" at {rel}"))
     ui.confirm(plan, "go on?", "cancelled")
     say(f"=> workspace {root.name} synchronized")
+    return 0
+
+
+def sync_new(root):
+    """sync at a vault root without workspace.yaml: create it in the same plan (B29)."""
+    activated(root)
+    cloud = cloud_folder(root)
+    if cloud:
+        raise Abort(f"the vault lies in a cloud folder ({cloud}); the workspace sync is off there (spec 06)")
+    cfg = config.load(root)
+    if cfg.values.get("sync") == "off":
+        raise Abort(f"sync: off in {cfg.source.get('sync')}; no workspace is created")
+    plan = Plan()
+    new_workspace(plan, root)
+    if ui.MODE != "yes":
+        say(f"=> make {root} a workspace and sync it")
+    ui.confirm(plan, "go on?", "cancelled")
+    say(f"=> workspace {root.name} created and synchronized")
     return 0
 
 
