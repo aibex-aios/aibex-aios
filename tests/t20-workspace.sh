@@ -169,3 +169,42 @@ YAML
    assert_contains "$LOCK" "lib-b: $(git -C "$V/libs/lib-b" rev-parse HEAD)" "lock: commit of lib-b"
    assert_contains "$LOCK" "schema: 1" "lock: schema"
    assert_contains "$(A "$V" --workspace freeze --yes)" "nothing to do" "freeze twice"
+
+#===============================================================================
+# sync, steps 4 and 5: manifest, hints, push, never tags, secrets stop the push (F159, F172, F176-F182)
+#===============================================================================
+
+   git -C "$V" add .aios/lock.yaml; git -C "$V" commit -qm freeze
+   printf '/new/\n/plain/\n/pkg/\n' >> "$V/.gitignore"; git -C "$V" commit -qam "exclude new, plain, pkg"
+   repo new @/README.md
+   git clone -q "file://$RM/new" "$V/new"
+   mkdir -p "$V/plain/@"; git -C "$V/plain" init -q -b main
+   mkdir -p "$V/pkg"; echo "name: skill-x" > "$V/pkg/manifest.yaml"; git -C "$V/pkg" init -q -b main
+   OUT="$(A "$V" --workspace sync --plan)"
+   assert_contains "$OUT" "workspace.yaml: add new; commit only workspace.yaml" "plan: new repo with origin added"
+   assert_contains "$OUT" "note: plain: no remote; suggested name W-plain" "plan: name after the schema"
+   assert_contains "$OUT" "note: pkg: no remote" "plan: package repo without remote"
+   assert_not_contains "$OUT" "suggested name W-pkg" "no schema name for a package repo"
+   assert_contains "$OUT" "note: libs/lib-a: remote lib-a differs from the schema (W-lib-a)" "plan: differs from the schema"
+   OUT="$(A "$V" --workspace sync --yes)"
+   assert_contains "$OUT" "new: added to workspace.yaml" "new added"
+   assert_contains "$(cat "$V/.aios/workspace.yaml")" "name: new" "workspace.yaml has new"
+   assert_contains "$(cat "$V/.aios/workspace.yaml")" "path: new" "workspace.yaml: path of new"
+   assert_eq "$(git -C "$V" log -1 --format=%s)" "AIOS: workspace.yaml nachgeführt" "commit of only workspace.yaml"
+   assert_contains "$OUT" ".: pushed" "vault root pushed"
+   assert_eq "$(git -C "$RM/root" log -1 --format=%s main)" "AIOS: workspace.yaml nachgeführt" "remote of the root has the commit"
+   assert_contains "$OUT" "libs/lib-a: not pushed (own commits, no fast-forward possible)" "diverged repo not pushed"
+   assert_not_contains "$(git -C "$RM/lib-a" log --format=%s main)" "own" "remote of lib-a without the own commit"
+   echo y > "$V/docs/@/y.md"; git -C "$V/docs" add -A; git -C "$V/docs" commit -qm "docs 2"; git -C "$V/docs" tag t1
+   OUT="$(A "$V" --workspace sync --yes)"
+   assert_contains "$OUT" "docs: pushed (1 commit to origin/main)" "docs pushed"
+   assert_eq "$(git -C "$RM/docs" log -1 --format=%s main)" "docs 2" "remote of docs has the commit"
+   assert_eq "$(git -C "$RM/docs" tag)" "" "no tag pushed"
+   echo s > "$V/docs/.env"; mkdir -p "$V/docs/@Secret"; echo k > "$V/docs/@Secret/k.txt"
+   git -C "$V/docs" add -f .env @Secret/k.txt; git -C "$V/docs" commit -qm "oops"
+   OUT="$(A "$V" --workspace sync --yes)"
+   assert_contains "$OUT" "docs: push stopped (secret-like files: " "push stopped by secrets"
+   assert_contains "$OUT" ".env in" "secret: .env named"
+   assert_contains "$OUT" "@Secret/k.txt in" "secret: @Secret named"
+   assert_eq "$(git -C "$RM/docs" log -1 --format=%s main)" "docs 2" "remote of docs unchanged"
+   assert_contains "$(A "$V" --workspace sync --plan)" "push docs: 1 commit(s)" "plan names the outgoing commits"

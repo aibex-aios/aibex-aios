@@ -290,11 +290,188 @@ def runnable(d):
         ui.MODE = keep
 
 
+# step 4: the manifest follows the repos with a remote (spec 06, sync; Namensschema)
+
+UMLAUT = {"ä": "ae", "ö": "oe", "ü": "ue", "Ä": "Ae", "Ö": "Oe", "Ü": "Ue", "ß": "ss"}
+SKIP = (".git", ".claude", ".obsidian", ".aios", "node_modules", "@Data")
+
+
+def schema_name(root, d):
+    """Name of the repo of d at the remote after the schema (F178-F180): <Workspace>-<folder>."""
+    clean = lambda n: re.sub(r"[^A-Za-z0-9._-]", "-", "".join(UMLAUT.get(c, c) for c in n))
+    ws = clean(Path(root).name.lstrip("§"))
+    return ws if Path(d) == Path(root) else f"{ws}-{clean(Path(d).name)}"
+
+
+def is_package(d):
+    """A package repo: manifest.yaml at its root and no @/ (F201)."""
+    return (d / "manifest.yaml").is_file() and not (d / "@").is_dir()
+
+
+def repos(root, gone=()):
+    """Paths (relative, posix) of all git repos below root, not the root, not in detached parts."""
+    found = []
+    for base, dirs, files in os.walk(root):
+        b = Path(base)
+        rel = b.relative_to(root).as_posix()
+        if rel != "." and is_detached(rel, gone):
+            dirs[:] = []
+            continue
+        if b != Path(root) and (b / ".git").exists():
+            found.append(rel)
+        dirs[:] = sorted(x for x in dirs if x not in SKIP and not x.startswith("."))
+    return found
+
+
+def owner_of(url):
+    m = re.match(r"(?:https://github\.com/|git@github\.com:)([^/]+)/", url or "")
+    return m.group(1) if m else None
+
+
+def manifest_steps(plan, root, items, rel, gone):
+    """Step 4 of sync: entries for repos with origin that are missing, hints for the rest."""
+    import yaml
+    data = yaml.safe_load((root / FILE).read_text(encoding="utf-8")) or {}
+    remotes = data.get("remotes") or {}
+    listed = {i.path for i in load(root)}
+    names = {i.name for i in load(root)}
+    folders = {}
+    entries, hints = [], []
+    for r in repos(root, gone):
+        if not (rel in ("", ".") or under(Item("", "", "", r), rel)):
+            continue
+        d = root / r
+        folders.setdefault(Path(r).name, []).append(r)
+        url = origin_of(d)
+        pkg = is_package(d)
+        if not url:
+            if pkg or not (d / "@").is_dir():
+                hints.append(f"{r}: no remote")
+            else:
+                name = schema_name(root, d)
+                owner = owner_of(origin_of(root))
+                cmd = (f"; gh repo create {owner}/{name} --private --source {r} --remote origin"
+                       if owner else "")
+                hints.append(f"{r}: no remote; suggested name {name}{cmd}")
+            continue
+        name = Path(url.rstrip("/")).name.removesuffix(".git")
+        if (d / "@").is_dir() and not pkg and name != schema_name(root, d):
+            hints.append(f"{r}: remote {name} differs from the schema ({schema_name(root, d)})")
+        if r in listed:
+            continue
+        if name in names:
+            hints.append(f"{r}: the name {name} is in workspace.yaml already, not added")
+            continue
+        names.add(name)
+        base = next((k for k, v in remotes.items()
+                     if same_repo(str(v).rstrip("/") + "/" + name, url)), None)
+        branch = git(d, "rev-parse", "--abbrev-ref", "HEAD").stdout.strip() or "main"
+        entries.append({"name": name, **({"remote": base} if base else {"repo": url}),
+                        "revision": branch, "path": r})
+    for folder, where in folders.items():
+        if len(where) > 1:
+            hints.append(f"the folder name {folder} occurs {len(where)} times ({', '.join(where)}); "
+                         "the schema gives no unique name")
+    if entries:
+        plan.add(f"workspace.yaml: add {', '.join(e['path'] for e in entries)}; commit only workspace.yaml",
+                 lambda: add_entries(root, entries))
+    for h in hints:
+        plan.add(f"note: {h}")
+
+
+def add_entries(root, entries):
+    """Append entries to projects: of workspace.yaml (text, comments stay) and commit only it."""
+    f = root / FILE
+    lines = f.read_text(encoding="utf-8").splitlines()
+    block = []
+    for e in entries:
+        block.append(f"  - name: {e['name']}")
+        block += [f"    {k}: {e[k]}" for k in ("remote", "repo", "revision", "path") if k in e]
+    at = None
+    for n, line in enumerate(lines):
+        if line.startswith("projects:"):
+            at = n + 1
+            while at < len(lines) and (not lines[at].strip() or lines[at][0] in " \t-#"):
+                at += 1
+            while at > n + 1 and not lines[at - 1].strip():
+                at -= 1
+            break
+    if at is None:
+        lines += ["projects:"] + block
+    else:
+        lines[at:at] = block
+    f.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    git(root, "add", "--", str(FILE))
+    r = git(root, "commit", "-q", "-m", "AIOS: workspace.yaml nachgeführt", "--", str(FILE))
+    if r.returncode:
+        warn(f"commit in {root} failed ({(r.stderr or r.stdout).strip()}); commit workspace.yaml by hand")
+    for e in entries:
+        report(e["path"], "added to workspace.yaml", e["name"])
+
+
+# step 5: push, never tags, never --force, never secrets (F159, F172)
+
+SECRET = re.compile(r"(^|/)@Secret/|(^|/)\.env(\.[^/]*)?$|\.pem$|\.key$|(^|/)id_(rsa|ed25519)[^/]*$")
+
+
+def outgoing(d):
+    """[(sha, author, subject)] of the commits that are not on the upstream, or None (no upstream)."""
+    if git(d, "rev-parse", "--abbrev-ref", "@{upstream}").returncode:
+        return None
+    out = git(d, "log", "--format=%h%x09%an%x09%s", "@{upstream}..HEAD").stdout
+    return [tuple(line.split("\t", 2)) for line in out.splitlines() if line]
+
+
+def secrets(d):
+    """[(file, sha)] of secret-like files in the outgoing commits (F172)."""
+    out = git(d, "log", "--format=%x00%h", "--name-only", "@{upstream}..HEAD").stdout
+    hits, sha = [], ""
+    for line in out.splitlines():
+        if line.startswith("\x00"):
+            sha = line[1:]
+        elif line and SECRET.search(line):
+            hits.append((line, sha))
+    return hits
+
+
+def push(path, d, kept):
+    if path in kept:
+        report(path, "not pushed", kept[path])
+        return
+    ahead = outgoing(d)
+    if not ahead:
+        return
+    hits = secrets(d)
+    if hits:
+        report(path, "push stopped", "secret-like files: " + ", ".join(f"{f} in {s}" for f, s in hits))
+        return
+    branch = git(d, "rev-parse", "--abbrev-ref", "HEAD").stdout.strip()
+    r = git(d, "push", "-q", "origin", branch)
+    if r.returncode:
+        report(path, "push failed", (r.stderr or r.stdout).strip())
+        return
+    report(path, "pushed", f"{len(ahead)} commit{'s' if len(ahead) != 1 else ''} to origin/{branch}")
+
+
+def push_steps(plan, root, targets, kept):
+    """Step 5 of sync: one action per repo; the plan names the outgoing commits."""
+    for item in targets:
+        d = root if item.path == "." else root / item.path
+        ahead = outgoing(d)
+        if ahead is None and item.path != ".":
+            continue
+        lines = [f"{s} {a}: {t}" for s, a, t in (ahead or [])]
+        text = f"push {item.path}" + (f": {len(lines)} commit(s)" if lines else " (if workspace.yaml was added)")
+        plan.add(text, lambda item=item, d=d: push(item.path, d, kept))
+        for line in lines:
+            plan.add(f"   {line}")
+
+
 def plan_sync(plan, root, rel=".", groups=()):
     """Add the steps of sync for the projects of root at or below rel to plan (spec 06, sync)."""
     items = [i for i in selected(load(root), groups) if under(i, rel)]
     gone = detached(root)
-    cloned = []
+    cloned, kept = [], {}
     for item in items:                                  # step 1: clone what is missing
         d = root / item.path
         if is_detached(item.path, gone):
@@ -305,15 +482,23 @@ def plan_sync(plan, root, rel=".", groups=()):
                 cloned.append(d)
                 report(item.path, "cloned", item.revision)
             plan.add(f"clone {item.url} ({item.revision}) -> {item.path}", act)
-    targets = ([root_item(root)] if rel in ("", ".") and origin_of(root) else []) + \
+    with_root = rel in ("", ".") and bool(origin_of(root))
+    targets = ([root_item(root)] if with_root else []) + \
         [i for i in items if (root / i.path).exists() and not is_detached(i.path, gone)]
+
+    def upd(item, d):
+        st, why = update(item, d)
+        if st == "kept":
+            kept[item.path] = why
+        report(item.path, st, why)
     for item in targets:                                # step 2: fetch, fast-forward only
         d = root if item.path == "." else root / item.path
-        plan.add(f"update {item.path} ({item.revision}, fast-forward only)",
-                 lambda item=item, d=d: report(item.path, *update(item, d)))
+        plan.add(f"update {item.path} ({item.revision}, fast-forward only)", lambda item=item, d=d: upd(item, d))
     if any(not (root / i.path).exists() for i in items if not is_detached(i.path, gone)):
         plan.add("make the newly cloned projects runnable (aios --fetch, registration)",
                  lambda: [runnable(d) for d in cloned])
+    manifest_steps(plan, root, items, rel, gone)        # step 4
+    push_steps(plan, root, targets, kept)               # step 5
     for d in gone:
         if under(Item("", "", "", d), rel):
             plan.add(f"{d}: detached on this machine, passed over")
