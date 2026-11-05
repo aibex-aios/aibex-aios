@@ -1,9 +1,10 @@
-"""aios --workspace: projects of a workspace as git checkouts (spec 06, Workspaces; V0.4, memos 10,
-12, 18, 57).
+"""aios --workspace: the projects of a workspace as git checkouts (spec 06, Workspaces; V0.4, memos
+10, 12, 18, 57; V0.6, memos 163-177).
 
-A workspace is a project with .aios/workspace.yaml listing repos with revision and path. They are
-cloned nested below the root project and excluded in the repo above, with a commit of only that
-line (I9). update moves a branch only by fast-forward and never drops changes (P4); a tag or a
+A workspace is a vault root with .aios/workspace.yaml listing repos with revision and path. They
+are cloned nested below the root, parents before children, and excluded in the repo above, with a
+commit of only that line (I9). attach binds a workspace to this machine, sync reconciles the tree
+with the remotes: it moves a branch only by fast-forward and never drops changes (P4); a tag or a
 commit is checked out as the local branch ws/<revision>, never as a detached HEAD.
 """
 
@@ -11,6 +12,7 @@ from __future__ import annotations
 
 import datetime
 import os
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -18,6 +20,11 @@ from . import config, paths, project, ui
 from .ui import Abort, Plan, say, warn
 
 FILE = Path(".aios") / "workspace.yaml"
+LOCAL = Path(".aios") / "workspace.local.yaml"
+LOCAL_HEAD = "# written by AIOS (workspace), do not edit\n"
+CLOUD = ("Library/CloudStorage", "Library/Mobile Documents", "Dropbox")   # spec 06, Schlüssel sync:
+USAGE = ("usage: aios --workspace attach <repo> [<vault-folder>] | sync [<path>] [--group <g>]"
+         " | status [<path>] | freeze [<path>]")
 
 
 @dataclass
@@ -28,13 +35,17 @@ class Item:
     path: str
     groups: list = field(default_factory=list)
 
+    @property
+    def depth(self):
+        return len(Path(self.path).parts)
+
 
 def git(p, *args):
     return project.git(p, *args)
 
 
 # ---------------------------------------------------------------------------
-# workspace.yaml
+# workspace.yaml, workspace.local.yaml
 # ---------------------------------------------------------------------------
 
 def find_root(start):
@@ -49,7 +60,8 @@ def find_root(start):
 
 
 def load(root):
-    """[Item] of root/.aios/workspace.yaml, checked (spec 06); import is reported and passed over."""
+    """[Item] of root/.aios/workspace.yaml, checked (spec 06), parents before children (F155);
+    import is reported and passed over."""
     import yaml
     f = Path(root) / FILE
     try:
@@ -82,10 +94,10 @@ def load(root):
         if not path or os.path.isabs(path) or ".." in Path(path).parts:
             raise Abort(f"{where} ({name}): path must be relative, below the root, without ..")
         if "import" in p:
-            warn(f"{where} ({name}): import has no effect in v0.4, passed over")
+            warn(f"{where} ({name}): import has no effect, passed over")
         groups = p.get("groups") or []
         items.append(Item(name, url, rev, path, list(groups) if isinstance(groups, list) else [groups]))
-    return items
+    return sorted(items, key=lambda i: i.depth)        # stable: same depth keeps the file order
 
 
 def selected(items, groups):
@@ -93,6 +105,62 @@ def selected(items, groups):
     if not groups:
         return items
     return [i for i in items if not i.groups or set(i.groups) & set(groups)]
+
+
+def detached(root):
+    """Paths (relative, posix) detached on this machine (.aios/workspace.local.yaml, F164)."""
+    f = Path(root) / LOCAL
+    if not f.is_file():
+        return []
+    import yaml
+    try:
+        data = yaml.safe_load(f.read_text(encoding="utf-8")) or {}
+    except yaml.YAMLError as e:
+        warn(f"{f}: {e}; read as empty")
+        return []
+    return [str(e.get("path")) for e in data.get("detached") or [] if isinstance(e, dict) and e.get("path")]
+
+
+def is_detached(path, gone):
+    p = Path(path)
+    return any(p == Path(d) or Path(d) in p.parents for d in gone)
+
+
+def under(item, rel):
+    """True if the item lies at or below rel (relative to the root, '.' = everything)."""
+    if rel in ("", "."):
+        return True
+    p, r = Path(item.path), Path(rel)
+    return p == r or r in p.parents
+
+
+# ---------------------------------------------------------------------------
+# key sync:, cloud folders
+# ---------------------------------------------------------------------------
+
+def cloud_folder(path):
+    """The cloud service whose folder holds path, or None (spec 06; V0.6, memo 174: F188)."""
+    p = Path(os.path.realpath(path))
+    home = Path(os.path.realpath(paths.home()))
+    for c in CLOUD:
+        base = home / c
+        if p == base or base in p.parents:
+            return c.split("/")[-1]
+    return None
+
+
+def sync_mode(root, cfg=None):
+    """(mode, reason) for the vault root: auto, manual or off (F183, F188)."""
+    cloud = cloud_folder(root)
+    if cloud:
+        return "off", f"the vault lies in a cloud folder ({cloud})"
+    cfg = cfg or config.load(root)
+    value = cfg.values.get("sync")
+    if value:
+        return value, f"sync: {value} in {cfg.source.get('sync')}"
+    if (Path(root) / FILE).is_file():
+        return "auto", "default with workspace.yaml"
+    return "off", "no workspace.yaml"
 
 
 # ---------------------------------------------------------------------------
@@ -163,7 +231,9 @@ def update(item, d):
         return "kept", why
     if git(d, "status", "--porcelain").stdout.strip():
         return "kept", "uncommitted changes"
-    git(d, "fetch", "-q", "--tags", "origin")
+    r = git(d, "fetch", "-q", "--tags", "origin")
+    if r.returncode:
+        return "kept", f"fetch failed: {(r.stderr or r.stdout).strip()}"
     if kind(d, item.revision) == "branch":
         cur = git(d, "rev-parse", "--abbrev-ref", "HEAD").stdout.strip()
         if cur != item.revision:
@@ -185,8 +255,186 @@ def update(item, d):
     return "moved", f"fast-forward to {item.revision}"
 
 
+def root_item(root):
+    """The vault root as an item: its origin and the checked out branch (spec 06, sync, step 2)."""
+    branch = git(root, "rev-parse", "--abbrev-ref", "HEAD").stdout.strip()
+    return Item(Path(root).name, origin_of(root), branch, ".")
+
+
 # ---------------------------------------------------------------------------
-# commands
+# sync (steps 1-3; steps 4-5 follow in step 3 of the implementation)
+# ---------------------------------------------------------------------------
+
+def report(path, state, why=""):
+    say(f"   {path}: {state}" + (f" ({why})" if why and state != "ok" else ""))
+
+
+def runnable(d):
+    """Step 3: reconcile packages and workhorses with lock.yaml, then register (F158)."""
+    from . import fetch, registry
+    if not (d / "@").is_dir():
+        return
+    keep = ui.MODE
+    ui.MODE = "yes"
+    try:
+        if (d / ".aios" / "lock.yaml").is_file():
+            try:
+                fetch.sync(str(d))
+            except (Abort, ui.Cancelled, ui.PlanOnly) as e:
+                warn(f"{d}: packages not reconciled ({e}); run aios --fetch there")
+        try:
+            registry.register(str(d), yes=True)
+        except (Abort, ui.Cancelled, ui.PlanOnly) as e:
+            warn(f"{d}: skills not registered ({e})")
+    finally:
+        ui.MODE = keep
+
+
+def plan_sync(plan, root, rel=".", groups=()):
+    """Add the steps of sync for the projects of root at or below rel to plan (spec 06, sync)."""
+    items = [i for i in selected(load(root), groups) if under(i, rel)]
+    gone = detached(root)
+    cloned = []
+    for item in items:                                  # step 1: clone what is missing
+        d = root / item.path
+        if is_detached(item.path, gone):
+            continue
+        if not d.exists():
+            def act(item=item, d=d):
+                clone(item, d)
+                cloned.append(d)
+                report(item.path, "cloned", item.revision)
+            plan.add(f"clone {item.url} ({item.revision}) -> {item.path}", act)
+    targets = ([root_item(root)] if rel in ("", ".") and origin_of(root) else []) + \
+        [i for i in items if (root / i.path).exists() and not is_detached(i.path, gone)]
+    for item in targets:                                # step 2: fetch, fast-forward only
+        d = root if item.path == "." else root / item.path
+        plan.add(f"update {item.path} ({item.revision}, fast-forward only)",
+                 lambda item=item, d=d: report(item.path, *update(item, d)))
+    if any(not (root / i.path).exists() for i in items if not is_detached(i.path, gone)):
+        plan.add("make the newly cloned projects runnable (aios --fetch, registration)",
+                 lambda: [runnable(d) for d in cloned])
+    for d in gone:
+        if under(Item("", "", "", d), rel):
+            plan.add(f"{d}: detached on this machine, passed over")
+    return items
+
+
+def refuse_off(root):
+    mode, why = sync_mode(root)
+    if mode == "off":
+        raise Abort(f"the workspace sync is off for {root} ({why}); plain git stays allowed")
+    return mode
+
+
+def do_sync(path=None, groups=()):
+    """aios --workspace sync [<path>] [--group <g>…] (spec 06, sync)."""
+    start = Path(os.path.realpath(path or paths.cwd()))
+    root = root_of(start)
+    activated(root)
+    refuse_off(root)
+    rel = start.relative_to(root).as_posix() if start != root else "."
+    plan = Plan()
+    items = plan_sync(plan, root, rel, groups)
+    if not items and rel != ".":
+        raise Abort(f"no project of {root / FILE} at or below {start}")
+    if ui.MODE != "yes":
+        say(f"=> sync the workspace {root}" + ("" if rel == "." else f" at {rel}"))
+    ui.confirm(plan, "go on?", "cancelled")
+    say(f"=> workspace {root.name} synchronized")
+    return 0
+
+
+# ---------------------------------------------------------------------------
+# attach <repo> [<vault-folder>]
+# ---------------------------------------------------------------------------
+
+REPO_URL = re.compile(r"(://|^[^/\s]+@[^/\s]+:|\.git/?$)")
+
+
+def is_repo(arg):
+    """URL of a repo or path (F171)."""
+    return bool(REPO_URL.search(arg))
+
+
+def repo_name(url):
+    return Path(url.rstrip("/")).name.removesuffix(".git")
+
+
+def kernel_ok(version):
+    """(True, None) if the bound version runs here, else (False, install step or None)."""
+    from . import install
+    from . import version as running
+    if version in (running(), None):
+        return True, None
+    if f"v{version}" in install.installations():
+        return True, None
+    try:
+        repo = install.find_repo()
+    except Abort:
+        return False, None
+    return False, repo
+
+
+def attach(repo, folder=None):
+    """aios --workspace attach <repo> [<vault-folder>]: clone the vault root, then sync (F161)."""
+    target = Path(folder) if folder else Path(paths.cwd()) / ("§" + repo_name(repo))
+    target = Path(os.path.abspath(target))
+    if not target.name.startswith("§"):
+        raise Abort(f"{target}: the folder of a vault root starts with § (spec 02)")
+    if target.exists():
+        raise Abort(f"{target} exists already; inside it use: aios --workspace sync")
+    cloud = cloud_folder(target.parent)
+    if cloud:
+        raise Abort(f"{target} would lie in a cloud folder ({cloud}); the workspace sync is off there (spec 06)")
+    plan = Plan()
+
+    def run():
+        target.parent.mkdir(parents=True, exist_ok=True)
+        r = git(target.parent, "clone", "-q", repo, target.name)
+        if r.returncode:
+            raise Abort(f"cannot clone {repo}: {r.stderr.strip()}")
+        report(".", "cloned", repo)
+        if not (target / FILE).is_file():
+            raise Abort(f"{repo} has no {FILE}; the vault root is cloned, nothing else")
+        cfg = config.load(target)
+        mode, why = sync_mode(target, cfg)
+        if mode == "off":
+            raise Abort(f"the vault root is cloned, the sync is off ({why})")
+        ok, src = kernel_ok(cfg.aios)
+        if not ok:
+            if src is None:
+                raise Abort(f"the vault binds AIOS {cfg.aios}, which is not installed and no clone of "
+                            f"aibex-aios is known; install it, then run: aios --workspace sync in {target}")
+            from . import install
+            keep = ui.MODE
+            ui.MODE = "yes"
+            try:
+                install.install(f"v{cfg.aios}")
+            finally:
+                ui.MODE = keep
+        inner = Plan()
+        plan_sync(inner, target)
+        keep = ui.MODE
+        ui.MODE = "yes"
+        try:
+            inner.run()
+        finally:
+            ui.MODE = keep
+
+    plan.add(f"clone {repo} -> {target} (vault root)", run)
+    plan.add("install the bound kernel version if it is missing (aios --install)")
+    plan.add("then sync: clone the projects of workspace.yaml, parents before children; reconcile "
+             "packages and workhorses; register the skills")
+    if ui.MODE != "yes":
+        say(f"=> attach the workspace {repo} to this machine")
+    ui.confirm(plan, "go on?", "cancelled")
+    say(f"=> workspace {target} attached")
+    return 0
+
+
+# ---------------------------------------------------------------------------
+# freeze, status
 # ---------------------------------------------------------------------------
 
 def root_of(path):
@@ -202,66 +450,6 @@ def activated(path):
         raise Abort(f"{path} is not in a vault")
     if not cfg.aios:
         raise Abort(f"the vault {cfg.vault} is not activated; run: aios --activate v<version> {cfg.vault}")
-
-
-def do_update(root, groups):
-    """Plan and run update for the projects of root."""
-    items = selected(load(root), groups)
-    plan = Plan()
-    for item in items:
-        d = root / item.path
-        if not d.exists():
-            plan.add(f"clone {item.url} ({item.revision}) -> {item.path}",
-                     lambda item=item, d=d: (clone(item, d), report(item, "cloned", item.revision)))
-        else:
-            plan.add(f"update {item.path} ({item.revision}, fast-forward only)",
-                     lambda item=item, d=d: report(item, *update(item, d)))
-    if not items:
-        say(f"=> no projects in {root / FILE}" + (f" for the groups {', '.join(groups)}" if groups else ""))
-        return 0
-    if ui.MODE != "yes":
-        say(f"=> update the workspace {root}")
-    ui.confirm(plan, "go on?", "cancelled")
-    say(f"=> workspace {root.name}: {len(items)} projects")
-    return 0
-
-
-def report(item, state, why):
-    say(f"   {item.path}: {state}" + (f" ({why})" if state != "ok" else ""))
-
-
-def init(repo, folder=None, groups=()):
-    here = Path(paths.cwd())
-    activated(here)
-    name = folder or Path(repo.rstrip("/")).name.removesuffix(".git")
-    root = here / name
-    if root.exists():
-        raise Abort(f"{root} exists already")
-    plan = Plan()
-    item = Item(name, repo, "", name)
-
-    def run():
-        root.parent.mkdir(parents=True, exist_ok=True)
-        r = git(root.parent, "clone", "-q", repo, root.name)
-        if r.returncode:
-            raise Abort(f"cannot clone {repo}: {r.stderr.strip()}")
-        exclude(root)
-        if not (root / FILE).is_file():
-            raise Abort(f"{repo} has no {FILE}; the root project is cloned, nothing else")
-        for i in selected(load(root), groups):
-            d = root / i.path
-            if d.exists():
-                report(i, *update(i, d))
-            else:
-                clone(i, d)
-                report(i, "cloned", i.revision)
-    plan.add(f"clone {repo} -> {root}, then the projects of its {FILE}"
-             + (f" (groups {', '.join(groups)})" if groups else ""), run)
-    if ui.MODE != "yes":
-        say(f"=> init the workspace {root}")
-    ui.confirm(plan, "go on?", "cancelled")
-    say(f"=> workspace {root} ready")
-    return 0
 
 
 def freeze(path=None):
@@ -290,8 +478,10 @@ def freeze(path=None):
     return 0
 
 
-def state(item, d):
+def state(item, d, gone=()):
     """(branch, revision, remote, changes) of a project for status and integrity."""
+    if is_detached(item.path, gone):
+        return "—", "detached", "—", "—"
     if not d.exists():
         return "—", "missing", "—", "—"
     why = conflict(item, d)
@@ -314,10 +504,12 @@ def state(item, d):
 
 def status(path=None):
     root = root_of(path)
+    gone = detached(root)
     rows = [("Project", "Path", "Branch", "Revision", "Remote", "Changes")]
     for item in load(root):
-        rows.append((item.name, item.path, *state(item, root / item.path)))
-    print(f"Workspace {root.name} — {datetime.date.today().isoformat()}")
+        rows.append((item.name, item.path, *state(item, root / item.path, gone)))
+    mode, why = sync_mode(root)
+    print(f"Workspace {root.name} — {datetime.date.today().isoformat()} — sync: {mode}")
     print()
     widths = [max(len(r[i]) for r in rows) + 2 for i in range(5)]
     for r in rows:
@@ -327,7 +519,7 @@ def status(path=None):
 
 def command(args):
     if not args:
-        raise Abort("usage: aios --workspace init <repo> [<folder>] | update | freeze | status [<path>] [--group <g>]")
+        raise Abort(USAGE)
     sub, rest, groups, i = args[0], [], [], 1
     while i < len(args):
         if args[i] == "--group" and i + 1 < len(args):
@@ -336,17 +528,21 @@ def command(args):
             continue
         rest.append(args[i])
         i += 1
-    if sub == "init" and 1 <= len(rest) <= 2:
-        return init(rest[0], rest[1] if len(rest) == 2 else None, groups)
-    if sub == "update" and len(rest) <= 1:
-        root = root_of(rest[0] if rest else None)
-        activated(root)
-        return do_update(root, groups)
+    if sub == "attach" and 1 <= len(rest) <= 2 and not groups:
+        if is_repo(rest[0]):
+            return attach(rest[0], rest[1] if len(rest) == 2 else None)
+        raise Abort("attach <path> (get a detached subtree back) comes with detach; "
+                    "attach a workspace with the URL of its vault root")
+    if sub == "sync" and len(rest) <= 1:
+        return do_sync(rest[0] if rest else None, groups)
     if sub == "freeze" and len(rest) <= 1 and not groups:
         return freeze(rest[0] if rest else None)
     if sub == "status" and len(rest) <= 1 and not groups:
         return status(rest[0] if rest else None)
-    raise Abort("usage: aios --workspace init <repo> [<folder>] | update | freeze | status [<path>] [--group <g>]")
+    if sub in ("init", "update"):
+        raise Abort(f"--workspace {sub} is gone since v0.6.4: use "
+                    + ("attach <repo> [<vault-folder>]" if sub == "init" else "sync [<path>]"))
+    raise Abort(USAGE)
 
 
 # ---------------------------------------------------------------------------

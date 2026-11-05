@@ -27,11 +27,13 @@ LEVELS = {                                          # key -> levels where it is 
     "packages": ("vault", "project"),              # wanted packages, not inherited (spec 06)
     "hubs": ("vault", "home"),                     # hub list (spec 06, Hub-Liste)
     "inline_limit": ("home",),
+    "sync": ("vault",),                            # sync of a workspace: auto, manual, off (spec 06)
 }
 INLINE_LIMIT = 9000
 ASSISTANT_NAME = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 RESERVED = ("none", "inherit")                     # values of assistant:, never names of assistants
 ROOT_ONLY = ("aios", "legacy")                     # keys that count only at the vault root (I14)
+SYNC_VALUES = ("auto", "manual", "off")            # key sync: (spec 06, Schlüssel sync:; V0.6, memo 174)
 AIBOS = (0, 6)                                     # a binding from 0.6 (also 0.6.0-dev) makes an A/W
 
 
@@ -329,6 +331,9 @@ class Config:
                 if val != "none" and not ASSISTANT_NAME.match(val):
                     self.warnings.append(f"{file}: assistant: {val} is not an assistant name (or none, inherit), ignored")
                     continue
+            if key == "sync" and val not in SYNC_VALUES:
+                self.warnings.append(f"{file}: sync: {val} is not one of {', '.join(SYNC_VALUES)}, ignored")
+                continue
             if key == "hosts" and not isinstance(val, list):
                 val = [val]
             if key == "inline_limit" and not str(val).isdigit():

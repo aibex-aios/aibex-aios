@@ -1,11 +1,11 @@
-# t20-workspace.sh: step 11 of the plan v0.4 (V0.4, memos 18, 57) - aios --workspace: init, update,
+# t20-workspace.sh: v0.6.4 step 2 (V0.6, memos 163-177) - aios --workspace: attach <repo>, sync without
+# push (clone, fast-forward, runnable), parents before children, key sync:, cloud folders,
+# workspace.local.yaml, status, integrity, freeze (spec 06, Workspaces; spec 05, F2)
 
    case "$SANDBOX" in */aios-test.*) ;; *) echo "*** run via tests/run, never directly (it would touch the real HOME)" >&2; exit 1;; esac
-# freeze, status, groups, branch ws/<revision>, fast-forward only, foreign repos (spec 06, Workspaces;
-# spec 05, F2)
 
 #===============================================================================
-# setup: python3 with PyYAML, repos under file://, an activated vault with its own repo
+# setup: python3 with PyYAML, repos under file://, a vault root as root of the workspace
 #===============================================================================
 
    PYDIR=""
@@ -15,24 +15,34 @@
    [ -n "$PYDIR" ] && ok || fail "t20 needs a python3 with PyYAML (pip install pyyaml)"
    export GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@t GIT_COMMITTER_NAME=t GIT_COMMITTER_EMAIL=t@t
    export PATH="$PYDIR:/usr/bin:/bin:/usr/sbin:/sbin"
+   VER="$(cat "$SRC/VERSION")"
    RM="$SANDBOX/remotes"; mkdir -p "$RM"
    repo() {                                         # repo <name> <file>...: a bare repo with one commit
       local n="$1" w="$SANDBOX/src/$1"; shift
       mkdir -p "$w"; git -C "$w" init -q -b main
       for f in "$@"; do mkdir -p "$(dirname "$w/$f")"; echo "$n" > "$w/$f"; done
+      cp "$SRC/templates/gitignore" "$w/.gitignore"  # registration writes there (spec 04, Vorlage)
       git -C "$w" add -A; git -C "$w" commit -q -m "$n 1"
       git clone -q --bare "$w" "$RM/$n"; git -C "$w" remote add origin "$RM/$n"
    }
    repo lib-a @/README.md
+   printf '/sub/\n' >> "$SANDBOX/src/lib-a/.gitignore"; git -C "$SANDBOX/src/lib-a" add -A
+   git -C "$SANDBOX/src/lib-a" commit -qm "exclude sub"; git -C "$SANDBOX/src/lib-a" push -q origin main
+   repo sub @/README.md
    repo lib-b src/main.c
    git -C "$SANDBOX/src/lib-b" tag v1.0; git -C "$SANDBOX/src/lib-b" push -q origin v1.0
    repo docs @/README.md
    repo root @/README.md
    W="$SANDBOX/src/root"; mkdir -p "$W/.aios"
+   printf 'aios: %s\n' "$VER" > "$W/.aios/config.yaml"
    cat > "$W/.aios/workspace.yaml" <<YAML
 remotes:
   local: file://$RM
 projects:
+  - name: sub
+    remote: local
+    revision: main
+    path: libs/lib-a/sub
   - name: lib-a
     remote: local
     revision: main
@@ -48,87 +58,114 @@ projects:
     path: docs
     groups: [doc]
 YAML
+   printf '/libs/\n/docs/\n.claude/skills/\n.aios/registry\n.aios/workspace.local.yaml\n' > "$W/.gitignore"
    git -C "$W" add -A; git -C "$W" commit -q -m "workspace"; git -C "$W" push -q origin main
-   V="$SANDBOX/v/§V"; mkdir -p "$V/@" "$V/.aios"; printf 'aios: 0.4.0\n' > "$V/.aios/config.yaml"
-   git -C "$V" init -q -b main; git -C "$V" add -A; git -C "$V" commit -q -m vault
    at() { (cd "$1" && shift && "$@" 2>&1); }
    A() { local d="$1"; shift; at "$d" "$SRC/bin/aios" "$@" </dev/null; }
-
-#===============================================================================
-# init: plan, root project like a project of the workspace, groups, exclusions with own commit
-#===============================================================================
-
-   assert_contains "$(A "$V" --workspace)" "usage: aios --workspace" "usage"
    U="$SANDBOX/u"; mkdir -p "$U"
-   assert_contains "$(A "$U" --workspace init "file://$RM/root")" "is not in a vault" "init outside a vault"
-   OUT="$(A "$V" --workspace init "file://$RM/root" --plan)"
-   assert_contains "$OUT" "clone file://$RM/root -> $V/root" "plan of init"
-   [ ! -e "$V/root" ] && ok || fail "--plan clones nothing"
-   OUT="$(A "$V" --workspace init "file://$RM/root" ws --group none --yes)"
+   V="$U/§W"
+
+#===============================================================================
+# usage, commands that are gone, attach: plan, clone, parents before children, runnable
+#===============================================================================
+
+   assert_contains "$(A "$U" --workspace)" "usage: aios --workspace attach" "usage"
+   assert_contains "$(A "$U" --workspace init "file://$RM/root")" "gone since v0.6.4: use attach" "init is gone"
+   assert_contains "$(A "$U" --workspace update)" "gone since v0.6.4: use sync" "update is gone"
+   assert_contains "$(A "$U" --workspace attach "file://$RM/root" "$U/W")" "starts with §" "vault folder needs §"
+   OUT="$(A "$U" --workspace attach "file://$RM/root" "$V" --plan)"
+   assert_contains "$OUT" "clone file://$RM/root -> $V (vault root)" "plan of attach"
+   [ ! -e "$V" ] && ok || fail "--plan clones nothing"
+   C="$HOME/Library/CloudStorage/GoogleDrive-x"; mkdir -p "$C"
+   assert_contains "$(A "$C" --workspace attach "file://$RM/root" "$C/§W" --yes)" "cloud folder (CloudStorage)" "attach into a cloud folder refused"
+   OUT="$(A "$U" --workspace attach "file://$RM/root" "$V" --yes)"
    assert_contains "$OUT" "import has no effect" "import reported"
    assert_contains "$OUT" "libs/lib-a: cloned (main)" "lib-a cloned"
+   assert_contains "$OUT" "libs/lib-a/sub: cloned (main)" "sub cloned although listed before its parent (L35)"
    assert_contains "$OUT" "libs/lib-b: cloned (v1.0)" "lib-b cloned"
-   assert_not_contains "$OUT" "docs: cloned" "group doc not selected"
-   assert_eq "$(git -C "$V/ws/libs/lib-b" rev-parse --abbrev-ref HEAD)" "ws/v1.0" "tag as branch ws/<revision>"
-   assert_eq "$(git -C "$V/ws/libs/lib-a" rev-parse --abbrev-ref HEAD)" "main" "branch main"
-   assert_contains "$(cat "$V/.gitignore")" "/ws/" "root excluded in the vault repo"
-   assert_eq "$(git -C "$V" log -1 --format=%s)" "AIOS: ws als Projekt des Workspace ausgeschlossen" "commit of the exclusion"
-   assert_contains "$(cat "$V/ws/.gitignore")" "/libs/lib-a/" "lib-a excluded in the root"
-   assert_eq "$(git -C "$V/ws" status --porcelain)" "" "root clean after the exclusions"
-   assert_contains "$(A "$V" --workspace init "file://$RM/root" ws)" "exists already" "init into an existing folder"
+   assert_contains "$OUT" "docs: cloned (main)" "docs cloned"
+   assert_contains "$OUT" "workspace $V attached" "attach done"
+   assert_eq "$(git -C "$V/libs/lib-a/sub" rev-parse --abbrev-ref HEAD)" "main" "sub is a clone of its own"
+   assert_eq "$(git -C "$V/libs/lib-a" status --porcelain)" "" "lib-a clean: sub excluded there"
+   assert_eq "$(git -C "$V/libs/lib-b" rev-parse --abbrev-ref HEAD)" "ws/v1.0" "tag as branch ws/<revision>"
+   assert_eq "$(git -C "$V" status --porcelain)" "" "vault root clean after attach"
+   assert_file "$V/libs/lib-a/.claude/skills/aios-status/SKILL.md"
+   assert_contains "$(A "$U" --workspace attach "file://$RM/root" "$V")" "exists already" "attach into an existing folder"
 
 #===============================================================================
-# update: groups, fast-forward, own commits, dirty tree, other branch, wrong origin
+# sync: fast-forward, vault root, <path>, own commits, dirty tree, other branch, wrong origin
 #===============================================================================
 
    echo 2 >> "$SANDBOX/src/lib-a/@/README.md"; git -C "$SANDBOX/src/lib-a" commit -qam "lib-a 2"
    git -C "$SANDBOX/src/lib-a" push -q origin main
-   OUT="$(A "$V/ws" --workspace update --yes)"
-   assert_contains "$OUT" "docs: cloned (main)" "update clones the missing docs"
+   echo 2 >> "$W/@/README.md"; git -C "$W" commit -qam "root 2"; git -C "$W" push -q origin main
+   rm -rf "$V/docs"
+   OUT="$(A "$V" --workspace sync --yes)"
+   assert_contains "$OUT" "docs: cloned (main)" "sync clones the missing docs"
    assert_contains "$OUT" "libs/lib-a: moved (fast-forward to main)" "fast-forward"
-   assert_eq "$(git -C "$V/ws/libs/lib-a" log -1 --format=%s)" "lib-a 2" "lib-a at the new commit"
+   assert_eq "$(git -C "$V/libs/lib-a" log -1 --format=%s)" "lib-a 2" "lib-a at the new commit"
+   assert_contains "$OUT" ".: moved (fast-forward to main)" "the vault root is updated too"
+   assert_eq "$(git -C "$V" log -1 --format=%s)" "root 2" "vault root at the new commit"
    assert_contains "$OUT" "libs/lib-b: ok" "tag unchanged"
-   OUT="$(A "$V/ws/libs/lib-a" --workspace update --plan)"
+   OUT="$(A "$V/libs/lib-a" --workspace sync --plan)"
    assert_contains "$OUT" "update libs/lib-a (main, fast-forward only)" "<path> finds the workspace above"
-   echo x > "$V/ws/libs/lib-a/x.txt"; git -C "$V/ws/libs/lib-a" add x.txt; git -C "$V/ws/libs/lib-a" commit -qm own
+   assert_not_contains "$OUT" "update docs" "<path> limits sync to the subtree"
+   assert_not_contains "$OUT" "update . " "<path> below the root leaves the root alone"
+   echo x > "$V/libs/lib-a/x.txt"; git -C "$V/libs/lib-a" add x.txt; git -C "$V/libs/lib-a" commit -qm own
    echo 3 >> "$SANDBOX/src/lib-a/@/README.md"; git -C "$SANDBOX/src/lib-a" commit -qam "lib-a 3"
    git -C "$SANDBOX/src/lib-a" push -q origin main
-   echo dirty >> "$V/ws/docs/@/README.md"
-   OUT="$(A "$V/ws" --workspace update --yes)"
+   echo dirty >> "$V/docs/@/README.md"
+   OUT="$(A "$V" --workspace sync --yes)"
    assert_contains "$OUT" "libs/lib-a: kept (own commits, no fast-forward possible)" "own commits kept"
-   assert_eq "$(git -C "$V/ws/libs/lib-a" log -1 --format=%s)" "own" "own commit stays"
+   assert_eq "$(git -C "$V/libs/lib-a" log -1 --format=%s)" "own" "own commit stays"
    assert_contains "$OUT" "docs: kept (uncommitted changes)" "dirty tree kept"
-   assert_contains "$(cat "$V/ws/docs/@/README.md")" "dirty" "change stays"
-   git -C "$V/ws/docs" checkout -q -- .; git -C "$V/ws/docs" checkout -q -b other
-   assert_contains "$(A "$V/ws" --workspace update --group doc --yes)" "docs: kept (branch other is checked out, not main)" "other branch kept"
-   git -C "$V/ws/docs" checkout -q main
-   git -C "$V/ws/docs" remote set-url origin "file://$RM/lib-b"
-   assert_contains "$(A "$V/ws" --workspace update --group doc --yes)" "docs: kept (origin is file://$RM/lib-b" "wrong origin kept"
-   git -C "$V/ws/docs" remote set-url origin "file://$RM/docs"
+   assert_contains "$(cat "$V/docs/@/README.md")" "dirty" "change stays"
+   git -C "$V/docs" checkout -q -- .; git -C "$V/docs" checkout -q -b other
+   assert_contains "$(A "$V" --workspace sync --group doc --yes)" "docs: kept (branch other is checked out, not main)" "other branch kept"
+   git -C "$V/docs" checkout -q main
+   git -C "$V/docs" remote set-url origin "file://$RM/lib-b"
+   assert_contains "$(A "$V" --workspace sync --group doc --yes)" "docs: kept (origin is file://$RM/lib-b" "wrong origin kept"
+   git -C "$V/docs" remote set-url origin "file://$RM/docs"
 
 #===============================================================================
-# status, integrity, freeze
+# key sync:, workspace.local.yaml, status
 #===============================================================================
 
-   OUT="$(A "$V/ws" --workspace status)"
+   printf 'aios: %s\nsync: off\n' "$VER" > "$V/.aios/config.yaml"
+   assert_contains "$(A "$V" --workspace sync --yes)" "sync is off" "sync: off refused"
+   assert_contains "$(A "$V" --workspace status)" "sync: off" "status names sync: off"
+   printf 'aios: %s\nsync: sometimes\n' "$VER" > "$V/.aios/config.yaml"
+   assert_contains "$(A "$V" --config)" "sync: sometimes is not one of auto, manual, off" "invalid sync: warned"
+   printf 'aios: %s\n' "$VER" > "$V/.aios/config.yaml"
+   assert_contains "$(A "$V" --workspace status)" "sync: auto" "default with workspace.yaml: auto"
+   printf 'schema: 1\ndetached:\n  - path: docs\n    since: 2026-11-05\n' > "$V/.aios/workspace.local.yaml"
+   OUT="$(A "$V" --workspace sync --plan)"
+   assert_contains "$OUT" "docs: detached on this machine, passed over" "sync passes over a detached subtree"
+   assert_not_contains "$OUT" "update docs" "no update of the detached docs"
+   assert_contains "$(A "$V" --workspace status | grep '^docs')" "detached" "status: detached"
+   rm "$V/.aios/workspace.local.yaml"
+   OUT="$(A "$V" --workspace status)"
    assert_contains "$OUT" "Project" "status: header"
    assert_contains "$(echo "$OUT" | grep '^lib-a')" "1 ahead, 1 behind" "status: lib-a ahead and behind"
    assert_contains "$(echo "$OUT" | grep '^lib-b')" "ws/v1.0" "status: lib-b on ws/v1.0"
-   OUT="$(A "$V/ws" --integrity)"
+   D="$HOME/Library/CloudStorage/GoogleDrive-x/§D"; mkdir -p "$D/.aios"
+   printf 'aios: %s\nsync: auto\n' "$VER" > "$D/.aios/config.yaml"; cp "$V/.aios/workspace.yaml" "$D/.aios/"
+   assert_contains "$(A "$D" --workspace sync --yes)" "cloud folder (CloudStorage)" "sync in a cloud folder refused"
+
+#===============================================================================
+# integrity, freeze
+#===============================================================================
+
+   OUT="$(A "$V" --integrity)"
    assert_contains "$(echo "$OUT" | grep 'lib-b')" "foreign repo" "integrity: foreign repo"
-   assert_contains "$OUT" "
-  lib-b " "integrity: one level below the root, sorted as a tree"
    assert_contains "$OUT" "workspace: revision main is not in the checked out branch" "integrity: revision behind"
-   OUT="$(A "$V" --integrity)"                     # from the vault root: the workspace below (B7)
-   assert_contains "$(echo "$OUT" | grep 'lib-b')" "foreign repo" "integrity at the vault root: projects of the workspace below"
-   rm -rf "$V/ws/docs"
-   OUT="$(A "$V/ws" --integrity)"
+   rm -rf "$V/docs"
+   OUT="$(A "$V" --integrity)"
    assert_contains "$(echo "$OUT" | grep 'docs')" "missing: clone" "integrity: missing clone"
-   A "$V/ws" --workspace update --group doc --yes >/dev/null
-   A "$V/ws" --fetch --yes >/dev/null 2>&1
-   OUT="$(A "$V/ws" --workspace freeze --yes)"
-   assert_contains "$OUT" "frozen: lib-a" "freeze"
-   LOCK="$(cat "$V/ws/.aios/lock.yaml")"
-   assert_contains "$LOCK" "lib-b: $(git -C "$V/ws/libs/lib-b" rev-parse HEAD)" "lock: commit of lib-b"
+   A "$V" --workspace sync --group doc --yes >/dev/null
+   OUT="$(A "$V" --workspace freeze --yes)"
+   assert_contains "$OUT" "frozen: docs" "freeze, parents before children"
+   LOCK="$(cat "$V/.aios/lock.yaml")"
+   assert_contains "$LOCK" "lib-b: $(git -C "$V/libs/lib-b" rev-parse HEAD)" "lock: commit of lib-b"
    assert_contains "$LOCK" "schema: 1" "lock: schema"
-   assert_contains "$(A "$V/ws" --workspace freeze --yes)" "nothing to do" "freeze twice"
+   assert_contains "$(A "$V" --workspace freeze --yes)" "nothing to do" "freeze twice"
