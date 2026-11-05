@@ -1,8 +1,8 @@
 ---
 title: "Master-Kontext"
-date: 2026-11-04
+date: 2026-11-05
 author: iHux
-status: Spec
+status: Entwurf
 tags: [spec, aios, v0.6, master-kontext]
 number: 02
 related:
@@ -144,7 +144,19 @@ Die letzte Zeile nennt `doc/README.md` der Installation des laufenden Kernels, a
 
 Der Hinweis, den Aufruf allein als einen Bash-Befehl auszuführen, folgt aus *Freigabe*, E3: Einen verketteten Aufruf (mit `cd`, `;`, `&&`, `|`) gibt AIBOS nicht frei, und der Host fragt (V0.6, Memo 98, B17).
 
-Der Aufruf nennt den absoluten Pfad des Weiterleiters (Spec 04). Der Block nennt keine `allowed-tools`; die Befehle gibt der Hook `PreToolUse` frei (*Hooks*). Er steht neben den registrierten Hüllen (Spec 03): Sie tragen `/<name>` in jedem Host und die Beschreibungen, an denen die Auslösung über einen Satz hängt; der Block nennt Namen und Aufruf auch dort, wo die Registrierung fehlt. Mit 12 Kernel-Skills hat er etwa 1000 Zeichen (gemessen 997 mit einem Home-Pfad von 10 Zeichen), mit der Zeile zur Dokumentation 121 mehr (gemessen mit demselben Home-Pfad und `v0.6.2`).
+Der Aufruf nennt den absoluten Pfad des Weiterleiters (Spec 04). Der Block nennt keine `allowed-tools`; die Befehle gibt der Hook `PreToolUse` frei (*Hooks*). Er steht neben den registrierten Hüllen (Spec 03): Sie tragen `/<name>` in jedem Host und die Beschreibungen, an denen die Auslösung über einen Satz hängt; der Block nennt Namen und Aufruf auch dort, wo die Registrierung fehlt. Mit 12 Kernel-Skills (bis v0.6.3) hatte er etwa 1000 Zeichen (gemessen 997 mit einem Home-Pfad von 10 Zeichen), mit der Zeile zur Dokumentation 121 mehr (gemessen mit demselben Home-Pfad und `v0.6.2`); mit den 15 Kernel-Skills von v0.6.4 wird neu gemessen.
+
+### Regel des Workspace
+
+Ist die Vault-Root ein Workspace (Spec 06, *Workspaces*), steht nach dem Block der Kernel-Skills der Block `<aios-workspace>`, ebenfalls innerhalb der Marken mit der id. Sein Text folgt aus dem Schlüssel `sync:` (Spec 06, *Schlüssel `sync:`*; V0.6, Memo 174: F183–F188) und ist fest im Kernel; eine Regeldatei in `@/@Rule/` gibt es dafür nicht:
+
+| `sync` | Text |
+|---|---|
+| `auto` | `This vault is an AIBOS workspace with sync: auto. After every commit, offer /aios-sync at once so that the remote holds a backup (push only after the user's yes). Name commits that are not pushed when you finish.` |
+| `manual` | `This vault is an AIBOS workspace with sync: manual. /aios-sync synchronizes it with its remotes on request.` |
+| `off` in einem Cloud-Ordner | `This vault lies in a cloud folder (<dienst>); the workspace sync of AIBOS is off. Plain git (commit, push, pull) stays allowed on the user's request.` |
+
+Bei `off` außerhalb eines Cloud-Ordners und in Vaults ohne `workspace.yaml` fehlt der Block.
 
 ## CLI `aios --context`
 
@@ -226,6 +238,21 @@ If the user declines, continue normally and do not offer it again.
 
 Die Lücken werden mit den Namen aus Spec 05 genannt (z. B. `own git repo`, `.gitignore lines: .aios/registry`, `exclusion in parent repo /…/§Demo`).
 
+Im Workspace mit `sync: auto` meldet der SessionStart-Hook das Holen beim Start (V0.6, Memo 174: F185):
+
+```
+AIOS-SYNC: <projekt> is up to date with origin/<zweig>.
+AIOS-SYNC: <projekt> fast-forwarded to origin/<zweig> (<n> commits).
+AIOS-SYNC: <projekt> not updated: <grund>. Mention it to the user before your first work.
+```
+
+In einem ausgelagerten Teilbaum (V0.6, Memo 170: F168):
+
+```
+AIOS-DETACHED: <pfad> is detached on this machine (since <datum>); only the placeholder is here.
+ Before your first answer, tell the user and offer /aios-attach <pfad> to get it back.
+```
+
 Läuft die Session in einer Arbeitskopie, steht davor:
 
 ```
@@ -258,7 +285,7 @@ Arbeitskopien unter `.claude/worktrees/` schließt die `.gitignore`-Vorlage aus 
 
 | Hook | Aufruf | Verhalten |
 |---|---|---|
-| **SessionStart** (Start, Resume, Clear, nach Compaction) | `aios --context --session` | 1. außerhalb eines A/W: nichts. 2. Legacy-Vault: Verhalten von `ai-brain --session`. 3. im A/W: Registrierung der Kernel-Skills und Projekt-Skills ohne Rückfrage (`--sync --yes`), bei Änderungen eine Zeile `AIOS-SKILLS: … — effective from the next chat` (Spec 03). 4. in einer Arbeitskopie: `AIOS-WORKTREE` (*Arbeitskopie*). 5. bei nicht initialisiertem Projekt: `PROJECT-UNINITIALIZED`; sonst bei `source` `startup` und nicht in einer Arbeitskopie die Konsistenzprüfung, bei Lücken `PROJECT-INCOMPLETE`. 6. Master-Kontext mit dem Block der Kernel-Skills inline, wenn er höchstens `inline_limit` Zeichen hat (Standard 9000), sonst `AIOS-CONTEXT-MANDATORY` mit der Liste der Part-Dateien. 7. Assistent der Session bestimmen und den Merker schreiben (unten); ist es nicht `none`, seinen Kontext ausgeben, inline mit `AIOS-ASSISTANT` oder bei mehr als `inline_limit` Zeichen `AIOS-ASSISTANT-MANDATORY` mit Part-Dateien |
+| **SessionStart** (Start, Resume, Clear, nach Compaction) | `aios --context --session` | 1. außerhalb eines A/W: nichts. 2. Legacy-Vault: Verhalten von `ai-brain --session`. 3. im A/W: Registrierung der Kernel-Skills und Projekt-Skills ohne Rückfrage (`--sync --yes`), bei Änderungen eine Zeile `AIOS-SKILLS: … — effective from the next chat` (Spec 03). 4. in einer Arbeitskopie: `AIOS-WORKTREE` (*Arbeitskopie*). 5. bei nicht initialisiertem Projekt: `PROJECT-UNINITIALIZED`; sonst bei `source` `startup` und nicht in einer Arbeitskopie die Konsistenzprüfung, bei Lücken `PROJECT-INCOMPLETE`. 6. im Workspace mit `sync: auto`, nur bei `source` `startup` und nicht in einer Arbeitskopie: für das Projekt der Session `git fetch` und `merge --ff-only`, ohne Rückfrage (Spec 01, I7); geht das nicht (nicht committete Änderungen, eigene Commits, kein Upstream), ändert der Hook nichts; in beiden Fällen eine Zeile `AIOS-SYNC` (*Ausgabe*). Liegt `cwd` in einem ausgelagerten Teilbaum (Spec 06, *detach*): `AIOS-DETACHED`. 7. Master-Kontext mit dem Block der Kernel-Skills inline, wenn er höchstens `inline_limit` Zeichen hat (Standard 9000), sonst `AIOS-CONTEXT-MANDATORY` mit der Liste der Part-Dateien. 8. Assistent der Session bestimmen und den Merker schreiben (unten); ist es nicht `none`, seinen Kontext ausgeben, inline mit `AIOS-ASSISTANT` oder bei mehr als `inline_limit` Zeichen `AIOS-ASSISTANT-MANDATORY` mit Part-Dateien |
 | **UserPromptSubmit** | `aios --context --advise` | außerhalb eines A/W: nichts. Legacy-Vault: Verhalten von `ai-brain --advise`. Im A/W, für das `cwd` dieses Prompts: `AIOS-CONTEXT-CHECK: expected id=<id>` mit der Anweisung, bei fehlenden Marken „Lade Master-Kontext" zu sagen, `aios --context --load "<cwd>"` auszuführen, alle Part-Dateien vollständig zu lesen und „Master-Kontext geladen (id <id>)" zu melden. Ist der Assistent der Session für dieses `cwd` nicht `none` (unten), zusätzlich `AIOS-ASSISTANT-CHECK`. Fehlen auf dem Rechner Arbeitspferde aus `lock.yaml` der Kette, zusätzlich `AIOS-WORKERS: missing <paket> <version>, … — run aios --fetch` (Spec 07; V0.5, Memo 29) |
 | **PreToolUse** (Matcher `Bash|Skill|Read`) | `aios --context --permit` | außerhalb eines A/W, in einem Legacy-Vault und einem Vault mit Altbindung: nichts. Im A/W: Freigabe nach *Freigabe* (unten) |
 

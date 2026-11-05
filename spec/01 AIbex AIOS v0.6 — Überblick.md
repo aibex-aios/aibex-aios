@@ -1,8 +1,8 @@
 ---
 title: "AIbex AIOS v0.6 — Überblick"
-date: 2026-11-04
+date: 2026-11-05
 author: iHux
-status: Spec
+status: Entwurf
 tags: [spec, aios, v0.6]
 number: 01
 related:
@@ -59,7 +59,7 @@ Die Spec v0.6 besteht aus sieben Dokumenten, die sich nicht wiederholen:
 | **06 Pakete und Workspaces** | Paket-Manifest, Versionen und Bereiche, Hubs und Hub-Liste, Resolver, Paket laden (`aios --fetch`), ausrollen (`aios --deploy`), Distributionen, Lock, `@Data/`, Workspaces, Rückfluss, Demo-App Taschenrechner |
 | **07 Arbeitspferde** | Definition, Pakete `worker-<name>`, Installation je Version, Aktivierung über `lock.yaml`, Weiterleiter, Abläufe, `aios --worker`, Tests |
 
-Die Begründungen stehen in den Memos der Konzeptprojekte unter `§AIOS/A-AIOS/AA-AIbex-AIOS/`: `@Memo/V0.1/` für die Grundlage, `@Memo/V0.2/` (Memos 13–18) für die Änderungen in v0.2, `@Memo/V0.3/` (Memos 01–28) für die Änderungen in v0.3, `@Memo/V0.4/` (Memos 01–29) für die Änderungen in v0.4, `@Memo/V0.5/` (Memos 11–41, Soll-Bild Memo 36) für die Änderungen in v0.5, dort auch die Memos 70–86 für v0.5.1, `@Memo/V0.6/` (Memos 01–36, Soll-Bild Memo 34, Skizze Memo 35) für die Änderungen in v0.6, dort auch die Memos 79–84 (Bewertung Memo 79, Skizze Memo 84) für v0.6.1 die Memos 114–123 (Bewertung Memo 118, Soll-Bild und Skizze Memo 122) für v0.6.2 und die Memos 152–154 (Bewertung und Skizze Memo 153) für v0.6.3. In den Memos 01–11 von V0.3 heißt der Assistent noch *Agent* (V0.3, Memo 13). Die Spec beschreibt nur den Soll-Stand. Sie wird im Repo `aibex-aios` unter `spec/` gepflegt und mit jeder Version nach `doc/spec/` ausgeliefert.
+Die Begründungen stehen in den Memos der Konzeptprojekte unter `§AIOS/A-AIOS/AA-AIbex-AIOS/`: `@Memo/V0.1/` für die Grundlage, `@Memo/V0.2/` (Memos 13–18) für die Änderungen in v0.2, `@Memo/V0.3/` (Memos 01–28) für die Änderungen in v0.3, `@Memo/V0.4/` (Memos 01–29) für die Änderungen in v0.4, `@Memo/V0.5/` (Memos 11–41, Soll-Bild Memo 36) für die Änderungen in v0.5, dort auch die Memos 70–86 für v0.5.1, `@Memo/V0.6/` (Memos 01–36, Soll-Bild Memo 34, Skizze Memo 35) für die Änderungen in v0.6, dort auch die Memos 79–84 (Bewertung Memo 79, Skizze Memo 84) für v0.6.1 die Memos 114–123 (Bewertung Memo 118, Soll-Bild und Skizze Memo 122) für v0.6.2 die Memos 152–154 (Bewertung und Skizze Memo 153) für v0.6.3 und die Memos 163–174 (Bewertung Memo 164, Skizze Memo 171) für v0.6.4. In den Memos 01–11 von V0.3 heißt der Assistent noch *Agent* (V0.3, Memo 13). Die Spec beschreibt nur den Soll-Stand. Sie wird im Repo `aibex-aios` unter `spec/` gepflegt und mit jeder Version nach `doc/spec/` ausgeliefert.
 
 ## Begriffe
 
@@ -183,6 +183,19 @@ v0.6.3 ist ein Patch auf v0.6.2, nur der Kernel (V0.6, Memos 152–154):
 | Keine Begleitpakete: `distribution-capricorn` bleibt 0.4.1 mit `kernel: "==0.6.2"` (F149) | V0.6, Memo 154 |
 | Release-Kandidaten `v0.6.3-rc<n>` (*Abnahmetest*) | V0.6, Memo 153 |
 
+v0.6.4 macht Workspaces zuverlässig auf mehreren Rechnern (V0.6, Memos 163–174):
+
+| in v0.6.4 | Memos |
+|---|---|
+| Die Vault-Root ist das Wurzelprojekt eines Workspace; drei Handgriffe `attach`, `sync`, `detach`, je für den ganzen Workspace oder mit Pfad für einen Teilbaum; `init` und `update` entfallen (Spec 06, *Workspaces*) | 166, 168, 170 |
+| `sync`: klonen, was fehlt, holen nur per fast-forward, neu Geklontes lauffähig machen, Manifest nachführen, pushen ohne Tags; Elternprojekte vor Kindern (L35) | 164–166 |
+| Teilbäume auslagern mit `detach <pfad>`, zurückholen mit `attach <pfad>`; Platzhalter mit `DETACHED.md` und `DETACHED.command`; Merker je Rechner in `.aios/workspace.local.yaml`; Papierkorb statt Löschen | 170, 172 |
+| Geheimnisse in `@Secret/`, Prüfung der ausgehenden Commits vor jedem Push | 169, 172 |
+| Namensschema am Remote `<Workspace>-<Ordnername>` als Vorschlag | 173 |
+| Schlüssel `sync: auto \| manual \| off`; bei `auto` Holen beim Start und Sync nach jedem Commit; in Cloud-Ordnern immer `off` | 174 |
+| Kernel-Skills `/aios-attach`, `/aios-sync`, `/aios-detach` (Spec 03) | 172 |
+| Release-Kandidaten `v0.6.4-rc<n>`, Vorabnahme im zweiten Benutzer, Abnahme auf einem zweiten Rechner (*Abnahmetest*) | 168, 171 |
+
 ## Vorabversionen
 
 Alle Versionen unter 1.0 sind Alpha- und Beta-Versionen; an Kunden wird erst ab v1.0 ausgeliefert. Das gilt für AIOS selbst und für die Pakete der Grundausstattung, die deshalb mit `0.1.0` beginnen (Ausnahme: `memo` behält seine Versionsfolge, 6.0.0).
@@ -198,12 +211,12 @@ AIBOS hält diese Regeln in jedem Befehl ein (für Pakete zusätzlich P1–P8, S
 | I1 | AIOS ändert nie ein bestehendes Memo in `@Memo/`. `/aios-memo` legt nur neue Memos an. |
 | I2 | AIOS schreibt in einen Masterspace `@/` nur mit `aios --fetch`, und nur nach `@!Package/<name>/`. Ausnahmen: `aios --activate` und `aios --init` legen ein fehlendes `@/` mit `.gitkeep` an; `aios --activate` ersetzt bei der Umstellung von v0.3 Blueprints mit Marke in `@!Skill/` und `@!Assistant/` durch geholte Pakete (Spec 06). |
 | I3 | AIBOS registriert nie einen Skill global. Kernel-Skills und Projekt-Skills werden nur im Vault registriert, an der Vault-Root und in Projekten (Spec 03). Beim Umstieg entfernt AIBOS die globalen Hüllen früherer Versionen (Spec 04). |
-| I4 | AIBOS fasst in Vaults ohne Bindung nichts an und liefert dort keinen Kontext. Ausnahmen sind `aios --activate`, das die Bindung schreibt, `aios --install distribution-<name>`, das den Vault an den Kernel der Distribution bindet, und der Umstieg, der nach Rückfrage `legacy: ai-brain` einträgt (Spec 04); `aios --fetch`, `aios --deploy`, `aios --workspace`, `aios --init`, `aios --assistant` und die Registrierung brechen ab bzw. tun nichts. In einem Legacy-Vault liefert `ai-brain` den Kontext. |
+| I4 | AIBOS fasst in Vaults ohne Bindung nichts an und liefert dort keinen Kontext. Ausnahmen sind `aios --activate`, das die Bindung schreibt, `aios --install distribution-<name>`, das den Vault an den Kernel der Distribution bindet, der Umstieg, der nach Rückfrage `legacy: ai-brain` einträgt (Spec 04), und `aios --workspace attach <repo>`, das einen gebundenen Vault aus einem Repo holt (Spec 06); `aios --fetch`, `aios --deploy`, `aios --workspace`, `aios --init`, `aios --assistant` und die Registrierung brechen ab bzw. tun nichts. In einem Legacy-Vault liefert `ai-brain` den Kontext. |
 | I5 | AIOS verändert nie eine installierte Version (`v<version>/` oder `workers/<paket>/v<version>/` unter `~/.aios` bzw. `/opt/aios`); es entfernt sie nur ganz. |
 | I6 | AIOS fasst in `.claude/skills/` nur Ordner an, die in `.aios/registry` stehen oder die es beim Registrieren neu anlegt; Ordner, die schon da sind und nicht in der Registry stehen, nie. In `~/.claude/skills/` entfernt der Umstieg nur die Hüllen früherer Versionen (Spec 04). |
-| I7 | Jeder schreibende Befehl zeigt vorher, was er tut, und wartet auf Bestätigung. Ausnahmen sind beim Session-Start die Registrierung, der Merker der Session (`~/.aios/sessions/`) und das Log (`~/.aios/log/`). Ein Skill holt den Plan mit `--plan`, fragt im Chat und ruft erst nach Ja mit `--yes` auf (Spec 04). Prüfungen (Konsistenzprüfung, `/aios-integrity`) schreiben nie; sie bieten eine Ergänzung nur an. |
+| I7 | Jeder schreibende Befehl zeigt vorher, was er tut, und wartet auf Bestätigung. Ausnahmen sind beim Session-Start die Registrierung, der Merker der Session (`~/.aios/sessions/`), das Log (`~/.aios/log/`) und im Workspace mit `sync: auto` das Holen neuer Stände für das Projekt der Session, nur per fast-forward, sodass nichts verloren gehen kann (Spec 02, *Hooks*; V0.6, Memo 174: F189). Ein Skill holt den Plan mit `--plan`, fragt im Chat und ruft erst nach Ja mit `--yes` auf (Spec 04). Prüfungen (Konsistenzprüfung, `/aios-integrity`) schreiben nie; sie bieten eine Ergänzung nur an. |
 | I8 | Jeder Befehl ist idempotent: Ein zweiter Aufruf ohne Änderung ändert nichts. |
-| I9 | AIOS committet nur, was es selbst angelegt oder geändert hat: den ersten Commit eines Projekts (mit den Dateien, die es dabei aus dem Repo darüber übernimmt, Spec 05) und den Ausschluss eines Unterprojekts im Repo darüber (Spec 05, Spec 06 *Workspaces*), dazu mit `aios --contribute` die genannten Dateien in einem eigenen Zweig eines Paket-Repos (Spec 06). Arbeitsstände des Users committet es nie. |
+| I9 | AIOS committet nur, was es selbst angelegt oder geändert hat: den ersten Commit eines Projekts (mit den Dateien, die es dabei aus dem Repo darüber übernimmt, Spec 05) den Ausschluss eines Unterprojekts im Repo darüber (Spec 05, Spec 06 *Workspaces*) und mit `aios --workspace sync` die nachgeführte `workspace.yaml` (Spec 06), dazu mit `aios --contribute` die genannten Dateien in einem eigenen Zweig eines Paket-Repos (Spec 06). Arbeitsstände des Users committet es nie. |
 | I10 | Ein Weiterleiter oder Skill löst nie ein setup aus; fehlt ein Arbeitspferd, meldet er das und nennt höchstens `aios --fetch` (Spec 07). |
 | I11 | Ein Plan mit „alles oder nichts" (Paket laden, Distribution installieren) stellt bei einem Fehler den Stand vor dem Plan wieder her (Sicherung, Spec 06); registriert wird erst nach erfolgreichem setup. |
 | I12 | Liegt das Arbeitsverzeichnis außerhalb eines A/W, geben die Hooks von AIBOS nichts aus und geben keinen Befehl frei; Fehler stehen nur im Log `~/.aios/log/context.log` (Spec 02). |
@@ -212,22 +225,33 @@ AIBOS hält diese Regeln in jedem Befehl ein (für Pakete zusätzlich P1–P8, S
 
 ## Abnahmetest
 
-Der Abnahmetest von v0.6.3 läuft auf dem Arbeitsrechner nach der Implementierung, auf dem letzten Release-Kandidaten `v0.6.3-rc<n>` (V0.6, Memos 153, 154), im Benutzer des Arbeitsrechners und in einem zweiten macOS-Benutzer (hier `aibex`), der eine eigene Installation unter `~/.aios` hat und `/opt/aios/workers.yaml` des Rechners mitliest. An den Kandidaten gebunden wird nur `~/vault/§Probe-AIBOS`; die übrigen Vaults bleiben bis Schritt 9 auf 0.6.2. Capricorn bleibt 0.4.1 (F149).
+Der Abnahmetest von v0.6.4 läuft auf dem letzten Release-Kandidaten `v0.6.4-rc<n>` (V0.6, Memos 171–174): zuerst als **Vorabnahme** am Arbeitsrechner, im Benutzer des Arbeitsrechners und in einem zweiten macOS-Benutzer (hier `aibex`) mit eigener Installation unter `~/.aios`, dann als **Abnahme** auf einem zweiten Rechner (Notebook). Testcommits entstehen nur im Testprojekt `A-AIOS/AA-AIbex-AIOS/AAP-Probe-Workspace` mit dem Remote `AIOS-AAP-Probe-Workspace` (F177). Schritte, die am Remote etwas anlegen, umbenennen oder pushen, haben je eine eigene Rückfrage.
 
-Die Abnahmetests von v0.6.2, v0.6.1, v0.6.0 und v0.5 stehen in dieser Spec in den Tags `v0.6.2`, `v0.6.1`, `v0.6.0` bzw. `v0.5.1`.
+Die Abnahmetests von v0.6.3, v0.6.2, v0.6.1, v0.6.0 und v0.5 stehen in dieser Spec in den Tags `v0.6.3`, `v0.6.2`, `v0.6.1`, `v0.6.0` bzw. `v0.5.1`.
 
-| # | Schritt | erwartet |
-|---|---|---|
-| 1 | `~/git/AIbex/aibex-aios/bin/aios --install v0.6.3-rc<n> --plan`, dann mit Ja | Kernel nach `~/.aios/versions/v0.6.3-rc<n>/`; Weiterleiter und Hooks unverändert |
-| 2 | `~/.aios/bin/aios --vaults` | dieselben Vaults mit denselben Quellen wie mit 0.6.2, weil alle Projekte in `/opt/aios/workers.yaml` dem Benutzer gehören |
-| 3 | im zweiten Benutzer, im Terminal: `git -c safe.directory='*' -C ~/.aios/installer/aibex-aios fetch /Users/<user>/git/AIbex/aibex-aios tag v0.6.3-rc<n>`, dann `~/.aios/bin/aios --install v0.6.3-rc<n>` mit Ja, dann `~/.aios/bin/aios --vaults` | nur Vaults im Home des zweiten Benutzers; kein Pfad aus dem Home des ersten (B26) |
-| 4 | `~/.aios/bin/aios --activate v0.6.3-rc<n> ~/vault/§Probe-AIBOS` mit Ja | Bindung `0.6.3-rc<n>`; Hüllen in `.aios/registry` mit `source` Kernel `0.6.3-rc<n>`; Pakete unverändert |
-| 5 | `git -C ~/git/AIbex/aibex-aios grep -n -E "v0\.6\.[0-2]" -- README.md doc` und `git -C ~/git/AIbex/aibex-aios grep -n "/Users/[a-z]" -- spec doc README.md` | nur historische Aussagen bzw. kein Treffer (H13, F152) |
-| 6 | `tests/run`, `tests/live/fresh.sh`, `permit.sh`, `changeover.sh`, `rothirsch.sh` | alle grün |
-| 7 | Bestandslauf: je Vault aus `aios --vaults` `aios --activate v0.6.3-rc<n> <vault> --plan`; Hooks, `~/.claude/skills/`, `workers.yaml` und `installations.yaml` an beiden Orten | keine Konflikte; Tabelle im Abnahme-Memo |
-| 8 | Abnahme-Memo | Schritte 1–7 bestanden |
-| 9 | nach Freigabe: `VERSION` `0.6.3`, Tag `v0.6.3`; `aios --install v0.6.3`; `§Probe-AIBOS` umbinden; mit eigener Frage die übrigen Vaults; `aios --remove-version v0.6.3-rc<n>` und, wenn kein Vault mehr daran hängt, `v0.6.2` | Bindung `0.6.3`; keine Hülle verweist auf einen Kandidaten |
-| 10 | Veröffentlichen, jeder Schritt mit eigener Rückfrage: `main` und Tag `v0.6.3` pushen, Konzept-Tag `v0.6.3` auf dem Abnahme-Memo | `aios --install v0.6.3` aus einem frischen Klon möglich |
+| # | Wer, wo | Schritt | erwartet |
+|---|---|---|---|
+| 0 | erster Benutzer, GitHub | Repos des Vault `§AIOS` nach dem Namensschema (Spec 06): bestehende Repos von Projekten mit `@/` umbenennen, fehlende privat anlegen (außer Probe-Projekten), `origin` je Repo nachführen; dazu das Testprojekt | jedes mitreisende Projekt hat ein Remote nach dem Schema |
+| 1 | erster Benutzer, Terminal | `~/git/AIbex/aibex-aios/bin/aios --install v0.6.4-rc<n>`, dann `~/.aios/bin/aios --activate v0.6.4-rc<n> ~/vault/§AIOS`, je mit Ja | Bindung `0.6.4-rc<n>` an `§AIOS` |
+| 2 | erster Benutzer, Chat in `§AIOS` | `/aios-sync` | Plan mit den Einträgen für alle Repos mit Remote, dem Commit von `workspace.yaml` und den Pushes; danach `aios --workspace status` ohne Abweichung; `sync: auto` wirkt, der Master-Kontext enthält `<aios-workspace>` |
+| 3 | zweiter Benutzer, Terminal | Zugang zu den privaten Repos einrichten | `git ls-remote <url der Vault-Root>` gelingt |
+| 4 | zweiter Benutzer, Terminal | Kandidat installieren (Tag in den eigenen Klon holen, `~/.aios/bin/aios --install v0.6.4-rc<n>`) | Kernel unter `~/.aios/versions/` des zweiten Benutzers |
+| 5 | zweiter Benutzer, Terminal | `~/.aios/bin/aios --workspace attach <url der Vault-Root> ~/vault/§AIOS` | ein Plan, ein Ja; alle Projekte des Manifests geklont, Eltern vor Kindern; Pakete und Arbeitspferde abgeglichen; `status` ohne Abweichung |
+| 6 | zweiter Benutzer, erster Chat im Testprojekt | „sync den Workspace" | Kernel-Skill über den Block der Kernel-Skills; Plan ohne Änderungen |
+| 7 | zweiter Benutzer, zweiter Chat | `/aios-sync` | der Slash-Befehl läuft |
+| 8 | zweiter, dann erster Benutzer | im Testprojekt eine Datei ändern und committen | Claude bietet sofort `/aios-sync` an; nach Ja ist der Commit am Remote; ein neuer Chat des ersten Benutzers im Testprojekt holt ihn beim Start ohne Rückfrage (`AIOS-SYNC: … fast-forwarded`) |
+| 9 | beide Benutzer | im Testprojekt auf beiden Seiten je einen Commit, dann `/aios-sync` beim zweiten | Projekt unverändert, kein Push, Grund im Bericht |
+| 10 | zweiter Benutzer | im Testprojekt eine Datei `.env` committen, `/aios-sync` | Push dieses Repos angehalten, Datei und Commit genannt; andere Repos laufen weiter |
+| 11 | zweiter Benutzer | `/aios-detach Y-Youtube` (Teilbaum mit Unterprojekt, ohne offene Stände) | Plan nennt den Papierkorb; Platzhalter mit `DETACHED.md` und `DETACHED.command`; `status` zeigt `detached`; ein Chat darin meldet `AIOS-DETACHED`; beim ersten Benutzer unverändert |
+| 12 | zweiter Benutzer, Finder | Doppelklick auf `Y-Youtube/DETACHED.command` | Terminal mit dem Plan von `attach Y-Youtube`; nach Ja ist der Teilbaum zurück |
+| 13 | zweiter Benutzer | im Testprojekt eine Datei ändern, nicht committen, `/aios-detach A-AIOS/AA-AIbex-AIOS/AAP-Probe-Workspace` | abgelehnt mit Nennung der Datei; nichts verändert |
+| 14 | erster Benutzer, Drive-Vault | in einem Vault unter `~/Library/CloudStorage/` den Master-Kontext laden und `aios --workspace sync --plan` | Zeile zum Cloud-Ordner, `sync` verweigert |
+| 15 | zweiter Benutzer | `~/.aios/bin/aios --workspace detach` | nach der Prüfung liegt der Vault-Ordner im Papierkorb des zweiten Benutzers |
+| 16 | Notebook | Schritte 3–8, 11 und 12 | wie dort |
+| 17 | erster Benutzer | `tests/run`, `tests/live/fresh.sh`, `permit.sh`, `changeover.sh`, `rothirsch.sh` | alle grün |
+| 18 | erster Benutzer | Bestandslauf: je Vault aus `aios --vaults` `aios --activate v0.6.4-rc<n> <vault> --plan`; Hooks, `~/.claude/skills/`, `workers.yaml` und `installations.yaml` an beiden Orten | keine Konflikte; Tabelle im Abnahme-Memo |
+| 19 | — | Abnahme-Memo | Schritte 0–18 bestanden |
+| 20 | nach Freigabe | `VERSION` `0.6.4`, Tag `v0.6.4`; `aios --install v0.6.4`; Vaults umbinden, mit eigener Frage; `aios --remove-version v0.6.4-rc<n>` und, wenn kein Vault mehr daran hängt, `v0.6.3`; veröffentlichen, jeder Schritt mit eigener Rückfrage | Bindung `0.6.4`; `aios --install v0.6.4` aus einem frischen Klon möglich |
 
 ## Offen
 

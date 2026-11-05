@@ -1,8 +1,8 @@
 ---
 title: "Skills und Assistenten"
-date: 2026-10-29
+date: 2026-11-05
 author: iHux
-status: Spec
+status: Entwurf
 tags: [spec, aios, v0.6, skills, assistenten]
 number: 03
 related:
@@ -71,7 +71,7 @@ Ein Blueprint ohne gültige `version` gilt wie ein Blueprint mit falschem `name`
 
 ## Kernel-Skills im Vault
 
-Die Kernel-Skills (12 Skills `aios-*`) erreichen die KI im A/W auf zwei Wegen (V0.6, Memos 23, 26–30):
+Die Kernel-Skills (15 Skills `aios-*`; mit v0.6.4 neu `aios-attach`, `aios-sync`, `aios-detach`) erreichen die KI im A/W auf zwei Wegen (V0.6, Memos 23, 26–30):
 
 | Weg | trägt | wo |
 |---|---|---|
@@ -154,6 +154,18 @@ Skills und Assistenten kommen als **Pakete** in ein Projekt: Ein Paket wird vom 
 Paketnamen folgen dem Muster `<typ>-<name>` (Spec 06, *Paketnamen*); die Elemente darin behalten ihre Namen. `assistant-gaertner` und `assistant-astronom` sind neue Repos mit dem Inhalt von `assistent-gaertner` bzw. `assistent-astronom` 0.2.1; die alten Repos bleiben, ihr README verweist auf den neuen Namen (V0.5, Memo 05). Die Demo-Assistenten liegen in eigenen Paket-Repos. Ihre Inhalte enthalten keine Pfade oder Bezüge auf einen bestimmten Vault; der Rollentext nennt in einem Satz, dass es sich um einen Demo-Assistenten handelt, dessen Inhalte der Veranschaulichung dienen. Ihre Grenzen sind gewollt: Der Gärtner lehnt Sonne-Mond-Aufgaben freundlich ab, der Astronom Apfel-Birne-Aufgaben. So zeigt das Ergebnis, welcher Assistent und welcher Skill aktiv sind. Die Wissenspakete hängen nicht vom Astronomen ab und er nicht von ihnen; er findet ihr Wissen über die Kette (Spec 02, K6).
 
 Pakete holt nur der User; `aios --install` bietet es nicht an.
+
+## Workspaces — `/aios-attach`, `/aios-sync`, `/aios-detach`
+
+Die drei Handgriffe eines Workspace (Spec 06, *Workspaces*) haben je einen Kernel-Skill (V0.6, Memos 166, 170, 172: F170). Jeder ist eine dünne Hülle um `aios --workspace`:
+
+| Skill | Aufruf | Bemerkung |
+|---|---|---|
+| `/aios-attach <pfad>` | `aios --workspace attach <pfad>` | nur mit Pfad: einen ausgelagerten Teilbaum zurückholen. Einen Workspace an einen neuen Rechner anbinden (`attach <repo>`) geht nur im Terminal, weil es dort noch keinen Vault gibt |
+| `/aios-sync [<pfad>]` | `aios --workspace sync [<pfad>]` | Projektbaum abgleichen |
+| `/aios-detach [<pfad>]` | `aios --workspace detach [<pfad>]` | Teilbaum auslagern bzw. Workspace lösen |
+
+**Ablauf:** den Befehl mit `--plan` ausführen; den Plan zeigen; bei `/aios-sync` dazu die ausgehenden Commits je Repo und die Commits, die nicht aus der laufenden Session stammen, mit einer eigenen Frage nennen (Regel *Weiter*); einmal fragen; nach Ja mit `--yes` ausführen und das Ergebnis kurz melden, mit den Hinweisen (Repos ohne Remote mit dem vorgeschlagenen Befehl, angehaltene Repos mit Grund). Bei `sync: auto` bietet Claude `/aios-sync` nach jedem Commit an (Spec 02, *Regel des Workspace*).
 
 ## Distributionen — `/aios-distribution`
 

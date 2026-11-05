@@ -1,8 +1,8 @@
 ---
 title: "Projekte"
-date: 2026-10-29
+date: 2026-11-05
 author: iHux
-status: Spec
+status: Entwurf
 tags: [spec, aios, v0.6, projekte]
 number: 05
 related:
@@ -107,7 +107,7 @@ Prüft auf Anforderung des Users die **Integrität** eines Projekts und aller se
 | **Init** | S1–S4 erfüllt | `ok` oder kurz `missing: <n> parts`; die Lücken stehen unter *Notes* (A15) |
 | **Commit** | `git status --porcelain` des eigenen Repos ist leer; neue, nicht versionierte Dateien zählen mit | `ok`, `<n> changed, <m> new` oder `—` (kein eigenes Repo) |
 
-**Workspace:** Hat `<pfad>`, ein Projekt darüber oder ein geprüftes Projekt darunter eine `.aios/workspace.yaml` (Spec 06), prüft `aios --integrity` zusätzlich jedes Projekt daraus, das unter `<pfad>` liegt (F2; V0.4, Memos 15, 73). Ein fehlender Klon erscheint als eigene Zeile mit Init `missing: clone` und gilt als nicht integer. Ein Fremd-Repo ohne `@/` (Spec 06) erscheint mit Init `foreign repo`; geprüft werden nur Klon und Commit, nicht S1–S4. Ist die Revision im ausgecheckten Zweig nicht enthalten oder zeigt `origin` auf ein anderes Repo als `workspace.yaml`, nennt der Bericht das unter *Notes*.
+**Workspace:** Hat `<pfad>`, ein Projekt darüber oder ein geprüftes Projekt darunter eine `.aios/workspace.yaml` (Spec 06), prüft `aios --integrity` zusätzlich jedes Projekt daraus, das unter `<pfad>` liegt (F2; V0.4, Memos 15, 73). Ein fehlender Klon erscheint als eigene Zeile mit Init `missing: clone` und gilt als nicht integer. Ein Fremd-Repo ohne `@/` (Spec 06) erscheint mit Init `foreign repo`; geprüft werden nur Klon und Commit, nicht S1–S4. Ist die Revision im ausgecheckten Zweig nicht enthalten oder zeigt `origin` auf ein anderes Repo als `workspace.yaml`, nennt der Bericht das unter *Notes*. Ein ausgelagerter Teilbaum (Spec 06, *detach*) erscheint als eine Zeile mit Init `detached` und gilt als integer; seine Projekte werden nicht geprüft (V0.6, Memo 170: F169).
 
 Ein Projekt ist **integer**, wenn Init und Commit erfüllt sind. **Hinweise** (`Notes`) ändern daran nichts:
 

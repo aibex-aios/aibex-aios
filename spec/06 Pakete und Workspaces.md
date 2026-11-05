@@ -1,8 +1,8 @@
 ---
 title: "Pakete und Workspaces"
-date: 2026-11-03
+date: 2026-11-05
 author: iHux
-status: Spec
+status: Entwurf
 tags: [spec, aios, v0.6, pakete, workspaces]
 number: 06
 related:
@@ -376,11 +376,21 @@ Daten, die ein Paket im Projekt erzeugt, liegen in `<projekt>/@Data/<paket>/` (F
 
 ## Workspaces
 
-Ein **Workspace** ist ein AIOS-Projekt, das in `.aios/workspace.yaml` Repos mit Revision und Pfad nennt (V0.4, Memo 10). Das Projekt mit dieser Datei ist das **Wurzelprojekt** des Workspace. Es hat ein eigenes Repo; die Projekte des Workspace liegen darunter, verschachtelt, und sind im jeweils darüberliegenden Repo ausgeschlossen (Spec 05, S4). Ein Paket im Workspace liegt als Checkout an seinem Pfad (Entwickler-Site), in einem Vault als Kopie in `@!Package/` (Anwender-Site).
+Ein **Workspace** ist eine Vault-Root mit `.aios/workspace.yaml` und alle Projekte darunter (V0.4, Memo 10; V0.6, Memos 163–174). Die Vault-Root ist das **Wurzelprojekt** des Workspace (F156). Sie hat ein eigenes Repo; die Projekte liegen verschachtelt darunter, jedes mit eigenem Repo an seinem eigenen Remote, und sind im jeweils darüberliegenden Repo ausgeschlossen (Spec 05, S4). Ein Paket im Workspace liegt als Checkout an seinem Pfad (Entwickler-Site), in einem Vault als Kopie in `@!Package/` (Anwender-Site).
 
 Ein **Projekt des Workspace** ist ein Repo an seinem Pfad. Mit `@/` ist es zugleich ein AIOS-Projekt. Ohne `@/` ist es ein **Fremd-Repo**, z. B. ein Paket-Repo oder das Code-Repo: kein Container, nicht Teil des Master-Kontexts, und `aios --integrity` prüft es nur über `workspace.yaml` (V0.4, Memo 18, L2). Projekte des Workspace müssen keine Pakete sein.
 
-`aios --workspace` arbeitet nur in einem A/W (Spec 01, I4).
+Ein Workspace kann Projekte verschiedener Eigentümer tragen, z. B. Branchenwissen bei AIbex und Kundenwissen beim Kunden (V0.8, Memo 16). Jedes Repo geht nur an sein eigenes `origin`. Das Remote ist jede Git-URL: GitHub, ein Git-Server des Kunden, ein Repo über `ssh`, `file://` (V0.6, Memo 169).
+
+Die Arbeit mit einem Workspace kennt drei Handgriffe, je für den ganzen Workspace oder, mit Pfad, für einen Teilbaum (V0.6, Memos 166, 168, 170):
+
+| Handgriff | Lesart | ganzer Workspace | mit Pfad |
+|---|---|---|---|
+| **attach** | anbinden | den Workspace an diesen Rechner anbinden | einen ausgelagerten Teilbaum zurückholen |
+| **sync** | synchronisieren | den Projektbaum mit den Remotes abgleichen | nur diesen Teilbaum |
+| **detach** | lösen | den Workspace von diesem Rechner lösen | einen Teilbaum auslagern |
+
+`aios --workspace` arbeitet nur in einem A/W (Spec 01, I4). Ausgenommen ist `attach <repo>`, das den A/W erst anlegt.
 
 ### `.aios/workspace.yaml`
 
@@ -389,60 +399,156 @@ schema: 1
 remotes:
   aibex: https://github.com/aibex-aios
 projects:
-  - name: AA-AIbex-AIOS
+  - name: Work-A-Admin
     remote: aibex
     revision: main
-    path: AA-AIbex-AIOS
+    path: A-Admin
+  - name: Work-AT-Templates
+    remote: aibex
+    revision: main
+    path: A-Admin/AT-Templates
   - name: app-taschenrechner
     remote: aibex
     revision: v0.1.0
-    path: AT-Taschenrechner/app-taschenrechner
+    path: A-Admin/AT-Templates/app-taschenrechner
     groups: [apps]
 ```
 
 | Feld | Pflicht | Regel |
 |---|---|---|
 | `remotes` | nein | Name → Basis-URL; die URL eines Projekts ist `<basis>/<name>` |
-| `projects[].name` | ja | eindeutig im Workspace |
+| `projects[].name` | ja | eindeutig im Workspace; bei `remote` zugleich der Name des Repos am Remote |
 | `projects[].remote` oder `repo` | genau eines | Remote aus `remotes` oder volle URL |
 | `projects[].revision` | ja | Zweig, Tag oder Commit-SHA |
 | `projects[].path` | ja | relativ zum Wurzelprojekt, darunter, ohne `..` |
 | `projects[].groups` | nein | Liste von Gruppennamen |
-| `projects[].import` | nein | im Format vorgesehen, in v0.6 ohne Wirkung; `aios --workspace` meldet ihn und übergeht ihn |
+| `projects[].import` | nein | im Format vorgesehen, ohne Wirkung; `aios --workspace` meldet ihn und übergeht ihn |
 
-Die Datei wird mit PyYAML gelesen und vom User gepflegt.
+Die Datei wird mit PyYAML gelesen. Der User pflegt sie; `sync` trägt neue Repos mit Remote ein (*sync*, Schritt 4). Die Reihenfolge der Einträge ist ohne Bedeutung: AIOS klont Elternprojekte immer vor ihren Kindern, sortiert nach der Tiefe des Pfads (F155).
+
+### Namensschema am Remote
+
+Für Projekte mit `@/` schlägt AIOS Namen nach einem festen Schema vor (V0.6, Memo 173):
+
+| Ordner | Repo am Remote |
+|---|---|
+| Vault-Root `§<Workspace>` | `<Workspace>` |
+| jedes Projekt darunter, in jeder Tiefe | `<Workspace>-<Ordnername>` |
+
+Beispiel `§Work`: `Work`, `Work-A-Admin`, `Work-AT-Templates`, `Work-ATP-Powerpoint`.
+
+- **Fremd-Repos** ohne `@/` behalten ihren Namen, weil er im Hub veröffentlicht ist (F178).
+- **Zeichen:** erlaubt sind `A–Z a–z 0–9 . _ -`; `ä ö ü Ä Ö Ü ß` werden zu `ae oe ue Ae Oe Ue ss`, jedes andere Zeichen zu `-` (F180).
+- **Eindeutigkeit:** Es zählt nur der letzte Ordnername. Haben zwei Projekte des Workspace denselben Ordnernamen, meldet `sync` die Kollision und schlägt keinen Namen vor (F179).
+- Das Schema ist ein **Vorschlag**: Ein abweichender Name funktioniert, `sync` nennt ihn als Hinweis (F181). AIOS legt keine Repos an; bei einem Projekt ohne Remote nennt `sync` den Namen und den Befehl, z. B. `gh repo create aibex-aios/Work-AT-Templates --private --source <pfad> --remote origin` (F182).
+
+### `.aios/workspace.local.yaml`
+
+Was nur für diesen Rechner gilt, steht in `.aios/workspace.local.yaml` der Vault-Root. Die Datei ist in der `.gitignore`-Vorlage (Spec 04) und reist nie mit; so wirkt eine Auslagerung auf dem Notebook nicht auf dem Arbeitsrechner (F164). Es schreiben nur `detach <pfad>` und `attach <pfad>`.
+
+```yaml
+# written by AIOS (workspace), do not edit
+schema: 1
+detached:
+  - path: Y-Youtube
+    since: 2026-11-05
+```
+
+### Schlüssel `sync:`
+
+`.aios/config.yaml` der Vault-Root nennt mit `sync:` die Art des Abgleichs (F183). Der Schlüssel ist versioniert und reist mit dem Workspace.
+
+| Wert | Wirkung |
+|---|---|
+| `auto` | Beim Start einer Session holt der SessionStart-Hook für das Projekt der Session neue Stände, nur per fast-forward (Spec 02, *Hooks*; F185). Die Kernel-Regel im Master-Kontext sagt Claude, nach jedem Commit sofort `/aios-sync` anzubieten, damit eine Sicherung am Remote besteht (F186) |
+| `manual` | kein Holen beim Start; die Kernel-Regel nennt nur `/aios-sync` (F187) |
+| `off` | keine Kernel-Regel; `attach` und `sync` verweigern mit Hinweis (F187) |
+
+**Standard:** `auto`, wenn die Vault-Root eine `workspace.yaml` hat, sonst `off`.
+
+**Cloud-Ordner:** Liegt die Vault-Root unter `~/Library/CloudStorage/` (Google Drive, OneDrive u. a.), unter `~/Library/Mobile Documents/` (iCloud Drive) oder unter `~/Dropbox/`, gilt `off`, auch wenn etwas anderes eingetragen ist; der Master-Kontext sagt das in einer Zeile. Dort repliziert der Cloud-Dienst, und ein Abgleich über Git-Remotes käme ihm in die Quere (V0.6, Memo 169). Git selbst bleibt erlaubt: Commit, Push und Pull von Hand bzw. auf Wunsch des Users (F188).
 
 ### `aios --workspace`
 
 | Befehl | Wirkung |
 |---|---|
-| `aios --workspace init <repo> [<ordner>] [--group <g>…]` | Wurzelprojekt nach `<ordner>` klonen (Standard: Name des Repos, im Ordner der Session), dann alle Projekte aus seiner `workspace.yaml` |
-| `aios --workspace update [<pfad>] [--group <g>…]` | fehlende Projekte klonen, vorhandene auf die Revision bringen |
+| `aios --workspace attach <repo> [<vault-ordner>]` | Workspace an diesen Rechner anbinden: Vault-Root klonen, dann `sync` |
+| `aios --workspace attach <pfad>` | ausgelagerten Teilbaum zurückholen |
+| `aios --workspace sync [<pfad>] [--group <g>…]` | Projektbaum mit den Remotes abgleichen |
+| `aios --workspace detach [<pfad>]` | ohne Pfad: Workspace von diesem Rechner lösen; mit Pfad: Teilbaum auslagern |
+| `aios --workspace status [<pfad>]` | je Projekt: vorhanden, ausgelagert, Zweig, Revision enthalten, voraus/hinter dem Remote, offene Änderungen |
 | `aios --workspace freeze [<pfad>]` | Commit-SHA jedes Projekts in `lock.yaml` des Wurzelprojekts schreiben (Abschnitt `workspace`) |
-| `aios --workspace status [<pfad>]` | je Projekt: vorhanden, Zweig, Revision enthalten, voraus/hinter dem Remote, offene Änderungen |
 
-**Init:** Das geklonte Wurzelprojekt wird wie ein Projekt des Workspace behandelt: Ziel ist `<ordner>` im Ordner der Session, in einem A/W (I4); liegt darüber ein Repo, trägt AIOS `/<ordner>/` in dessen `.gitignore` ein und committet nur diese Zeile (I9). Gibt es `<ordner>` schon, bricht `init` ab; für einen bestehenden Workspace gilt `update` (V0.4, Memo 57).
+Die Befehle `init` und `update` aus v0.4 gehen in `attach` und `sync` auf (F163). Alle Befehle außer `status` sind schreibend und folgen I7 (Plan, `--plan`, `--yes`); sie zeigen einen Plan und fragen einmal.
 
-`<pfad>` ist das Wurzelprojekt oder ein Ordner darunter; AIOS sucht die nächste `workspace.yaml` aufwärts. Ohne `--group` gelten alle Projekte; mit `--group` nur Projekte dieser Gruppen und Projekte ohne Gruppe.
+**URL oder Pfad:** Ein Argument von `attach` mit `://`, der Form `<user>@<host>:` oder der Endung `.git` ist ein Repo, sonst ein Pfad (F171). `<pfad>` ist das Wurzelprojekt oder ein Ordner darunter; AIOS sucht die nächste `workspace.yaml` aufwärts. Ohne `--group` gelten alle Projekte; mit `--group` nur Projekte dieser Gruppen und Projekte ohne Gruppe.
 
-**Klonen:** `git clone <url> <path>`. Ist `revision` ein Zweig, wird er ausgecheckt. Ist sie ein Tag oder Commit, legt AIOS einen lokalen Zweig `ws/<revision>` an diesem Commit an und checkt ihn aus. Es gibt kein *detached HEAD* (V0.4, Memo 10). Danach trägt AIOS `/<path>/` in die `.gitignore` des Repos darüber ein, wenn sie fehlt, und committet nur diese Zeile („AIOS: <path> als Projekt des Workspace ausgeschlossen", I9).
+**Klonen** (in `attach` und `sync`): `git clone <url> <path>`. Ist `revision` ein Zweig, wird er ausgecheckt. Ist sie ein Tag oder Commit, legt AIOS einen lokalen Zweig `ws/<revision>` an diesem Commit an und checkt ihn aus; es gibt kein *detached HEAD* (V0.4, Memo 10). Danach trägt AIOS `/<path>/` in die `.gitignore` des Repos darüber ein, wenn sie fehlt, und committet nur diese Zeile („AIOS: <path> als Projekt des Workspace ausgeschlossen", I9).
 
-**Update** (nur fast-forward): Ist `revision` ein Zweig, `git fetch` und `git merge --ff-only origin/<zweig>`. Ist sie ein Tag oder Commit und enthält der ausgecheckte Zweig ihn nicht, wird der Zweig per fast-forward auf diesen Commit gesetzt, wenn das möglich ist. Ist ein fast-forward nicht möglich (eigene Commits, nicht committete Änderungen, anderer Zweig ausgecheckt), lässt AIOS das Projekt unverändert und meldet es mit dem Grund. Ebenso unverändert bleibt ein Ordner am Pfad, der kein Git-Repo ist oder dessen `origin` auf ein anderes Repo zeigt als `workspace.yaml`; `status` und `aios --integrity` zeigen ihn weiter an (V0.4, Memo 57). `update` schreibt nichts in die Projekte außer durch Klonen und fast-forward.
+#### attach — Workspace anbinden
+
+`aios --workspace attach <repo> [<vault-ordner>]` läuft ohne Vault (F161):
+
+1. **Ziel:** `<vault-ordner>`, Standard `§<Name des Repos>` im aktuellen Ordner. Gibt es den Ordner schon, bricht `attach` ab und verweist auf `sync`. Liegt das Ziel in einem Cloud-Ordner (*Schlüssel `sync:`*), bricht es ab.
+2. **Vault-Root klonen** nach *Klonen*, ohne Ausschluss darüber. Fehlt im Klon `.aios/workspace.yaml` oder gilt dort `sync: off`, bleibt der Klon stehen, und `attach` endet mit Hinweis.
+3. **Kernel:** Ist die Version aus `aios:` der geklonten `config.yaml` nicht installiert, nimmt der Plan `aios --install v<version>` aus dem Klon unter `~/.aios/repo` auf (Spec 04); fehlt der Klon, bricht `attach` vor Schritt 2 mit dem Befehl zum Installieren ab.
+4. **sync** für den ganzen Workspace, im selben Plan.
+
+Der Plan zeigt alle Schritte; ein Ja. Danach ist der Rechner ohne `aios --activate` bereit: Die Bindung reist in `config.yaml` mit, und der SessionStart-Hook registriert die Hüllen in jedem Projekt beim ersten Chat (Spec 02, *Hooks*). Im allerersten Chat ist `/aios-sync` deshalb noch kein Slash-Befehl; der Wunsch in Worten wirkt über den Block der Kernel-Skills (V0.6, Memo 167).
+
+#### sync — Projektbaum abgleichen
+
+`aios --workspace sync [<pfad>]` macht fünf Schritte in einem Plan (V0.6, Memo 166). Mit `<pfad>` gelten sie nur für Projekte an oder unter diesem Pfad. Ausgelagerte Teilbäume (`workspace.local.yaml`) überspringt `sync` ganz: Es holt sie nicht zurück und pusht nichts aus ihnen (F175).
+
+1. **Klonen, was fehlt:** Projekte aus `workspace.yaml`, deren Pfad fehlt, nach *Klonen*, Eltern vor Kindern.
+2. **Holen, nur fast-forward:** jedes vorhandene Repo des Workspace mit Upstream, auch die Vault-Root: `git fetch --tags origin`. Ist `revision` ein Zweig, `git merge --ff-only origin/<zweig>`; ist sie ein Tag oder Commit und enthält der ausgecheckte Zweig ihn nicht, wird der Zweig per fast-forward auf diesen Commit gesetzt. Nicht möglich (nicht committete Änderungen, anderer Zweig ausgecheckt, eigene Commits bei neuen Ständen am Remote, `origin` zeigt auf ein anderes Repo als `workspace.yaml`): Das Repo bleibt unverändert, wird in Schritt 5 nicht gepusht und erscheint mit dem Grund im Bericht (F160, P4). Ein Ordner am Pfad, der kein Git-Repo ist, bleibt ebenso unverändert.
+3. **Lauffähig machen:** für jedes in Schritt 1 geklonte Projekt mit `@/` den Abgleich der Pakete und Arbeitspferde mit `lock.yaml` (wie `aios --fetch` ohne Argument) und die Registrierung (wie `aios --register`) (F158).
+4. **Manifest nachführen:** Repos unter dem Wurzelprojekt mit `origin`, die in `workspace.yaml` fehlen und nicht ausgelagert sind, werden eingetragen: `name` aus der URL, `remote`, wenn die URL mit der Basis eines Eintrags in `remotes` beginnt, sonst `repo`; `revision` der ausgecheckte Zweig; `path` relativ zum Wurzelprojekt (F176). AIOS committet im Wurzelprojekt nur `workspace.yaml` („AIOS: workspace.yaml nachgeführt"). Repos ohne Remote, Kollisionen und Abweichungen vom Namensschema nennt der Bericht als Hinweis (*Namensschema am Remote*).
+5. **Pushen:** jedes Repo mit Upstream und ausgehenden Commits, das Schritt 2 nicht ausgenommen hat: `git push origin <zweig>` für den ausgecheckten Zweig, nie Tags, nie `--force` (F159). Vorher prüft AIOS die ausgehenden Commits auf **Geheimnisse**: Dateien unter `@Secret/` und Dateien mit den Namen `.env`, `.env.*`, `*.pem`, `*.key`, `id_rsa*`, `id_ed25519*`. Ein Treffer hält den Push dieses Repos an, mit Datei und Commit im Bericht; die übrigen Repos laufen weiter (F172).
+
+Der Plan zeigt je Repo, was geschieht, bei Schritt 5 die ausgehenden Commits mit Kurz-SHA, Autor und Betreff. Der Skill `/aios-sync` nennt dem User dazu die Commits, die nicht aus der laufenden Session stammen (Regel *Weiter*). `sync` committet nichts außer den Zeilen aus *Klonen* und `workspace.yaml`, macht keine Merge-Commits und keinen Rebase und legt keine Repos am Remote an.
+
+#### detach — Teilbaum auslagern, Workspace lösen
+
+`aios --workspace detach <pfad>` lagert einen Teilbaum auf diesem Rechner aus, um Platz zu sparen (V0.6, Memo 170). `<pfad>` ist ein Projekt aus `workspace.yaml`, nicht das Wurzelprojekt.
+
+**Prüfung** (F165): Für jedes Repo im Teilbaum, auch für Unterprojekte, die nicht im Manifest stehen, gilt:
+
+- es hat ein `origin` und einen Upstream, und `git fetch` gelingt;
+- keine nicht committeten und keine unversionierten Dateien, kein Eintrag in `git stash`;
+- keine ausgehenden Commits; der ausgecheckte Stand liegt auf dem Remote;
+- keine ausgeschlossenen Dateien außer solchen, die sich neu erzeugen lassen (`.DS_Store`, `.claude/skills/`, `.aios/registry`); insbesondere kein Inhalt unter `@Secret/`.
+
+Verletzt ein Repo eine Bedingung, nennt der Plan jedes Hindernis mit Pfad, und `detach` ändert nichts.
+
+**Auslagern:** Der Teilbaum wandert in den Papierkorb (`~/.Trash/<ordnername> <datum uhrzeit>`), nicht endgültig gelöscht (F173). An seiner Stelle legt AIOS einen **Platzhalter** an: einen Ordner mit demselben Namen, damit Ausschluss, Pfade und `status` gültig bleiben, mit zwei Dateien (F166):
+
+- `DETACHED.md`: was ausgelagert ist, seit wann, die Repos mit URL, und wie man es zurückholt (`/aios-attach <pfad>` im Chat, `aios --workspace attach <pfad>` im Terminal);
+- `DETACHED.command`: ausführbar; ein Doppelklick im Finder öffnet das Terminal und ruft `~/.aios/bin/aios --workspace attach <pfad>` auf, den Pfad aus dem eigenen Ort bestimmt; das Terminal zeigt den Plan und fragt (F167). Nur unter macOS; auf anderen Systemen steht der Befehl in `DETACHED.md`.
+
+Dazu ein Eintrag in `workspace.local.yaml`.
+
+**Zurückholen:** `aios --workspace attach <pfad>` prüft, dass `<pfad>` in `workspace.local.yaml` steht und der Ordner nur den Platzhalter enthält, entfernt den Platzhalter, klont das Projekt und seine Unterprojekte aus `workspace.yaml` (Eltern vor Kindern), führt für sie die Schritte 2 und 3 von `sync` aus und entfernt den Eintrag.
+
+**Workspace lösen:** `aios --workspace detach` ohne Pfad prüft wie oben alle Repos des Workspace einschließlich der Vault-Root und legt danach den Vault-Ordner in den Papierkorb (F174). Installation, Hooks und andere Vaults bleiben.
+
+#### status
+
+`aios --workspace status [<pfad>]` zeigt eine Tabelle wie `aios --integrity` (Spec 05), mit dem Zustand `detached` für ausgelagerte Teilbäume (F169) und mit den Hinweisen aus *sync*, Schritt 4 (Repos ohne Eintrag, ohne Remote). Grundlage ist der lokale Stand ohne `git fetch`.
+
+```
+Workspace AIOS — 2026-11-05
+
+Project              Path                    Branch  Revision  Remote    Changes
+AIOS-A-AIOS          A-AIOS                  main    ok        ok        ok
+AIOS-AA-AIbex-AIOS   A-AIOS/AA-AIbex-AIOS    main    ok        2 ahead   ok
+AIOS-Y-Youtube       Y-Youtube               —       detached  —         —
+
+Notes
+- B-Basics: no remote; suggested: gh repo create aibex-aios/AIOS-B-Basics --private --source B-Basics --remote origin
+```
 
 **Freeze** schreibt in `lock.yaml` des Wurzelprojekts den Abschnitt `workspace:` mit `<name>: <commit-sha>` je geklontem Projekt; der Abschnitt `packages:` bleibt, und `aios --fetch` lässt `workspace:` stehen.
-
-**Status** zeigt eine Tabelle wie `aios --integrity` (Spec 05):
-
-```
-Workspace A-AIOS — 2026-10-21
-
-Project          Path                     Branch    Revision   Remote   Changes
-AA-AIbex-AIOS    AA-AIbex-AIOS            main      ok         ok       ok
-app-taschenrechner AT-Taschenrechner/…    ws/v0.1.0 ok         —        2 changed
-aibex-aios       AB-Code/aibex-aios       —         missing    —        —
-```
-
-Alle Befehle außer `status` sind schreibend und folgen I7 (Plan, `--plan`, `--yes`).
 
 ## Rückfluss — `aios --contribute`
 
@@ -497,7 +603,7 @@ Zusätzlich zu Spec 01 (I1–I9):
 | P1 | AIOS schreibt in `@!Package/` nur mit `aios --fetch` und nur ganze Paketordner mit Marke. |
 | P2 | `lock.yaml` schreiben nur `aios --fetch`, `aios --install` (Distribution), `aios --activate` (Umstellung) und `aios --workspace freeze`. |
 | P3 | Skripte und Installationen eines Pakets (setup und remove von Arbeitspferden, Befehle) laufen nie ohne Bestätigung, außer `aios --run` mit einem Befehl, den der User selbst aufruft; der Plan zeigt bei `kind: python` die Pakete, bei Skripten den Inhalt (Spec 07). |
-| P4 | `aios --workspace` verschiebt keinen Zweig außer per fast-forward und verwirft nie Änderungen. |
+| P4 | `aios --workspace` verschiebt keinen Zweig außer per fast-forward und verwirft nie Änderungen. Es pusht nur den ausgecheckten Zweig, nie Tags, nie mit `--force`, und nie ein Repo mit Geheimnissen in den ausgehenden Commits. `detach` entfernt nur nach der Prüfung und nur in den Papierkorb. |
 | P5 | `aios --contribute` schreibt nur in einen neuen Zweig; es pusht nie auf den Standardzweig. |
 | P6 | `@Data/<paket>/` wird von keinem Befehl außer dem Paket selbst geändert; `--remove` lässt ihn stehen. |
 | P7 | `aios --deploy` kopiert nichts; es ändert nur `only` in `packages:`. |
@@ -505,4 +611,4 @@ Zusätzlich zu Spec 01 (I1–I9):
 
 ## Entschiedene Festlegungen
 
-Die beim Schreiben getroffenen Festlegungen sind entschieden: S1–S9 in V0.4, Memo 17 (S9 als „jedes Projekt ist in sich vollständig"), L1–L6 und Q1–Q7 in den Memos 18–20, Hubs und Hub-Liste in den Memos 21, 22, 25 und 26, holen und ausrollen mit H1–H5 in den Memos 23–26, die Wissenspakete in Memo 27. Für v0.5: Arbeitspferde und Paket laden in V0.5, Memos 15–22 und 28–33, Distributionen in den Memos 25–28 und 34, Paketnamen und Umstellung in den Memos 05, 30 und 35, `@Data/` in Memo 07, Skizze in Memo 37.
+Die beim Schreiben getroffenen Festlegungen sind entschieden: S1–S9 in V0.4, Memo 17 (S9 als „jedes Projekt ist in sich vollständig"), L1–L6 und Q1–Q7 in den Memos 18–20, Hubs und Hub-Liste in den Memos 21, 22, 25 und 26, holen und ausrollen mit H1–H5 in den Memos 23–26, die Wissenspakete in Memo 27. Für v0.5: Arbeitspferde und Paket laden in V0.5, Memos 15–22 und 28–33, Distributionen in den Memos 25–28 und 34, Paketnamen und Umstellung in den Memos 05, 30 und 35, `@Data/` in Memo 07, Skizze in Memo 37. Für v0.6.4: Workspaces mit attach, sync, detach, Namensschema, `workspace.local.yaml` und Schlüssel `sync:` in V0.6, Memos 163–174 (F155–F189), Skizze in Memo 171.

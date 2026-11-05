@@ -1,8 +1,8 @@
 ---
 title: "Installation und Konfiguration"
-date: 2026-11-04
+date: 2026-11-05
 author: iHux
-status: Spec
+status: Entwurf
 tags: [spec, aios, v0.6, installation, konfiguration]
 number: 04
 related:
@@ -114,6 +114,8 @@ AIBOS legt nichts in `~/bin`, `~/etc`, `~/tmp` oder `~/git` an und ändert keine
 ├── .gitignore                      mit den Ausschlüssen der Unterprojekte
 ├── .aios/config.yaml               Bindung oder Markierung, Pakete, Zuordnung
 ├── .aios/lock.yaml                 aufgelöste Pakete (Spec 06)
+├── .aios/workspace.yaml            Manifest des Workspace, falls die Vault-Root ein Workspace ist (Spec 06)
+├── .aios/workspace.local.yaml      nur für diesen Rechner: ausgelagerte Teilbäume (Spec 06)
 ├── .aios/registry                  Build-Output
 ├── .claude/skills/<name>/          Build-Output: Hüllen der Kernel-Skills und des Alias, Projekt-Skills (Spec 03)
 └── @/                              Root-Masterspace (Klassen, Spec 02)
@@ -127,6 +129,8 @@ AIBOS legt nichts in `~/bin`, `~/etc`, `~/tmp` oder `~/git` an und ändert keine
 | `.aios/config.yaml` | `aios --activate`, `aios --fetch`, `aios --deploy`, `aios --hubs --vault`, `aios --assistant`; `legacy:` der Umstieg nach Rückfrage | ja |
 | `.aios/registry`, `.claude/skills/<name>/` | Registrierung (Spec 03) | nie |
 | `.aios/lock.yaml` | `aios --fetch`, `aios --install` (Distribution), `aios --activate` (Umstellung), `aios --workspace freeze` | ja |
+| `.aios/workspace.yaml` | User; `aios --workspace sync` trägt Repos mit Remote ein (Spec 06) | ja |
+| `.aios/workspace.local.yaml` | `aios --workspace detach <pfad>`, `attach <pfad>` | nie |
 | `@/`, `.git/`, `.gitignore` | `aios --activate` bzw. `aios --init`, falls fehlend | ja |
 | `@/@!Skill/<name>/`, `@/@!Assistant/<name>/` | User | ja |
 | `@/@!Package/<name>/` | `aios --fetch` | ja |
@@ -140,10 +144,11 @@ AIBOS legt nichts in `~/bin`, `~/etc`, `~/tmp` oder `~/git` an und ändert keine
 ├── @/
 ├── @Memo/                          vom Memo-Skill beim ersten Memo angelegt
 ├── @Data/<paket>/                  Daten der Pakete (Spec 06)
+├── @Secret/                        Geheimnisse des Projekts, nie versioniert (Spec 06, *sync*)
 ├── .aios/
 │   ├── config.yaml                 optional
 │   ├── lock.yaml                   optional (Spec 06)
-│   ├── workspace.yaml              nur im Wurzelprojekt eines Workspace (Spec 06)
+│   ├── workspace.yaml              nur im Wurzelprojekt eines Workspace, der Vault-Root (Spec 06)
 │   ├── backup/                     Sicherung während eines Plans (Spec 06)
 │   └── registry                    Build-Output
 └── .claude/skills/<name>/          Build-Output
@@ -157,7 +162,8 @@ AIBOS legt nichts in `~/bin`, `~/etc`, `~/tmp` oder `~/git` an und ändert keine
 | `@Data/<paket>/` | das Paket (Spec 06) | ja | ja |
 | `.aios/lock.yaml` | `aios --fetch`, `aios --install`, `aios --activate`, `aios --workspace freeze` | ja | nein |
 | `.aios/backup/` | Plan mit „alles oder nichts" (Spec 06) | nie | nein |
-| `.aios/workspace.yaml` | User | ja | ja |
+| `.aios/workspace.yaml` | User; `aios --workspace sync` (Spec 06) | ja | ja |
+| `@Secret/` | User | nie | ja |
 | `.aios/registry` | Registrierung (Spec 03) | nie | nein |
 | `.claude/skills/<name>/` | Registrierung | nie | nein |
 
@@ -186,6 +192,7 @@ hosts: [claude-code]
 | `assistant` | Vault, Projekt | `<name>`, `none` oder `inherit` | Zuordnung des Assistenten (Spec 03, *Zuordnung*); fehlt der Schlüssel, gilt `inherit` |
 | `hosts` | alle Ebenen | Liste | in v0.6 nur `claude-code` |
 | `hubs` | Home, Vault-Root | Liste von Namen bzw. `name: url` | Hub-Liste in Suchreihenfolge; die Vault-Root vor Home, bei gleichem Namen gilt die Vault-Root; ohne Eintrag `[aibex-aios]` (Spec 06, *Hub-Liste*) |
+| `sync` | Vault-Root | `auto`, `manual`, `off` | Abgleich des Workspace mit den Remotes (Spec 06, *Schlüssel `sync:`*); Standard `auto` mit `workspace.yaml`, sonst `off`; in einem Cloud-Ordner gilt immer `off` (V0.6, Memo 174) |
 | `inline_limit` | Home | Zeichenzahl | Grenze für die Inline-Ladung von Master-Kontext und Assistent, Standard 9000 |
 
 `aios`, `legacy` und `assistant` in `~/.aios/config.yaml` sind nicht erlaubt: Die Voreinstellung des Rechners darf keinen Vault binden (Grundregel 6) und keinen Assistenten festlegen (Grundregel 8). Unbekannte Schlüssel, Schlüssel auf einer Ebene, auf der sie nicht erlaubt sind, ein `aios`-Wert, der keine Version ist, und ein `assistant`-Wert, der kein gültiger Name ist, werden mit Warnung ignoriert.
@@ -317,9 +324,11 @@ v0.6 liefert die Kernel-Skills `aios-context`, `aios-init`, `aios-register`, `ai
 .agents/
 .aios/registry
 .aios/backup/
+.aios/workspace.local.yaml
+@Secret/
 ```
 
-`.claude/worktrees/` enthält Arbeitskopien, die der Host für eine Session anlegen kann (V0.5, Memos 71, 73), `.agents/` Kopien von Skills für andere Agenten (V0.5, Memo 10), `.aios/backup/` die Sicherung während eines Plans (Spec 06).
+`.claude/worktrees/` enthält Arbeitskopien, die der Host für eine Session anlegen kann (V0.5, Memos 71, 73), `.agents/` Kopien von Skills für andere Agenten (V0.5, Memo 10), `.aios/backup/` die Sicherung während eines Plans (Spec 06), `.aios/workspace.local.yaml` was nur für diesen Rechner gilt und `@Secret/` die Geheimnisse eines Projekts (Spec 06, *Workspaces*; V0.6, Memos 170, 172).
 
 ## Umlenkung für Tests
 
@@ -396,7 +405,7 @@ Die Weiterleiter lesen nur kleine Dateien und greifen nie auf das Netzwerk zu.
 | `aios --deploy <paket> --only <element>… \| --all [--to <projekt>]`, `aios --deploy [--to <projekt>]` | Elemente eines geholten Pakets ausrollen bzw. zeigen (Spec 06) |
 | `aios --library [<suchwort> \| <paket>]` | Pakete der Hub-Liste suchen bzw. Versionen eines Pakets (Spec 06) |
 | `aios --hubs [add <name> [<url>] \| remove <name>] [--vault]` | Hub-Liste zeigen bzw. ändern (Spec 06) |
-| `aios --workspace init <repo> [<ordner>] \| update \| freeze \| status [<pfad>] [--group <g>]` | Workspace klonen, abgleichen, einfrieren, prüfen (Spec 06) |
+| `aios --workspace attach <repo> [<vault-ordner>] \| attach <pfad> \| sync [<pfad>] [--group <g>] \| detach [<pfad>] \| status [<pfad>] \| freeze [<pfad>]` | Workspace anbinden, synchronisieren, lösen bzw. Teilbaum zurückholen und auslagern, prüfen, einfrieren (Spec 06) |
 | `aios --contribute <datei>… --to <paket> [--message <text>]` | Rückfluss als Pull Request (Spec 06) |
 | `aios --run <befehl> [argumente]` | ausgerollter Befehl eines Pakets (Spec 06) |
 | `aios --worker [<paket> setup] [--to <projekt>]` | Arbeitspferde zeigen bzw. reparieren (Spec 07) |
