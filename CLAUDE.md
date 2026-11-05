@@ -11,7 +11,8 @@ Regeln für Sessions, die an AIbex AIOS arbeiten, ob sie im Repo laufen oder im 
 | Implementierungsplan | v0.6.3: verkürzte Form ohne eigenen Plan, Schritte 0–3 in Memo 156 in V0.6 (Skizze Memo 153; Spec freigegeben in Memo 156); v0.6.2: Memo 126 in V0.6, freigegeben in Memo 127 (Spec freigegeben in Memo 125); v0.6.1: Memo 87 in V0.6, freigegeben in Memo 88 (Spec freigegeben in Memo 86); v0.6: Memo 40 in V0.6, freigegeben in Memo 41 (Spec freigegeben in Memo 39); v0.5.1: Memo 74 in V0.5, freigegeben in Memo 75; v0.5: Memo 44 in V0.5, freigegeben in Memo 45; spätere Memos gehen ihm vor (v0.4: Memo 18 in V0.4, v0.3: Memo 32 in V0.3, v0.2: Memo 20 in V0.2, v0.1: Memo 18 in V0.1) |
 | Stand der Umsetzung | `STATUS.md`: alle Schritte des freigegebenen Implementierungsplans mit ☐/☑; liegt in jedem Paket-Repo mit Implementierungsplan, auch hier (V0.6, Memos 123, 126: F102) |
 | Code | `bin/` (Bash: `aios`; `aios --context` für Hooks und lesende Skills), `templates/forwarder` (Weiterleiter `~/.aios/bin/aios`), `lib/aios/` (Python) |
-| Skills | `skills/aios/<name>/SKILL.md` (AIOS-Skills); Pakete (Skills, Assistenten, Wissen, Arbeitspferde, Distributionen) in eigenen Paket-Repos unter `~/git/AIbex/<paket>/` |
+| Skills | `skills/aios/<name>/SKILL.md` (AIOS-Skills); Pakete (Skills, Assistenten, Wissen, Arbeitspferde, Distributionen) in eigenen Paket-Repos unter `~/git/AIbex/<paket>/` oder im Konzeptprojekt unter `@Package/<paket>/` |
+| Ort dieses Repos | `~/vault/§AIOS/A-AIOS/AA-AIbex-AIOS/@Package/aibex-aios/` im Konzeptprojekt; am alten Ort `~/git/AIbex/aibex-aios` steht ein Link (Konzept-Repo V0.6, Memo 178) |
 | Paket-Manifest des Kernels | `manifest.yaml` (`name: aios`, `type: kernel`), Version wie `VERSION` |
 | Tests | `tests/run` |
 | Entwickler-Doku | `dev/` (wird nicht installiert) |
