@@ -7,7 +7,7 @@ import re
 from pathlib import Path
 
 from . import aiosinit, config, install, migrate, paths, semver
-from .ui import Abort, Plan, confirm, extra, say
+from .ui import Abort, Plan, confirm, extra, say, warn
 
 
 def target(path):
@@ -119,6 +119,34 @@ def plan_registration(root, plan):
     return True
 
 
+def plan_templates(root, plan):
+    """Missing lines of the .gitignore template in the projects of the vault (not the root, which
+    aiosinit.Steps completes), one commit of only .gitignore each (V0.6, memos 188, 189: H28)."""
+    from . import project
+    todo = [(p, project.missing_gitignore_lines(p)) for p in vault_projects(root)
+            if Path(p) != Path(root) and (Path(p) / ".git").exists()]
+    todo = [(p, lines) for p, lines in todo if lines]
+    if not todo:
+        return False
+    added = sorted({line for _, lines in todo for line in lines})
+    plan.add(f"complete the .gitignore of {len(todo)} projects of {root} after the template "
+             f"({', '.join(added)}); one commit of only .gitignore each", lambda: complete_templates(todo))
+    return True
+
+
+def complete_templates(todo):
+    from . import project
+    for p, lines in todo:
+        gi = Path(p) / ".gitignore"
+        have = gi.read_text(encoding="utf-8") if gi.is_file() else ""
+        gi.write_text(have + ("" if not have or have.endswith("\n") else "\n") + "\n".join(lines) + "\n",
+                      encoding="utf-8")
+        project.git(p, "add", "--", ".gitignore")
+        r = project.git(p, "commit", "-q", "-m", "AIOS: .gitignore nach der Vorlage ergänzt", "--", ".gitignore")
+        if r.returncode:
+            warn(f"commit in {p} failed ({(r.stderr or r.stdout).strip()}); commit .gitignore by hand")
+
+
 def register_vault(root):
     from . import context, registry
     for p in vault_projects(root):
@@ -167,7 +195,8 @@ def activate(version, path=None):
     plan = Plan()
     bound = plan_activation(tag, p, plan)
     registers = config.is_aibos(tag[1:]) and plan_registration(p, plan)
-    if not bound and not registers:
+    templates = config.is_aibos(tag[1:]) and plan_templates(p, plan)
+    if not bound and not registers and not templates:
         say(f"=> {effective(p)}, nothing to do")
         offer_old_wrappers(tag, p)
         return 0

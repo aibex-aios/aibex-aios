@@ -199,6 +199,25 @@
    assert_not_contains "$(A --activate v0.6.0 "$V8" --plan)" "note: distribution-" "H5: no note when nothing changes"
 
 #===============================================================================
+# v0.6.4 (H28): the binding completes the .gitignore of the projects after the template, one commit
+# of only .gitignore each (spec 04, aios --activate; V0.6, memos 188, 189)
+#===============================================================================
+
+   V9="$W/§Neun"; mkdir -p "$V9/P-Alt/@" "$V9/P-Neu/@"
+   for X in P-Alt P-Neu; do git -C "$V9/$X" init -q -b main; done
+   printf '.DS_Store\n.claude/skills/\n.claude/worktrees/\n.agents/\n.aios/registry\n.aios/backup/\n' > "$V9/P-Alt/.gitignore"
+   cp "$SRC/templates/gitignore" "$V9/P-Neu/.gitignore"
+   for X in P-Alt P-Neu; do git -C "$V9/$X" add -A; git -C "$V9/$X" -c user.name=t -c user.email=t@t commit -qm init; done
+   OUT="$(A --activate v0.6.0 "$V9" --plan)"
+   assert_contains "$OUT" "complete the .gitignore of 1 projects of $V9 after the template (.aios/workspace.local.yaml, @Secret/)" "H28: plan completes the old project only"
+   OUT="$(echo y | A --activate v0.6.0 "$V9")"
+   assert_contains "$(cat "$V9/P-Alt/.gitignore")" "@Secret/" "H28: line added"
+   assert_eq "$(git -C "$V9/P-Alt" log -1 --format=%s)" "AIOS: .gitignore nach der Vorlage ergänzt" "H28: commit of only .gitignore"
+   assert_eq "$(git -C "$V9/P-Alt" status --porcelain -- .gitignore)" "" "H28: .gitignore committed"
+   assert_eq "$(git -C "$V9/P-Neu" log -1 --format=%s)" "init" "H28: a complete project is not touched"
+   assert_not_contains "$(A --activate v0.6.0 "$V9" --plan)" "complete the .gitignore" "H28: nothing to complete the second time"
+
+#===============================================================================
 # v0.6 step 10 (B3): the vault reached through a symlink binds like its physical path (spec 02)
 #===============================================================================
 
