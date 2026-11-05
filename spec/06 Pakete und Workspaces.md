@@ -437,7 +437,7 @@ Für Projekte mit `@/` schlägt AIOS Namen nach einem festen Schema vor (V0.6, M
 
 Beispiel `§Work`: `Work`, `Work-A-Admin`, `Work-AT-Templates`, `Work-ATP-Powerpoint`.
 
-- **Fremd-Repos** ohne `@/` behalten ihren Namen, weil er im Hub veröffentlicht ist (F178).
+- **Paket-Repos** folgen nicht dem Schema: Ihr Name ist der Paketname, klein geschrieben, `<typ>-<name>` (*Pakete*); der Kernel liegt im Repo `aibex-aios`. Ein Repo mit `manifest.yaml` an seiner Wurzel und ohne `@/` gilt als Paket-Repo; `sync` schlägt dafür keinen Namen vor und meldet keine Abweichung (V0.6, Memo 177: F200, F201). Andere **Fremd-Repos** ohne `@/` behalten ihren Namen ebenso (F178).
 - **Zeichen:** erlaubt sind `A–Z a–z 0–9 . _ -`; `ä ö ü Ä Ö Ü ß` werden zu `ae oe ue Ae Oe Ue ss`, jedes andere Zeichen zu `-` (F180).
 - **Eindeutigkeit:** Es zählt nur der letzte Ordnername. Haben zwei Projekte des Workspace denselben Ordnernamen, meldet `sync` die Kollision und schlägt keinen Namen vor (F179).
 - Das Schema ist ein **Vorschlag**: Ein abweichender Name funktioniert, `sync` nennt ihn als Hinweis (F181). AIOS legt keine Repos an; bei einem Projekt ohne Remote nennt `sync` den Namen und den Befehl, z. B. `gh repo create aibex-aios/Work-AT-Templates --private --source <pfad> --remote origin` (F182).
