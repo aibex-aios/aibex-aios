@@ -152,7 +152,7 @@ Ist die Vault-Root ein Workspace (Spec 06, *Workspaces*), steht nach dem Block d
 
 | `sync` | Text |
 |---|---|
-| `auto` | `This vault is an AIBOS workspace with sync: auto. After every commit, offer /aios-sync at once so that the remote holds a backup (push only after the user's yes). Name commits that are not pushed when you finish.` |
+| `auto` | `This vault is an AIBOS workspace with sync: auto. After every commit, offer /aios-sync for the project at once so that the remote holds a backup (push only after the user's yes). Name commits that are not pushed when you finish.` |
 | `manual` | `This vault is an AIBOS workspace with sync: manual. /aios-sync synchronizes it with its remotes on request.` |
 | `off` in einem Cloud-Ordner | `This vault lies in a cloud folder (<dienst>); the workspace sync of AIBOS is off. Plain git (commit, push, pull) stays allowed on the user's request.` |
 

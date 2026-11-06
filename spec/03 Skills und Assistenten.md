@@ -162,10 +162,10 @@ Die drei Handgriffe eines Workspace (Spec 06, *Workspaces*) haben je einen Kerne
 | Skill | Aufruf | Bemerkung |
 |---|---|---|
 | `/aios-attach <pfad>` | `aios --workspace attach <pfad>` | nur mit Pfad: einen ausgelagerten Teilbaum zurückholen. Einen Workspace an einen neuen Rechner anbinden (`attach <repo>`) geht nur im Terminal, weil es dort noch keinen Vault gibt |
-| `/aios-sync [<pfad>]` | `aios --workspace sync [<pfad>]` | Projektbaum abgleichen |
-| `/aios-detach [<pfad>]` | `aios --workspace detach [<pfad>]` | Teilbaum auslagern bzw. Workspace lösen |
+| `/aios-sync [<pfad>]` | `aios --workspace sync [<pfad>]` | Projektbaum abgleichen; „Projekt" oder kein Wort: ohne Pfad (Projekt der Session), „Workspace"/„Vault": Pfad der Vault-Root |
+| `/aios-detach [<pfad>]` | `aios --workspace detach [<pfad>]` | Teilbaum auslagern bzw. Workspace lösen; Worte wie bei `/aios-sync`, den ganzen Workspace sagt Claude vorher ausdrücklich an |
 
-**Ablauf:** den Befehl mit `--plan` ausführen; den Plan zeigen; bei `/aios-sync` dazu die ausgehenden Commits je Repo und die Commits, die nicht aus der laufenden Session stammen, mit einer eigenen Frage nennen (Regel *Weiter*); einmal fragen; nach Ja mit `--yes` ausführen und das Ergebnis kurz melden, mit den Hinweisen (Repos ohne Remote mit dem vorgeschlagenen Befehl, angehaltene Repos mit Grund). Bei `sync: auto` bietet Claude `/aios-sync` nach jedem Commit an (Spec 02, *Regel des Workspace*).
+**Ablauf:** den Befehl mit `--plan` ausführen; den Plan zeigen; bei `/aios-sync` dazu die ausgehenden Commits je Repo und die Commits, die nicht aus der laufenden Session stammen, mit einer eigenen Frage nennen (Regel *Weiter*); einmal fragen; nach Ja mit `--yes` ausführen und das Ergebnis kurz melden, mit den Hinweisen (Repos ohne Remote mit dem vorgeschlagenen Befehl, angehaltene Repos mit Grund). Bei `sync: auto` bietet Claude `/aios-sync` für das Projekt nach jedem Commit an (V0.6, Memo 203: B33) (Spec 02, *Regel des Workspace*).
 
 ## Distributionen — `/aios-distribution`
 

@@ -237,7 +237,7 @@ Die Abnahmetests von v0.6.3, v0.6.2, v0.6.1, v0.6.0 und v0.5 stehen in dieser Sp
 | 3 | zweiter Benutzer, Terminal | Zugang zu den privaten Repos einrichten | `git ls-remote <url der Vault-Root>` gelingt |
 | 4 | zweiter Benutzer, Terminal | Kandidat installieren (Tag in den eigenen Klon holen, `~/.aios/bin/aios --install v0.6.4-rc<n>`) | Kernel unter `~/.aios/versions/` des zweiten Benutzers |
 | 5 | zweiter Benutzer, Terminal | `~/.aios/bin/aios --workspace attach <url der Vault-Root> ~/Workspace/§AIBOS` | ein Plan, ein Ja; alle Projekte des Manifests geklont, Eltern vor Kindern; Pakete und Arbeitspferde abgeglichen; `status` ohne Abweichung |
-| 6 | zweiter Benutzer, erster Chat im Testprojekt | „sync den Workspace" | Kernel-Skill über den Block der Kernel-Skills; Plan ohne Änderungen |
+| 6 | zweiter Benutzer, erster Chat im Testprojekt | „sync den Workspace", dann „sync project" | Kernel-Skill über den Block der Kernel-Skills; Plan ohne Änderungen, zuerst für den ganzen Workspace, dann nur für das Testprojekt (V0.6, Memo 203: B33) |
 | 7 | zweiter Benutzer, zweiter Chat | `/aios-sync` | der Slash-Befehl läuft |
 | 8 | zweiter, dann erster Benutzer | im Testprojekt eine Datei ändern und committen | Claude bietet sofort `/aios-sync` an; nach Ja ist der Commit am Remote; ein neuer Chat des ersten Benutzers im Testprojekt holt ihn beim Start ohne Rückfrage (`AIOS-SYNC: … fast-forwarded`) |
 | 9 | beide Benutzer | im Testprojekt auf beiden Seiten je einen Commit, dann `/aios-sync` beim zweiten | Projekt unverändert, kein Push, Grund im Bericht |
@@ -246,7 +246,7 @@ Die Abnahmetests von v0.6.3, v0.6.2, v0.6.1, v0.6.0 und v0.5 stehen in dieser Sp
 | 12 | zweiter Benutzer, Finder | Doppelklick auf `Y-Youtube/DETACHED.command` | Terminal mit dem Plan von `attach Y-Youtube`; nach Ja ist der Teilbaum zurück |
 | 13 | zweiter Benutzer | im Testprojekt eine Datei ändern, nicht committen, `/aios-detach A-AIOS/AA-AIbex-AIOS/AAP-Probe-Workspace` | abgelehnt mit Nennung der Datei; nichts verändert |
 | 14 | erster Benutzer, Drive-Vault | in einem Vault unter `~/Library/CloudStorage/` den Master-Kontext laden und `aios --workspace sync --plan` | Zeile zum Cloud-Ordner, `sync` verweigert |
-| 15 | zweiter Benutzer | `~/.aios/bin/aios --workspace detach` | nach der Prüfung liegt der Vault-Ordner im Papierkorb des zweiten Benutzers |
+| 15 | zweiter Benutzer | `~/.aios/bin/aios --workspace detach ~/Workspace/§AIBOS` | nach der Prüfung liegt der Vault-Ordner im Papierkorb des zweiten Benutzers |
 | 16 | Notebook | Schritte 3–8, 11 und 12 | wie dort |
 | 17 | erster Benutzer | `tests/run`, `tests/live/fresh.sh`, `permit.sh`, `changeover.sh`, `rothirsch.sh` | alle grün |
 | 18 | erster Benutzer | Bestandslauf: je Vault aus `aios --vaults` `aios --activate v0.6.4-rc<n> <vault> --plan`; Hooks, `~/.claude/skills/`, `workers.yaml` und `installations.yaml` an beiden Orten | keine Konflikte; Tabelle im Abnahme-Memo |

@@ -585,6 +585,19 @@ def refuse_off(root):
     return mode
 
 
+def project_of(root, start):
+    """B33: without a path the project of the working directory counts: the nearest entry of
+    workspace.yaml at or above start, else the vault root (the whole workspace)."""
+    paths_ = {i.path for i in load(root)}
+    d = start
+    while d != root and root in d.parents:
+        rel = d.relative_to(root).as_posix()
+        if rel in paths_:
+            return d
+        d = d.parent
+    return root
+
+
 def do_sync(path=None, groups=()):
     """aios --workspace sync [<path>] [--group <g>…] (spec 06, sync)."""
     start = Path(os.path.realpath(path or paths.cwd()))
@@ -593,6 +606,8 @@ def do_sync(path=None, groups=()):
     root = root_of(start)
     activated(root)
     refuse_off(root)
+    if path is None:
+        start = project_of(root, start)                 # B33: the project, at the vault root all
     rel = start.relative_to(root).as_posix() if start != root else "."
     plan = Plan()
     items = plan_sync(plan, root, rel, groups)
@@ -988,11 +1003,14 @@ def placeholder(root, d, rel, origins):
 
 
 def detach(path=None):
-    """aios --workspace detach [<path>]: with a path detach the subtree, without it the workspace."""
+    """aios --workspace detach [<path>]: detach the subtree of the project; at the vault root (or
+    with its path) detach the workspace. Without a path the project of the working directory (B33)."""
     start = Path(os.path.realpath(path or paths.cwd()))
     root = root_of(start)
     activated(root)
-    if path is None or start == root:
+    if path is None:
+        start = project_of(root, start)
+    if start == root:
         return detach_all(root)
     rel = start.relative_to(root).as_posix()
     items = {i.path: i for i in load(root)}

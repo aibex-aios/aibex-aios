@@ -365,3 +365,19 @@ This vault is an AIBOS workspace with sync: auto." "block with sync: auto"
    printf 'v0.6.2: %s\n' "$F" >> "$HOME/.aios/installations.yaml"
    OUT="$(A "$U" --workspace attach "file://$RM/root9" "$U/§W8" --yes)"
    assert_contains "$OUT" "has no workspace sync; the sync runs with $VER" "H30: no hand over below 0.6.4"
+
+#===============================================================================
+# B33: without a path sync and detach take the project of the working directory, at the vault
+# root the whole workspace (V0.6, memo 203)
+#===============================================================================
+
+   OUT="$(A "$V/libs/lib-a/@" --workspace sync --plan)"
+   assert_contains "$OUT" "sync the workspace $V at libs/lib-a" "B33: sync without a path: the project of the working directory"
+   assert_not_contains "$OUT" "update docs" "B33: other projects stay out"
+   OUT="$(A "$V" --workspace sync --plan)"
+   assert_contains "$OUT" "update docs" "B33: at the vault root the whole workspace"
+   OUT="$(A "$V/libs/lib-a/sub" --workspace detach --plan)"
+   assert_contains "$OUT" "move libs/lib-a/sub with" "B33: detach without a path: the project of the working directory"
+   assert_not_contains "$OUT" "move $V to the trash" "B33: not the whole workspace from a project"
+   assert_contains "$(A "$V/libs/lib-a/sub" --skill aios-sync)" "sync project" "B33: skill knows the words"
+   assert_contains "$(A "$V" --context --load "$V" 2>/dev/null; cat "$HOME"/.aios/cache/*/part-1.md 2>/dev/null)" "offer /aios-sync for the project" "B33: rule of the workspace names the project"

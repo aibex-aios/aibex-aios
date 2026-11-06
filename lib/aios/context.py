@@ -190,8 +190,8 @@ def kernel_skills_block():
 
 
 WORKSPACE_TEXT = {                                  # spec 02, Regel des Workspace (V0.6, memo 174)
-    "auto": ("This vault is an AIBOS workspace with sync: auto. After every commit, offer /aios-sync at once "
-             "so that the remote holds a backup (push only after the user's yes). Name commits that are not "
+    "auto": ("This vault is an AIBOS workspace with sync: auto. After every commit, offer /aios-sync for the "
+             "project at once so that the remote holds a backup (push only after the user's yes). Name commits that are not "
              "pushed when you finish."),
     "manual": "This vault is an AIBOS workspace with sync: manual. /aios-sync synchronizes it with its remotes on request.",
     "cloud": ("This vault lies in a cloud folder ({cloud}); the workspace sync of AIBOS is off. Plain git "

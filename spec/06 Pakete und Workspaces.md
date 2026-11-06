@@ -390,6 +390,8 @@ Die Arbeit mit einem Workspace kennt drei Handgriffe, je für den ganzen Workspa
 | **sync** | synchronisieren | den Projektbaum mit den Remotes abgleichen | nur diesen Teilbaum |
 | **detach** | lösen | den Workspace von diesem Rechner lösen | einen Teilbaum auslagern |
 
+**Umfang ohne Pfad** (V0.6, Memo 203: B33): Ohne Pfad gilt das **Projekt des Arbeitsverzeichnisses** mit seinen Unterprojekten, also der nächste Eintrag von `workspace.yaml` an oder über dem Arbeitsverzeichnis; an der Vault-Root (oder außerhalb jedes Eintrags) ist das der ganze Workspace. Das gilt für `sync` und `detach` gleich; `attach` mit Pfad holt ausdrücklich einen Teilbaum zurück. Der Plan nennt den Umfang. Die Kernel-Skills übersetzen die Worte des Users: „Projekt" oder kein Wort ohne Pfad, „Workspace" bzw. „Vault" mit der Vault-Root als Pfad (Spec 03, *Workspaces*).
+
 `aios --workspace` arbeitet nur in einem A/W (Spec 01, I4). Ausgenommen ist `attach <repo>`, das den A/W erst anlegt.
 
 ### `.aios/workspace.yaml`
@@ -475,7 +477,7 @@ detached:
 | `aios --workspace attach <repo> [<vault-ordner>]` | Workspace an diesen Rechner anbinden: Vault-Root klonen, dann `sync` |
 | `aios --workspace attach <pfad>` | ausgelagerten Teilbaum zurückholen |
 | `aios --workspace sync [<pfad>] [--group <g>…]` | Projektbaum mit den Remotes abgleichen |
-| `aios --workspace detach [<pfad>]` | ohne Pfad: Workspace von diesem Rechner lösen; mit Pfad: Teilbaum auslagern |
+| `aios --workspace detach [<pfad>]` | Teilbaum auslagern; an der Vault-Root bzw. mit ihrem Pfad: Workspace von diesem Rechner lösen |
 | `aios --workspace status [<pfad>]` | je Projekt: vorhanden, ausgelagert, Zweig, Revision enthalten, voraus/hinter dem Remote, offene Änderungen |
 | `aios --workspace freeze [<pfad>]` | Commit-SHA jedes Projekts in `lock.yaml` des Wurzelprojekts schreiben (Abschnitt `workspace`) |
 
@@ -498,7 +500,7 @@ Der Plan zeigt alle Schritte; ein Ja. Danach ist der Rechner ohne `aios --activa
 
 #### sync — Projektbaum abgleichen
 
-`aios --workspace sync [<pfad>]` macht fünf Schritte in einem Plan (V0.6, Memo 166). Mit `<pfad>` gelten sie nur für Projekte an oder unter diesem Pfad. Ausgelagerte Teilbäume (`workspace.local.yaml`) überspringt `sync` ganz: Es holt sie nicht zurück und pusht nichts aus ihnen (F175).
+`aios --workspace sync [<pfad>]` macht fünf Schritte in einem Plan (V0.6, Memo 166). Sie gelten für die Projekte an oder unter `<pfad>`, ohne Pfad unter dem Projekt des Arbeitsverzeichnisses (*Umfang ohne Pfad*); an der Vault-Root für den ganzen Workspace. Ausgelagerte Teilbäume (`workspace.local.yaml`) überspringt `sync` ganz: Es holt sie nicht zurück und pusht nichts aus ihnen (F175).
 
 1. **Klonen, was fehlt:** Projekte aus `workspace.yaml`, deren Pfad fehlt, nach *Klonen*, Eltern vor Kindern. Scheitert ein Klon (z. B. ein Remote, das es auf diesem Rechner nicht gibt), nennt der Bericht das Projekt mit Grund (`not cloned`), überspringt seine Unterprojekte und macht mit den übrigen weiter (V0.6, Memo 194: B30).
 2. **Holen, nur fast-forward:** jedes vorhandene Repo des Workspace mit Upstream, auch die Vault-Root: `git fetch --tags origin`. Ist `revision` ein Zweig, `git merge --ff-only origin/<zweig>`; ist sie ein Tag oder Commit und enthält der ausgecheckte Zweig ihn nicht, wird der Zweig per fast-forward auf diesen Commit gesetzt. Nicht möglich (nicht committete Änderungen, anderer Zweig ausgecheckt, eigene Commits bei neuen Ständen am Remote, `origin` zeigt auf ein anderes Repo als `workspace.yaml`): Das Repo bleibt unverändert und erscheint mit dem Grund im Bericht (F160, P4). In Schritt 5 wird es nicht gepusht, außer der Grund sind nur nicht committete Änderungen: Ein Push ändert den Arbeitsbaum nicht, committete Arbeit geht also hinaus (V0.6, Memo 196: B31). Ein Ordner am Pfad, der kein Git-Repo ist, bleibt ebenso unverändert.
@@ -512,7 +514,7 @@ Der Plan zeigt je Repo, was geschieht, bei Schritt 5 die ausgehenden Commits mit
 
 #### detach — Teilbaum auslagern, Workspace lösen
 
-`aios --workspace detach <pfad>` lagert einen Teilbaum auf diesem Rechner aus, um Platz zu sparen (V0.6, Memo 170). `<pfad>` ist ein Projekt aus `workspace.yaml`, nicht das Wurzelprojekt.
+`aios --workspace detach [<pfad>]` lagert einen Teilbaum auf diesem Rechner aus, um Platz zu sparen (V0.6, Memo 170). `<pfad>` ist ein Projekt aus `workspace.yaml`; ohne Pfad das Projekt des Arbeitsverzeichnisses (*Umfang ohne Pfad*). Ist es die Vault-Root, wird der Workspace gelöst (unten).
 
 **Prüfung** (F165): Für jedes Repo im Teilbaum, auch für Unterprojekte, die nicht im Manifest stehen, gilt:
 
@@ -532,7 +534,7 @@ Dazu ein Eintrag in `workspace.local.yaml`.
 
 **Zurückholen:** `aios --workspace attach <pfad>` prüft, dass `<pfad>` in `workspace.local.yaml` steht und der Ordner nur den Platzhalter enthält, entfernt den Platzhalter, klont das Projekt und seine Unterprojekte aus `workspace.yaml` (Eltern vor Kindern), führt für sie die Schritte 2 und 3 von `sync` aus und entfernt den Eintrag.
 
-**Workspace lösen:** `aios --workspace detach` ohne Pfad prüft wie oben alle Repos des Workspace einschließlich der Vault-Root und legt danach den Vault-Ordner in den Papierkorb (F174). Installation, Hooks und andere Vaults bleiben.
+**Workspace lösen:** `aios --workspace detach` an der Vault-Root bzw. mit ihrem Pfad prüft wie oben alle Repos des Workspace einschließlich der Vault-Root und legt danach den Vault-Ordner in den Papierkorb (F174). Installation, Hooks und andere Vaults bleiben.
 
 #### status
 
