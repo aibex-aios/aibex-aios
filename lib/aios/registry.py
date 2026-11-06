@@ -323,7 +323,7 @@ def sync_for(cwd):
     return ctx, Sync(ctx)
 
 
-def register(cwd, yes=False):
+def register(cwd, yes=False, brief=False):
     """aios --context --sync [--yes], aios --register: preview, (question), apply."""
     from . import ui
     from .ui import say, warn
@@ -336,6 +336,10 @@ def register(cwd, yes=False):
         warn(p)
     if not s:
         say(f"=> skills of {ctx.cwd} are up to date")
+        return 0
+    if brief:                                       # H31: one line per project in sync/attach
+        s.apply()
+        say(f"   {ctx.cwd.name}: registered ({len(s.lines())} skills new or changed)")
         return 0
     say(f"=> register the kernel skills and project skills of {ctx.cwd} in .claude/skills/")
     for line in s.lines():

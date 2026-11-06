@@ -30,6 +30,8 @@
    git -C "$SANDBOX/src/lib-a" commit -qm "exclude sub"; git -C "$SANDBOX/src/lib-a" push -q origin main
    repo sub @/README.md
    repo lib-b src/main.c
+   printf 'build/\n' > "$SANDBOX/src/lib-b/.gitignore"  # a foreign repo: no AIOS template (B32)
+   git -C "$SANDBOX/src/lib-b" commit -qam "foreign"; git -C "$SANDBOX/src/lib-b" push -q origin main
    git -C "$SANDBOX/src/lib-b" tag v1.0; git -C "$SANDBOX/src/lib-b" push -q origin v1.0
    repo docs @/README.md
    repo root @/README.md
@@ -331,3 +333,35 @@ This vault is an AIBOS workspace with sync: auto." "block with sync: auto"
    assert_contains "$OUT" "workspace §W synchronized" "B30: sync goes on"
    [ ! -e "$V/gone" ] && ok || fail "B30: no folder left for the failed parent"
    cp "$SANDBOX/ws.bak" "$V/.aios/workspace.yaml"; git -C "$V" checkout -q -- .gitignore
+
+#===============================================================================
+# B32: an @/ without a tracked file is missing in a clone; sync creates it and makes the project
+# runnable; integrity names it. H31: one line per project for the registration. H30: attach
+# hands over to the bound version (V0.6, memos 198, 199)
+#===============================================================================
+
+   repo bare README.md                               # an AIOS project whose @/ held no tracked file
+   printf '  - name: bare\n    repo: file://%s/bare\n    revision: main\n    path: bare\n' "$RM" >> "$V/.aios/workspace.yaml"
+   printf '/bare/\n' >> "$V/.gitignore"
+   OUT="$(A "$V" --workspace sync --yes)"
+   assert_contains "$OUT" "bare: cloned (main)" "B32: bare cloned"
+   assert_contains "$OUT" "bare: @/ was missing in the clone (no tracked file in it), created" "B32: @/ created"
+   assert_file "$V/bare/.claude/skills/aios-status/SKILL.md"
+   assert_contains "$OUT" "bare: registered (" "H31: one line for the registration"
+   assert_not_contains "$OUT" "      new      aios-status" "H31: no line per skill in sync"
+   assert_contains "$(A "$V/bare" --integrity)" "@/ holds no tracked file" "B32: integrity names the untracked @/"
+   cp "$SANDBOX/ws.bak" "$V/.aios/workspace.yaml"; git -C "$V" checkout -q -- .gitignore
+   F="$SANDBOX/fake"; mkdir -p "$F/bin"
+   printf '#!/bin/sh\necho "fake 0.6.4-rc9: $* in $(pwd)"\n' > "$F/bin/aios"; chmod +x "$F/bin/aios"
+   printf 'v0.6.4-rc9: %s\n' "$F" >> "$HOME/.aios/installations.yaml"
+   repo root9 @/README.md
+   W9="$SANDBOX/src/root9"; mkdir -p "$W9/.aios"; printf 'aios: 0.6.4-rc9\n' > "$W9/.aios/config.yaml"
+   printf 'projects: []\n' > "$W9/.aios/workspace.yaml"
+   git -C "$W9" add -A; git -C "$W9" commit -qm "bound to rc9"; git -C "$W9" push -q origin main
+   OUT="$(A "$U" --workspace attach "file://$RM/root9" "$U/§W9" --yes)"
+   assert_contains "$OUT" "hand over to the bound version 0.6.4-rc9" "H30: attach hands over"
+   assert_contains "$OUT" "fake 0.6.4-rc9: --workspace sync --yes in $U/§W9" "H30: sync runs in the bound version"
+   printf 'aios: 0.6.2\n' > "$W9/.aios/config.yaml"; git -C "$W9" commit -qam "bound to 0.6.2"; git -C "$W9" push -q origin main
+   printf 'v0.6.2: %s\n' "$F" >> "$HOME/.aios/installations.yaml"
+   OUT="$(A "$U" --workspace attach "file://$RM/root9" "$U/§W8" --yes)"
+   assert_contains "$OUT" "has no workspace sync; the sync runs with $VER" "H30: no hand over below 0.6.4"

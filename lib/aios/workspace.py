@@ -13,6 +13,7 @@ from __future__ import annotations
 import datetime
 import os
 import re
+import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -269,11 +270,25 @@ def report(path, state, why=""):
     say(f"   {path}: {state}" + (f" ({why})" if why and state != "ok" else ""))
 
 
+def aios_clone(d):
+    """A clone of an AIOS project: @/, or else the .gitignore of the AIOS template; git keeps no
+    empty folder, so an @/ without a tracked file is missing in the clone (B32)."""
+    if (d / "@").is_dir():
+        return True
+    gi = d / ".gitignore"
+    if is_package(d) or not gi.is_file():
+        return False
+    return ".aios/registry" in gi.read_text(encoding="utf-8", errors="replace").split()
+
+
 def runnable(d):
     """Step 3: reconcile packages and workhorses with lock.yaml, then register (F158)."""
     from . import fetch, registry
-    if not (d / "@").is_dir():
+    if not aios_clone(d):
         return
+    if not (d / "@").is_dir():
+        (d / "@").mkdir()
+        say(f"   {d.name}: @/ was missing in the clone (no tracked file in it), created")
     keep = ui.MODE
     ui.MODE = "yes"
     try:
@@ -283,7 +298,7 @@ def runnable(d):
             except (Abort, ui.Cancelled, ui.PlanOnly) as e:
                 warn(f"{d}: packages not reconciled ({e}); run aios --fetch there")
         try:
-            registry.register(str(d), yes=True)
+            registry.register(str(d), yes=True, brief=True)
         except (Abort, ui.Cancelled, ui.PlanOnly) as e:
             warn(f"{d}: skills not registered ({e})")
     finally:
@@ -639,6 +654,30 @@ def kernel_ok(version):
     return False, repo
 
 
+def handover(target, bound):
+    """H30: the sync after attach runs in the bound version, not in the calling one; True if handed
+    over. A bound version without workspace commands (< 0.6.4) cannot take over: warn, go on here."""
+    from . import version as running
+    from .install import semver_key
+    if bound in (None, running()):
+        return False
+    if semver_key(bound) < semver_key("0.6.4-rc1"):
+        warn(f"the vault binds AIOS {bound}, which has no workspace sync; the sync runs with {running()}")
+        return False
+    from .install import installations
+    found = installations().get(f"v{bound}")
+    if not found:
+        warn(f"AIOS {bound} is bound but not installed; the sync runs with {running()}")
+        return False
+    say(f"=> hand over to the bound version {bound}: aios --workspace sync")
+    env = {k: v for k, v in os.environ.items() if k != "AIOS_HOME"}
+    r = subprocess.run([str(Path(found[0]) / "bin" / "aios"), "--workspace", "sync", "--yes"],
+                       cwd=str(target), env=env)
+    if r.returncode:
+        raise Abort(f"the sync in {bound} failed; run aios --workspace sync in {target}")
+    return True
+
+
 def attach(repo, folder=None):
     """aios --workspace attach <repo> [<vault-folder>]: clone the vault root, then sync (F161)."""
     target = Path(folder) if folder else Path(paths.cwd()) / ("§" + repo_name(repo))
@@ -676,6 +715,8 @@ def attach(repo, folder=None):
                 install.install(f"v{cfg.aios}")
             finally:
                 ui.MODE = keep
+        if handover(target, cfg.aios):
+            return
         inner = Plan()
         plan_sync(inner, target)
         keep = ui.MODE
@@ -686,7 +727,7 @@ def attach(repo, folder=None):
             ui.MODE = keep
 
     plan.add(f"clone {repo} -> {target} (vault root)", run)
-    plan.add("install the bound kernel version if it is missing (aios --install)")
+    plan.add("install the bound kernel version if it is missing (aios --install), hand over to it")
     plan.add("then sync: clone the projects of workspace.yaml, parents before children; reconcile "
              "packages and workhorses; register the skills")
     if ui.MODE != "yes":

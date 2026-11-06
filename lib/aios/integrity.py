@@ -157,6 +157,8 @@ def check(p, depth):
         r.hints += push_hints(p)
     r.hints += agents_hints(p)
     r.hints += binding_hints(p)
+    if r.repo and not project.git(p, "ls-files", "@").stdout.strip():
+        r.hints.append("@/ holds no tracked file, a clone lacks it; commit @/.gitkeep (B32)")
     name = project.check_name(p)
     if not name.ok:
         r.hints.append("name violates the name rule (" + "; ".join(name.problems)

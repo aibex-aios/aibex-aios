@@ -115,6 +115,7 @@ Ein Projekt ist **integer**, wenn Init und Commit erfüllt sind. **Hinweise** (`
 - **Namensregel:** ein Verstoß nach *Namensregel*.
 - **Kopien in `.agents/`:** Liegen in `<Projekt>/.agents/skills/<name>/` Kopien mit Marke `.aios-deploy`, deren Version nicht dem registrierten oder geholten Stand entspricht oder deren Skill es in der Kette nicht mehr gibt, nennt der Bericht sie als veraltet. AIOS ändert und entfernt sie nicht (V0.5, Memos 10, 24, Option C).
 - **Bindung im Projekt:** Ein `aios:` oder `legacy:` in der `.aios/config.yaml` eines Projekts (nicht der Vault-Root) nennt der Bericht als übergangen (Spec 04, *Formate*; V0.6, Memo 16, F4).
+- **`@/` ohne getrackte Datei:** Enthält `@/` im eigenen Repo keine getrackte Datei, fehlt es in jedem Klon; der Bericht empfiehlt, `@/.gitkeep` zu committen (V0.6, Memo 199: B32). `aios --init` legt `@/` mit `.gitkeep` an.
 - **Bindung und Markierung zugleich:** Stehen `aios:` und `legacy:` in der `.aios/config.yaml` der Vault-Root, nennt der Bericht, dass `aios:` gilt (V0.6, Memo 17, F7).
 
 Registrierte Skills, geholte Pakete und Blueprints gehören nicht zur Integrität; den Abgleich macht `aios --fetch` (Spec 06).
