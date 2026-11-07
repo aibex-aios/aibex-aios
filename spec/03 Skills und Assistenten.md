@@ -155,15 +155,16 @@ Paketnamen folgen dem Muster `<typ>-<name>` (Spec 06, *Paketnamen*); die Element
 
 Pakete holt nur der User; `aios --install` bietet es nicht an.
 
-## Workspaces — `/aios-attach`, `/aios-sync`, `/aios-detach`
+## Workspaces — `/aios-attach`, `/aios-sync`, `/aios-detach`, `/aios-restore`
 
-Die drei Handgriffe eines Workspace (Spec 06, *Workspaces*) haben je einen Kernel-Skill (V0.6, Memos 166, 170, 172: F170). Jeder ist eine dünne Hülle um `aios --workspace`:
+Die drei Handgriffe eines Workspace (Spec 06, *Workspaces*) und das Zurückholen (Spec 06, *Zurückholen*) haben je einen Kernel-Skill (V0.6, Memos 166, 170, 172: F170; Memo 204: F229). Jeder ist eine dünne Hülle um `aios --workspace`:
 
 | Skill | Aufruf | Bemerkung |
 |---|---|---|
 | `/aios-attach <pfad>` | `aios --workspace attach <pfad>` | nur mit Pfad: einen ausgelagerten Teilbaum zurückholen. Einen Workspace an einen neuen Rechner anbinden (`attach <repo>`) geht nur im Terminal, weil es dort noch keinen Vault gibt |
 | `/aios-sync [<pfad>]` | `aios --workspace sync [<pfad>]` | Projektbaum abgleichen; „Projekt" oder kein Wort: ohne Pfad (Projekt der Session), „Workspace"/„Vault": Pfad der Vault-Root |
 | `/aios-detach [<pfad>]` | `aios --workspace detach [<pfad>]` | Teilbaum auslagern bzw. Workspace lösen; Worte wie bei `/aios-sync`, den ganzen Workspace sagt Claude vorher ausdrücklich an |
+| `/aios-restore …` | `aios --workspace history …`, `aios --workspace restore …` | Sätze wie „hol die gelöschte Datei … zurück", „zeig frühere Fassungen von …", „setz das Projekt auf den Stand von gestern zurück": erst `history` zeigen, die gewählte Fassung nennen, dann `restore` mit Plan und Rückfrage |
 
 **Ablauf:** den Befehl mit `--plan` ausführen; den Plan zeigen; bei `/aios-sync` dazu die ausgehenden Commits je Repo und die Commits, die nicht aus der laufenden Session stammen, mit einer eigenen Frage nennen (Regel *Weiter*); einmal fragen; nach Ja mit `--yes` ausführen und das Ergebnis kurz melden, mit den Hinweisen (Repos ohne Remote mit dem vorgeschlagenen Befehl, angehaltene Repos mit Grund). Bei `sync: auto` bietet Claude `/aios-sync` für das Projekt nach jedem Commit an (V0.6, Memo 203: B33) (Spec 02, *Regel des Workspace*).
 
