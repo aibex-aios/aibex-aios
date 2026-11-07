@@ -20,7 +20,17 @@ STEP = re.compile(r"^(?:[A-Z]|\d+)$")              # a child adds one capital le
 
 
 def git(p, *args):
-    return subprocess.run(["git", "-C", str(p), *args], capture_output=True, text=True)
+    """git in p; paths with umlauts come unescaped (B34: core.quotePath)."""
+    return subprocess.run(["git", "-c", "core.quotePath=false", "-C", str(p), *args],
+                          capture_output=True, text=True)
+
+
+def unquote(path):
+    """A path as git prints it: "…" with C escapes for spaces and special characters (B34)."""
+    if len(path) >= 2 and path.startswith('"') and path.endswith('"'):
+        raw = path[1:-1].encode("utf-8").decode("unicode_escape")
+        return raw.encode("latin-1").decode("utf-8", errors="replace")
+    return path
 
 
 def template_lines():

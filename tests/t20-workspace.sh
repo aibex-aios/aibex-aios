@@ -227,6 +227,7 @@ YAML
 
    OUT="$(A "$V" --workspace detach "$V/docs" --yes)"
    assert_contains "$OUT" "nothing detached, something would be lost" "detach with an unpushed commit refused"
+   assert_contains "$OUT" "aios --workspace sync saves open changes" "F238: detach points to sync"
    assert_contains "$OUT" "docs: 1 commit(s) not pushed" "obstacle: not pushed"
    assert_dir "$V/docs/.git"
    echo s > "$V/libs/lib-a/sub/secret.txt"; echo secret.txt >> "$V/libs/lib-a/sub/.git/info/exclude"
@@ -422,7 +423,8 @@ This vault is an AIBOS workspace with sync: auto." "block with sync: auto"
    assert_contains "$(git -C "$RM/sub" ls-tree -r --name-only main)" "Konflikt" "F227: copy is saved and pushed"
    printf 'SECRET=1\n' > "$P/.env"; printf 'x\n' > "$P/plain.md"
    OUT="$(A "$P" --workspace sync --plan)"
-   assert_contains "$OUT" "save libs/lib-a/sub: 2 new, 0 changed, 0 deleted; not saved (secret): .env" "F232: plan names the secret"
+   assert_contains "$OUT" "save libs/lib-a/sub: 1 new, 0 changed, 0 deleted; not saved (secret): .env" "F232, H41: plan names the secret, does not count it"
+   assert_contains "$OUT" "push libs/lib-a/sub after saving" "H39: the plan names the push after saving"
    OUT="$(A "$P" --workspace sync --yes)"
    assert_contains "$OUT" "not saved (secret) (.env)" "F232: secret not saved"
    assert_not_contains "$(git -C "$P" ls-files)" ".env" "F232: .env not in the repo"
@@ -456,3 +458,25 @@ This vault is an AIBOS workspace with sync: auto." "block with sync: auto"
    assert_contains "$OUT" "unsaved files copied to the trash" "F237: unsaved version to the trash first"
    assert_eq "$(cat "$P/gone.md")" "changed here" "F237: last saved version back"
    assert_contains "$(A "$P" --workspace restore "$P" --yes)" "restore it with --at" "F237: a folder only with --at"
+
+#===============================================================================
+# B34: paths with umlauts and spaces (git quotes them): a subproject with an umlaut is no lost
+# ignored file for detach; a file with an umlaut and a space is saved and restored (V0.6, memo 211)
+#===============================================================================
+
+   repo fuenf @/README.md
+   git -C "$SANDBOX/src/root" pull -q origin main 2>/dev/null
+   printf '  - name: fuenf\n    repo: file://%s/fuenf\n    revision: main\n    path: libs/lib-a/Fünf-Acht\n' "$RM" >> "$V/.aios/workspace.yaml"
+   git -C "$V" commit -qam "fuenf"
+   printf '/Fünf-Acht/\n' >> "$V/libs/lib-a/.gitignore"; git -C "$V/libs/lib-a" commit -qam "exclude Fünf-Acht"
+   A "$V" --workspace sync --yes >/dev/null
+   [ -d "$V/libs/lib-a/Fünf-Acht/.git" ] && ok || fail "B34: subproject with an umlaut cloned"
+   assert_not_contains "$(A "$V" --workspace detach "$V/libs/lib-a" --plan)" "ignored file that cannot be restored" "B34: subproject with an umlaut is no lost file"
+   F="$V/libs/lib-a/Fünf-Acht/Größe und Maß.md"; printf 'eins\n' > "$F"
+   OUT="$(A "$V/libs/lib-a/Fünf-Acht" --workspace sync --yes)"
+   assert_contains "$OUT" "saved (1 new, 0 changed, 0 deleted)" "B34: file with umlaut and space saved"
+   assert_not_contains "$OUT" "unchanged" "H40: a saved project is not counted as unchanged"
+   rm "$F"; A "$V/libs/lib-a/Fünf-Acht" --workspace sync --yes >/dev/null
+   assert_contains "$(A "$V" --workspace history "$V/libs/lib-a/Fünf-Acht" --deleted)" "Größe und Maß.md  deleted" "B34: history names it unescaped"
+   A "$V" --workspace restore "$F" --yes >/dev/null
+   assert_eq "$(cat "$F")" "eins" "B34: restored"

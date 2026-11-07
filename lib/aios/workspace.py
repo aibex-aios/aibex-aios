@@ -327,9 +327,10 @@ def changes(d):
     """(new, changed, deleted) paths of the working tree, untracked files one by one."""
     new, changed, deleted = [], [], []
     for line in git(d, "status", "--porcelain", "--untracked-files=all").stdout.splitlines():
-        code, path = line[:2], line[3:].strip('"')
+        code, path = line[:2], line[3:]
         if " -> " in path:
             path = path.split(" -> ", 1)[1]
+        path = project.unquote(path)
         if code == "??":
             new.append(path)
         elif "D" in code:
@@ -419,8 +420,12 @@ def save_text(item, d):
     why = savable(item, d)
     if why:
         return f"not saved: {item.path} ({len(new) + len(changed) + len(deleted)} local changes; {why})"
-    text = f"save {item.path}: {len(new)} new, {len(changed)} changed, {len(deleted)} deleted"
     held = [f for f in new + changed if SECRET.search(f)]
+    new = [f for f in new if f not in held]                       # H41: secrets are not counted
+    changed = [f for f in changed if f not in held]
+    if not (new or changed or deleted):
+        return f"not saved (secret): {', '.join(held)}"
+    text = f"save {item.path}: {len(new)} new, {len(changed)} changed, {len(deleted)} deleted"
     if held:
         text += f"; not saved (secret): {', '.join(held)}"
     if deleted and large_deletion(d, deleted):
@@ -461,20 +466,23 @@ def root_item(root):
 # sync (steps 1-3; steps 4-5 follow in step 3 of the implementation)
 # ---------------------------------------------------------------------------
 
-UNCHANGED = []
+UNCHANGED, CHANGED = [], set()
 
 
 def report(path, state, why=""):
     if state == "ok":                               # H36: the result counts them in one line
         UNCHANGED.append(path)
         return
+    CHANGED.add(path)
     say(f"   {path}: {state}" + (f" ({why})" if why else ""))
 
 
 def unchanged_line():
-    if UNCHANGED:
-        say(f"   {len(UNCHANGED)} project{'s' if len(UNCHANGED) != 1 else ''} unchanged")
-        UNCHANGED.clear()
+    n = len([p for p in UNCHANGED if p not in CHANGED])   # H40: saved or pushed is not unchanged
+    if n:
+        say(f"   {n} project{'s' if n != 1 else ''} unchanged")
+    UNCHANGED.clear()
+    CHANGED.clear()
 
 
 def aios_clone(d):
@@ -718,8 +726,13 @@ def push_steps(plan, root, targets, kept):
         if ahead is None and item.path != ".":
             continue
         lines = [f"{s} {a}: {t}" for s, a, t in (ahead or [])]
-        text = f"push {item.path}: {len(lines)} commit(s)" if lines else None   # H36: pushes of saves
-        plan.add(text, lambda item=item, d=d: push(item.path, d, kept))          # and merges follow
+        new, changed, deleted = changes(d)
+        saves = (new or changed or deleted) and savable(item, d) is None
+        if lines:
+            text = f"push {item.path}: {len(lines)} commit(s)" + (" and the saved changes" if saves else "")
+        else:                                       # H36: no line without commits; H39: but after
+            text = f"push {item.path} after saving" if saves else None   # saving a push follows
+        plan.add(text, lambda item=item, d=d: push(item.path, d, kept))
         for line in lines:
             plan.add(line)
 
@@ -1236,7 +1249,7 @@ def obstacles(d):
     why = []
     st = [x for x in git(d, "status", "--porcelain").stdout.splitlines() if x]
     if st:
-        why.append(f"{len(st)} uncommitted or untracked: {', '.join(x[3:] for x in st[:3])}"
+        why.append(f"{len(st)} uncommitted or untracked: {', '.join(project.unquote(x[3:]) for x in st[:3])}"
                    + (" …" if len(st) > 3 else ""))
     if git(d, "stash", "list").stdout.strip():
         why.append("entries in git stash")
@@ -1250,7 +1263,7 @@ def obstacles(d):
         why.append("the checked out state is not on the remote")
     nested = {Path(r).relative_to(d).as_posix() + "/" for r in repos_in(d) if Path(r) != Path(d)}
     ignored = git(d, "ls-files", "--others", "--ignored", "--exclude-standard").stdout
-    lost = [f for f in ignored.splitlines()
+    lost = [f for f in map(project.unquote, ignored.splitlines())
             if f and Path(f).name != ".DS_Store"
             and not any(f.startswith(n) for n in nested)
             and not any(f == r or f.startswith(r) for r in REGENERABLE)]
@@ -1342,7 +1355,8 @@ def detach(path=None):
     found = check_all(start)
     if found:
         lines = [f"{Path(r).relative_to(root).as_posix() or '.'}: {'; '.join(w)}" for r, w in found.items()]
-        raise Abort("nothing detached, something would be lost:\n      " + "\n      ".join(lines))
+        raise Abort("nothing detached, something would be lost:\n      " + "\n      ".join(lines)
+                    + "\n   (aios --workspace sync saves open changes and pushes them; secrets stay)")
     origins = [(Path(r).relative_to(root).as_posix(), origin_of(r)) for r in repos_in(start)]
     plan = Plan()
 
@@ -1364,7 +1378,8 @@ def detach_all(root):
     found = check_all(root)
     if found:
         lines = [f"{Path(r).relative_to(root).as_posix() or '.'}: {'; '.join(w)}" for r, w in found.items()]
-        raise Abort("nothing detached, something would be lost:\n      " + "\n      ".join(lines))
+        raise Abort("nothing detached, something would be lost:\n      " + "\n      ".join(lines)
+                    + "\n   (aios --workspace sync saves open changes and pushes them; secrets stay)")
     plan = Plan()
 
     def run():
