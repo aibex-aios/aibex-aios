@@ -95,13 +95,14 @@ knowledge-orion     W-Werkstatt/wissen/knowledge-orion   main       ok        ok
 
 ## 4. Abgleichen ohne Verlust
 
-Ein zweiter `aios --workspace sync` holt neue Stände, aber **nur per fast-forward**. Ein Projekt mit offenen Änderungen, eigenen Commits, einem anderen Zweig oder einem anderen `origin` bleibt unverändert und wird mit Grund gemeldet, etwa:
+Ein zweiter `aios --workspace sync` arbeitet wie ein Cloud-Laufwerk: Was du geändert, neu angelegt oder gelöscht hast, **sichert** er selbst (ohne dass du committest), neue Stände anderer Rechner **führt er zusammen**. Hast du dieselbe Datei geändert wie ein anderer Rechner, gilt dessen Fassung, und deine liegt als `… (Konflikt <Rechner> <Datum>).md` daneben. Geheimnisse wie `.env` bleiben lokal. Fehlen in einem Projekt viele Dateien (mehr als 10 oder ganz `@/`), fragt sync, ob das Löschen gewollt ist, und stellt sonst wieder her, etwa:
 
 ```
-   W-Werkstatt/skill-memo: kept (uncommitted changes)
+   W-Werkstatt: saved (1 new, 2 changed, 0 deleted)
+   W-Werkstatt: moved (merged with origin/main)
 ```
 
-Mit einem Pfad gleicht sync nur diesen Teilbaum ab: `aios --workspace sync W-Werkstatt/skill-memo`.
+Ohne Pfad gleicht sync das Projekt ab, in dem du stehst, an der Vault-Root den ganzen Workspace; mit Pfad nur diesen Teilbaum: `aios --workspace sync W-Werkstatt/skill-memo`. Frühere Fassungen zeigt `aios --workspace history <datei>`, gelöschte Dateien `history <projekt> --deleted`; zurück holt sie `aios --workspace restore <datei>` bzw. `restore <projekt> --at 2026-11-06` (im Chat `/aios-restore`).
 
 ## 5. Hinausbringen
 
@@ -162,7 +163,7 @@ Geprüft wird jedes Repo im Teilbaum: Remote erreichbar, nichts offen, nichts un
 
 | Wert | Wirkung |
 |---|---|
-| `auto` | ein neuer Chat holt sein Projekt per fast-forward (`AIOS-SYNC: … fast-forwarded …`), und Claude bietet nach jedem Commit `/aios-sync` an |
+| `auto` | ein neuer Chat holt sein Projekt und führt es zusammen, wenn es dabei nichts zu sichern und keinen Konflikt gibt (`AIOS-SYNC: … updated from …`), und Claude bietet nach jedem Commit `/aios-sync` für das Projekt an |
 | `manual` | abgeglichen wird nur auf Wunsch |
 | `off` | `attach` und `sync` verweigern |
 
@@ -182,7 +183,8 @@ aios --workspace freeze
 |---|---|
 | Workspace, Vault-Root | `§Demo` mit `.aios/workspace.yaml` |
 | Paket-Repo, Namensschema | Paket-Repos klein und unverändert; eigene Projekte `<Workspace>-<Ordnername>` |
-| sync | klonen, fast-forward, lauffähig machen, Manifest nachführen, pushen ohne Tags; Geheimnisse halten an |
+| sync | klonen, sichern, zusammenführen (Konfliktkopie), lauffähig machen, Manifest nachführen, pushen ohne Tags; Geheimnisse bleiben lokal; große Löschung nur auf Wunsch |
+| history, restore | frühere Fassungen und gelöschte Dateien zeigen und zurückholen; Papierkorb für nicht Gesichertes |
 | attach | Workspace an einen zweiten Rechner; mit Pfad: Teilbaum zurück |
 | detach | Teilbaum auslagern, Workspace lösen, nur ohne Verlust; Papierkorb |
 | sync: | `auto`, `manual`, `off`; Cloud-Ordner immer `off` |

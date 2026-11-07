@@ -54,7 +54,7 @@
    [ ! -e "$K/memo" ] && [ ! -e "$G/.aios/registry" ] && ok || fail "cancelled: nothing written"
 
    OUT="$(echo y | SY "$G")"
-   assert_contains "$OUT" "=> registered: new aios-assistant, aios-attach, aios-context, aios-deploy, aios-detach, aios-distribution, aios-fetch, aios-gui, aios-init, aios-integrity, aios-memo, aios-package, aios-register, aios-status, aios-sync, gui, memo, shared" "registered: wrappers of the kernel and project skills"
+   assert_contains "$OUT" "=> registered: new aios-assistant, aios-attach, aios-context, aios-deploy, aios-detach, aios-distribution, aios-fetch, aios-gui, aios-init, aios-integrity, aios-memo, aios-package, aios-register, aios-restore, aios-status, aios-sync, gui, memo, shared" "registered: wrappers of the kernel and project skills"
    assert_contains "$OUT" "from the next chat (or after /reload-skills)" "hint: next chat"
    assert_eq "$(cat "$K/memo/SKILL.md")" "$(cat "$G/@/@!Skill/memo/SKILL.md")" "memo copied from Garten"
    assert_file "$K/memo/vorlagen/brief.md"
@@ -145,7 +145,7 @@ registered:
 #===============================================================================
 
    FW="$HOME/.aios/bin/aios"
-   assert_eq "$(ls "$K" | grep -c '^aios-')" "15" "15 wrappers of the kernel skills in the project"
+   assert_eq "$(ls "$K" | grep -c '^aios-')" "16" "16 wrappers of the kernel skills in the project"
    assert_eq "$(cat "$K/aios-init/SKILL.md" | sed -n '2p;4p;7p')" "name: aios-init
 allowed-tools: Bash($FW --skill aios-init)
 !\`$FW --skill aios-init\`" "wrapper: name, own call only, absolute path (F20, F27)"
@@ -155,7 +155,7 @@ allowed-tools: Bash($FW --skill aios-init)
    assert_contains "$(cat "$K/gui/SKILL.md")" "!\`$FW --gui --session \${CLAUDE_SESSION_ID}\`" "alias gui: body"
    assert_eq "$(sed -n '/^  aios-init:/,/^  [a-z]/p' "$G/.aios/registry" | sed -n 2p)" '    source: "kernel"' "registry: source kernel"
    assert_contains "$(sed -n '/^  aios-init:/,/digest/p' "$G/.aios/registry")" "version: $(cat "$SRC/VERSION")" "registry: version of the kernel"
-   assert_eq "$(ls "$D/.claude/skills" | grep -c '^aios-')" "15" "vault root brought up to date from a project below"
+   assert_eq "$(ls "$D/.claude/skills" | grep -c '^aios-')" "16" "vault root brought up to date from a project below"
    assert_file "$D/.claude/skills/gui/SKILL.md"
    printf 'changed\n' >> "$K/aios-init/SKILL.md"
    assert_contains "$(SY "$G" --plan)" "changed  aios-init" "changed wrapper: written anew"

@@ -160,7 +160,7 @@ $KS</aios-context id=\"$ID\">
 #===============================================================================
 
    assert_eq "$(CTX "$D/Garten" --context | grep -c -- "--skill aios-")" "$(ls "$SRC/skills/aios" | wc -l | tr -d ' ')" "block: one line per kernel skill"
-   assert_eq "$(ls "$SRC/skills/aios" | wc -l | tr -d ' ')" "15" "block: 15 kernel skills (v0.6.4: aios-attach, aios-sync, aios-detach)"
+   assert_eq "$(ls "$SRC/skills/aios" | wc -l | tr -d ' ')" "16" "block: 16 kernel skills (v0.6.4: aios-attach, aios-sync, aios-detach, aios-restore)"
    ID1="$(IDOF "$D/Garten")"
    ID2="$(PYTHONPATH="$SRC/lib" python3 -c "
 from aios import context

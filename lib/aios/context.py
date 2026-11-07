@@ -246,7 +246,7 @@ def detached_message(ctx):
 
 
 def sync_message(ctx):
-    """With sync: auto, fetch and fast-forward the project of the session (F185, F189)."""
+    """With sync: auto, fetch and merge the project of the session, never save (F185, F189, F230)."""
     from . import workspace
     info = workspace_info(ctx)
     if info is None or info[1] != "auto" or info[2] or ctx.project is None:
@@ -259,10 +259,10 @@ def sync_message(ctx):
     if workspace.git(d, "rev-parse", "--abbrev-ref", "@{upstream}").returncode:
         return f"AIOS-SYNC: {name} not updated: no upstream. Mention it to the user before your first work."
     before = workspace.git(d, "rev-parse", "HEAD").stdout.strip()
-    state, why = workspace.update(workspace.Item(name, workspace.origin_of(d), branch, "."), d)
+    state, why = workspace.update(workspace.Item(name, workspace.origin_of(d), branch, "."), d, copies=False)
     if state == "moved":
         n = workspace.git(d, "rev-list", "--count", f"{before}..HEAD").stdout.strip()
-        return f"AIOS-SYNC: {name} fast-forwarded to origin/{branch} ({n} commits)."
+        return f"AIOS-SYNC: {name} updated from origin/{branch} ({n} commits)."
     if state == "ok":
         return f"AIOS-SYNC: {name} is up to date with origin/{branch}."
     return f"AIOS-SYNC: {name} not updated: {why}. Mention it to the user before your first work."

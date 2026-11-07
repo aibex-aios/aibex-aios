@@ -16,7 +16,7 @@ USAGE = ("usage: aios --prepare [--dev] | --install [v<version>] [--system] | --
          " | --fetch --upgrade [<package>] | --fetch --remove <package>"
          " | --worker [<package> setup] [--to <project>] | --run <command> [args]"
          " | --contribute <file>... --to <package> [--message <text>]"
-         " | --workspace attach <repo> [<vault-folder>] | sync [<path>] [--group <g>] | status [<path>] | freeze [<path>]"
+         " | --workspace attach <repo> [<vault-folder>] | sync [<path>] [--group <g>] | history <path> | restore <path> [--at <time>] | detach [<path>] | status [<path>] | freeze [<path>]"
          " | --deploy <package> --only <element>... | --all [--to <project>] | --deploy [--to <project>]"
          "  (writing commands: --plan, --yes)")
 

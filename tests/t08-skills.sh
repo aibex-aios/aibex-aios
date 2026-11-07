@@ -44,12 +44,12 @@ import sys; t=open(sys.argv[1],encoding='utf-8').read(); e=t.find('\n---',3); pr
    case "$(at "$D" aios --skill aios-init)" in *"name: aios-init"*|*"allowed-tools"*) fail "--skill: no frontmatter" ;; *) ok ;; esac
    case "$(at "$D" aios --skill aios-init)" in *"Nur in Version 0.7.0"*) fail "--skill in §Demo: version 0.6.0" ;; *) ok ;; esac
    assert_not_contains "$(at "$D/Garten" aios --skill aios-init)" "Nur in Version 0.7.0" "--skill in Garten: the vault root decides (I14)"
-   for S in aios-context aios-init aios-register aios-status aios-deploy aios-assistant aios-integrity aios-memo aios-gui aios-fetch aios-package aios-distribution aios-attach aios-sync aios-detach; do
+   for S in aios-context aios-init aios-register aios-status aios-deploy aios-assistant aios-integrity aios-memo aios-gui aios-fetch aios-package aios-distribution aios-attach aios-sync aios-detach aios-restore; do
       assert_contains "$(at "$D" aios --skill "$S")" "Ein AIOS-Skill von AIbex AIOS" "--skill $S"
    done
    assert_exit 1 "$SRC/bin/aios" --skill aios-nope
    assert_exit 1 "$SRC/bin/aios" --skill aios-agent
-   assert_eq "$(ls "$SRC/skills/aios" | tr '\n' ' ')" "aios-assistant aios-attach aios-context aios-deploy aios-detach aios-distribution aios-fetch aios-gui aios-init aios-integrity aios-memo aios-package aios-register aios-status aios-sync " "AIOS skills of v0.6.4 (with aios-attach, aios-detach, aios-sync)"
+   assert_eq "$(ls "$SRC/skills/aios" | tr '\n' ' ')" "aios-assistant aios-attach aios-context aios-deploy aios-detach aios-distribution aios-fetch aios-gui aios-init aios-integrity aios-memo aios-package aios-register aios-restore aios-status aios-sync " "AIOS skills of v0.6.4 (with aios-attach, aios-detach, aios-restore, aios-sync)"
    FM() { sed -n '/^allowed-tools:/p' "$SRC/skills/aios/$1/SKILL.md"; }
    assert_eq "$(FM aios-distribution)" "allowed-tools: Bash(aios --library *), Bash(aios --install * --plan), Bash(aios --context *), Bash(git -C *), Bash(mkdir -p *), Write" "aios-distribution: allowed-tools (N16)"
    assert_contains "$(FM aios-package)" "Bash(aios --install distribution-*)" "aios-package: may install distributions"

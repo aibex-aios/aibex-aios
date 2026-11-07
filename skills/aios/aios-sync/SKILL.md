@@ -1,6 +1,6 @@
 ---
 name: aios-sync
-description: Synchronisiert den Projektbaum eines AIbex-AIOS-Workspace mit seinen Remotes - fehlende Projekte klonen, neue Stände per fast-forward holen, neu Geklontes lauffähig machen, workspace.yaml nachführen, eigene Stände pushen (ohne Tags, Geheimnisse halten an). Verwenden bei "/aios-sync", "sync", "sync project", "synchronisiere das Projekt", "sync workspace", "sync vault", "synchronisiere den Workspace", "Workspace abgleichen", nach einem Commit bei sync auto.
+description: Synchronisiert den Projektbaum eines AIbex-AIOS-Workspace mit seinen Remotes wie ein Cloud-Laufwerk - fehlende Projekte klonen, lokale Änderungen sichern, neue Stände holen und zusammenführen (Konfliktkopien), neu Geklontes lauffähig machen, workspace.yaml nachführen, pushen (ohne Tags, Geheimnisse bleiben lokal). Verwenden bei "/aios-sync", "sync", "sync project", "synchronisiere das Projekt", "sync workspace", "sync vault", "synchronisiere den Workspace", "Workspace abgleichen", nach einem Commit bei sync auto.
 allowed-tools: Bash(aios --workspace *)
 ---
 
@@ -18,12 +18,12 @@ Ein AIOS-Skill von AIbex AIOS (Spec 06, *sync*; Spec 03, *Workspaces*).
    - **Ein Pfad** oder `--group <g>`: wie angegeben.
    Nenne den Umfang in einem Satz (welches Projekt bzw. „ganzer Workspace").
 2. **Plan:** `aios --workspace sync ["<pfad>"] --plan`. Endet der Befehl mit `*** aios --workspace: …` (z. B. `sync is off`, kein Workspace), nenne die Meldung und beende.
-3. **Zeigen:** Fasse den Plan **einmal** kurz zusammen (nicht im Text und in der Frage wiederholen): was geklont, geholt, eingetragen und gepusht wird. Nenne bei jedem Push die ausgehenden Commits aus dem Plan und, **mit einer eigenen Frage**, die Commits, die nicht aus dieser Session stammen (Regel *Weiter*). Nenne die Hinweise (`note: …`), etwa Repos ohne Remote mit dem vorgeschlagenen Befehl, ohne sie auszuführen.
-4. **Fragen:** einmal, ob du ausführen sollst. Ohne Ja nichts ausführen.
-5. **Ausführen:** `aios --workspace sync ["<pfad>"] --yes` und das Ergebnis kurz melden: geklont, geholt, gepusht; unverändert gelassene Repos mit Grund (`kept`, `not pushed`, `push stopped`).
+3. **Zeigen:** Fasse den Plan **einmal** kurz zusammen, in Alltagssprache und ohne Git-Begriffe (nicht im Text und in der Frage wiederholen): was geklont, **gesichert** (neue, geänderte, gelöschte Dateien je Projekt), geholt und zusammengeführt, eingetragen und gepusht wird. Nenne Dateien, die als Geheimnis nicht gesichert werden. Nenne bei jedem Push die ausgehenden Commits aus dem Plan und, **mit einer eigenen Frage**, die Commits, die nicht aus dieser Session stammen (Regel *Weiter*). Nenne die Hinweise (`note: …`), etwa Repos ohne Remote mit dem vorgeschlagenen Befehl, ohne sie auszuführen.
+4. **Fragen:** einmal, ob du ausführen sollst. Steht im Plan `LARGE DELETION` für ein Projekt, frage dafür **zusätzlich**: „In <Projekt> sind <n> Dateien gelöscht, z. B. … Sollen sie wiederhergestellt werden (empfohlen) oder ist das Löschen gewollt und soll auch in der Sicherung gelten?" Ohne Ja nichts ausführen.
+5. **Ausführen:** `aios --workspace sync ["<pfad>"] --yes`, bei gewolltem Löschen mit `--accept-deletion <projektpfad>` je Projekt. Melde das Ergebnis kurz: geklont, gesichert, zusammengeführt (mit jeder **Konfliktkopie**: „beide Fassungen sind erhalten, deine liegt als … daneben"), gepusht; Projekte, die unverändert blieben, mit dem Grund in Alltagssprache.
 
 ## Grenzen
 
-- sync committet nichts außer `workspace.yaml` und Ausschlüssen; nicht committete Arbeit nennst du, committest sie aber nicht ungefragt.
+- sync sichert alle lokalen Änderungen selbst (Drive-Modell, Spec 06); du committest nichts zusätzlich. Was verloren scheint, holt `/aios-restore` aus der Geschichte zurück.
 - Repos am Remote anlegen ist ein eigener Schritt nach außen mit eigener Rückfrage, nie Teil dieses Skills.
 - Hält sync einen Push wegen Geheimnissen an (`push stopped`), schlage vor, die Datei aus der Geschichte zu nehmen und nach `@Secret/` zu legen; ändere die Geschichte nie ohne ausdrückliches Ja.

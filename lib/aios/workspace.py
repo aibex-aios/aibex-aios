@@ -14,6 +14,7 @@ import datetime
 import os
 import re
 import subprocess
+import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -25,6 +26,7 @@ LOCAL = Path(".aios") / "workspace.local.yaml"
 LOCAL_HEAD = "# written by AIOS (workspace), do not edit\n"
 CLOUD = ("Library/CloudStorage", "Library/Mobile Documents", "Dropbox")   # spec 06, Schlüssel sync:
 USAGE = ("usage: aios --workspace attach <repo> [<vault-folder>] | attach <path> | sync [<path>] [--group <g>]"
+         " [--accept-deletion <path>] | history <path> [--deleted] | restore <path> [--at <time>]"
          " | detach [<path>] | status [<path>] | freeze [<path>]")
 
 
@@ -225,17 +227,62 @@ def conflict(item, d):
     return None
 
 
-def update(item, d):
-    """Fast-forward d to the revision of item; (state, reason) with state ok, moved or kept."""
+def host():
+    """Short name of this machine for commit messages and conflict copies (F235)."""
+    import socket
+    r = subprocess.run(["scutil", "--get", "LocalHostName"], capture_output=True, text=True) \
+        if Path("/usr/sbin/scutil").exists() else None
+    name = r.stdout.strip() if r is not None and r.returncode == 0 else ""
+    return name or socket.gethostname().split(".")[0]
+
+
+def git_bytes(d, *args):
+    return subprocess.run(["git", "-C", str(d), *args], capture_output=True).stdout
+
+
+def copy_name(path, day):
+    """<Name> (Konflikt <Rechner> <JJJJ-MM-TT>).<Endung> (F227, F235)."""
+    p = Path(path)
+    stem, suffix = (p.stem, p.suffix) if p.suffix else (p.name, "")
+    return (p.parent / f"{stem} (Konflikt {host()} {day}){suffix}").as_posix()
+
+
+def resolve(d):
+    """Resolve the conflicts of a stopped merge: the remote version wins, the local one stays as a
+    conflict copy; deleted against changed keeps the changed one (F227, F233). [copies]"""
+    day = datetime.date.today().isoformat()
+    copies = []
+    for path in git(d, "diff", "--name-only", "--diff-filter=U").stdout.splitlines():
+        stages = {line.split()[2] for line in git(d, "ls-files", "-u", "--", path).stdout.splitlines()}
+        if "2" in stages and "3" in stages:
+            copy = copy_name(path, day)
+            (d / copy).write_bytes(git_bytes(d, "show", f":2:{path}"))
+            git(d, "checkout", "--theirs", "--", path)
+            git(d, "add", "--", path, copy)
+            copies.append(copy)
+        elif "3" in stages:
+            git(d, "checkout", "--theirs", "--", path)
+            git(d, "add", "--", path)
+        else:
+            git(d, "checkout", "--ours", "--", path)
+            git(d, "add", "--", path)
+    return copies
+
+
+def update(item, d, copies=True):
+    """Bring d to the revision of item (spec 06, sync, step 3): fast-forward, else merge; with
+    copies a conflict becomes a conflict copy (F226, F227), without (hook, F230) the merge is
+    given up. (state, reason) with state ok, moved or kept."""
     why = conflict(item, d)
     if why:
         return "kept", why
-    if git(d, "status", "--porcelain").stdout.strip():
-        return "kept", "uncommitted changes"
+    if git(d, "status", "--porcelain", "--untracked-files=no").stdout.strip():
+        return "kept", "local changes that are not saved yet"
     r = git(d, "fetch", "-q", "--tags", "origin")
     if r.returncode:
         return "kept", f"fetch failed: {(r.stderr or r.stdout).strip()}"
-    if kind(d, item.revision) == "branch":
+    branch = kind(d, item.revision) == "branch"
+    if branch:
         cur = git(d, "rev-parse", "--abbrev-ref", "HEAD").stdout.strip()
         if cur != item.revision:
             return "kept", f"branch {cur} is checked out, not {item.revision}"
@@ -248,12 +295,155 @@ def update(item, d):
     tsha = git(d, "rev-parse", target).stdout.strip()
     if head == tsha or git(d, "merge-base", "--is-ancestor", tsha, "HEAD").returncode == 0:
         return "ok", "contains the revision"
-    if git(d, "merge-base", "--is-ancestor", "HEAD", tsha).returncode != 0:
-        return "kept", "own commits, no fast-forward possible"
-    r = git(d, "merge", "-q", "--ff-only", tsha)
+    if git(d, "merge-base", "--is-ancestor", "HEAD", tsha).returncode == 0:
+        r = git(d, "merge", "-q", "--ff-only", tsha)
+        if r.returncode:
+            return "kept", f"fast-forward failed: {r.stderr.strip()}"
+        return "moved", f"fast-forward to {item.revision}"
+    if not branch:
+        return "kept", "own commits on a fixed revision"
+    msg = f"AIOS: zusammengeführt auf {host()}"
+    r = git(d, "merge", "-q", "--no-edit", "-m", msg, tsha)
+    if r.returncode == 0:
+        return "moved", f"merged with {target}"
+    if not git(d, "diff", "--name-only", "--diff-filter=U").stdout.strip():
+        git(d, "merge", "--abort")
+        return "kept", f"merge failed: {(r.stderr or r.stdout).strip()}"
+    if not copies:
+        git(d, "merge", "--abort")
+        return "kept", "the same files changed here and on the remote; /aios-sync makes conflict copies"
+    made = resolve(d)
+    r = git(d, "commit", "-q", "--no-edit", "-m", msg)
     if r.returncode:
-        return "kept", f"fast-forward failed: {r.stderr.strip()}"
-    return "moved", f"fast-forward to {item.revision}"
+        git(d, "merge", "--abort")
+        return "kept", f"merge failed: {(r.stderr or r.stdout).strip()}"
+    return "moved", f"merged with {target}; conflict copies: " + ", ".join(made) if made else f"merged with {target}"
+
+
+# step 2: save local changes (spec 06, sync; V0.6, memos 204, 205: F225, F228, F232, F234, F236)
+
+def changes(d):
+    """(new, changed, deleted) paths of the working tree, untracked files one by one."""
+    new, changed, deleted = [], [], []
+    for line in git(d, "status", "--porcelain", "--untracked-files=all").stdout.splitlines():
+        code, path = line[:2], line[3:].strip('"')
+        if " -> " in path:
+            path = path.split(" -> ", 1)[1]
+        if code == "??":
+            new.append(path)
+        elif "D" in code:
+            deleted.append(path)
+        else:
+            changed.append(path)
+    return new, changed, deleted
+
+
+def large_deletion(d, deleted):
+    """F236: more than 10 tracked files, or all tracked files below @/ or .aios/, are gone."""
+    if len(deleted) > 10:
+        return True
+    gone = set(deleted)
+    for top in ("@/", ".aios/"):
+        tracked = [f for f in git(d, "ls-files", "--", top).stdout.splitlines()]
+        if tracked and all(f in gone for f in tracked):
+            return True
+    return False
+
+
+def savable(item, d):
+    """Why the local changes of d are not saved, or None (F234)."""
+    if conflict(item, d):
+        return conflict(item, d)
+    if git(d, "rev-parse", "--abbrev-ref", "@{upstream}").returncode:
+        return "no upstream"
+    if kind(d, item.revision) != "branch":
+        return f"fixed revision {item.revision}"
+    cur = git(d, "rev-parse", "--abbrev-ref", "HEAD").stdout.strip()
+    if cur != item.revision:
+        return f"branch {cur} is checked out, not {item.revision}"
+    return None
+
+
+def save(item, d, accept=()):
+    """Step 2 of sync: commit all local changes of d (F225); secrets stay out (F232); a large
+    deletion is restored unless accepted (F228)."""
+    new, changed, deleted = changes(d)
+    if not (new or changed or deleted):
+        return
+    why = savable(item, d)
+    if why:
+        report(item.path, "not saved", f"{len(new) + len(changed) + len(deleted)} local changes; {why}")
+        return
+    if deleted and large_deletion(d, deleted):
+        keep = False
+        if item.path in accept:
+            keep = True
+        elif ui.MODE == "ask" and sys.stdin.isatty():
+            sys.stdout.write(f"   {item.path}: {len(deleted)} files are deleted here (e.g. {', '.join(deleted[:3])}).\n")
+            keep = ask_no("take over the deletion (also in the backup)? no: restore them")
+        if not keep:
+            git(d, "checkout", "--", *deleted)
+            report(item.path, "restored", f"{len(deleted)} deleted files (large deletion, F228)")
+            deleted = []
+    git(d, "add", "-A")
+    staged = git(d, "diff", "--cached", "--name-only").stdout.splitlines()
+    held = [f for f in staged if SECRET.search(f)]
+    if held:
+        git(d, "reset", "-q", "--", *held)
+        report(item.path, "not saved (secret)", ", ".join(held))
+    if not git(d, "diff", "--cached", "--name-only").stdout.strip():
+        return
+    stamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
+    r = git(d, "commit", "-q", "-m", f"AIOS: gesichert von {host()} am {stamp}")
+    if r.returncode:
+        report(item.path, "not saved", (r.stderr or r.stdout).strip())
+        return
+    report(item.path, "saved", f"{len([f for f in new if f not in held])} new, {len(changed)} changed, "
+                               f"{len(deleted)} deleted")
+
+
+def ask_no(question):
+    """A question whose default is no."""
+    sys.stdout.write(f"   {question} [y/N] ")
+    sys.stdout.flush()
+    line = sys.stdin.readline()
+    return line.strip().lower() in ("y", "yes", "j", "ja")
+
+
+def save_text(item, d):
+    """Line of the plan for step 2, or None."""
+    new, changed, deleted = changes(d)
+    if not (new or changed or deleted):
+        return None
+    why = savable(item, d)
+    if why:
+        return f"not saved: {item.path} ({len(new) + len(changed) + len(deleted)} local changes; {why})"
+    text = f"save {item.path}: {len(new)} new, {len(changed)} changed, {len(deleted)} deleted"
+    held = [f for f in new + changed if SECRET.search(f)]
+    if held:
+        text += f"; not saved (secret): {', '.join(held)}"
+    if deleted and large_deletion(d, deleted):
+        text += (f"; LARGE DELETION ({len(deleted)} files): restored unless taken over "
+                 f"(question, or --accept-deletion {item.path})")
+    return text
+
+
+def sync_steps(plan, root, targets, kept, accept=()):
+    """Steps 2 and 3 of sync for the existing repos: save, then fetch and merge."""
+    for item in targets:
+        d = root if item.path == "." else root / item.path
+        text = save_text(item, d)
+        if text:
+            plan.add(text, lambda item=item, d=d: save(item, d, accept))
+
+    def upd(item, d):
+        st, why = update(item, d)
+        if st == "kept":
+            kept[item.path] = why
+        report(item.path, st, why)
+    for item in targets:
+        d = root if item.path == "." else root / item.path
+        plan.add(f"update {item.path} ({item.revision}, merge)", lambda item=item, d=d: upd(item, d))
 
 
 def root_item(root):
@@ -423,15 +613,7 @@ def new_workspace(plan, root):
              f"{', '.join(e['path'] for e in entries) or '-'}; commit only workspace.yaml", create)
     targets = ([root_item(root)] if origin_of(root) else []) + items
     kept = {}
-
-    def upd(item, d):
-        st, why = update(item, d)
-        if st == "kept" and why != "uncommitted changes":   # B31
-            kept[item.path] = why
-        report(item.path, st, why)
-    for item in targets:
-        d = root if item.path == "." else root / item.path
-        plan.add(f"update {item.path} ({item.revision}, fast-forward only)", lambda item=item, d=d: upd(item, d))
+    sync_steps(plan, root, targets, kept)
     push_steps(plan, root, targets, kept)
     for h in hints:
         plan.add(f"note: {h}")
@@ -543,7 +725,7 @@ def try_clone(item, d, cloned, failed):
     report(item.path, "cloned", item.revision)
 
 
-def plan_sync(plan, root, rel=".", groups=()):
+def plan_sync(plan, root, rel=".", groups=(), accept=()):
     """Add the steps of sync for the projects of root at or below rel to plan (spec 06, sync)."""
     items = [i for i in selected(load(root), groups) if under(i, rel)]
     gone = detached(root)
@@ -559,19 +741,12 @@ def plan_sync(plan, root, rel=".", groups=()):
     targets = ([root_item(root)] if with_root else []) + \
         [i for i in items if (root / i.path).exists() and not is_detached(i.path, gone)]
 
-    def upd(item, d):
-        st, why = update(item, d)
-        if st == "kept" and why != "uncommitted changes":   # B31: a push leaves the working tree alone
-            kept[item.path] = why
-        report(item.path, st, why)
-    for item in targets:                                # step 2: fetch, fast-forward only
-        d = root if item.path == "." else root / item.path
-        plan.add(f"update {item.path} ({item.revision}, fast-forward only)", lambda item=item, d=d: upd(item, d))
+    sync_steps(plan, root, targets, kept, accept)        # steps 2, 3: save, fetch and merge
     if any(not (root / i.path).exists() for i in items if not is_detached(i.path, gone)):
         plan.add("make the newly cloned projects runnable (aios --fetch, registration)",
                  lambda: [runnable(d) for d in cloned])
-    manifest_steps(plan, root, items, rel, gone)        # step 4
-    push_steps(plan, root, targets, kept)               # step 5
+    manifest_steps(plan, root, items, rel, gone)        # step 5
+    push_steps(plan, root, targets, kept)               # step 6
     for d in gone:
         if under(Item("", "", "", d), rel):
             plan.add(f"{d}: detached on this machine, passed over")
@@ -598,7 +773,7 @@ def project_of(root, start):
     return root
 
 
-def do_sync(path=None, groups=()):
+def do_sync(path=None, groups=(), accept=()):
     """aios --workspace sync [<path>] [--group <g>…] (spec 06, sync)."""
     start = Path(os.path.realpath(path or paths.cwd()))
     if find_root(start) is None and config.vault_root(start) == start:
@@ -610,7 +785,9 @@ def do_sync(path=None, groups=()):
         start = project_of(root, start)                 # B33: the project, at the vault root all
     rel = start.relative_to(root).as_posix() if start != root else "."
     plan = Plan()
-    items = plan_sync(plan, root, rel, groups)
+    accept = [Path(os.path.realpath(a)).relative_to(root).as_posix() if os.path.isabs(a) or os.path.exists(a)
+              else a for a in accept]
+    items = plan_sync(plan, root, rel, groups, accept)
     if not items and rel != ".":
         raise Abort(f"no project of {root / FILE} at or below {start}")
     if ui.MODE != "yes":
@@ -839,11 +1016,23 @@ def status(path=None):
 def command(args):
     if not args:
         raise Abort(USAGE)
-    sub, rest, groups, i = args[0], [], [], 1
+    sub, rest, groups, accept, opts, i = args[0], [], [], [], {}, 1
     while i < len(args):
         if args[i] == "--group" and i + 1 < len(args):
             groups.append(args[i + 1])
             i += 2
+            continue
+        if args[i] == "--accept-deletion" and i + 1 < len(args):
+            accept.append(args[i + 1])
+            i += 2
+            continue
+        if args[i] == "--at" and i + 1 < len(args):
+            opts["at"] = args[i + 1]
+            i += 2
+            continue
+        if args[i] == "--deleted":
+            opts["deleted"] = True
+            i += 1
             continue
         rest.append(args[i])
         i += 1
@@ -856,7 +1045,11 @@ def command(args):
     if sub == "detach" and len(rest) <= 1 and not groups:
         return detach(rest[0] if rest else None)
     if sub == "sync" and len(rest) <= 1:
-        return do_sync(rest[0] if rest else None, groups)
+        return do_sync(rest[0] if rest else None, groups, accept)
+    if sub == "history" and len(rest) == 1 and not groups:
+        return history(rest[0], opts.get("deleted", False))
+    if sub == "restore" and len(rest) == 1 and not groups:
+        return restore(rest[0], opts.get("at"))
     if sub == "freeze" and len(rest) <= 1 and not groups:
         return freeze(rest[0] if rest else None)
     if sub == "status" and len(rest) <= 1 and not groups:
@@ -865,6 +1058,114 @@ def command(args):
         raise Abort(f"--workspace {sub} is gone since v0.6.4: use "
                     + ("attach <repo> [<vault-folder>]" if sub == "init" else "sync [<path>]"))
     raise Abort(USAGE)
+
+
+# ---------------------------------------------------------------------------
+# history, restore (spec 06, Zurückholen; V0.6, memos 204, 205: F229, F237)
+# ---------------------------------------------------------------------------
+
+def repo_of(target):
+    """(repo top, path relative to it) for a file or folder that may be gone."""
+    d = target if target.is_dir() else target.parent
+    while not d.exists():
+        d = d.parent
+    top = git(d, "rev-parse", "--show-toplevel").stdout.strip()
+    if not top:
+        raise Abort(f"{target} is not in a git repo of the workspace")
+    top = Path(os.path.realpath(top))
+    rel = Path(os.path.realpath(target.parent) if not target.exists() else os.path.realpath(target))
+    rel = (rel / target.name if not target.exists() else rel).relative_to(top).as_posix()
+    return top, ("." if rel == "" else rel)
+
+
+def when(top, at):
+    """Commit of a time (date, date and time) or a short SHA (F229)."""
+    sha = git(top, "rev-parse", "--verify", "-q", f"{at}^{{commit}}").stdout.strip()
+    if sha:
+        return sha
+    before = at + (" 23:59:59" if re.fullmatch(r"\d{4}-\d{2}-\d{2}", at) else "")
+    sha = git(top, "rev-list", "-1", f"--before={before}", "HEAD").stdout.strip()
+    if not sha:
+        raise Abort(f"no saved version at or before {at}")
+    return sha
+
+
+def history(path, deleted=False):
+    """aios --workspace history <path> [--deleted]: versions of a file or project, newest first."""
+    target = Path(os.path.abspath(path))
+    top, rel = repo_of(target)
+    fmt = "--format=%h%x09%ad%x09%an%x09%s"
+    if deleted:
+        out = git(top, "log", "--diff-filter=D", "--name-only", fmt, "--date=format:%Y-%m-%d %H:%M",
+                  "--", rel).stdout
+        say(f"=> deleted files in {target}")
+        head = ""
+        for line in out.splitlines():
+            if "\t" in line:
+                h, date, _, _ = line.split("\t", 3)
+                head = f"{date} ({h})"
+            elif line.strip() and not (top / line).exists():
+                say(f"   {line}  deleted {head}")
+        return 0
+    out = git(top, "log", fmt, "--date=format:%Y-%m-%d %H:%M", "--", rel).stdout
+    say(f"=> versions of {target} (newest first)")
+    for line in out.splitlines():
+        h, date, author, subject = line.split("\t", 3)
+        say(f"   {h}  {date}  {author}: {subject}")
+    if not out.strip():
+        say("   (no saved version)")
+    return 0
+
+
+def restore(path, at=None):
+    """aios --workspace restore <path> [--at <time>]: only the working tree changes; what is not
+    saved and would be overwritten or removed goes to the trash first (F237)."""
+    target = Path(os.path.abspath(path))
+    top, rel = repo_of(target)
+    tracked_now = git(top, "ls-files", "--", rel).stdout.splitlines()
+    is_dir = rel == "." or target.is_dir() or git(top, "cat-file", "-t", f"HEAD:{rel}").stdout.strip() == "tree"
+    if is_dir and at is None:
+        raise Abort(f"{target} is a folder; restore it with --at <time> (e.g. --at 2026-11-06)")
+    if at:
+        src = when(top, at)
+    elif git(top, "cat-file", "-e", f"HEAD:{rel}").returncode == 0:
+        src = "HEAD"
+    else:
+        gone = git(top, "rev-list", "-1", "HEAD", "--", rel).stdout.strip()
+        if not gone:
+            raise Abort(f"{rel} has no saved version")
+        src = f"{gone}^"
+    files = git(top, "ls-tree", "-r", "--name-only", src, "--", rel).stdout.splitlines()
+    if not files:
+        raise Abort(f"{rel} does not exist in the version {at or src}")
+    touched = sorted(set(files) | set(tracked_now))
+    unsaved = [f for f in touched if (top / f).is_file() and
+               (git(top, "ls-files", "--error-unmatch", "--", f).returncode != 0
+                or git(top, "diff", "--quiet", "HEAD", "--", f).returncode != 0)]
+    short = git(top, "rev-parse", "--short", src).stdout.strip()
+    plan = Plan()
+
+    def run():
+        if unsaved:
+            import shutil
+            stamp = datetime.datetime.now().strftime("%Y-%m-%d %H-%M")
+            bin_ = paths.home() / ".Trash" / f"{top.name} {stamp}"
+            for f in unsaved:
+                (bin_ / f).parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(top / f, bin_ / f)
+            say(f"   unsaved files copied to the trash: {bin_}")
+        r = git(top, "restore", f"--source={src}", "--worktree", "--", rel)
+        if r.returncode:
+            raise Abort(f"restore failed: {(r.stderr or r.stdout).strip()}")
+        say(f"   {rel}: restored from {short}")
+    if unsaved:
+        plan.add(f"copy {len(unsaved)} unsaved file(s) to the trash first: {', '.join(unsaved[:5])}")
+    plan.add(f"restore {rel} from the version {short} ({len(files)} file(s)); the next sync saves it", run)
+    if ui.MODE != "yes":
+        say(f"=> restore {target}")
+    ui.confirm(plan, "go on?", "cancelled")
+    say(f"=> {rel} restored")
+    return 0
 
 
 # ---------------------------------------------------------------------------

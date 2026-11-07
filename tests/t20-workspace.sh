@@ -95,7 +95,8 @@ YAML
    assert_contains "$(A "$U" --workspace attach "file://$RM/root" "$V")" "exists already" "attach into an existing folder"
 
 #===============================================================================
-# sync: fast-forward, vault root, <path>, own commits, dirty tree, other branch, wrong origin
+# sync: fast-forward, vault root, <path>, own commits (merge), local changes (saved), other branch,
+# wrong origin (drive model, V0.6, memos 204, 205)
 #===============================================================================
 
    echo 2 >> "$SANDBOX/src/lib-a/@/README.md"; git -C "$SANDBOX/src/lib-a" commit -qam "lib-a 2"
@@ -110,7 +111,7 @@ YAML
    assert_eq "$(git -C "$V" log -1 --format=%s)" "root 2" "vault root at the new commit"
    assert_contains "$OUT" "libs/lib-b: ok" "tag unchanged"
    OUT="$(A "$V/libs/lib-a" --workspace sync --plan)"
-   assert_contains "$OUT" "update libs/lib-a (main, fast-forward only)" "<path> finds the workspace above"
+   assert_contains "$OUT" "update libs/lib-a (main, merge)" "<path> finds the workspace above"
    assert_not_contains "$OUT" "update docs" "<path> limits sync to the subtree"
    assert_not_contains "$OUT" "update . " "<path> below the root leaves the root alone"
    echo x > "$V/libs/lib-a/x.txt"; git -C "$V/libs/lib-a" add x.txt; git -C "$V/libs/lib-a" commit -qm own
@@ -118,11 +119,15 @@ YAML
    git -C "$SANDBOX/src/lib-a" push -q origin main
    echo dirty >> "$V/docs/@/README.md"
    OUT="$(A "$V" --workspace sync --yes)"
-   assert_contains "$OUT" "libs/lib-a: kept (own commits, no fast-forward possible)" "own commits kept"
-   assert_eq "$(git -C "$V/libs/lib-a" log -1 --format=%s)" "own" "own commit stays"
-   assert_contains "$OUT" "docs: kept (uncommitted changes)" "dirty tree kept"
+   assert_contains "$OUT" "libs/lib-a: moved (merged with origin/main)" "F226: own commits merged"
+   assert_contains "$(git -C "$V/libs/lib-a" log -1 --format=%s)" "AIOS: zusammengeführt auf" "F226: merge commit"
+   assert_contains "$(git -C "$V/libs/lib-a" log --format=%s)" "own" "own commit stays"
+   assert_contains "$OUT" "libs/lib-a: pushed" "merged repo pushed"
+   assert_contains "$OUT" "docs: saved (0 new, 1 changed, 0 deleted)" "F225: local change saved"
+   assert_contains "$(git -C "$V/docs" log -1 --format=%s)" "AIOS: gesichert von" "F225: commit of the save"
+   assert_contains "$(git -C "$RM/docs" log -1 --format=%s main)" "AIOS: gesichert von" "F225: save pushed"
    assert_contains "$(cat "$V/docs/@/README.md")" "dirty" "change stays"
-   git -C "$V/docs" checkout -q -- .; git -C "$V/docs" checkout -q -b other
+   git -C "$V/docs" checkout -q -b other
    assert_contains "$(A "$V" --workspace sync --group doc --yes)" "docs: kept (branch other is checked out, not main)" "other branch kept"
    git -C "$V/docs" checkout -q main
    git -C "$V/docs" remote set-url origin "file://$RM/lib-b"
@@ -146,6 +151,10 @@ YAML
    assert_not_contains "$OUT" "update docs" "no update of the detached docs"
    assert_contains "$(A "$V" --workspace status | grep '^docs')" "detached" "status: detached"
    rm "$V/.aios/workspace.local.yaml"
+   echo x2 > "$V/libs/lib-a/x2.txt"; git -C "$V/libs/lib-a" add x2.txt; git -C "$V/libs/lib-a" commit -qm own2
+   git -C "$SANDBOX/src/lib-a" pull -q --no-rebase origin main; echo 4 >> "$SANDBOX/src/lib-a/@/README.md"
+   git -C "$SANDBOX/src/lib-a" commit -qam "lib-a 4"; git -C "$SANDBOX/src/lib-a" push -q origin main
+   git -C "$V/libs/lib-a" fetch -q origin                # diverged again, for status and integrity
    OUT="$(A "$V" --workspace status)"
    assert_contains "$OUT" "Project" "status: header"
    assert_contains "$(echo "$OUT" | grep '^lib-a')" "1 ahead, 1 behind" "status: lib-a ahead and behind"
@@ -164,7 +173,8 @@ YAML
    rm -rf "$V/docs"
    OUT="$(A "$V" --integrity)"
    assert_contains "$(echo "$OUT" | grep 'docs')" "missing: clone" "integrity: missing clone"
-   A "$V" --workspace sync --group doc --yes >/dev/null
+   OUT="$(A "$V" --workspace sync --group doc --yes)"
+   assert_contains "$OUT" "libs/lib-a: moved (merged with origin/main)" "diverged repo merged (no group: in every group)"
    OUT="$(A "$V" --workspace freeze --yes)"
    assert_contains "$OUT" "frozen: docs" "freeze, parents before children"
    LOCK="$(cat "$V/.aios/lock.yaml")"
@@ -195,8 +205,7 @@ YAML
    assert_eq "$(git -C "$V" log -1 --format=%s)" "AIOS: workspace.yaml nachgeführt" "commit of only workspace.yaml"
    assert_contains "$OUT" ".: pushed" "vault root pushed"
    assert_eq "$(git -C "$RM/root" log -1 --format=%s main)" "AIOS: workspace.yaml nachgeführt" "remote of the root has the commit"
-   assert_contains "$OUT" "libs/lib-a: not pushed (own commits, no fast-forward possible)" "diverged repo not pushed"
-   assert_not_contains "$(git -C "$RM/lib-a" log --format=%s main)" "own" "remote of lib-a without the own commit"
+   assert_contains "$(git -C "$RM/lib-a" log --format=%s main)" "own2" "remote of lib-a has the own commit"
    echo y > "$V/docs/@/y.md"; git -C "$V/docs" add -A; git -C "$V/docs" commit -qm "docs 2"; git -C "$V/docs" tag t1
    OUT="$(A "$V" --workspace sync --yes)"
    assert_contains "$OUT" "docs: pushed (1 commit to origin/main)" "docs pushed"
@@ -268,11 +277,18 @@ This vault is an AIBOS workspace with sync: auto." "block with sync: auto"
    assert_contains "$(A "$D" --context)" "This vault lies in a cloud folder (CloudStorage)" "block in a cloud folder"
    echo 2 >> "$SANDBOX/src/sub/@/README.md"; git -C "$SANDBOX/src/sub" commit -qam "sub 2"; git -C "$SANDBOX/src/sub" push -q origin main
    OUT="$(S "$V/libs/lib-a/sub")"
-   assert_contains "$OUT" "AIOS-SYNC: sub fast-forwarded to origin/main (1 commits)." "hook: fast-forward at startup"
+   assert_contains "$OUT" "AIOS-SYNC: sub updated from origin/main (1 commits)." "hook: update at startup"
    assert_eq "$(git -C "$V/libs/lib-a/sub" log -1 --format=%s)" "sub 2" "sub at the new commit"
    assert_contains "$(S "$V/libs/lib-a/sub")" "AIOS-SYNC: sub is up to date with origin/main." "hook: up to date"
    assert_not_contains "$(S "$V/libs/lib-a/sub" resume)" "AIOS-SYNC" "hook: not at resume"
-   assert_contains "$(S "$V/libs/lib-a")" "AIOS-SYNC: lib-a not updated: own commits, no fast-forward possible." "hook: own commits named"
+   echo here > "$V/libs/lib-a/@/README.md"; git -C "$V/libs/lib-a" commit -qam "here"
+   git -C "$SANDBOX/src/lib-a" pull -q --no-rebase origin main; echo there > "$SANDBOX/src/lib-a/@/README.md"
+   git -C "$SANDBOX/src/lib-a" commit -qam "there"; git -C "$SANDBOX/src/lib-a" push -q origin main
+   assert_contains "$(S "$V/libs/lib-a")" "AIOS-SYNC: lib-a not updated: the same files changed here and on the remote" "F230: hook makes no conflict copy"
+   assert_eq "$(git -C "$V/libs/lib-a" log -1 --format=%s)" "here" "F230: hook leaves the repo as it was"
+   echo wip >> "$V/libs/lib-a/x2.txt"
+   assert_contains "$(S "$V/libs/lib-a")" "not updated: local changes that are not saved yet" "F230: hook does not save"
+   git -C "$V/libs/lib-a" checkout -q -- x2.txt
    printf 'aios: %s\nsync: manual\n' "$VER" > "$V/.aios/config.yaml"
    assert_not_contains "$(S "$V/libs/lib-a/sub")" "AIOS-SYNC" "hook: no fetch with sync: manual"
    assert_contains "$(A "$V" --context)" "with sync: manual." "block with sync: manual"
@@ -319,11 +335,10 @@ This vault is an AIBOS workspace with sync: auto." "block with sync: auto"
    echo 3 >> "$V/libs/lib-a/sub/@/README.md"; git -C "$V/libs/lib-a/sub" commit -qam "sub 3"
    echo wip > "$V/libs/lib-a/sub/wip.txt"
    OUT="$(A "$V" --workspace sync --yes)"
-   assert_contains "$OUT" "libs/lib-a/sub: kept (uncommitted changes)" "B31: dirty tree not updated"
-   assert_contains "$OUT" "libs/lib-a/sub: pushed (1 commit to origin/main)" "B31: committed work pushed anyway"
-   assert_eq "$(git -C "$RM/sub" log -1 --format=%s main)" "sub 3" "B31: remote has the commit"
+   assert_contains "$OUT" "libs/lib-a/sub: saved (1 new, 0 changed, 0 deleted)" "F225: new file saved"
+   assert_contains "$OUT" "libs/lib-a/sub: pushed (2 commits to origin/main)" "F225: commit and save pushed"
+   assert_contains "$(git -C "$RM/sub" log --format=%s main)" "sub 3" "remote has the commit"
    assert_file "$V/libs/lib-a/sub/wip.txt"
-   rm "$V/libs/lib-a/sub/wip.txt"
    cp "$V/.aios/workspace.yaml" "$SANDBOX/ws.bak"
    printf '  - name: gone\n    repo: file://%s/nope\n    revision: main\n    path: gone\n  - name: gone-child\n    repo: file://%s/sub\n    revision: main\n    path: gone/child\n' "$RM" "$RM" >> "$V/.aios/workspace.yaml"
    printf '/gone/\n' >> "$V/.gitignore"
@@ -381,3 +396,62 @@ This vault is an AIBOS workspace with sync: auto." "block with sync: auto"
    assert_not_contains "$OUT" "move $V to the trash" "B33: not the whole workspace from a project"
    assert_contains "$(A "$V/libs/lib-a/sub" --skill aios-sync)" "sync project" "B33: skill knows the words"
    assert_contains "$(A "$V" --context --load "$V" 2>/dev/null; cat "$HOME"/.aios/cache/*/part-1.md 2>/dev/null)" "offer /aios-sync for the project" "B33: rule of the workspace names the project"
+
+#===============================================================================
+# L38, drive model: conflict copy, deleted against changed, secrets, large deletion, history,
+# restore (spec 06, sync and Zurückholen; V0.6, memos 204, 205: F225-F237)
+#===============================================================================
+
+   P="$V/libs/lib-a/sub"; SS="$SANDBOX/src/sub"
+   A "$V" --workspace sync --yes >/dev/null
+   git -C "$SS" pull -q --no-rebase origin main
+   printf 'remote\n' > "$SS/@/README.md"; printf 'keep\n' > "$SS/gone.md"
+   git -C "$SS" add -A; git -C "$SS" commit -qm "remote side"; git -C "$SS" push -q origin main
+   A "$P" --workspace sync --yes >/dev/null
+   git -C "$SS" rm -q gone.md; printf 'remote 2\n' > "$SS/@/README.md"
+   git -C "$SS" commit -qam "remote deletes gone, changes README"; git -C "$SS" push -q origin main
+   printf 'local\n' > "$P/@/README.md"; printf 'changed here\n' > "$P/gone.md"; printf 'n\n' > "$P/note.md"
+   OUT="$(A "$P" --workspace sync --yes)"
+   assert_contains "$OUT" "libs/lib-a/sub: saved (1 new, 2 changed, 0 deleted)" "F225: saved before the merge"
+   assert_contains "$OUT" "conflict copies: @/README (Konflikt " "F227: conflict copy named"
+   assert_eq "$(cat "$P/@/README.md")" "remote 2" "F227: the remote version wins"
+   CP="$(ls "$P/@" | grep 'Konflikt')"
+   assert_eq "$(cat "$P/@/$CP")" "local" "F227: the local version stays as a copy"
+   assert_eq "$(cat "$P/gone.md")" "changed here" "F233: changed wins over deleted"
+   assert_contains "$(git -C "$RM/sub" ls-tree -r --name-only main)" "Konflikt" "F227: copy is saved and pushed"
+   printf 'SECRET=1\n' > "$P/.env"; printf 'x\n' > "$P/plain.md"
+   OUT="$(A "$P" --workspace sync --plan)"
+   assert_contains "$OUT" "save libs/lib-a/sub: 2 new, 0 changed, 0 deleted; not saved (secret): .env" "F232: plan names the secret"
+   OUT="$(A "$P" --workspace sync --yes)"
+   assert_contains "$OUT" "not saved (secret) (.env)" "F232: secret not saved"
+   assert_not_contains "$(git -C "$P" ls-files)" ".env" "F232: .env not in the repo"
+   assert_contains "$(git -C "$RM/sub" ls-tree -r --name-only main)" "plain.md" "F232: the rest is saved"
+   rm "$P/.env"
+   for i in 1 2 3 4 5 6 7 8 9 10 11; do echo "$i" > "$P/f$i.md"; done
+   A "$P" --workspace sync --yes >/dev/null
+   rm "$P"/f*.md
+   OUT="$(A "$P" --workspace sync --plan)"
+   assert_contains "$OUT" "LARGE DELETION (11 files)" "F228: plan names the large deletion"
+   OUT="$(A "$P" --workspace sync --yes)"
+   assert_contains "$OUT" "restored (11 deleted files (large deletion, F228))" "F228: restored without a question"
+   assert_file "$P/f5.md"
+   rm "$P"/f*.md
+   OUT="$(A "$P" --workspace sync --yes --accept-deletion libs/lib-a/sub)"
+   assert_contains "$OUT" "saved (0 new, 0 changed, 11 deleted)" "F228: deletion taken over when accepted"
+   rm "$P/@/README.md" "$P/@/$CP"
+   OUT="$(A "$P" --workspace sync --yes)"
+   assert_contains "$OUT" "restored (2 deleted files" "F236: all of @/ gone counts as large"
+   rm "$P/plain.md"; A "$P" --workspace sync --yes >/dev/null
+   OUT="$(A "$P" --workspace history "$P" --deleted)"
+   assert_contains "$OUT" "plain.md  deleted" "F229: history --deleted lists the deleted note"
+   assert_contains "$(A "$P" --workspace history "$P/gone.md")" "AIOS: gesichert von" "F229: versions of a file"
+   OUT="$(A "$P" --workspace restore "$P/plain.md" --plan)"
+   assert_contains "$OUT" "restore plain.md from the version" "F229: plan of restore"
+   [ ! -e "$P/plain.md" ] && ok || fail "--plan restores nothing"
+   OUT="$(A "$P" --workspace restore "$P/plain.md" --yes)"
+   assert_eq "$(cat "$P/plain.md")" "x" "F229: deleted note restored"
+   printf 'unsaved\n' > "$P/gone.md"
+   OUT="$(A "$P" --workspace restore "$P/gone.md" --yes)"
+   assert_contains "$OUT" "unsaved files copied to the trash" "F237: unsaved version to the trash first"
+   assert_eq "$(cat "$P/gone.md")" "changed here" "F237: last saved version back"
+   assert_contains "$(A "$P" --workspace restore "$P" --yes)" "restore it with --at" "F237: a folder only with --at"

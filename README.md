@@ -216,12 +216,17 @@ so the answer shows which assistant and which skill are active.
 vault root lists its projects in `.aios/workspace.yaml`, each project is a repo
 of its own at its own remote. Three moves handle it: `aios --workspace attach
 <repo> [<vault-folder>]` binds a workspace to a new machine (in the terminal),
-`sync` clones what is missing, fast-forwards, records new repos and pushes
-(never tags; secrets stop the push), `detach <path>` moves a subtree to the
-trash after checking that nothing is lost, `attach <path>` gets it back. With
-`sync: auto` in the vault root, a new session fast-forwards its project; in
-cloud folders (Google Drive, iCloud, Dropbox) the sync is off. Skills:
-`/aios-sync`, `/aios-detach`, `/aios-attach`.
+`sync` works like a cloud drive: it clones what is missing, saves local
+changes (new, changed, deleted files; secrets stay local), merges new states
+(the same file changed on both sides leaves a conflict copy), records new repos
+and pushes (never tags); a large deletion is restored unless taken over.
+`history` and `restore` bring back earlier versions. `detach <path>` moves a
+subtree to the trash after checking that nothing is lost, `attach <path>` gets
+it back. Without a path the project of the working directory counts, at the
+vault root the whole workspace. With `sync: auto` in the vault root, a new
+session merges its project; in cloud folders (Google Drive, iCloud, Dropbox)
+the sync is off. Skills: `/aios-sync`, `/aios-restore`, `/aios-detach`,
+`/aios-attach`.
 **Contributions** go back to a package as a pull request
 (`aios --contribute <file> --to <package>`).
 

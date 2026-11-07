@@ -38,6 +38,7 @@
       echo '          aios --contribute <file>... --to <package> [--message <text>] # pull request'
       echo '          aios --workspace attach <repo> [<vault-folder>] # bind a workspace to this machine'
       echo '          aios --workspace sync | status | freeze [<path>] [--group <g>] # projects of a workspace'
+      echo '          aios --workspace history | restore <path> [--at <time>] # earlier versions'
       echo '          aios --skill <name> [--session <id>] # body of an AIOS skill'
       echo '          aios <writing command> --plan       # show the plan only (for skills)'
       echo '          aios <writing command> --yes        # no question (after asking in the chat)'
