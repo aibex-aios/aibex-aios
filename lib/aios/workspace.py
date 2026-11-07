@@ -646,12 +646,20 @@ def new_workspace(plan, root):
 
 def add_entries(root, entries):
     """Append entries to projects: of workspace.yaml (text, comments stay) and commit only it."""
+    import yaml
     f = root / FILE
-    lines = f.read_text(encoding="utf-8").splitlines()
+    old = f.read_text(encoding="utf-8")
+    lines = old.splitlines()
+    indent = "  "                                   # B35: the indentation of the entries there
+    for n, line in enumerate(lines):
+        if line.startswith("projects:"):
+            m = next((re.match(r"^(\s*)- ", x) for x in lines[n + 1:] if re.match(r"^\s*- ", x)), None)
+            indent = m.group(1) if m else "  "
+            break
     block = []
     for e in entries:
-        block.append(f"  - name: {e['name']}")
-        block += [f"    {k}: {e[k]}" for k in ("remote", "repo", "revision", "path") if k in e]
+        block.append(f"{indent}- name: {e['name']}")
+        block += [f"{indent}  {k}: {e[k]}" for k in ("remote", "repo", "revision", "path") if k in e]
     at = None
     for n, line in enumerate(lines):
         if line.startswith("projects:"):
@@ -666,6 +674,13 @@ def add_entries(root, entries):
     else:
         lines[at:at] = block
     f.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    try:                                            # B35: never commit a manifest that cannot be read
+        data = yaml.safe_load(f.read_text(encoding="utf-8"))
+        assert len(data["projects"]) >= len(entries)
+    except Exception as e:
+        f.write_text(old, encoding="utf-8")
+        warn(f"{FILE} not updated: the result could not be read ({e}); add the entries by hand")
+        return
     git(root, "add", "--", str(FILE))
     r = git(root, "commit", "-q", "-m", "AIOS: workspace.yaml nachgeführt", "--", str(FILE))
     if r.returncode:

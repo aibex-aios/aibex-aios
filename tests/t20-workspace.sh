@@ -326,6 +326,11 @@ This vault is an AIBOS workspace with sync: auto." "block with sync: auto"
    assert_eq "$(git -C "$N" log -1 --format=%s)" "AIOS: workspace.yaml angelegt" "commit of only workspace.yaml"
    assert_contains "$OUT" ".: pushed" "vault root pushed"
    assert_contains "$(A "$N" --workspace status)" "sync: auto" "now a workspace with sync: auto"
+   repo p-drei @/README.md; git clone -q "file://$RM/p-drei" "$N/P-Drei"; printf '/P-Drei/\n' >> "$N/.gitignore"
+   git -C "$N" commit -qam "exclude P-Drei"
+   OUT="$(A "$N" --workspace sync --yes)"
+   assert_contains "$OUT" "P-Drei: added to workspace.yaml" "B35: entry added to a workspace.yaml written by AIOS"
+   assert_contains "$(A "$N" --workspace status)" "P-Drei" "B35: the manifest stays readable"
    M="$U/§M"; mkdir -p "$M/.aios"; printf 'aios: %s\nsync: off\n' "$VER" > "$M/.aios/config.yaml"; git -C "$M" init -q -b main
    assert_contains "$(A "$M" --workspace sync --yes)" "no workspace is created" "sync: off: no new workspace"
 
