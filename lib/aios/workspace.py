@@ -228,12 +228,13 @@ def conflict(item, d):
 
 
 def host():
-    """Short name of this machine for commit messages and conflict copies (F235)."""
+    """<user>@<machine> for commit messages and conflict copies (F235, H38)."""
     import socket
     r = subprocess.run(["scutil", "--get", "LocalHostName"], capture_output=True, text=True) \
         if Path("/usr/sbin/scutil").exists() else None
     name = r.stdout.strip() if r is not None and r.returncode == 0 else ""
-    return name or socket.gethostname().split(".")[0]
+    import getpass
+    return f"{getpass.getuser()}@{name or socket.gethostname().split('.')[0]}"
 
 
 def git_bytes(d, *args):
@@ -441,9 +442,13 @@ def sync_steps(plan, root, targets, kept, accept=()):
         if st == "kept":
             kept[item.path] = why
         report(item.path, st, why)
+    names = [i.path for i in targets]
+    if names:                                       # H36: one line for all, names only for a few
+        plan.add(f"fetch and merge {len(names)} project{'s' if len(names) != 1 else ''}"
+                 + (f": {', '.join(names)}" if len(names) <= 5 else ""))
     for item in targets:
         d = root if item.path == "." else root / item.path
-        plan.add(f"update {item.path} ({item.revision}, merge)", lambda item=item, d=d: upd(item, d))
+        plan.add(None, lambda item=item, d=d: upd(item, d))
 
 
 def root_item(root):
@@ -456,8 +461,20 @@ def root_item(root):
 # sync (steps 1-3; steps 4-5 follow in step 3 of the implementation)
 # ---------------------------------------------------------------------------
 
+UNCHANGED = []
+
+
 def report(path, state, why=""):
-    say(f"   {path}: {state}" + (f" ({why})" if why and state != "ok" else ""))
+    if state == "ok":                               # H36: the result counts them in one line
+        UNCHANGED.append(path)
+        return
+    say(f"   {path}: {state}" + (f" ({why})" if why else ""))
+
+
+def unchanged_line():
+    if UNCHANGED:
+        say(f"   {len(UNCHANGED)} project{'s' if len(UNCHANGED) != 1 else ''} unchanged")
+        UNCHANGED.clear()
 
 
 def aios_clone(d):
@@ -701,8 +718,8 @@ def push_steps(plan, root, targets, kept):
         if ahead is None and item.path != ".":
             continue
         lines = [f"{s} {a}: {t}" for s, a, t in (ahead or [])]
-        text = f"push {item.path}" + (f": {len(lines)} commit(s)" if lines else " (if workspace.yaml was added)")
-        plan.add(text, lambda item=item, d=d: push(item.path, d, kept))
+        text = f"push {item.path}: {len(lines)} commit(s)" if lines else None   # H36: pushes of saves
+        plan.add(text, lambda item=item, d=d: push(item.path, d, kept))          # and merges follow
         for line in lines:
             plan.add(line)
 
@@ -793,6 +810,7 @@ def do_sync(path=None, groups=(), accept=()):
     if ui.MODE != "yes":
         say(f"=> sync the workspace {root}" + ("" if rel == "." else f" at {rel}"))
     ui.confirm(plan, "go on?", "cancelled")
+    unchanged_line()
     say(f"=> workspace {root.name} synchronized")
     return 0
 
@@ -811,6 +829,7 @@ def sync_new(root):
     if ui.MODE != "yes":
         say(f"=> make {root} a workspace and sync it")
     ui.confirm(plan, "go on?", "cancelled")
+    unchanged_line()
     say(f"=> workspace {root.name} created and synchronized")
     return 0
 
@@ -917,6 +936,7 @@ def attach(repo, folder=None):
             inner.run()
         finally:
             ui.MODE = keep
+        unchanged_line()
 
     plan.add(f"clone {repo} -> {target} (vault root)", run)
     plan.add("install the bound kernel version if it is missing (aios --install), hand over to it")

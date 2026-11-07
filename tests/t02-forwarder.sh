@@ -37,7 +37,7 @@
 # forwarder: own options, arguments passed unchanged
 #===============================================================================
 
-   assert_eq "$(aios ---version)" "0.4.1" "---version"
+   assert_eq "$(aios ---version)" "0.4.2" "---version"
    assert_exit 1 aios ---help
    assert_contains "$(aios ---help)" "aios ---which" "---help names the tool"
 
@@ -64,6 +64,8 @@
    printf 'aios: "0.2.0"   # quoted\n' > "$V/.aios/config.yaml"
    assert_eq "$(run "$V/Sterne" aios --context --id)" "sys-0.2.0 aios --context --id" "quoted version at the vault root"
    printf 'aios: 0.1.0\n' > "$V/.aios/config.yaml"
+   assert_eq "$(run "$SANDBOX/outside" aios --workspace sync "$V/Garten")" "sys-0.1.0 aios --workspace sync $V/Garten" "H37: --workspace <path>: the binding at the path"
+   assert_eq "$(run "$SANDBOX/outside" aios --workspace restore "$V/Garten/neu.md" --at 2026-11-06)" "sys-0.1.0 aios --workspace restore $V/Garten/neu.md --at 2026-11-06" "H37: a file that is gone: its folder"
 
 #===============================================================================
 # user installations.yaml wins over the system one, ~ and quotes are resolved

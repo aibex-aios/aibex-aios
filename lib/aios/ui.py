@@ -30,6 +30,8 @@ class Plan:
     def show(self):
         print("   plan:")
         for text, action in self.steps:
+            if text is None:                        # a step that only the result names (H36)
+                continue
             print(("      " if action else "      (") + text + ("" if action else ")"))
 
     def run(self):

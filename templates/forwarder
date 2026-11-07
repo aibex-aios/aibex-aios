@@ -11,7 +11,8 @@
       echo '          legacy: ai-brain there, else nothing; everything else: highest installed'
       echo '          version; aios --install distribution-*: always the highest installed'
       echo '          version, at least 0.5; aios --remove-version and aios --vaults: always the highest'
-      echo '          installed version; aios --context with a version below 0.5: its aios-context'
+      echo '          installed version; aios --context with a version below 0.5: its aios-context;'
+      echo '          aios --workspace <cmd> <path>: the binding of the vault at <path>'
       echo '   see also: aios, ai-brain'
       exit 1
    fi
@@ -21,7 +22,7 @@
 #===============================================================================
 
    if [ "$*" == "---version" ]; then
-      echo "0.4.1"; exit 0
+      echo "0.4.2"; exit 0
    fi
 
 #===============================================================================
@@ -190,7 +191,26 @@
 # forward: aios <args>
 #===============================================================================
 
-   choose
+   WSDIR=""                                         # --workspace <cmd> <path>: the binding at <path>
+   if [ "$1" == "--workspace" ]; then              # (V0.6, memo 208: H37)
+      SKIP=""
+      for A in "${@:3}"; do
+         if [ -n "$SKIP" ]; then SKIP=""; continue; fi
+         case "$A" in --group|--at|--accept-deletion) SKIP=1; continue;; -*) continue;; esac
+         if [ -d "$A" ]; then WSDIR="$A"; elif [ -d "$(dirname "$A")" ]; then WSDIR="$(dirname "$A")"; fi
+         break
+      done
+   fi
+   if [ -n "$WSDIR" ]; then
+      OLD="$(pwd -P 2>/dev/null)"
+      if cd "$WSDIR" 2>/dev/null; then
+         choose; [ -n "$OLD" ] && cd "$OLD" 2>/dev/null
+      else
+         choose
+      fi
+   else
+      choose
+   fi
    case "$KIND" in
       aios)
          if [ "$1" == "--context" ] && [ "$2" == "--permit" ] && [ -z "$AIOS_HOME" ]; then
