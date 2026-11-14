@@ -8,7 +8,9 @@ Dieses Tutorial führt in etwa 20 Minuten durch Workspaces von AIbex AIOS. Ein *
 | `sync` | den Projektbaum mit den Remotes abgleichen |
 | `detach` | den Workspace von diesem Rechner lösen; mit Pfad: einen Teilbaum auslagern |
 
-Voraussetzung: AIBOS v0.6.4 ist installiert, der Vault `~/tmp/§Demo` ist ein AIBOS-Workspace (Tutorial 01) und hat ein eigenes Git-Repo. Die Projekte des Beispiels sind Paket-Repos des Hubs `aibex-aios`; zum Klonen genügt Lesezugriff.
+Dazu kommt `remove`: ein Projekt aus dem Workspace entfernen, auf allen Rechnern (Abschnitt 7).
+
+Voraussetzung: AIBOS v0.6.6 ist installiert, der Vault `~/tmp/§Demo` ist ein AIBOS-Workspace (Tutorial 01) und hat ein eigenes Git-Repo. Die Projekte des Beispiels sind Paket-Repos des Hubs `aibex-aios`; zum Klonen genügt Lesezugriff.
 
 ## 1. Das Manifest in der Vault-Root
 
@@ -102,7 +104,7 @@ Ein zweiter `aios --workspace sync` arbeitet wie ein Cloud-Laufwerk: Was du geä
    W-Werkstatt: moved (merged with origin/main)
 ```
 
-Ohne Pfad gleicht sync das Projekt ab, in dem du stehst, an der Vault-Root den ganzen Workspace; mit Pfad nur diesen Teilbaum: `aios --workspace sync W-Werkstatt/skill-memo`. Frühere Fassungen zeigt `aios --workspace history <datei>`, gelöschte Dateien `history <projekt> --deleted`; zurück holt sie `aios --workspace restore <datei>` bzw. `restore <projekt> --at 2026-11-06` (im Chat `/aios-restore`).
+Ohne Pfad gleicht sync das Projekt ab, in dem du stehst, an der Vault-Root den ganzen Workspace; mit Pfad nur diesen Teilbaum: `aios --workspace sync W-Werkstatt/skill-memo`. Mit `--only` nur das eine Projekt ohne seine Unterprojekte, etwa die Vault-Root allein: `aios --workspace sync ~/tmp/§Demo --only`. Frühere Fassungen zeigt `aios --workspace history <datei>`, gelöschte Dateien `history <projekt> --deleted`; zurück holt sie `aios --workspace restore <datei>` bzw. `restore <projekt> --at 2026-11-06` (im Chat `/aios-restore`).
 
 ## 5. Hinausbringen
 
@@ -116,7 +118,7 @@ sync pusht auch: je Repo mit Upstream und eigenen Commits den ausgecheckten Zwei
 Zwei Sicherungen gehören dazu:
 
 - **Geheimnisse:** Berührt ein ausgehender Commit `@Secret/`, `.env`, `*.pem`, `*.key` oder einen SSH-Schlüssel, hält sync den Push dieses Repos an und nennt Datei und Commit. Geheimnisse gehören in den Ordner `@Secret/` eines Projekts; die `.gitignore`-Vorlage schließt ihn aus.
-- **Manifest:** Liegt unter der Vault-Root ein neues Repo mit Remote, trägt sync es in `workspace.yaml` ein und committet nur diese Datei. Ein Repo ohne Remote nennt sync als Hinweis, mit einem Namen nach dem Schema und, wenn die Vault-Root bei GitHub liegt, dem Befehl `gh repo create …`. Repos am Remote anlegen tut sync nie selbst.
+- **Manifest:** Liegt unter der Vault-Root ein neues Repo mit Remote, trägt sync es in `workspace.yaml` ein und committet nur diese Datei. Ein Repo ohne Remote nennt sync als Hinweis, mit einem Namen nach dem Schema und, wenn die Vault-Root bei GitHub liegt, dem Befehl `gh repo create … --push`, der das Repo anlegt und den ersten Stand hinausbringt. Hat ein Repo ein Remote, aber noch nie gepusht (kein Upstream), nennt sync `git -C <pfad> push -u origin main`. Repos am Remote anlegen tut sync nie selbst.
 
 ## 6. Der Workspace auf einem zweiten Rechner
 
@@ -157,6 +159,14 @@ Geprüft wird jedes Repo im Teilbaum: Remote erreichbar, nichts offen, nichts un
 
 `detach` ohne Pfad löst den ganzen Workspace und legt den Vault-Ordner in den Papierkorb, nach derselben Prüfung für alle Repos.
 
+Soll ein Projekt **ganz aus dem Workspace**, auf allen Rechnern, hilft `remove`:
+
+```bash
+aios --workspace remove W-Werkstatt/wissen/knowledge-orion --plan
+```
+
+Es prüft wie `detach`, legt den Teilbaum ohne Platzhalter in den Papierkorb, trägt ihn in `workspace.yaml` unter `removed:` ein und committet nur diese Datei. Das Repo am Remote bleibt. Der nächste sync bringt den Eintrag hinaus; auf einem anderen Rechner entfernt sync das Projekt dann ebenso, nach derselben Prüfung. Zurück geht es mit `aios --workspace attach W-Werkstatt/wissen/knowledge-orion`. Im Chat versteht `/aios-detach` „entferne … aus dem Workspace".
+
 ## 8. Laufender Abgleich: sync auto, manual, off
 
 `sync:` in `.aios/config.yaml` der Vault-Root legt fest, wie der Workspace abgleicht; mit `workspace.yaml` gilt `auto`:
@@ -168,6 +178,13 @@ Geprüft wird jedes Repo im Teilbaum: Remote erreichbar, nichts offen, nichts un
 | `off` | `attach` und `sync` verweigern |
 
 Ein Vault in einem Cloud-Ordner (Google Drive, OneDrive, iCloud Drive, Dropbox) gilt immer als `off`: Dort repliziert der Cloud-Dienst. Git bleibt erlaubt, nur der Abgleich von AIBOS ist aus.
+
+Insgesamt gibt es vier Arten, einen Vault über Rechner zu führen:
+
+- **Lokal-Drive:** Der Vault liegt nur auf diesem Rechner; kein Abgleich.
+- **Cloud-Drive:** Die Vault-Root liegt in einem Cloud-Ordner. Der Cloud-Dienst repliziert den Vault; `sync` ist immer `off`.
+- **AIBOS-Drive:** Der Vault hat eine `workspace.yaml`. AIBOS gleicht ihn über die Git-Remotes ab (`attach`, `sync`, `detach`, `remove`).
+- **Netz-Drive:** Der Vault liegt auf einem Netzlaufwerk (NAS, Server). Es gibt nur eine Kopie, auf der alle Rechner arbeiten; setze dort `sync: off`.
 
 ## 9. Einfrieren
 
@@ -187,7 +204,8 @@ aios --workspace freeze
 | history, restore | frühere Fassungen und gelöschte Dateien zeigen und zurückholen; Papierkorb für nicht Gesichertes |
 | attach | Workspace an einen zweiten Rechner; mit Pfad: Teilbaum zurück |
 | detach | Teilbaum auslagern, Workspace lösen, nur ohne Verlust; Papierkorb |
-| sync: | `auto`, `manual`, `off`; Cloud-Ordner immer `off` |
+| remove | Projekt aus dem Workspace entfernen, auf allen Rechnern; `removed:` in `workspace.yaml` |
+| sync:, Arten | `auto`, `manual`, `off`; Lokal-, Cloud-, AIBOS- und Netz-Drive; Cloud-Ordner immer `off` |
 | Einfrieren | `aios --workspace freeze`, Abschnitt `workspace:` in `lock.yaml` |
 
-Die vollständigen Regeln stehen in Spec 06 *Pakete und Workspaces*, Abschnitt *Workspaces*, und in Spec 05 *Projekte*, installiert unter `~/.aios/versions/v0.6.4/doc/spec/`.
+Die vollständigen Regeln stehen in Spec 06 *Pakete und Workspaces*, Abschnitt *Workspaces*, und in Spec 05 *Projekte*, installiert unter `~/.aios/versions/v0.6.6/doc/spec/`.

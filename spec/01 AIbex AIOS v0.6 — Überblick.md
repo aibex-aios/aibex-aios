@@ -59,7 +59,7 @@ Die Spec v0.6 besteht aus sieben Dokumenten, die sich nicht wiederholen:
 | **06 Pakete und Workspaces** | Paket-Manifest, Versionen und Bereiche, Hubs und Hub-Liste, Resolver, Paket laden (`aios --fetch`), ausrollen (`aios --deploy`), Distributionen, Lock, `@Data/`, Workspaces, Rückfluss, Demo-App Taschenrechner |
 | **07 Arbeitspferde** | Definition, Pakete `worker-<name>`, Installation je Version, Aktivierung über `lock.yaml`, Weiterleiter, Abläufe, `aios --worker`, Tests |
 
-Die Begründungen stehen in den Memos der Konzeptprojekte unter `§AIOS/A-AIOS/AA-AIbex-AIOS/`: `@Memo/V0.1/` für die Grundlage, `@Memo/V0.2/` (Memos 13–18) für die Änderungen in v0.2, `@Memo/V0.3/` (Memos 01–28) für die Änderungen in v0.3, `@Memo/V0.4/` (Memos 01–29) für die Änderungen in v0.4, `@Memo/V0.5/` (Memos 11–41, Soll-Bild Memo 36) für die Änderungen in v0.5, dort auch die Memos 70–86 für v0.5.1, `@Memo/V0.6/` (Memos 01–36, Soll-Bild Memo 34, Skizze Memo 35) für die Änderungen in v0.6, dort auch die Memos 79–84 (Bewertung Memo 79, Skizze Memo 84) für v0.6.1 die Memos 114–123 (Bewertung Memo 118, Soll-Bild und Skizze Memo 122) für v0.6.2 die Memos 152–154 (Bewertung und Skizze Memo 153) für v0.6.3 und die Memos 163–174 (Bewertung Memo 164, Skizze Memo 171) für v0.6.4. In den Memos 01–11 von V0.3 heißt der Assistent noch *Agent* (V0.3, Memo 13). Die Spec beschreibt nur den Soll-Stand. Sie wird im Repo `aibex-aios` unter `spec/` gepflegt und mit jeder Version nach `doc/spec/` ausgeliefert.
+Die Begründungen stehen in den Memos der Konzeptprojekte unter `§AIOS/A-AIOS/AA-AIbex-AIOS/`: `@Memo/V0.1/` für die Grundlage, `@Memo/V0.2/` (Memos 13–18) für die Änderungen in v0.2, `@Memo/V0.3/` (Memos 01–28) für die Änderungen in v0.3, `@Memo/V0.4/` (Memos 01–29) für die Änderungen in v0.4, `@Memo/V0.5/` (Memos 11–41, Soll-Bild Memo 36) für die Änderungen in v0.5, dort auch die Memos 70–86 für v0.5.1, `@Memo/V0.6/` (Memos 01–36, Soll-Bild Memo 34, Skizze Memo 35) für die Änderungen in v0.6, dort auch die Memos 79–84 (Bewertung Memo 79, Skizze Memo 84) für v0.6.1 die Memos 114–123 (Bewertung Memo 118, Soll-Bild und Skizze Memo 122) für v0.6.2 die Memos 152–154 (Bewertung und Skizze Memo 153) für v0.6.3, die Memos 163–174 (Bewertung Memo 164, Skizze Memo 171) für v0.6.4, die Memos 218–220 für v0.6.5 und die Memos 221–227 für v0.6.6. In den Memos 01–11 von V0.3 heißt der Assistent noch *Agent* (V0.3, Memo 13). Die Spec beschreibt nur den Soll-Stand. Sie wird im Repo `aibex-aios` unter `spec/` gepflegt und mit jeder Version nach `doc/spec/` ausgeliefert.
 
 ## Begriffe
 
@@ -107,6 +107,7 @@ Die Begründungen stehen in den Memos der Konzeptprojekte unter `§AIOS/A-AIOS/A
 | **Anwender-Site** | Vault mit Paketen als Kopie in `@!Package/` |
 | **Entwickler-Site** | Workspace mit Paketen als Git-Checkout |
 | **Workspace** | Projekt mit `.aios/workspace.yaml`, das Repos mit Revision und Pfad nennt (Spec 06); nicht zu verwechseln mit dem AIBOS-Workspace |
+| **Lokal-Drive**, **Cloud-Drive**, **AIBOS-Drive**, **Netz-Drive** | die vier Arten, einen A/W über Rechner zu führen: nur auf diesem Rechner; repliziert von einem Cloud-Dienst (Vault-Root in einem Cloud-Ordner); abgeglichen von AIBOS über Git-Remotes (`workspace.yaml`); eine einzige Kopie auf einem Netzlaufwerk (Spec 06, *Arten der Führung*; V0.6, Memo 224) |
 | **Fremd-Repo** | Repo eines Workspace ohne `@/`, z. B. ein Paket-Repo; kein Projekt und kein Container (Spec 06) |
 | **Lock** | `.aios/lock.yaml`: aufgelöste Pakete und eingefrorener Stand eines Workspace |
 | **Demo-Assistent** | Assistent als Paket zum Ausprobieren und für Tutorials (`assistant-gaertner`, `assistant-astronom`) |
@@ -196,6 +197,21 @@ v0.6.4 macht Workspaces zuverlässig auf mehreren Rechnern (V0.6, Memos 163–17
 | Kernel-Skills `/aios-attach`, `/aios-sync`, `/aios-detach` (Spec 03) | 172 |
 | Release-Kandidaten `v0.6.4-rc<n>`, Vorabnahme im zweiten Benutzer, Abnahme auf einem zweiten Rechner (*Abnahmetest*) | 168, 171 |
 
+v0.6.5 ist ein Patch auf v0.6.4: `sync` übernimmt beim Nachführen die Einrückung der `workspace.yaml` (B35; V0.6, Memos 218–220).
+
+v0.6.6 ist ein Patch auf v0.6.5, nur der Kernel, in verkürzter Form (V0.6, Memos 221, 225–227):
+
+| in v0.6.6 | Memos |
+|---|---|
+| `aios --workspace remove <pfad>`: Projekt mit Unterprojekten aus dem Workspace entfernen, auf allen Rechnern; Liste `removed` in `workspace.yaml`; Wiederaufnahme mit `attach <pfad>` (Spec 06, *remove*; F231, F239–F243) | 204, 205, 226 |
+| `sync --only`: nur das eine Projekt ohne Unterprojekte (H42) | 222, 227 |
+| Hinweis für ein Repo ohne Remote mit `gh repo create … --push`; Hinweis für ein Repo ohne Upstream (B36) | 222, 225 |
+| kurze Ausgabe des Paketabgleichs im `sync` (H33) | 202 |
+| klare Meldung ohne gültiges Arbeitsverzeichnis, mit absolutem Pfad weiterarbeiten (Spec 04; H34) | 204 |
+| Skill `/aios-sync`: Plan vor jedem Push, auch für den ganzen Workspace (R34); `/aios-detach` versteht „aus dem Workspace entfernen" (Spec 03) | 216, 217, 226, 227 |
+| Begriffe Lokal-, Cloud-, AIBOS- und Netz-Drive in Spec und Tutorial 04, Zeile zum Cloud-Drive im Master-Kontext; keine Erkennung des Netz-Drives (Spec 06, *Arten der Führung*) | 223, 224, 227 |
+| Keine Begleitpakete: `distribution-capricorn` bleibt bei `kernel: "==0.6.5"`, bis die Session `knowledge-capricorn` eine neue Version macht | 221 |
+
 ## Vorabversionen
 
 Alle Versionen unter 1.0 sind Alpha- und Beta-Versionen; an Kunden wird erst ab v1.0 ausgeliefert. Das gilt für AIOS selbst und für die Pakete der Grundausstattung, die deshalb mit `0.1.0` beginnen (Ausnahme: `memo` behält seine Versionsfolge, 6.0.0).
@@ -216,7 +232,7 @@ AIBOS hält diese Regeln in jedem Befehl ein (für Pakete zusätzlich P1–P8, S
 | I6 | AIOS fasst in `.claude/skills/` nur Ordner an, die in `.aios/registry` stehen oder die es beim Registrieren neu anlegt; Ordner, die schon da sind und nicht in der Registry stehen, nie. In `~/.claude/skills/` entfernt der Umstieg nur die Hüllen früherer Versionen (Spec 04). |
 | I7 | Jeder schreibende Befehl zeigt vorher, was er tut, und wartet auf Bestätigung. Ausnahmen sind beim Session-Start die Registrierung, der Merker der Session (`~/.aios/sessions/`), das Log (`~/.aios/log/`) und im Workspace mit `sync: auto` das Holen und Zusammenführen neuer Stände für das Projekt der Session, nur ohne lokale Änderungen und ohne Konflikt, sodass nichts verloren gehen kann (Spec 02, *Hooks*; V0.6, Memo 174: F189; Memo 204: F230). Ein Skill holt den Plan mit `--plan`, fragt im Chat und ruft erst nach Ja mit `--yes` auf (Spec 04). Prüfungen (Konsistenzprüfung, `/aios-integrity`) schreiben nie; sie bieten eine Ergänzung nur an. |
 | I8 | Jeder Befehl ist idempotent: Ein zweiter Aufruf ohne Änderung ändert nichts. |
-| I9 | AIOS committet nur, was es selbst angelegt oder geändert hat: den ersten Commit eines Projekts (mit den Dateien, die es dabei aus dem Repo darüber übernimmt, Spec 05) den Ausschluss eines Unterprojekts im Repo darüber (Spec 05, Spec 06 *Workspaces*) und mit `aios --workspace sync` die nachgeführte `workspace.yaml` (Spec 06), dazu mit `aios --contribute` die genannten Dateien in einem eigenen Zweig eines Paket-Repos (Spec 06). Arbeitsstände des Users committet es nie. |
+| I9 | AIOS committet nur, was es selbst angelegt oder geändert hat: den ersten Commit eines Projekts (mit den Dateien, die es dabei aus dem Repo darüber übernimmt, Spec 05) den Ausschluss eines Unterprojekts im Repo darüber (Spec 05, Spec 06 *Workspaces*) mit `aios --workspace sync` die nachgeführte `workspace.yaml` (Spec 06), mit `aios --workspace remove` und `attach <pfad>` die geänderte `workspace.yaml` (Spec 06, *remove*), dazu mit `aios --contribute` die genannten Dateien in einem eigenen Zweig eines Paket-Repos (Spec 06). Arbeitsstände des Users committet es nie. |
 | I10 | Ein Weiterleiter oder Skill löst nie ein setup aus; fehlt ein Arbeitspferd, meldet er das und nennt höchstens `aios --fetch` (Spec 07). |
 | I11 | Ein Plan mit „alles oder nichts" (Paket laden, Distribution installieren) stellt bei einem Fehler den Stand vor dem Plan wieder her (Sicherung, Spec 06); registriert wird erst nach erfolgreichem setup. |
 | I12 | Liegt das Arbeitsverzeichnis außerhalb eines A/W, geben die Hooks von AIBOS nichts aus und geben keinen Befehl frei; Fehler stehen nur im Log `~/.aios/log/context.log` (Spec 02). |
@@ -225,33 +241,30 @@ AIBOS hält diese Regeln in jedem Befehl ein (für Pakete zusätzlich P1–P8, S
 
 ## Abnahmetest
 
-Der Abnahmetest von v0.6.4 läuft auf dem letzten Release-Kandidaten `v0.6.4-rc<n>` (V0.6, Memos 171–174): zuerst als **Vorabnahme** am Arbeitsrechner, im Benutzer des Arbeitsrechners und in einem zweiten macOS-Benutzer (hier `aibex`) mit eigener Installation unter `~/.aios`, dann als **Abnahme** auf einem zweiten Rechner (Notebook). Testcommits entstehen nur im Testprojekt `A-AIOS/AA-AIbex-AIOS/AAP-Probe-Workspace` mit dem Remote `AIOS-AAP-Probe-Workspace` (F177). Schritte, die am Remote etwas anlegen, umbenennen oder pushen, haben je eine eigene Rückfrage.
-
-Die Abnahmetests von v0.6.3, v0.6.2, v0.6.1, v0.6.0 und v0.5 stehen in dieser Spec in den Tags `v0.6.3`, `v0.6.2`, `v0.6.1`, `v0.6.0` bzw. `v0.5.1`.
+Der Abnahmetest von v0.6.6 läuft auf dem letzten Release-Kandidaten `v0.6.6-rc<n>` am Arbeitsrechner, in verkürzter Form (V0.6, Memos 221, 227). Die neuen Handgriffe werden in einem **Probe-Workspace** im Scratchpad geprüft: ein Vault `§Probe-Remove` mit lokalen Bare-Repos als Remotes (`file://`) und einem **Zweitklon** desselben Workspace als zweitem Rechner, beide an `v0.6.6-rc<n>` gebunden; am Remote bei GitHub entsteht dafür nichts. Schritte im Chat dürfen headless laufen (`claude -p` im Probe-Workspace, Spec 03). Schritte, die am Remote etwas anlegen oder pushen, haben je eine eigene Rückfrage.
 
 | # | Wer, wo | Schritt | erwartet |
 |---|---|---|---|
-| 0 | erster Benutzer, GitHub | Repos des Vault `§AIOS` nach dem Namensschema (Spec 06): bestehende Repos von Projekten mit `@/` umbenennen, fehlende privat anlegen (außer Probe-Projekten), `origin` je Repo nachführen; dazu das Testprojekt | jedes mitreisende Projekt hat ein Remote nach dem Schema |
-| 1 | erster Benutzer, Terminal | `~/git/AIbex/aibex-aios/bin/aios --install v0.6.4-rc<n>`, dann `~/.aios/bin/aios --activate v0.6.4-rc<n> ~/Workspace/§AIBOS`, je mit Ja | Bindung `0.6.4-rc<n>` an `§AIOS` |
-| 2 | erster Benutzer, Chat in `§AIOS` | `/aios-sync` | Plan mit den Einträgen für alle Repos mit Remote, dem Commit von `workspace.yaml` und den Pushes; danach `aios --workspace status` ohne Abweichung; `sync: auto` wirkt, der Master-Kontext enthält `<aios-workspace>` |
-| 3 | zweiter Benutzer, Terminal | Zugang zu den privaten Repos einrichten | `git ls-remote <url der Vault-Root>` gelingt |
-| 4 | zweiter Benutzer, Terminal | Kandidat installieren (Tag in den eigenen Klon holen, `~/.aios/bin/aios --install v0.6.4-rc<n>`) | Kernel unter `~/.aios/versions/` des zweiten Benutzers |
-| 5 | zweiter Benutzer, Terminal | `~/.aios/bin/aios --workspace attach <url der Vault-Root> ~/Workspace/§AIBOS` | ein Plan, ein Ja; alle Projekte des Manifests geklont, Eltern vor Kindern; Pakete und Arbeitspferde abgeglichen; `status` ohne Abweichung |
-| 6 | zweiter Benutzer, erster Chat im Testprojekt | „sync den Workspace", dann „sync project" | Kernel-Skill über den Block der Kernel-Skills; Plan ohne Änderungen, zuerst für den ganzen Workspace, dann nur für das Testprojekt (V0.6, Memo 203: B33) |
-| 7 | zweiter Benutzer, zweiter Chat | `/aios-sync` | der Slash-Befehl läuft |
-| 8 | zweiter, dann erster Benutzer | im Testprojekt in Obsidian oder im Finder eine Datei ändern, eine neue anlegen (ohne Commit), dann „sync project" | Plan nennt 1 neue, 1 geänderte Datei; nach Ja am Remote als „AIOS: gesichert von …"; ein neuer Chat des ersten Benutzers im Testprojekt holt den Stand beim Start ohne Rückfrage (`AIOS-SYNC`) |
-| 9 | beide Benutzer | im Testprojekt dieselbe Datei auf beiden Seiten verschieden ändern und je eine andere Datei; erst beim ersten, dann beim zweiten „sync project" | beim zweiten: verschiedene Dateien zusammengeführt; für die gemeinsame Datei gilt die Fassung des ersten, die des zweiten liegt als `… (Konflikt <Rechner> <Datum>).md` daneben und ist gesichert; der Bericht nennt sie |
-| 10 | zweiter Benutzer | im Testprojekt eine Datei `.env` und eine Notiz anlegen, „sync project" | Notiz gesichert und gepusht; `.env` nicht gesichert, als Geheimnis genannt |
-| 11 | zweiter Benutzer | `/aios-detach Y-Youtube` (Teilbaum mit Unterprojekt, ohne offene Stände) | Plan nennt den Papierkorb; Platzhalter mit `DETACHED.md` und `DETACHED.command`; `status` zeigt `detached`; ein Chat darin meldet `AIOS-DETACHED`; beim ersten Benutzer unverändert |
-| 12 | zweiter Benutzer, Finder | Doppelklick auf `Y-Youtube/DETACHED.command` | Terminal mit dem Plan von `attach Y-Youtube`; nach Ja ist der Teilbaum zurück |
-| 13 | zweiter Benutzer | im Testprojekt eine Notiz löschen, „sync project"; dann „hol die gelöschte Notiz zurück"; dann alle Dateien unter `@/` löschen, „sync project" | Löschen gesichert; `/aios-restore` zeigt die Fassung vor dem Löschen und holt sie nach Ja zurück, der nächste sync sichert sie; bei `@/` fragt sync (große Löschung), „wiederherstellen" stellt `@/` her |
-| 14 | erster Benutzer, Drive-Vault | in einem Vault unter `~/Library/CloudStorage/` den Master-Kontext laden und `aios --workspace sync --plan` | Zeile zum Cloud-Ordner, `sync` verweigert |
-| 15 | zweiter Benutzer | `~/.aios/bin/aios --workspace detach ~/Workspace/§AIBOS` | nach der Prüfung liegt der Vault-Ordner im Papierkorb des zweiten Benutzers |
-| 16 | Notebook | Schritte 3–9, 11–13 | wie dort |
-| 17 | erster Benutzer | `tests/run`, `tests/live/fresh.sh`, `permit.sh`, `changeover.sh`, `rothirsch.sh` | alle grün |
-| 18 | erster Benutzer | Bestandslauf: je Vault aus `aios --vaults` `aios --activate v0.6.4-rc<n> <vault> --plan`; Hooks, `~/.claude/skills/`, `workers.yaml` und `installations.yaml` an beiden Orten | keine Konflikte; Tabelle im Abnahme-Memo |
-| 19 | — | Abnahme-Memo | Schritte 0–18 bestanden |
-| 20 | nach Freigabe | `VERSION` `0.6.4`, Tag `v0.6.4`; `aios --install v0.6.4`; Vaults umbinden, mit eigener Frage; `aios --remove-version v0.6.4-rc<n>` und, wenn kein Vault mehr daran hängt, `v0.6.3`; veröffentlichen, jeder Schritt mit eigener Rückfrage | Bindung `0.6.4`; `aios --install v0.6.4` aus einem frischen Klon möglich |
+| 1 | Terminal | `tests/run`; `tests/live/fresh.sh`, `permit.sh`, `changeover.sh`, `rothirsch.sh` | alle grün |
+| 2 | Terminal | `bin/aios --install v0.6.6-rc<n>`; Probe-Workspace mit Vault-Root, Projekt `PA-Alpha` mit Unterprojekt `PAA-Kind`, Projekt `PB-Beta`, je mit Bare-Repo; `aios --workspace sync --yes`; Zweitklon mit `aios --workspace attach <bare-repo der Vault-Root> <ordner>` | beide Klone mit allen Projekten; `status` ohne Abweichung |
+| 3 | Chat im Probe-Workspace | „entferne PA-Alpha aus dem Workspace" | `/aios-detach` mit `remove`; der Plan nennt Prüfung, Papierkorb für `PA-Alpha` samt `PAA-Kind`, Commit der `workspace.yaml`, keinen Push; nach Ja liegen beide im Papierkorb, `removed` hat zwei Einträge, die Zeile in der `.gitignore` der Vault-Root bleibt |
+| 4 | Probe-Workspace | `aios --workspace sync --yes` | `PA-Alpha` wird nicht neu geklont und nicht wieder eingetragen; der Commit der `workspace.yaml` ist gepusht |
+| 5 | Zweitklon | in `PB-Beta` eine Datei ändern; `aios --workspace sync --plan`, dann `--yes` | der Plan nennt „remove PA-Alpha (removed on another computer)" und „remove PA-Alpha/PAA-Kind …"; danach liegen beide im Papierkorb des Zweitklons, die Änderung in `PB-Beta` ist gesichert |
+| 6 | Zweitklon | wie Schritt 5, aber vorher in `PA-Alpha` eine Datei ändern | `PA-Alpha` bleibt mit Hindernis im Plan stehen, wird nicht gesichert und nicht gepusht; `status` zeigt `removed` |
+| 7 | Probe-Workspace | `aios --workspace attach PA-Alpha` | Einträge zurück in `projects`, Commit, Klon von `PA-Alpha` und `PAA-Kind`; der nächste `sync` im Zweitklon lässt den dort stehenden Ordner aus Schritt 6 unverändert |
+| 8 | Probe-Workspace | an der Vault-Root eine Datei ändern und in `PB-Beta` eine; „sync nur die Root" | Plan mit `--only`: Sichern und Push nur der Vault-Root, `PB-Beta` nicht im Plan |
+| 9 | Probe-Workspace | `aios --workspace sync --only --group x` | Fehler, nichts geschrieben |
+| 10 | Probe-Workspace | neues Projekt `PC-Gamma` mit `aios --init`, Remote `origin` auf ein leeres Bare-Repo ohne Push; `sync --plan`; ein weiteres Projekt ganz ohne Remote | Hinweis `no upstream; git -C PC-Gamma push -u origin main`; für das Projekt ohne Remote der Befehl mit `--push` |
+| 11 | erster Benutzer, GitHub | mit eigener Rückfrage: `gh repo create` mit `--push` für ein Probe-Repo (privat), danach `git -C <pfad> rev-parse --abbrev-ref @{u}`; Repo danach löschen, ebenfalls mit Rückfrage | Upstream `origin/main` gesetzt (B36); sonst Befund und Hinweistext anpassen |
+| 12 | Terminal | in einem Ordner, der danach gelöscht wird: `aios --workspace sync --plan` und `aios --workspace sync <vault-root> --plan` | ohne Pfad die Meldung „the current directory no longer exists …" ohne Python-Fehler; mit absolutem Pfad der Plan (H34) |
+| 13 | Probe-Workspace | ein Projekt mit Paket in `lock.yaml` frisch klonen lassen (`sync` nach Löschen eines Projekts, mit Wiederherstellen) | Paketabgleich und Registrierung je eine Zeile je Projekt, keine Liste der Skills (H33) |
+| 14 | Chat in `§AIBOS` | `/aios-sync` an der Vault-Root mit einem fremden Commit in einem Unterprojekt | Plan vor dem Push, fremder Commit mit eigener Frage (R34) |
+| 15 | Terminal | Master-Kontext eines Vaults unter `~/Library/CloudStorage/` | Zeile „This vault is a Cloud-Drive …" |
+| 16 | erster Benutzer | Bestandslauf: je Vault aus `aios --vaults` `aios --activate v0.6.6-rc<n> <vault> --plan`; Hooks, `~/.claude/skills/`, `workers.yaml` und `installations.yaml` an beiden Orten | keine Konflikte; Tabelle im Abnahme-Memo |
+| 17 | — | Abnahme-Memo | Schritte 1–16 bestanden |
+| 18 | nach Freigabe | `VERSION` `0.6.6`, Tag `v0.6.6`; `aios --install v0.6.6`; Vaults umbinden, mit eigener Frage; `aios --remove-version v0.6.6-rc<n>`; veröffentlichen, jeder Schritt mit eigener Rückfrage | Bindung `0.6.6` |
+
+Die Abnahmetests von v0.6.4 (mit zweitem Benutzer und Notebook; v0.6.5 hat ihn nur für B35 wiederholt), v0.6.3, v0.6.2, v0.6.1, v0.6.0 und v0.5 stehen in dieser Spec in den Tags `v0.6.4`, `v0.6.3`, `v0.6.2`, `v0.6.1`, `v0.6.0` bzw. `v0.5.1`.
 
 ## Offen
 

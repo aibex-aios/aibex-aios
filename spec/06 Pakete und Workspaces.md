@@ -390,6 +390,19 @@ Die Arbeit mit einem Workspace kennt drei Handgriffe, je für den ganzen Workspa
 | **sync** | synchronisieren | den Projektbaum mit den Remotes abgleichen | nur diesen Teilbaum |
 | **detach** | lösen | den Workspace von diesem Rechner lösen | einen Teilbaum auslagern |
 
+Dazu kommt **remove**: ein Projekt mit seinen Unterprojekten aus dem Workspace entfernen, auf allen Rechnern; das Repo am Remote bleibt (*remove*; V0.6, Memo 226).
+
+**Arten der Führung** (V0.6, Memos 223, 224): Ein A/W wird auf eine von vier Arten über Rechner geführt. Die Begriffe sagen, wo die Daten liegen und wer sie repliziert; es sind keine Arten von Vaults.
+
+| Art | wo liegen die Daten | wer repliziert | `sync` |
+|---|---|---|---|
+| **Lokal-Drive** | nur auf diesem Rechner | niemand | `off` |
+| **Cloud-Drive** | auf dem Rechner und beim Cloud-Dienst (Google Drive, OneDrive, iCloud Drive, Dropbox); die Vault-Root liegt in einem **Cloud-Ordner** | der Cloud-Dienst | immer `off`; Git von Hand bleibt erlaubt |
+| **AIBOS-Drive** | auf dem Rechner und an den Git-Remotes; die Vault-Root hat eine `workspace.yaml` | AIBOS mit `attach`, `sync`, `detach`, `remove` | `auto` (Standard) oder `manual` |
+| **Netz-Drive** | nur am Server, eingebunden als Netzlaufwerk (NAS, Server über SMB, NFS, AFP, WebDAV, SSHFS) | niemand, es gibt nur eine Kopie | `off` (Empfehlung) |
+
+AIOS erkennt den Cloud-Drive am Ort (*Schlüssel `sync:`*) und den AIBOS-Drive an der `workspace.yaml`. Einen Netz-Drive erkennt es nicht; dort wird `sync: off` empfohlen, weil Git auf einem Netzlaufwerk und mehrere Rechner auf derselben Kopie sich in die Quere kommen können. Ein Lokal-Drive ist der Rest. Ein Vault in einem anderen Sync-Ordner (z. B. Nextcloud, Synology Drive) mit `workspace.yaml` würde vom Dienst und von AIBOS zugleich abgeglichen; dort `sync: off` setzen bzw. keine `workspace.yaml` anlegen.
+
 **Umfang ohne Pfad** (V0.6, Memo 203: B33): Ohne Pfad gilt das **Projekt des Arbeitsverzeichnisses** mit seinen Unterprojekten, also der nächste Eintrag von `workspace.yaml` an oder über dem Arbeitsverzeichnis; an der Vault-Root (oder außerhalb jedes Eintrags) ist das der ganze Workspace. Das gilt für `sync` und `detach` gleich; `attach` mit Pfad holt ausdrücklich einen Teilbaum zurück. Der Plan nennt den Umfang. Die Kernel-Skills übersetzen die Worte des Users: „Projekt" oder kein Wort ohne Pfad, „Workspace" bzw. „Vault" mit der Vault-Root als Pfad (Spec 03, *Workspaces*).
 
 `aios --workspace` arbeitet nur in einem A/W (Spec 01, I4). Ausgenommen ist `attach <repo>`, das den A/W erst anlegt.
@@ -414,6 +427,12 @@ projects:
     revision: v0.1.0
     path: A-Admin/AT-Templates/app-taschenrechner
     groups: [apps]
+removed:
+  - path: A-Admin/AX-Archiv
+    name: Work-AX-Archiv
+    remote: aibex
+    revision: main
+    since: 2026-11-14
 ```
 
 | Feld | Pflicht | Regel |
@@ -425,8 +444,9 @@ projects:
 | `projects[].path` | ja | relativ zum Wurzelprojekt, darunter, ohne `..` |
 | `projects[].groups` | nein | Liste von Gruppennamen |
 | `projects[].import` | nein | im Format vorgesehen, ohne Wirkung; `aios --workspace` meldet ihn und übergeht ihn |
+| `removed` | nein | Liste der Projekte, die mit `remove` aus dem Workspace entfernt wurden: `path`, `name`, `remote` oder `repo` und `revision` wie in `projects`, dazu `since` (Datum); je Unterprojekt ein eigener Eintrag. Ein Pfad steht nie zugleich in `projects` und `removed` (*remove*) |
 
-Die Datei wird mit PyYAML gelesen. Der User pflegt sie; `sync` trägt neue Repos mit Remote ein (*sync*, Schritt 4). Die Reihenfolge der Einträge ist ohne Bedeutung: AIOS klont Elternprojekte immer vor ihren Kindern, sortiert nach der Tiefe des Pfads (F155).
+Die Datei wird mit PyYAML gelesen. Der User pflegt sie; `sync` trägt neue Repos mit Remote ein (*sync*, Schritt 5), nie an einem Pfad aus `removed`, und `remove` bzw. `attach <pfad>` verschieben Einträge zwischen `projects` und `removed`. Die Reihenfolge der Einträge ist ohne Bedeutung: AIOS klont Elternprojekte immer vor ihren Kindern, sortiert nach der Tiefe des Pfads (F155).
 
 ### Namensschema am Remote
 
@@ -442,7 +462,7 @@ Beispiel `§Work`: `Work`, `Work-A-Admin`, `Work-AT-Templates`, `Work-ATP-Powerp
 - **Paket-Repos** folgen nicht dem Schema: Ihr Name ist der Paketname, klein geschrieben, `<typ>-<name>` (*Pakete*); der Kernel liegt im Repo `aibex-aios`. Ein Repo mit `manifest.yaml` an seiner Wurzel und ohne `@/` gilt als Paket-Repo; `sync` schlägt dafür keinen Namen vor und meldet keine Abweichung (V0.6, Memo 177: F200, F201). Andere **Fremd-Repos** ohne `@/` behalten ihren Namen ebenso (F178).
 - **Zeichen:** erlaubt sind `A–Z a–z 0–9 . _ -`; `ä ö ü Ä Ö Ü ß` werden zu `ae oe ue Ae Oe Ue ss`, jedes andere Zeichen zu `-` (F180).
 - **Eindeutigkeit:** Es zählt nur der letzte Ordnername. Haben zwei Projekte des Workspace denselben Ordnernamen, meldet `sync` die Kollision und schlägt keinen Namen vor (F179).
-- Das Schema ist ein **Vorschlag**: Ein abweichender Name funktioniert, `sync` nennt ihn als Hinweis (F181). AIOS legt keine Repos an; bei einem Projekt ohne Remote nennt `sync` den Namen und den Befehl, z. B. `gh repo create aibex-aios/Work-AT-Templates --private --source <pfad> --remote origin` (F182).
+- Das Schema ist ein **Vorschlag**: Ein abweichender Name funktioniert, `sync` nennt ihn als Hinweis (F181). AIOS legt keine Repos an; bei einem Projekt ohne Remote nennt `sync` den Namen und den Befehl, der das Repo anlegt und den ersten Stand pusht, z. B. `gh repo create aibex-aios/Work-AT-Templates --private --source <pfad> --remote origin --push` (F182; V0.6, Memos 222, 225: B36). Hat ein Repo ein `origin`, aber sein Zweig keinen Upstream (etwa nach `gh repo create` ohne `--push`), pusht `sync` es nicht (F217) und nennt es in Plan, Bericht und `status` als Hinweis: `note: <pfad>: no upstream; git -C <pfad> push -u origin <zweig>`.
 
 ### `.aios/workspace.local.yaml`
 
@@ -468,15 +488,16 @@ detached:
 
 **Standard:** `auto`, wenn die Vault-Root eine `workspace.yaml` hat, sonst `off`.
 
-**Cloud-Ordner:** Liegt die Vault-Root unter `~/Library/CloudStorage/` (Google Drive, OneDrive u. a.), unter `~/Library/Mobile Documents/` (iCloud Drive) oder unter `~/Dropbox/`, gilt `off`, auch wenn etwas anderes eingetragen ist; der Master-Kontext sagt das in einer Zeile. Dort repliziert der Cloud-Dienst, und ein Abgleich über Git-Remotes käme ihm in die Quere (V0.6, Memo 169). Git selbst bleibt erlaubt: Commit, Push und Pull von Hand bzw. auf Wunsch des Users (F188).
+**Cloud-Ordner** (Cloud-Drive, *Arten der Führung*): Liegt die Vault-Root unter `~/Library/CloudStorage/` (Google Drive, OneDrive u. a.), unter `~/Library/Mobile Documents/` (iCloud Drive) oder unter `~/Dropbox/`, gilt `off`, auch wenn etwas anderes eingetragen ist; der Master-Kontext sagt das in einer Zeile. Dort repliziert der Cloud-Dienst, und ein Abgleich über Git-Remotes käme ihm in die Quere (V0.6, Memo 169). Git selbst bleibt erlaubt: Commit, Push und Pull von Hand bzw. auf Wunsch des Users (F188).
 
 ### `aios --workspace`
 
 | Befehl | Wirkung |
 |---|---|
 | `aios --workspace attach <repo> [<vault-ordner>]` | Workspace an diesen Rechner anbinden: Vault-Root klonen, dann `sync` |
-| `aios --workspace attach <pfad>` | ausgelagerten Teilbaum zurückholen |
-| `aios --workspace sync [<pfad>] [--group <g>…]` | Projektbaum mit den Remotes abgleichen |
+| `aios --workspace attach <pfad>` | ausgelagerten Teilbaum zurückholen bzw. ein entferntes Projekt wieder aufnehmen (*remove*) |
+| `aios --workspace sync [<pfad>] [--group <g>… \| --only]` | Projektbaum mit den Remotes abgleichen; mit `--only` nur das eine Projekt ohne Unterprojekte |
+| `aios --workspace remove <pfad>` | Projekt mit seinen Unterprojekten aus dem Workspace entfernen (*remove*) |
 | `aios --workspace history <pfad> [--deleted]` | frühere Fassungen und gelöschte Dateien zeigen (*Zurückholen*) |
 | `aios --workspace restore <pfad> [--at <zeit>]` | Datei oder Projekt auf eine frühere Fassung zurückholen (*Zurückholen*) |
 | `aios --workspace detach [<pfad>]` | Teilbaum auslagern; an der Vault-Root bzw. mit ihrem Pfad: Workspace von diesem Rechner lösen |
@@ -485,7 +506,7 @@ detached:
 
 Die Befehle `init` und `update` aus v0.4 gehen in `attach` und `sync` auf (F163). Alle Befehle außer `status` sind schreibend und folgen I7 (Plan, `--plan`, `--yes`); sie zeigen einen Plan und fragen einmal.
 
-**URL oder Pfad:** Ein Argument von `attach` mit `://`, der Form `<user>@<host>:` oder der Endung `.git` ist ein Repo, sonst ein Pfad (F171). `<pfad>` ist das Wurzelprojekt oder ein Ordner darunter; AIOS sucht die nächste `workspace.yaml` aufwärts. Ohne `--group` gelten alle Projekte; mit `--group` nur Projekte dieser Gruppen und Projekte ohne Gruppe.
+**URL oder Pfad:** Ein Argument von `attach` mit `://`, der Form `<user>@<host>:` oder der Endung `.git` ist ein Repo, sonst ein Pfad (F171). `<pfad>` ist das Wurzelprojekt oder ein Ordner darunter; AIOS sucht die nächste `workspace.yaml` aufwärts. Ohne `--group` gelten alle Projekte; mit `--group` nur Projekte dieser Gruppen und Projekte ohne Gruppe. `--only` beschränkt `sync` auf das eine Projekt an `<pfad>` (ohne Pfad das Projekt des Arbeitsverzeichnisses, an der Vault-Root diese allein), ohne Unterprojekte; `--only` mit `--group` ist ein Fehler (V0.6, Memos 222, 227: H42).
 
 **Klonen** (in `attach` und `sync`): `git clone <url> <path>`. Ist `revision` ein Zweig, wird er ausgecheckt. Ist sie ein Tag oder Commit, legt AIOS einen lokalen Zweig `ws/<revision>` an diesem Commit an und checkt ihn aus; es gibt kein *detached HEAD* (V0.4, Memo 10). Danach trägt AIOS `/<path>/` in die `.gitignore` des Repos darüber ein, wenn sie fehlt, und committet nur diese Zeile („AIOS: <path> als Projekt des Workspace ausgeschlossen", I9).
 
@@ -502,18 +523,18 @@ Der Plan zeigt alle Schritte; ein Ja. Danach ist der Rechner ohne `aios --activa
 
 #### sync — Projektbaum abgleichen
 
-`aios --workspace sync [<pfad>]` gleicht den Projektbaum mit den Remotes ab, nach dem **Drive-Modell** (V0.6, Memo 204: L38): Was der User lokal ändert, neu anlegt oder löscht, sichert `sync` selbst; neue Stände anderer Rechner führt es zusammen; dieselbe Datei auf beiden Seiten ergibt eine Konfliktkopie statt eines Stillstands. Der User braucht kein Git: Er sieht keinen Commit, und jede frühere Fassung bleibt in der Geschichte (*Zurückholen*). Die Schritte gelten für die Projekte an oder unter `<pfad>`, ohne Pfad unter dem Projekt des Arbeitsverzeichnisses (*Umfang ohne Pfad*); an der Vault-Root für den ganzen Workspace. Ausgelagerte Teilbäume (`workspace.local.yaml`) überspringt `sync` ganz: Es holt sie nicht zurück und pusht nichts aus ihnen (F175).
+`aios --workspace sync [<pfad>]` gleicht den Projektbaum mit den Remotes ab, nach dem **Drive-Modell** (V0.6, Memo 204: L38): Was der User lokal ändert, neu anlegt oder löscht, sichert `sync` selbst; neue Stände anderer Rechner führt es zusammen; dieselbe Datei auf beiden Seiten ergibt eine Konfliktkopie statt eines Stillstands. Der User braucht kein Git: Er sieht keinen Commit, und jede frühere Fassung bleibt in der Geschichte (*Zurückholen*). Die Schritte gelten für die Projekte an oder unter `<pfad>`, ohne Pfad unter dem Projekt des Arbeitsverzeichnisses (*Umfang ohne Pfad*); an der Vault-Root für den ganzen Workspace. Ausgelagerte Teilbäume (`workspace.local.yaml`) überspringt `sync` ganz: Es holt sie nicht zurück und pusht nichts aus ihnen (F175). Mit `--only` gelten die Schritte 2, 3 und 6 nur für das eine Repo und Schritt 5 nur an der Vault-Root; Schritt 1, Schritt 4 und das Entfernen nach `removed` entfallen (V0.6, Memo 227: H42).
 
-1. **Klonen, was fehlt:** Projekte aus `workspace.yaml`, deren Pfad fehlt, nach *Klonen*, Eltern vor Kindern. Ein fehlender Projektordner wird immer neu geklont; aus dem Workspace entfernen ist ein eigener Handgriff einer späteren Version, auf diesem Rechner hilft `detach`. Scheitert ein Klon (z. B. ein Remote, das es auf diesem Rechner nicht gibt), nennt der Bericht das Projekt mit Grund (`not cloned`), überspringt seine Unterprojekte und macht mit den übrigen weiter (V0.6, Memo 194: B30).
+1. **Klonen, was fehlt:** Projekte aus `workspace.yaml`, deren Pfad fehlt, nach *Klonen*, Eltern vor Kindern. Ein fehlender Projektordner wird immer neu geklont; soll ein Projekt nicht zurückkommen, wird es mit `remove` aus dem Workspace entfernt, auf diesem Rechner allein hilft `detach`. **Entfernt auf einem anderen Rechner:** Liegt ein Ordner an einem Pfad aus `removed` noch auf diesem Rechner, nimmt `sync` „remove <pfad> (removed on another computer)" in den Plan auf und entfernt ihn nach der *Prüfung* von `detach` wie `remove` (Papierkorb, ohne Commit, weil `workspace.yaml` schon stimmt). Besteht er die Prüfung nicht, bleibt er stehen; der Plan nennt die Hindernisse, und `sync` sichert, holt und pusht ihn nicht mehr (V0.6, Memo 226: F241). Scheitert ein Klon (z. B. ein Remote, das es auf diesem Rechner nicht gibt), nennt der Bericht das Projekt mit Grund (`not cloned`), überspringt seine Unterprojekte und macht mit den übrigen weiter (V0.6, Memo 194: B30).
 2. **Sichern** (F225): In jedem vorhandenen Repo mit Upstream, dessen `revision` ein Zweig ist und das diesen Zweig ausgecheckt hat, übernimmt `sync` alle lokalen Änderungen (neue, geänderte, gelöschte Dateien; Ausgeschlossenes nach `.gitignore` bleibt draußen) in einen Commit „AIOS: gesichert von `<benutzer>@<Rechner>` am `<JJJJ-MM-TT hh:mm>`" (H38). **Geheimnisse** (Dateien unter `@Secret/` und mit den Namen `.env`, `.env.*`, `*.pem`, `*.key`, `id_rsa*`, `id_ed25519*`) nimmt es nicht auf; sie bleiben lokal, und der Bericht nennt sie als „nicht gesichert (Geheimnis)". **Große Löschung** (F228): Fehlen in einem Repo mehr als 10 getrackte Dateien, oder fehlen alle getrackten Dateien unter `@/` oder `.aios/`, fragt `sync` einmal für dieses Repo: „Löschen übernehmen" oder „wiederherstellen" (Standard). Wiederherstellen holt die gelöschten Dateien aus dem letzten Commit zurück; die übrigen Änderungen werden gesichert. Ohne Frage (`--yes`, kein Terminal, Hook) gilt wiederherstellen.
 3. **Holen und zusammenführen** (F226, F227): `git fetch --tags origin` für jedes Repo mit Upstream, auch die Vault-Root. Ist `revision` ein Zweig, führt `sync` `origin/<zweig>` zusammen: per fast-forward, sonst mit einem Merge-Commit „AIOS: zusammengeführt auf `<benutzer>@<Rechner>`". Haben beide Seiten dieselbe Datei geändert, gilt die Fassung des Remote; die lokale bleibt daneben als `<Name> (Konflikt <benutzer>@<Rechner> <JJJJ-MM-TT>).<Endung>` und wird im selben Commit gesichert. Ist eine Datei auf einer Seite gelöscht und auf der anderen geändert, bleibt die geänderte Fassung. Der Bericht nennt jede Konfliktkopie. Ist `revision` ein Tag oder Commit (fester Stand), wird nichts gesichert; enthält der ausgecheckte Zweig den Stand nicht, setzt `sync` ihn per fast-forward darauf, lokale Änderungen nennt der Bericht. Unverändert bleibt ein Repo mit anderem ausgecheckten Zweig oder mit einem `origin`, das auf ein anderes Repo als `workspace.yaml` zeigt (F160), ebenso ein Ordner am Pfad, der kein Git-Repo ist; der Bericht nennt den Grund in Alltagssprache (H35).
-4. **Lauffähig machen:** für jedes in Schritt 1 geklonte Projekt mit `@/` den Abgleich der Pakete und Arbeitspferde mit `lock.yaml` (wie `aios --fetch` ohne Argument) und die Registrierung (wie `aios --register`) (F158). Git hält keinen leeren Ordner: Enthält `@/` keine getrackte Datei, fehlt es im Klon. Ein Klon ohne `@/`, dessen `.gitignore` die Zeile `.aios/registry` der Vorlage enthält und der kein Paket-Repo ist, gilt deshalb als Projekt; `sync` legt `@/` an und nennt das im Bericht. Der Bericht zeigt die Registrierung mit einer Zeile je Projekt (V0.6, Memo 199: B32, H31).
-5. **Manifest nachführen:** Repos unter dem Wurzelprojekt mit `origin`, die in `workspace.yaml` fehlen und nicht ausgelagert sind, werden eingetragen: `name` aus der URL, `remote`, wenn die URL mit der Basis eines Eintrags in `remotes` beginnt, sonst `repo`; `revision` der ausgecheckte Zweig; `path` relativ zum Wurzelprojekt (F176). AIOS committet im Wurzelprojekt `workspace.yaml` („AIOS: workspace.yaml nachgeführt"). Repos ohne Remote, Kollisionen und Abweichungen vom Namensschema nennt der Bericht als Hinweis (*Namensschema am Remote*).
+4. **Lauffähig machen:** für jedes in Schritt 1 geklonte Projekt mit `@/` den Abgleich der Pakete und Arbeitspferde mit `lock.yaml` (wie `aios --fetch` ohne Argument) und die Registrierung (wie `aios --register`) (F158). Git hält keinen leeren Ordner: Enthält `@/` keine getrackte Datei, fehlt es im Klon. Ein Klon ohne `@/`, dessen `.gitignore` die Zeile `.aios/registry` der Vorlage enthält und der kein Paket-Repo ist, gilt deshalb als Projekt; `sync` legt `@/` an und nennt das im Bericht. Der Bericht zeigt den Abgleich der Pakete und die Registrierung mit je einer Zeile je Projekt, ohne die Liste der einzelnen Skills (V0.6, Memo 199: B32, H31; Memo 202: H33).
+5. **Manifest nachführen:** Repos unter dem Wurzelprojekt mit `origin`, die in `workspace.yaml` fehlen, nicht ausgelagert sind und an keinem Pfad aus `removed` liegen, werden eingetragen: `name` aus der URL, `remote`, wenn die URL mit der Basis eines Eintrags in `remotes` beginnt, sonst `repo`; `revision` der ausgecheckte Zweig; `path` relativ zum Wurzelprojekt (F176). AIOS committet im Wurzelprojekt `workspace.yaml` („AIOS: workspace.yaml nachgeführt"). Repos ohne Remote, Repos ohne Upstream, Kollisionen und Abweichungen vom Namensschema nennt der Bericht als Hinweis (*Namensschema am Remote*).
 6. **Pushen:** jedes Repo mit Upstream und ausgehenden Commits, das Schritt 3 nicht ausgenommen hat: `git push origin <zweig>` für den ausgecheckten Zweig, nie Tags, nie `--force` (F159). Vorher prüft AIOS die ausgehenden Commits auf Geheimnisse (Namen wie in Schritt 2); ein Treffer, etwa ein früher von Hand committetes `.env`, hält den Push dieses Repos an, mit Datei und Commit im Bericht; die übrigen Repos laufen weiter (F172).
 
 **Neuer Workspace:** Läuft sync an einer Vault-Root ohne `workspace.yaml`, legt es sie im selben Plan an: `remotes` mit der Basis des `origin` der Vault-Root, wenn sie bei GitHub liegt (`<owner>: https://github.com/<owner>`), `projects` mit allen Repos mit Remote wie in Schritt 5; Commit nur dieser Datei („AIOS: workspace.yaml angelegt"); danach die Schritte 2, 3 und 6 für die Vault-Root und diese Projekte. Unterhalb der Vault-Root und bei `sync: off` legt sync nichts an (V0.6, Memo 194: B29).
 
-**Plan und Bericht:** Der Plan nennt nur, was geschieht: zu klonende Projekte, je Repo das Sichern (Zahl der neuen, geänderten, gelöschten Dateien), eine Zeile für das Holen und Zusammenführen aller Projekte (bis zu fünf mit Namen), Einträge ins Manifest und Pushes mit den ausgehenden Commits (Kurz-SHA, Autor, Betreff). Steht für ein Repo ein Sichern im Plan, nennt er auch den Push danach („push <pfad> after saving"); Geheimnisse zählt er nicht mit, er nennt sie. Pushes, die erst durch Zusammenführen entstehen, nennt der Bericht. Der Bericht nennt nur Änderungen und fasst Projekte, die weder gesichert noch geholt noch gepusht wurden, in einer Zeile zusammen (V0.6, Memo 208: H36; Memo 211: H39–H41). Der Skill `/aios-sync` nennt dem User dazu die Commits, die nicht aus der laufenden Session stammen (Regel *Weiter*). `sync` macht keinen Rebase, ändert nie die Geschichte und legt keine Repos am Remote an.
+**Plan und Bericht:** Der Plan nennt nur, was geschieht: zu klonende Projekte, zu entfernende Projekte (nach `removed`), je Repo das Sichern (Zahl der neuen, geänderten, gelöschten Dateien), eine Zeile für das Holen und Zusammenführen aller Projekte (bis zu fünf mit Namen), Einträge ins Manifest und Pushes mit den ausgehenden Commits (Kurz-SHA, Autor, Betreff). Steht für ein Repo ein Sichern im Plan, nennt er auch den Push danach („push <pfad> after saving"); Geheimnisse zählt er nicht mit, er nennt sie. Pushes, die erst durch Zusammenführen entstehen, nennt der Bericht. Der Bericht nennt nur Änderungen und fasst Projekte, die weder gesichert noch geholt noch gepusht wurden, in einer Zeile zusammen (V0.6, Memo 208: H36; Memo 211: H39–H41). Der Skill `/aios-sync` zeigt den Plan vor jedem Push, auch für den ganzen Workspace an der Vault-Root, und nennt dem User dazu die Commits, die nicht aus der laufenden Session stammen (Regel *Weiter*; V0.6, Memos 216, 217, 227: R34); der Kernel erzwingt das nicht. `sync` macht keinen Rebase, ändert nie die Geschichte und legt keine Repos am Remote an.
 
 **Grenzen:** `sync` gleicht nicht laufend ab wie ein Cloud-Laufwerk, sondern beim Start eines Chats (nur holen, Spec 02), nach Commits und auf Wunsch; je seltener, desto häufiger Konfliktkopien. Große Dateien (z. B. Videos) machen ein Repo schwer; sie gehören in `.gitignore`.
 
@@ -548,13 +569,26 @@ Verletzt ein Repo eine Bedingung, nennt der Plan jedes Hindernis mit Pfad, und `
 
 Dazu ein Eintrag in `workspace.local.yaml`.
 
-**Zurückholen:** `aios --workspace attach <pfad>` prüft, dass `<pfad>` in `workspace.local.yaml` steht und der Ordner nur den Platzhalter enthält, entfernt den Platzhalter, klont das Projekt und seine Unterprojekte aus `workspace.yaml` (Eltern vor Kindern), führt für sie die Schritte 3 und 4 von `sync` aus und entfernt den Eintrag.
+**Zurückholen:** `aios --workspace attach <pfad>` für einen Pfad aus `removed` nimmt das Projekt wieder auf (*remove*). Sonst prüft es, dass `<pfad>` in `workspace.local.yaml` steht und der Ordner nur den Platzhalter enthält, entfernt den Platzhalter, klont das Projekt und seine Unterprojekte aus `workspace.yaml` (Eltern vor Kindern), führt für sie die Schritte 3 und 4 von `sync` aus und entfernt den Eintrag.
 
 **Workspace lösen:** `aios --workspace detach` an der Vault-Root bzw. mit ihrem Pfad prüft wie oben alle Repos des Workspace einschließlich der Vault-Root und legt danach den Vault-Ordner in den Papierkorb (F174). Installation, Hooks und andere Vaults bleiben.
 
+#### remove — aus dem Workspace entfernen
+
+`aios --workspace remove <pfad>` entfernt ein Projekt mit allen Unterprojekten aus dem Workspace, auf diesem und auf jedem anderen Rechner (V0.6, Memos 204, 205: F231; Memo 226: FG20, F239–F243). Das Repo am Remote bleibt; AIOS löscht nie ein Remote. `<pfad>` ist ein Projekt aus `workspace.yaml`; einen Pfad muss man nennen.
+
+1. **Ziel:** Die Vault-Root lässt sich nicht entfernen; dafür gibt es `detach` (Workspace lösen). Ein ausgelagerter Teilbaum lässt sich entfernen: Statt des Teilbaums kommt der Platzhalter in den Papierkorb, und der Eintrag in `workspace.local.yaml` entfällt (F240).
+2. **Prüfung** wie bei `detach` (*Prüfung*, F165) für jedes Repo im Teilbaum. Verletzt ein Repo eine Bedingung, nennt der Plan jedes Hindernis mit Pfad, und `remove` ändert nichts; der Bericht schlägt `sync` vor.
+3. **Ordner:** Der Teilbaum wandert in den Papierkorb (`~/.Trash/<ordnername> <datum uhrzeit>`), ohne Platzhalter. Die Zeile `/<pfad>/` in der `.gitignore` des Repos darüber bleibt, damit ein Ordner, der auf einem anderen Rechner noch liegt, dort nicht ins Repo darüber gesichert wird.
+4. **Manifest:** Die Einträge des Projekts und aller Unterprojekte wandern von `projects` nach `removed` (mit `since`); AIOS committet im Wurzelprojekt nur `workspace.yaml` („AIOS: <pfad> aus dem Workspace entfernt"). `remove` pusht nicht; das tut der nächste `sync` (F239).
+
+Der Plan zeigt Prüfung, Papierkorb und Commit; ein Ja. **Andere Rechner** übernehmen das Entfernen beim nächsten `sync` (*sync*, Schritt 1); der Hook beim Start entfernt nichts (Spec 02, *Hooks*).
+
+**Wieder aufnehmen:** `aios --workspace attach <pfad>` für einen Pfad aus `removed` verschiebt die Einträge des Pfads und seiner Unterprojekte zurück nach `projects` (ohne `since`), committet `workspace.yaml` („AIOS: <pfad> wieder in den Workspace aufgenommen") und klont wie *sync*, Schritte 1, 3 und 4. Liegt der Ordner noch da, wird nur das Manifest geändert (F242).
+
 #### status
 
-`aios --workspace status [<pfad>]` zeigt eine Tabelle wie `aios --integrity` (Spec 05), mit dem Zustand `detached` für ausgelagerte Teilbäume (F169) und mit den Hinweisen aus *sync*, Schritt 4 (Repos ohne Eintrag, ohne Remote). Grundlage ist der lokale Stand ohne `git fetch`.
+`aios --workspace status [<pfad>]` zeigt eine Tabelle wie `aios --integrity` (Spec 05), mit dem Zustand `detached` für ausgelagerte Teilbäume (F169), dem Zustand `removed` für Pfade aus `removed`, deren Ordner auf diesem Rechner noch liegt (F243), und mit den Hinweisen aus *sync*, Schritt 5 (Repos ohne Eintrag, ohne Remote, ohne Upstream). Grundlage ist der lokale Stand ohne `git fetch`.
 
 ```
 Workspace AIOS — 2026-11-05
@@ -565,7 +599,8 @@ AIOS-AA-AIbex-AIOS   A-AIOS/AA-AIbex-AIOS    main    ok        2 ahead   ok
 AIOS-Y-Youtube       Y-Youtube               —       detached  —         —
 
 Notes
-- B-Basics: no remote; suggested: gh repo create aibex-aios/AIOS-B-Basics --private --source B-Basics --remote origin
+- B-Basics: no remote; suggested: gh repo create aibex-aios/AIOS-B-Basics --private --source B-Basics --remote origin --push
+- C-Clients: no upstream; git -C C-Clients push -u origin main
 ```
 
 **Freeze** schreibt in `lock.yaml` des Wurzelprojekts den Abschnitt `workspace:` mit `<name>: <commit-sha>` je geklontem Projekt; der Abschnitt `packages:` bleibt, und `aios --fetch` lässt `workspace:` stehen.
